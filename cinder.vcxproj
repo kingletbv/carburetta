@@ -20,10 +20,39 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cinder.c" />
+    <ClCompile Include="helpers\aes.c" />
+    <ClCompile Include="helpers\cpp_helpers.cpp" />
+    <ClCompile Include="helpers\gf8.c" />
+    <ClCompile Include="helpers\helpers.c" />
+    <ClCompile Include="helpers\klt_logger.c" />
+    <ClCompile Include="helpers\md5.c" />
+    <ClCompile Include="helpers\sha1.c" />
+    <ClCompile Include="helpers\sha256.c" />
+    <ClCompile Include="helpers\unicode_data.c" />
     <ClCompile Include="log_function.c" />
+    <ClCompile Include="mlx\chain.c" />
+    <ClCompile Include="mlx\dfa.c" />
+    <ClCompile Include="mlx\nfa.c" />
+    <ClCompile Include="mlx\scanner.c" />
+    <ClCompile Include="mlx\tokenizer.c" />
+    <ClCompile Include="mlx\xlalr.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="helpers\aes.h" />
+    <ClInclude Include="helpers\gf8.h" />
+    <ClInclude Include="helpers\helpers.h" />
+    <ClInclude Include="helpers\klt_logger.h" />
+    <ClInclude Include="helpers\md5.h" />
+    <ClInclude Include="helpers\sha1.h" />
+    <ClInclude Include="helpers\sha256.h" />
+    <ClInclude Include="helpers\unicode_data.h" />
     <ClInclude Include="log_function.h" />
+    <ClInclude Include="mlx\chain.h" />
+    <ClInclude Include="mlx\dfa.h" />
+    <ClInclude Include="mlx\nfa.h" />
+    <ClInclude Include="mlx\scanner.h" />
+    <ClInclude Include="mlx\tokenizer.h" />
+    <ClInclude Include="mlx\xlalr.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -96,7 +125,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>helpers/;mlx/</AdditionalIncludeDirectories>
     </ClCompile>
@@ -112,7 +141,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>helpers/;mlx/</AdditionalIncludeDirectories>
     </ClCompile>
@@ -130,7 +159,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>helpers/;mlx/</AdditionalIncludeDirectories>
     </ClCompile>
@@ -150,7 +179,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>helpers/;mlx/</AdditionalIncludeDirectories>
     </ClCompile>

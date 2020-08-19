@@ -3,8 +3,106 @@
   <ItemGroup>
     <ClCompile Include="cinder.c" />
     <ClCompile Include="log_function.c" />
+    <ClCompile Include="mlx\chain.c">
+      <Filter>mlx</Filter>
+    </ClCompile>
+    <ClCompile Include="mlx\dfa.c">
+      <Filter>mlx</Filter>
+    </ClCompile>
+    <ClCompile Include="mlx\nfa.c">
+      <Filter>mlx</Filter>
+    </ClCompile>
+    <ClCompile Include="mlx\scanner.c">
+      <Filter>mlx</Filter>
+    </ClCompile>
+    <ClCompile Include="mlx\xlalr.c">
+      <Filter>mlx</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\aes.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\cpp_helpers.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\gf8.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\helpers.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\klt_logger.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\md5.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\sha1.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\sha256.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\unicode_data.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="mlx\tokenizer.c">
+      <Filter>mlx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
+    <ClInclude Include="mlx\chain.h">
+      <Filter>mlx</Filter>
+    </ClInclude>
+    <ClInclude Include="mlx\dfa.h">
+      <Filter>mlx</Filter>
+    </ClInclude>
+    <ClInclude Include="mlx\nfa.h">
+      <Filter>mlx</Filter>
+    </ClInclude>
+    <ClInclude Include="mlx\scanner.h">
+      <Filter>mlx</Filter>
+    </ClInclude>
+    <ClInclude Include="mlx\xlalr.h">
+      <Filter>mlx</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\aes.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\gf8.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\helpers.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\klt_logger.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\md5.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\sha1.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\sha256.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\unicode_data.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="mlx\tokenizer.h">
+      <Filter>mlx</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="helpers">
+      <UniqueIdentifier>{650522bf-3e73-4986-8644-cb80ccda6a5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdparty">
+      <UniqueIdentifier>{2438e150-3df8-4465-be55-d8442c7bffe6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mlx">
+      <UniqueIdentifier>{70fff8b7-3284-4771-879b-daf096c58072}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
