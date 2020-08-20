@@ -48,6 +48,8 @@
     <ClCompile Include="mlx\tokenizer.c">
       <Filter>mlx</Filter>
     </ClCompile>
+    <ClCompile Include="line_defs.c" />
+    <ClCompile Include="tokens.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -93,6 +95,8 @@
     <ClInclude Include="mlx\tokenizer.h">
       <Filter>mlx</Filter>
     </ClInclude>
+    <ClInclude Include="line_defs.h" />
+    <ClInclude Include="tokens.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">

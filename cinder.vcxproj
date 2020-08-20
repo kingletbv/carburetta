@@ -29,6 +29,7 @@
     <ClCompile Include="helpers\sha1.c" />
     <ClCompile Include="helpers\sha256.c" />
     <ClCompile Include="helpers\unicode_data.c" />
+    <ClCompile Include="line_defs.c" />
     <ClCompile Include="log_function.c" />
     <ClCompile Include="mlx\chain.c" />
     <ClCompile Include="mlx\dfa.c" />
@@ -36,6 +37,7 @@
     <ClCompile Include="mlx\scanner.c" />
     <ClCompile Include="mlx\tokenizer.c" />
     <ClCompile Include="mlx\xlalr.c" />
+    <ClCompile Include="tokens.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helpers\aes.h" />
@@ -46,6 +48,7 @@
     <ClInclude Include="helpers\sha1.h" />
     <ClInclude Include="helpers\sha256.h" />
     <ClInclude Include="helpers\unicode_data.h" />
+    <ClInclude Include="line_defs.h" />
     <ClInclude Include="log_function.h" />
     <ClInclude Include="mlx\chain.h" />
     <ClInclude Include="mlx\dfa.h" />
@@ -53,6 +56,7 @@
     <ClInclude Include="mlx\scanner.h" />
     <ClInclude Include="mlx\tokenizer.h" />
     <ClInclude Include="mlx\xlalr.h" />
+    <ClInclude Include="tokens.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
