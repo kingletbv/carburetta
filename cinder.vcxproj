@@ -37,6 +37,7 @@
     <ClCompile Include="mlx\scanner.c" />
     <ClCompile Include="mlx\tokenizer.c" />
     <ClCompile Include="mlx\xlalr.c" />
+    <ClCompile Include="prd_gram.c" />
     <ClCompile Include="tokens.c" />
   </ItemGroup>
   <ItemGroup>
@@ -56,6 +57,7 @@
     <ClInclude Include="mlx\scanner.h" />
     <ClInclude Include="mlx\tokenizer.h" />
     <ClInclude Include="mlx\xlalr.h" />
+    <ClInclude Include="prd_gram.h" />
     <ClInclude Include="tokens.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

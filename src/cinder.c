@@ -56,6 +56,8 @@ int main(int argc, char **argv) {
 
   LOG("We've started..\n");
 
+  prd_init();
+
   struct tkr_tokenizer tkr;
   ldl_init_tokenizer(&tkr);
 
