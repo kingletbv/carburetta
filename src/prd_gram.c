@@ -13,6 +13,21 @@
 #include <stdint.h>
 #endif
 
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
+#include <string.h>
+#endif
+
+#ifndef ERRNO_H_INCLUDED
+#define ERNNO_H_INCLUDED
+#include <errno.h>
+#endif
+
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
+#include <assert.h>
+#endif
+
 #ifndef XLALR_H_INCLUDED
 #define XLALR_H_INCLUDED
 #include "xlalr.h"
@@ -23,10 +38,20 @@
 #include "tokenizer.h"
 #endif
 
+#ifndef TOKENS_H_INCLUDED
+#define TOKENS_H_INCLUDED
+#include "tokens.h"
+#endif
+
 #ifndef KLT_LOGGER_H_INCLUDED
 #define KLT_LOGGER_H_INCLUDED
 #define KLT_LOG_MODULE "prd"
 #include "klt_logger.h"
+#endif
+
+#ifndef PRD_GRAM_H_INCLUDED
+#define PRD_GRAM_H_INCLUDED
+#include "prd_gram.h"
 #endif
 
 #define PRD_SYMBOL_ENUM \
@@ -60,6 +85,24 @@ typedef enum prd_symbol_enum {
   PRD_SYMBOL_ENUM
 #undef xx
 } prd_symbol_t;
+
+void prd_stack_init(struct prd_stack *stack) {
+  stack->pos_ = 0;
+  stack->num_stack_allocated_ = 0;
+  stack->states_ = NULL;
+  stack->syms_ = NULL;
+}
+
+void prd_stack_cleanup(struct prd_stack *stack) {
+  if (stack->states_) free(stack->states_);
+  
+  size_t n;
+  for (n = 0; n < stack->pos_; ++n) {
+    if (stack->syms_[n].text_) free(stack->syms_[n].text_);
+  }
+
+  if (stack->syms_) free(stack->syms_);
+}
 
 static int g_grammar_[] = {
   PRD_GRAMMAR, NT_END, RULE_END,
@@ -162,3 +205,169 @@ void prd_cleanup(void) {
   if (production_lengths) free(production_lengths);
   if (production_syms) free(production_syms);
 }
+
+static int push_state(struct prd_stack *stack, int state) {
+  if (stack->num_stack_allocated_ == stack->pos_) {
+    size_t new_num_allocated = 0;
+    if (stack->num_stack_allocated_) {
+      new_num_allocated = stack->num_stack_allocated_ * 2;
+      if (new_num_allocated <= stack->num_stack_allocated_) {
+        LOGERROR("Overflow in allocation\n");
+        return EOVERFLOW;
+      }
+    }
+    else {
+      new_num_allocated = 16;
+    }
+
+    if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
+      LOGERROR("Overflow in allocation\n");
+      return EOVERFLOW;
+    }
+    if (new_num_allocated > (SIZE_MAX / sizeof(int))) {
+      LOGERROR("Overflow in allocation\n");
+      return EOVERFLOW;
+    }
+
+    void *p = realloc(stack->syms_, new_num_allocated * sizeof(struct prd_sym_data));
+    if (!p) {
+      LOGERROR("Out of memory\n");
+      return ENOMEM;
+    }
+    stack->syms_ = (struct prd_sym_data *)p;
+    void *p2 = realloc(stack->states_, new_num_allocated * sizeof(int));
+    if (!p2) {
+      LOGERROR("Out of memory\n");
+      return ENOMEM;
+    }
+    stack->states_ = p2;
+    stack->num_stack_allocated_ = new_num_allocated;
+  }
+  stack->states_[stack->pos_++] = state;
+  return 0;
+}
+
+static int top_state(struct prd_stack *stack) {
+  assert(stack->pos_ && "Invalid stack position, should never be empty");
+  return stack->states_[stack->pos_ - 1];
+}
+
+static void popn_state(struct prd_stack *stack, size_t num_pops) {
+  assert((stack->pos_ > num_pops) && "Cannot pop down to zero or below");
+  stack->pos_ -= num_pops;
+}
+
+int prd_reset(struct prd_stack *stack) {
+  int r;
+  stack->pos_ = 0;
+  r = push_state(stack, 0);
+  if (r) {
+    return r;
+  }
+  stack->syms_[0].p_ = NULL;
+  stack->syms_[0].text_ = NULL;
+  return 0;
+}
+
+
+static int reduce(struct prd_stack *stack, int production, struct prd_sym_data *syms) {
+  return PRD_SUCCESS;
+}
+
+int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_input) {
+  int sym;
+  int r;
+  
+  if (!end_of_input) {
+    token_type_t tkt = (token_type_t)tkr->best_match_variant_;
+    switch (tkt) {
+    case TOK_IDENT: sym = PRD_IDENT; break;
+    case TOK_COLON: sym = PRD_COLON; break;
+    case TOK_SEMICOLON: sym = PRD_SEMICOLON; break;
+    case TOK_PAR_OPEN: sym = PRD_PAR_OPEN; break;
+    case TOK_PAR_CLOSE: sym = PRD_PAR_CLOSE; break;
+    case TOK_CUBRACE_OPEN: sym = PRD_CUBRACE_OPEN; break;
+    case TOK_CUBRACE_CLOSE: sym = PRD_CUBRACE_CLOSE; break;
+    default: sym = PRD_TOKEN; break;
+    }
+  }
+  else {
+    sym = INPUT_END;
+  }
+
+  int current_state = top_state(stack);
+  int action = parse_table[num_columns * current_state + (sym - minimum_sym)];
+  if (!action) {
+    /* Syntax error */
+    LOGERROR("%s(%d): Syntax error \"%s\" not expected at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+    /* XXX: Pop until we transition */
+    return PRD_SYNTAX_ERROR;
+  }
+  while (action < 0) {
+    /* While we're reducing.. */
+    int production = -action - 1;
+    size_t production_length = production_lengths[production];
+    int nonterminal = production_syms[production];
+
+    if (0 == production) {
+      /* Synth S we're done. */
+      return PRD_SUCCESS;
+    }
+
+    r = reduce(stack, production, stack->syms_ + stack->pos_ - production_length);
+    if (r) {
+      /* Semantic error */
+      return r;
+    }
+
+    /* Free symdata for every symbol in the production, except for the first symbol,
+     * which is to be preserved as the data of the non-terminal we just reduced to. */
+    size_t n;
+    for (n = stack->pos_ - production_length + 1; n < stack->pos_; ++n) {
+      if (stack->syms_[n].text_) {
+        free(stack->syms_[n].text_);
+        stack->syms_[n].text_ = NULL;
+      }
+    }
+
+    popn_state(stack, production_length);
+
+    current_state = top_state(stack);
+    action = parse_table[num_columns * current_state + (nonterminal - minimum_sym)];
+
+    if (!action) {
+      LOGERROR("%s(%d): Internal error \"%s\" cannot shift an already reduced nonterminal at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+      return PRD_INTERNAL_ERROR;
+    }
+    if (action < 0) {
+      LOGERROR("%s(%d): Internal error \"%s\" reduced non-terminal not shifting at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+      return PRD_INTERNAL_ERROR;
+    }
+
+    push_state(stack, action - 1 /* action for a shift is ordinal + 1 */);
+
+    current_state = top_state(stack);
+    action = parse_table[num_columns * current_state + (sym - minimum_sym)];
+    if (!action) {
+      /* Syntax error */
+      LOGERROR("%s(%d): Syntax error \"%s\" not expected at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+      return PRD_SYNTAX_ERROR;
+    }
+  }
+
+  /* Shift token onto stack */
+  if (action > 0 /* shift? */) {
+    push_state(stack, action - 1);
+    struct prd_sym_data *sym = stack->syms_ + stack->pos_ - 1;
+    
+    /* Fill in the sym from the tokenizer */
+    sym->text_ = strdup(tkr->match_);
+  }
+  else {
+    LOGERROR("%s(%d): Syntax error \"%s\" not expected at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+    return PRD_SYNTAX_ERROR;
+  }
+
+  return PRD_NEXT;
+}
+
