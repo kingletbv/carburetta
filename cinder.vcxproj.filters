@@ -51,6 +51,7 @@
     <ClCompile Include="line_defs.c" />
     <ClCompile Include="tokens.c" />
     <ClCompile Include="prd_gram.c" />
+    <ClCompile Include="line_splitter.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -99,6 +100,7 @@
     <ClInclude Include="line_defs.h" />
     <ClInclude Include="tokens.h" />
     <ClInclude Include="prd_gram.h" />
+    <ClInclude Include="line_splitter.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">
