@@ -112,6 +112,7 @@ typedef enum token_type {
 /* Initializes a TKR tokenizer with the symbols for tokens */
 int tok_init_tkr_tokenizer(struct tkr_tokenizer *tkr);
 
+const char *tok_token_type_to_str(token_type_t tkt);
 
 #ifdef __cplusplus
 } /* extern "C" */

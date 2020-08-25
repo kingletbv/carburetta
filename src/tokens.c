@@ -44,3 +44,15 @@ int tok_init_tkr_tokenizer(struct tkr_tokenizer *tkr) {
   return 0;
 }
 
+const char *tok_token_type_to_str(token_type_t tkt) {
+  switch (tkt) {
+#define xx(regex, minor) case minor: return #minor;
+#define xy(regex, minor, major) case minor: return #minor;
+#define xz(major) case major: return #major;
+    ENUM_SCANNER_DEFS
+#undef xx
+#undef xy
+#undef xz
+  }
+  return "???";
+}
