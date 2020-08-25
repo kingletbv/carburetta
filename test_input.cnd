@@ -1,6 +1,16 @@
  ## 
-AA#BB
+test: production;
+emit \
+this \
+line
+%n\
+t Flap\
+drol
+
+%debug_end
+
 Hello from the test file
+SPIT
 Second line
 Third line.
   %%  

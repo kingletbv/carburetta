@@ -15,12 +15,14 @@
 extern "C" {
 #endif
 
+/* XXX: Line continuations \CRLF don't work... We will need them for terseness. */
+
 #define ENUM_LINE_DEFS \
 xz(LD_UNKNOWN) \
-xx("[ \\x9\\xb\\xc\\xd]*#([^\\\\\\n]|\\\\+[^\\\\])*\\n?", LD_C_PREPROCESSOR) \
+xx("[ \\x9\\xb\\xc\\xd]*#.*\\n?", LD_C_PREPROCESSOR) \
 xx("[ \\x9\\xb\\xc\\xd]*%%[ \\x9\\xb\\xc\\xd]*\\n?", LD_CINDER_SECTION_DELIMITER) \
-xx("[ \\x9\\xb\\xc\\xd]*%([^\\\\\\n]|\\\\+[^\\\\])*\\n?", LD_CINDER_DIRECTIVE) \
-xx("([^\\\\\\n]|\\\\+[^\\\\])*\\n?", LD_REGULAR) \
+xx("[ \\x9\\xb\\xc\\xd]*%.*\\n?", LD_CINDER_DIRECTIVE) \
+xx("([^\\\\\\n]|\\\\+[^\\\\])*\\n?", LD_REGULAR)
 
 typedef enum ld_line_type {
 #define xx(regex, type_of_line) type_of_line,
