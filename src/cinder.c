@@ -191,7 +191,7 @@ static int process_cinder_directive(struct tkr_tokenizer *directive_line_match) 
   if (MATCH("nt")) {
     char savec = *value_end;
     *value_end = '\0';
-    LOG("\"%s\" recognized as non-terminal\n", value_start);
+    LOG("%s(%d): \"%s\" (at column %d) recognized as non-terminal\n", directive_line_match->filename_, directive_line_match->start_line_, value_start, directive_line_match->col_);
     *value_end = savec;
   }
   else if (MATCH("debug_end")) {
@@ -209,10 +209,12 @@ static int process_cinder_directive(struct tkr_tokenizer *directive_line_match) 
 
 static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct tkr_tokenizer *tkr_lines, int is_final, struct prd_stack *prds) {
   int r;
-  tkr_tokens->filename_ = tkr_lines->filename_;
-  tkr_tokens->line_ = tkr_lines->best_match_line_;
-  tkr_tokens->col_ = tkr_lines->best_match_col_;
-  r = tkr_tokenizer_input(tkr_tokens, tkr_lines->match_, tkr_lines->token_size_, is_final);
+  if (!is_final) {
+    tkr_tokens->filename_ = tkr_lines->filename_;
+    tkr_tokens->line_ = tkr_lines->best_match_line_;
+    tkr_tokens->col_ = tkr_lines->best_match_col_;
+  }
+  r = tkr_tokenizer_input(tkr_tokens, tkr_lines->match_, is_final ? 0 : tkr_lines->token_size_, is_final);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
       if (isprint(tkr_tokens->match_[0])) {
@@ -244,10 +246,11 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct tkr_tokenizer
       }
     }
 
-    r = tkr_tokenizer_input(tkr_tokens, tkr_lines->match_, tkr_lines->token_size_, is_final);
+    r = tkr_tokenizer_input(tkr_tokens, tkr_lines->match_, is_final ? 0 : tkr_lines->token_size_, is_final);
   }
 
   if (r == TKR_END_OF_INPUT) {
+    r = prd_parse(prds, tkr_tokens, 1);
     switch (r) {
     case PRD_SUCCESS:
       return TKR_END_OF_INPUT;
@@ -322,9 +325,20 @@ int main(int argc, char **argv) {
     r = ls_input(&line_splitter, buf, num_bytes_read, !num_bytes_read);
     while ((r != LSSL_END_OF_INPUT) && (r != LSSL_FEED_ME)) {
 
+      /* Because line_splitter consumes line continuations, the actual line and column count may
+       * drift from the observed line and column count on tkr_lines. We synchronize line, column
+       * and offset at every start of a line-continuation patched line. */
+      tkr_lines.start_line_ = line_splitter.line_;
+      tkr_lines.start_col_ = line_splitter.col_;
+      tkr_lines.start_offset_ = line_splitter.offset_;
+      tkr_lines.line_ = line_splitter.line_;
+      tkr_lines.col_ = line_splitter.col_;
+      tkr_lines.offset_ = line_splitter.offset_;
+
       /* Lines are tokenizer as final input (1 for last parameter) to ensure the _current_ line in 
        * line_splitter is matched as the current line in tkr_lines. Otherwise, tkr_lines would be
        * running behind line_splitter by 1 line for want of a lookahead character. */
+
       r = tkr_tokenizer_input(&tkr_lines, line_splitter.stripped_, line_splitter.num_stripped_, 1);
       if ((r == TKR_END_OF_INPUT) || (r == TKR_FEED_ME)) {
         LOGERROR("%s(%d): Internal error: all lines are expected to match.\n");
@@ -379,12 +393,14 @@ int main(int argc, char **argv) {
             LOGERROR("%s(%d): Error, preprocessor directives do not belong in grammar area\n", tkr_lines.filename_, tkr_lines.start_line_);
             return EXIT_SUCCESS;
           case LD_CINDER_SECTION_DELIMITER:
+            /* Finish up */
+            r = process_tokens(&tkr_tokens, &tkr_lines, 1, &prds);
             where_are_we = EPILOGUE;
             break;
           case LD_REGULAR:
           {
-            printf("(process this\n");
             r = process_tokens(&tkr_tokens, &tkr_lines, 0, &prds);
+            break;
           }
           case LD_CINDER_DIRECTIVE:
             r = process_cinder_directive(&tkr_lines);
