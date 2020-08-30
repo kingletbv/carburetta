@@ -24,6 +24,11 @@ extern "C" {
 struct ls_line_splitter {
   struct tkr_tokenizer tkr_;
 
+  /* Line number, column number, and offset, at the start of the current line in original_ and
+   * stripped_, relative to the input. */
+  int line_, col_;
+  size_t offset_;
+
   int clear_buffers_on_entry_ : 1,
       last_line_emitted_ : 1;
 

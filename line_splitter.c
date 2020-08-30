@@ -77,13 +77,17 @@ const char *ls_line_split_to_str(ls_split_type_t lsst) {
 
 
 int ls_init(struct ls_line_splitter *ls) {
-  ls->clear_buffers_on_entry_ = 0;
+  ls->clear_buffers_on_entry_ = 0; /* this value is sensitive at construction and may not be 1, see comment at ls_input(). */
   ls->last_line_emitted_ = 0;
 
   ls->num_original_ = ls->num_original_allocated_ = 0;
   ls->original_ = NULL;
   ls->num_stripped_ = ls->num_stripped_allocated_ = 0;
   ls->stripped_ = NULL;
+
+  ls->line_ = 1;
+  ls->col_ = 1;
+  ls->offset_ = 0;
 
   return tkr_tokenizer_init(&ls->tkr_, LS_UNKNOWN, sizeof(g_scanner_rules_) / sizeof(*g_scanner_rules_), g_scanner_rules_);
 }
@@ -178,6 +182,14 @@ int ls_input(struct ls_line_splitter *ls, const char *input, size_t input_size, 
   if (ls->clear_buffers_on_entry_) {
     ls->clear_buffers_on_entry_ = 0;
     ls->num_original_ = ls->num_stripped_ = 0;
+    /* starting a new line; copy over tokenizer's current location at the start of our line; the
+     * current location is not the start of the last match (in tkr_.start_line_ etc.) but the
+     * end of the current match (in tkr_.best_match_line_ etc.) 
+     * We are therefore dependant on having matched at least 1 newline prior to clear_buffers_on_entry_
+     * being true. */
+    ls->line_ = ls->tkr_.best_match_line_;
+    ls->col_ = ls->tkr_.best_match_col_;
+    ls->offset_ = ls->tkr_.best_match_offset_;
   }
   for (;;) {
     r = tkr_tokenizer_input(&ls->tkr_, input, input_size, is_final_input);
