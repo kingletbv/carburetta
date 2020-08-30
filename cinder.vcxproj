@@ -29,6 +29,7 @@
     <ClCompile Include="helpers\sha1.c" />
     <ClCompile Include="helpers\sha256.c" />
     <ClCompile Include="helpers\unicode_data.c" />
+    <ClCompile Include="lalr.c" />
     <ClCompile Include="line_defs.c" />
     <ClCompile Include="line_splitter.c" />
     <ClCompile Include="log_function.c" />
@@ -50,6 +51,7 @@
     <ClInclude Include="helpers\sha1.h" />
     <ClInclude Include="helpers\sha256.h" />
     <ClInclude Include="helpers\unicode_data.h" />
+    <ClInclude Include="lalr.h" />
     <ClInclude Include="line_defs.h" />
     <ClInclude Include="line_splitter.h" />
     <ClInclude Include="log_function.h" />
