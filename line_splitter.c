@@ -47,7 +47,6 @@ xz(LS_UNKNOWN) \
 xx("\\r\\n|\\n", LS_NEW_LINE) \
 xx("\\\\\\r\\n|\\n", LS_LINE_CONTINUATION)
 
-
 typedef enum ls_split_type {
 #define xx(regex, type_of_line) type_of_line,
 #define xz(type_of_line) type_of_line,
@@ -75,8 +74,18 @@ const char *ls_line_split_to_str(ls_split_type_t lsst) {
   return "?";
 }
 
+struct sc_scanner g_ls_scanner_;
 
-int ls_init(struct ls_line_splitter *ls) {
+int ls_init(void) {
+  sc_scanner_init(&g_ls_scanner_);
+  return sc_scanner_compile(&g_ls_scanner_, LS_UNKNOWN, sizeof(g_scanner_rules_) / sizeof(*g_scanner_rules_), g_scanner_rules_);
+}
+
+void ls_cleanup(void) {
+  sc_scanner_cleanup(&g_ls_scanner_);
+}
+
+void ls_init_line_splitter(struct ls_line_splitter *ls) {
   ls->clear_buffers_on_entry_ = 0; /* this value is sensitive at construction and may not be 1, see comment at ls_input(). */
   ls->last_line_emitted_ = 0;
 
@@ -89,10 +98,10 @@ int ls_init(struct ls_line_splitter *ls) {
   ls->col_ = 1;
   ls->offset_ = 0;
 
-  return tkr_tokenizer_init(&ls->tkr_, LS_UNKNOWN, sizeof(g_scanner_rules_) / sizeof(*g_scanner_rules_), g_scanner_rules_);
+  tkr_tokenizer_init(&ls->tkr_, &g_ls_scanner_);
 }
 
-void ls_cleanup(struct ls_line_splitter *ls) {
+void ls_cleanup_line_splitter(struct ls_line_splitter *ls) {
   if (ls->original_) free(ls->original_);
   if (ls->stripped_) free(ls->stripped_);
   tkr_tokenizer_cleanup(&ls->tkr_);

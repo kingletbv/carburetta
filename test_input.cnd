@@ -2,9 +2,14 @@
 
 alpha: bravo charlie delta = call();
 
-echo: foxtrot golf = call();
+echo: foxtrot golf-lima = fail-me call();
 
 %%
+
+%nt alpha \
+bravo charlie-delta
+%token echo /* comment */ foxtrot
+
 %debug_end
 
 Hello from the test file

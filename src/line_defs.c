@@ -42,6 +42,8 @@ ENUM_LINE_DEFS
 #undef xx
 };
 
+static struct sc_scanner g_ldl_scanner_;
+
 const char *ld_line_type_to_str(ld_line_type_t ldlt) {
 #define xx(regex, type_of_line) case type_of_line: return #type_of_line;
 #define xz(type_of_line) case type_of_line: return #type_of_line;
@@ -66,8 +68,20 @@ void ld_line_cleanup(struct ld_line *ldl) {
   }
 }
 
-int ldl_init_tokenizer(struct tkr_tokenizer *tkr) {
-  return tkr_tokenizer_init(tkr, LD_UNKNOWN, sizeof(g_scanner_rules_) / sizeof(*g_scanner_rules_), g_scanner_rules_);
+
+int ldl_init(void) {
+  sc_scanner_init(&g_ldl_scanner_);
+  int r;
+  r = sc_scanner_compile(&g_ldl_scanner_, LD_UNKNOWN, sizeof(g_scanner_rules_) / sizeof(*g_scanner_rules_), g_scanner_rules_);
+  return r;
+}
+
+void ldl_cleanup(void) {
+  sc_scanner_cleanup(&g_ldl_scanner_);
+}
+
+void ldl_init_tokenizer(struct tkr_tokenizer *tkr) {
+  tkr_tokenizer_init(tkr, &g_ldl_scanner_);
 }
 
 int ldl_fill_token(struct ld_line *ldl, struct tkr_tokenizer *tkr) {

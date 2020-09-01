@@ -94,7 +94,96 @@ static struct part *append_part(struct part **tailptr, size_t num_chars, char *c
   return p;
 }
 
-static int process_cinder_directive(struct tkr_tokenizer *directive_line_match) {
+
+static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct tkr_tokenizer *directive_line_match) {
+  int r;
+  int ate_percent = 0;
+  int ate_directive = 0;
+  enum {
+    PCD_NT_DIRECTIVE,
+    PCD_TOKEN_DIRECTIVE
+  } directive;
+  tok_switch_to_nonterminal_idents(tkr_tokens);
+  tkr_tokens->filename_ = directive_line_match->filename_;
+  tkr_tokens->line_ = directive_line_match->start_line_;
+  tkr_tokens->col_ = directive_line_match->start_col_;
+  r = tkr_tokenizer_input(tkr_tokens, directive_line_match->match_, directive_line_match->token_size_, 1);
+  while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
+    if (r == TKR_SYNTAX_ERROR) {
+      if (isprint(tkr_tokens->match_[0])) {
+        LOGERROR("%s(%d): Character \"%s\" not expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->match_, tkr_tokens->start_col_);
+      }
+      else {
+        LOGERROR("%s(%d): Character 0x%02x not expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->match_[0], tkr_tokens->start_col_);
+      }
+    }
+    else if (r == TKR_INTERNAL_ERROR) {
+      return r;
+    }
+    else if (r == TKR_MATCH) {
+      if (tkr_tokens->best_match_variant_ == TOK_WHITESPACE) {
+        /* eat silently */
+      }
+      else {
+        if (!ate_percent) {
+          if (tkr_tokens->best_match_variant_ == TOK_PERCENT) {
+            /* leading percent sign indicates cinder directive, eat it */
+            ate_percent = 1;
+          }
+          else {
+            LOGERROR("%s(%d): Syntax error, \"%%\" expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->start_col_);
+            return TKR_SYNTAX_ERROR;
+          }
+        }
+        else if (!ate_directive) {
+          if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
+            ate_directive = 1;
+            if (!strcmp("nt", tkr_tokens->match_)) {
+              directive = PCD_NT_DIRECTIVE;
+            }
+            else if (!strcmp("token", tkr_tokens->match_)) {
+              directive = PCD_TOKEN_DIRECTIVE;
+            }
+            else if (!strcmp("debug_end", tkr_tokens->match_)) {
+              LOGERROR("%s(%d): %%debug_end encountered, terminating early\n", directive_line_match->filename_, directive_line_match->start_line_);
+              return TKR_INTERNAL_ERROR;
+            }
+            else {
+              LOGERROR("%s(%d): Syntax error, invalid directive at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->start_col_);
+              return TKR_SYNTAX_ERROR;
+            }
+          }
+        }
+        else {
+          if (directive == PCD_NT_DIRECTIVE) {
+            if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
+              TRACE("%s(%d): Non-terminal \"%s\" declared at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->match_, tkr_tokens->start_col_);
+            }
+            else {
+              LOGERROR("%s(%d): Syntax error, identifier expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->start_col_);
+              return TKR_SYNTAX_ERROR;
+            }
+          }
+          else if (directive == PCD_TOKEN_DIRECTIVE) {
+            if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
+              TRACE("%s(%d): Token \"%s\" declared at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->match_, tkr_tokens->start_col_);
+            }
+            else {
+              LOGERROR("%s(%d): Syntax error, identifier expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->start_col_);
+              return TKR_SYNTAX_ERROR;
+            }
+          }
+        }
+      }
+    }
+
+    r = tkr_tokenizer_input(tkr_tokens, directive_line_match->match_, directive_line_match->token_size_, 1);
+  }
+
+  return r;
+}
+
+static int process_cinder_directive2(struct tkr_tokenizer *tkr_tokens, struct tkr_tokenizer *directive_line_match) {
   char *p = directive_line_match->match_;
 
   /* Copy to separate buffer to remove line continuations */
@@ -279,9 +368,24 @@ int main(int argc, char **argv) {
   LOG("We've started..\n");
 
   prd_init();
+  r = ls_init();
+  if (r) {
+    LOGERROR("Failed to initialize ls\n");
+    return EXIT_FAILURE;
+  }
+  r = ldl_init();
+  if (r) {
+    LOGERROR("Failed to initialize ldl\n");
+    return EXIT_FAILURE;
+  }
+  r = tok_init();
+  if (r) {
+    LOGERROR("Failed to initialize tok\n");
+    return EXIT_FAILURE;
+  }
 
   struct ls_line_splitter line_splitter;
-  ls_init(&line_splitter);
+  ls_init_line_splitter(&line_splitter);
 
   struct tkr_tokenizer tkr_lines;
   ldl_init_tokenizer(&tkr_lines);
@@ -380,7 +484,7 @@ int main(int argc, char **argv) {
             printf("%s", line_splitter.original_);
             break;
           case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_lines);
+            r = process_cinder_directive(&tkr_tokens, &tkr_lines);
             if (r == TKR_INTERNAL_ERROR) {
               return EXIT_FAILURE;
             }
@@ -403,7 +507,7 @@ int main(int argc, char **argv) {
             break;
           }
           case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_lines);
+            r = process_cinder_directive(&tkr_tokens, &tkr_lines);
             if (r == TKR_INTERNAL_ERROR) {
               return EXIT_FAILURE;
             }
@@ -425,7 +529,7 @@ int main(int argc, char **argv) {
             printf("%s", line_splitter.original_);
             break;
           case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_lines);
+            r = process_cinder_directive(&tkr_tokens, &tkr_lines);
             if (r == TKR_INTERNAL_ERROR) {
               return EXIT_FAILURE;
             }
@@ -454,7 +558,11 @@ int main(int argc, char **argv) {
 
   tkr_tokenizer_cleanup(&tkr_lines);
 
-  ls_cleanup(&line_splitter);
+  ls_cleanup_line_splitter(&line_splitter);
+
+  tok_cleanup();
+  ldl_cleanup();
+  prd_cleanup();
 
   LOG("We've finished\n");
 

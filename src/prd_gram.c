@@ -385,8 +385,14 @@ static const char *prd_sym_to_cstr(int sym) {
   return "?";
 }
 
-static int reduce(struct prd_stack *stack, int production, struct prd_sym_data *syms) {
+static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *syms) {
   TRACE("Reducing production %d to symbol %s\n", production, prd_sym_to_cstr(production_syms[production]));
+  if (production_syms[production] == PRD_START_C_TOKENIZER) {
+    tok_switch_to_c_idents(tkr);
+  }
+  if (production_syms[production] == PRD_END_C_TOKENIZER) {
+    tok_switch_to_nonterminal_idents(tkr);
+  }
   return PRD_SUCCESS;
 }
 
@@ -440,7 +446,7 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
       return PRD_SUCCESS;
     }
 
-    r = reduce(stack, production, stack->syms_ + stack->pos_ - production_length);
+    r = reduce(stack, tkr, production, stack->syms_ + stack->pos_ - production_length);
     if (r) {
       /* Semantic error */
       return r;

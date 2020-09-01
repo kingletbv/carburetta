@@ -50,12 +50,15 @@ struct ld_line {
   int end_col_;
 };
 
+int ldl_init();
+void ldl_cleanup();
+
 void ld_line_init(struct ld_line *ldl);
 void ld_line_cleanup(struct ld_line *ldl);
 
 const char *ld_line_type_to_str(ld_line_type_t ldlt);
 
-int ldl_init_tokenizer(struct tkr_tokenizer *tkr);
+void ldl_init_tokenizer(struct tkr_tokenizer *tkr);
 
 int ldl_fill_token(struct ld_line *ldl, struct tkr_tokenizer *tkr);
 

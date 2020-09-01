@@ -42,8 +42,11 @@ struct ls_line_splitter {
 };
 
 
-int ls_init(struct ls_line_splitter *ls);
-void ls_cleanup(struct ls_line_splitter *ls);
+int ls_init(void);
+void ls_cleanup(void);
+
+void ls_init_line_splitter(struct ls_line_splitter *ls);
+void ls_cleanup_line_splitter(struct ls_line_splitter *ls);
 
 int ls_input(struct ls_line_splitter *ls, const char *input, size_t input_size, int is_final_input);
 
