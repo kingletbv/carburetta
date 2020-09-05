@@ -20,6 +20,27 @@ extern "C" {
 #define LSSL_INTERNAL_ERROR 3
 #define LSSL_FEED_ME 4
 
+typedef enum ls_chunk_type_enum {
+  LS_CT_SKIP,
+  LS_CT_SAME,
+} ls_chunk_type_t;
+
+struct ls_chunk {
+  ls_chunk_type_t ct_;
+  int start_line_, start_col_;
+  size_t start_offset_;
+  int end_line_, end_col_;
+  size_t end_offset_;
+  
+  size_t num_original_bytes_;
+  size_t num_stripped_bytes_;
+};
+
+struct ls_chunk_seq {
+  size_t num_chunks_;
+  size_t num_chunks_allocated_;
+  struct ls_chunk *chunks_;
+};
 
 struct ls_line_splitter {
   struct tkr_tokenizer tkr_;
@@ -39,8 +60,12 @@ struct ls_line_splitter {
   size_t num_stripped_;
   size_t num_stripped_allocated_;
   char *stripped_;
+
+  struct ls_chunk_seq chunks_;
 };
 
+void lscs_init_chunk_seq(struct ls_chunk_seq *lscs);
+void lscs_cleanup_chunk_seq(struct ls_chunk_seq *lscs);
 
 int ls_init(void);
 void ls_cleanup(void);
