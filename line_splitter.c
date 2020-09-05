@@ -149,7 +149,7 @@ static int ls_append_match_to_original(struct ls_line_splitter *ls) {
       LOGERROR("Error: no memory\n");
       return LSSL_INTERNAL_ERROR;
     }
-    ls->original_ = p;
+    ls->original_ = (char *)p;
     ls->num_original_allocated_ = size_to_allocate;
   }
   memcpy(ls->original_ + ls->num_original_, ls->tkr_.match_, ls->tkr_.token_size_);
