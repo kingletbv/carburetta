@@ -54,6 +54,7 @@
     <ClCompile Include="line_splitter.c" />
     <ClCompile Include="lalr.c" />
     <ClCompile Include="line_assembly.c" />
+    <ClCompile Include="xlts.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -105,6 +106,7 @@
     <ClInclude Include="line_splitter.h" />
     <ClInclude Include="lalr.h" />
     <ClInclude Include="line_assembly.h" />
+    <ClInclude Include="xlts.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">
