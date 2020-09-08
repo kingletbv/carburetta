@@ -53,7 +53,7 @@ struct las_chunk {
   size_t end_offset_;
 
   size_t num_original_bytes_;
-  size_t num_stripped_bytes_;
+  size_t num_translated_bytes_;
 };
 
 struct las_line_assembly {
@@ -61,7 +61,9 @@ struct las_line_assembly {
   struct tkr_tokenizer lc_tkr_;
 
   int lc_clear_buffers_on_entry_ : 1,
-      lc_last_line_emitted_ : 1;
+      lc_last_line_emitted_ : 1,
+      mlc_clear_buffers_on_entry_ : 1,
+      mlc_last_line_emitted_ : 1;
 
   size_t lc_num_original_;
   size_t lc_num_original_allocated_;

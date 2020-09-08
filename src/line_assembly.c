@@ -334,7 +334,7 @@ static struct las_chunk *las_lc_new_typed_tail_chunk(struct las_line_assembly *l
   lasc->end_offset_ = 0;
 
   lasc->num_original_bytes_ = 0;
-  lasc->num_stripped_bytes_ = 0;
+  lasc->num_translated_bytes_ = 0;
   return lasc;
 }
 
@@ -371,7 +371,7 @@ static struct las_chunk *las_mlc_new_typed_tail_chunk(struct las_line_assembly *
   lasc->end_offset_ = 0;
 
   lasc->num_original_bytes_ = 0;
-  lasc->num_stripped_bytes_ = 0;
+  lasc->num_translated_bytes_ = 0;
   return lasc;
 }
 
@@ -423,6 +423,34 @@ static struct las_chunk *las_mlc_typed_tail_chunk(struct las_line_assembly *las,
   return lasc;
 }
 
+static struct las_chunk *las_mlc_append_chunk(struct las_line_assembly *las, struct las_chunk *chunk, size_t num_translated) {
+  struct las_chunk *lasc = NULL;
+  if (las->mlc_num_chunks_) {
+    lasc = las->mlc_chunks_ + las->mlc_num_chunks_ - 1;
+  }
+
+  if (!lasc ||
+      (lasc->ct_ != chunk->ct_) ||
+      (lasc->end_line_ != chunk->start_line_) ||
+      (lasc->end_col_ != chunk->start_col_) ||
+      (lasc->end_offset_ != chunk->start_offset_)) {
+    lasc = las_mlc_new_typed_tail_chunk(las, chunk->ct_);
+    if (!lasc) {
+      return NULL;
+    }
+    lasc->start_line_ = chunk->start_line_;
+    lasc->start_col_ = chunk->start_col_;
+    lasc->start_offset_ = chunk->start_offset_;
+    lasc->end_line_ = lasc->start_line_;
+    lasc->end_col_ = lasc->start_col_;
+    lasc->end_offset_ = lasc->start_offset_;
+  }
+
+  if (chunk->end_line_ == chunk->start_line_) {
+
+  }
+}
+
 static int las_lc_append_same(struct las_line_assembly *las) {
   int r;
   struct las_chunk *lasc = las_lc_typed_tail_chunk(las, LAS_CT_SAME);
@@ -430,7 +458,7 @@ static int las_lc_append_same(struct las_line_assembly *las) {
     return LAS_INTERNAL_ERROR;
   }
   lasc->num_original_bytes_ += las->lc_tkr_.token_size_;
-  lasc->num_stripped_bytes_ += las->lc_tkr_.token_size_;
+  lasc->num_translated_bytes_ += las->lc_tkr_.token_size_;
 
   r = las_lc_append_match_to_original(las);
   if (r) return r;
@@ -466,6 +494,7 @@ static int las_lc_input(struct las_line_assembly *las, const char *input, size_t
         las->lc_clear_buffers_on_entry_ = 1;
         return LAS_MATCH;
       }
+      return LAS_END_OF_INPUT;
     case TKR_MATCH:
       if (las->lc_tkr_.best_match_variant_ == LAS_LC_NEW_LINE) {
         r = las_lc_append_same(las);
@@ -486,6 +515,48 @@ static int las_lc_input(struct las_line_assembly *las, const char *input, size_t
       r = las_lc_append_same(las);
       if (r) return r;
       break;
+    case TKR_INTERNAL_ERROR:
+      return LAS_INTERNAL_ERROR;
+    case TKR_FEED_ME:
+      return LAS_FEED_ME;
+    }
+  }
+}
+
+static int las_mlc_append_same(struct las_line_assembly *las) {
+  return LAS_INTERNAL_ERROR;
+}
+
+static int las_mlc_input(struct las_line_assembly *las, int is_final_input) {
+  int r;
+  if (las->mlc_clear_buffers_on_entry_) {
+    las->mlc_clear_buffers_on_entry_ = 0;
+    las->mlc_num_original_ = las->mlc_num_translated_ = 0;
+    las->mlc_num_chunks_ = 0; /* XXX: IS this how we're going to be doing it? */
+  }
+  for (;;) {
+    r = tkr_tokenizer_input(&las->mlc_tkr_, las->lc_translated_, las->lc_num_translated_, is_final_input);
+    switch (r) {
+    case TKR_END_OF_INPUT:
+      if (!las->mlc_last_line_emitted_) {
+        las->mlc_last_line_emitted_ = 1;
+        las->mlc_clear_buffers_on_entry_ = 1;
+        return LAS_MATCH;
+      }
+      return LAS_END_OF_INPUT;
+    case TKR_MATCH:
+      if (las->mlc_tkr_.best_match_variant_ == LAS_MLC_C_STYLE_COMMENT) {
+      }
+      else if (las->mlc_tkr_.best_match_variant_ == LAS_MLC_CPP_STYLE_COMMENT) {
+      }
+      else if (las->mlc_tkr_.best_match_variant_ == LAS_MLC_NEW_LINE) {
+      }
+      else {
+        /* No more LAS MLC token types */
+        assert(0);
+      }
+    case TKR_SYNTAX_ERROR:
+
     case TKR_INTERNAL_ERROR:
       return LAS_INTERNAL_ERROR;
     case TKR_FEED_ME:
