@@ -55,6 +55,7 @@
     <ClCompile Include="lalr.c" />
     <ClCompile Include="line_assembly.c" />
     <ClCompile Include="xlts.c" />
+    <ClCompile Include="decomment.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -107,6 +108,7 @@
     <ClInclude Include="lalr.h" />
     <ClInclude Include="line_assembly.h" />
     <ClInclude Include="xlts.h" />
+    <ClInclude Include="decomment.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">

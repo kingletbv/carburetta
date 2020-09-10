@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cinder.c" />
+    <ClCompile Include="decomment.c" />
     <ClCompile Include="helpers\aes.c" />
     <ClCompile Include="helpers\cpp_helpers.cpp" />
     <ClCompile Include="helpers\gf8.c" />
@@ -45,6 +46,7 @@
     <ClCompile Include="xlts.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="decomment.h" />
     <ClInclude Include="helpers\aes.h" />
     <ClInclude Include="helpers\gf8.h" />
     <ClInclude Include="helpers\helpers.h" />
