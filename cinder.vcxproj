@@ -41,9 +41,9 @@
     <ClCompile Include="mlx\scanner.c" />
     <ClCompile Include="mlx\tokenizer.c" />
     <ClCompile Include="mlx\xlalr.c" />
+    <ClCompile Include="mlx\xlts.c" />
     <ClCompile Include="prd_gram.c" />
     <ClCompile Include="tokens.c" />
-    <ClCompile Include="xlts.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="decomment.h" />
@@ -66,9 +66,9 @@
     <ClInclude Include="mlx\scanner.h" />
     <ClInclude Include="mlx\tokenizer.h" />
     <ClInclude Include="mlx\xlalr.h" />
+    <ClInclude Include="mlx\xlts.h" />
     <ClInclude Include="prd_gram.h" />
     <ClInclude Include="tokens.h" />
-    <ClInclude Include="xlts.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

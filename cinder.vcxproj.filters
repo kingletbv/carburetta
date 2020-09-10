@@ -54,8 +54,10 @@
     <ClCompile Include="line_splitter.c" />
     <ClCompile Include="lalr.c" />
     <ClCompile Include="line_assembly.c" />
-    <ClCompile Include="xlts.c" />
     <ClCompile Include="decomment.c" />
+    <ClCompile Include="mlx\xlts.c">
+      <Filter>mlx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -107,8 +109,10 @@
     <ClInclude Include="line_splitter.h" />
     <ClInclude Include="lalr.h" />
     <ClInclude Include="line_assembly.h" />
-    <ClInclude Include="xlts.h" />
     <ClInclude Include="decomment.h" />
+    <ClInclude Include="mlx\xlts.h">
+      <Filter>mlx</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">
