@@ -1,4 +1,8 @@
+fla\
+pdrol
 %%
+%token echo/* multi-line 
+comment */foxtrot
 
 alpha: bravo charlie delta = call();
 
