@@ -111,379 +111,35 @@ void las_init_line_assembly(struct las_line_assembly *las) {
   las->lc_clear_buffers_on_entry_ = 0;
   las->lc_last_line_emitted_ = 0;
 
-  las->lc_num_original_ = las->lc_num_original_allocated_ = 0;
-  las->lc_original_ = NULL;
-
-  las->lc_num_translated_ = las->lc_num_translated_allocated_ = 0;
-  las->lc_translated_ = NULL;
-
-  las->lc_num_chunks_ = las->lc_num_chunks_allocated_ = 0;
-  las->lc_chunks_ = NULL;
+  xlts_init(&las->lc_buf_);
 
   tkr_tokenizer_init(&las->mlc_tkr_, &g_las_mlc_scanner_);
 
-  las->mlc_num_original_ = las->mlc_num_original_allocated_ = 0;
-  las->mlc_original_ = NULL;
+  xlts_init(&las->mlc_buf_);
 
-  las->mlc_num_translated_ = las->mlc_num_translated_allocated_ = 0;
-  las->mlc_translated_ = NULL;
+  las->mlc_clear_buffers_on_entry_ = 0;
+  las->mlc_last_line_emitted_ = 0;
 
-  las->mlc_num_chunks_ = las->mlc_num_chunks_allocated_ = 0;
-  las->mlc_chunks_ = NULL;
+  las->mlc_cumulative_line_size_ = 0;
 
+  las->las_input_reentry_from_match_ = 0;
+  las->mlc_has_final_input_ = 0;
 }
 
 void las_cleanup_line_assembly(struct las_line_assembly *las) {
   tkr_tokenizer_cleanup(&las->lc_tkr_);
-  if (las->lc_original_) free(las->lc_original_);
-  if (las->lc_translated_) free(las->lc_translated_);
-  if (las->lc_chunks_) free(las->lc_chunks_);
+  xlts_cleanup(&las->lc_buf_);
 
   tkr_tokenizer_cleanup(&las->mlc_tkr_);
-  if (las->mlc_original_) free(las->mlc_original_);
-  if (las->mlc_translated_) free(las->mlc_translated_);
-  if (las->mlc_chunks_) free(las->mlc_chunks_);
+  xlts_cleanup(&las->mlc_buf_);
 }
 
-static int las_lc_append_match_to_original(struct las_line_assembly *las) {
-  size_t size_needed = las->lc_num_original_ + las->lc_tkr_.token_size_;
-  if (size_needed < las->lc_num_original_) {
-    LOGERROR("Error: overflow on reallocation\n");
-    return LAS_INTERNAL_ERROR;
-  }
-  /* add in null terminator */
-  if ((size_needed + 1) < size_needed) {
-    LOGERROR("Error: overflow on reallocation\n");
-    return LAS_INTERNAL_ERROR;
-  }
-  size_needed++;
-  if (size_needed < 128) {
-    /* start with a decent minimum */
-    size_needed = 128;
-  }
-  if (size_needed > las->lc_num_original_allocated_) {
-    size_t size_to_allocate = las->lc_num_original_allocated_ * 2 + 1;
-    if (size_to_allocate <= las->lc_num_original_allocated_) {
-      LOGERROR("Error: overflow on reallocation\n");
-      return LAS_INTERNAL_ERROR;
-    }
-    if (size_to_allocate < size_needed) {
-      size_to_allocate = size_needed;
-    }
-    void *p = realloc(las->lc_original_, size_to_allocate);
-    if (!p) {
-      LOGERROR("Error: no memory\n");
-      return LAS_INTERNAL_ERROR;
-    }
-    las->lc_original_ = (char *)p;
-    las->lc_num_original_allocated_ = size_to_allocate;
-  }
-  memcpy(las->lc_original_ + las->lc_num_original_, las->lc_tkr_.match_, las->lc_tkr_.token_size_);
-  las->lc_num_original_ += las->lc_tkr_.token_size_;
-  las->lc_original_[las->lc_num_original_] = '\0';
-  return 0;
-}
-
-static int las_lc_append_match_to_translated(struct las_line_assembly *las) {
-  size_t size_needed = las->lc_num_translated_ + las->lc_tkr_.token_size_;
-  if (size_needed < las->lc_num_translated_) {
-    LOGERROR("Error: overflow on reallocation\n");
-    return LAS_INTERNAL_ERROR;
-  }
-  /* add in null terminator */
-  if ((size_needed + 1) < size_needed) {
-    LOGERROR("Error: overflow on reallocation\n");
-    return LAS_INTERNAL_ERROR;
-  }
-  size_needed++;
-  if (size_needed < 128) {
-    /* start with a decent minimum */
-    size_needed = 128;
-  }
-  if (size_needed > las->lc_num_translated_allocated_) {
-    size_t size_to_allocate = las->lc_num_translated_allocated_ * 2 + 1;
-    if (size_to_allocate <= las->lc_num_translated_allocated_) {
-      LOGERROR("Error: overflow on reallocation\n");
-      return LAS_INTERNAL_ERROR;
-    }
-    if (size_to_allocate < size_needed) {
-      size_to_allocate = size_needed;
-    }
-    void *p = realloc(las->lc_translated_, size_to_allocate);
-    if (!p) {
-      LOGERROR("Error: no memory\n");
-      return LAS_INTERNAL_ERROR;
-    }
-    las->lc_translated_ = (char *)p;
-    las->lc_num_translated_allocated_ = size_to_allocate;
-  }
-  memcpy(las->lc_translated_ + las->lc_num_translated_, las->lc_tkr_.match_, las->lc_tkr_.token_size_);
-  las->lc_num_translated_ += las->lc_tkr_.token_size_;
-  las->lc_translated_[las->lc_num_translated_] = '\0';
-  return 0;
-}
-
-static int las_mlc_append_match_to_original(struct las_line_assembly *las) {
-  size_t size_needed = las->mlc_num_original_ + las->mlc_tkr_.token_size_;
-  if (size_needed < las->mlc_num_original_) {
-    LOGERROR("Error: overflow on reallocation\n");
-    return LAS_INTERNAL_ERROR;
-  }
-  /* add in null terminator */
-  if ((size_needed + 1) < size_needed) {
-    LOGERROR("Error: overflow on reallocation\n");
-    return LAS_INTERNAL_ERROR;
-  }
-  size_needed++;
-  if (size_needed < 128) {
-    /* start with a decent minimum */
-    size_needed = 128;
-  }
-  if (size_needed > las->mlc_num_original_allocated_) {
-    size_t size_to_allocate = las->mlc_num_original_allocated_ * 2 + 1;
-    if (size_to_allocate <= las->mlc_num_original_allocated_) {
-      LOGERROR("Error: overflow on reallocation\n");
-      return LAS_INTERNAL_ERROR;
-    }
-    if (size_to_allocate < size_needed) {
-      size_to_allocate = size_needed;
-    }
-    void *p = realloc(las->mlc_original_, size_to_allocate);
-    if (!p) {
-      LOGERROR("Error: no memory\n");
-      return LAS_INTERNAL_ERROR;
-    }
-    las->mlc_original_ = (char *)p;
-    las->mlc_num_original_allocated_ = size_to_allocate;
-  }
-  memcpy(las->mlc_original_ + las->mlc_num_original_, las->mlc_tkr_.match_, las->mlc_tkr_.token_size_);
-  las->mlc_num_original_ += las->mlc_tkr_.token_size_;
-  las->mlc_original_[las->mlc_num_original_] = '\0';
-  return 0;
-}
-
-static int las_mlc_append_match_to_translated(struct las_line_assembly *las) {
-  size_t size_needed = las->mlc_num_translated_ + las->mlc_tkr_.token_size_;
-  if (size_needed < las->mlc_num_translated_) {
-    LOGERROR("Error: overflow on reallocation\n");
-    return LAS_INTERNAL_ERROR;
-  }
-  /* add in null terminator */
-  if ((size_needed + 1) < size_needed) {
-    LOGERROR("Error: overflow on reallocation\n");
-    return LAS_INTERNAL_ERROR;
-  }
-  size_needed++;
-  if (size_needed < 128) {
-    /* start with a decent minimum */
-    size_needed = 128;
-  }
-  if (size_needed > las->mlc_num_translated_allocated_) {
-    size_t size_to_allocate = las->mlc_num_translated_allocated_ * 2 + 1;
-    if (size_to_allocate <= las->mlc_num_translated_allocated_) {
-      LOGERROR("Error: overflow on reallocation\n");
-      return LAS_INTERNAL_ERROR;
-    }
-    if (size_to_allocate < size_needed) {
-      size_to_allocate = size_needed;
-    }
-    void *p = realloc(las->mlc_translated_, size_to_allocate);
-    if (!p) {
-      LOGERROR("Error: no memory\n");
-      return LAS_INTERNAL_ERROR;
-    }
-    las->mlc_translated_ = (char *)p;
-    las->mlc_num_translated_allocated_ = size_to_allocate;
-  }
-  memcpy(las->mlc_translated_ + las->mlc_num_translated_, las->mlc_tkr_.match_, las->mlc_tkr_.token_size_);
-  las->mlc_num_translated_ += las->mlc_tkr_.token_size_;
-  las->mlc_translated_[las->mlc_num_translated_] = '\0';
-  return 0;
-}
-
-static struct las_chunk *las_lc_new_typed_tail_chunk(struct las_line_assembly *las, las_chunk_type_t lasct) {
-  if (las->lc_num_chunks_ == las->lc_num_chunks_allocated_) {
-    size_t num_to_alloc = las->lc_num_chunks_allocated_ * 2 + 1;
-    if (num_to_alloc <= las->lc_num_chunks_allocated_) {
-      LOGERROR("Error: overflow on reallocation\n");
-      return NULL;
-    }
-    if (num_to_alloc > (SIZE_MAX / sizeof(struct las_chunk))) {
-      LOGERROR("Error: overflow on reallocation\n");
-      return NULL;
-    }
-    if (num_to_alloc < 16) {
-      num_to_alloc = 16;
-    }
-    size_t size_to_allocate = num_to_alloc * sizeof(struct las_chunk);
-    void *p = realloc(las->lc_chunks_, size_to_allocate);
-    if (!p) {
-      LOGERROR("Error: no memory\n");
-      return NULL;
-    }
-    las->lc_chunks_ = (struct las_chunk *)p;
-    las->lc_num_chunks_allocated_ = num_to_alloc;
-  }
-  struct las_chunk *lasc = las->lc_chunks_ + las->lc_num_chunks_++;
-  lasc->ct_ = lasct;
-  lasc->start_line_ = 0;
-  lasc->start_col_ = 0;
-  lasc->start_offset_ = 0;
-  lasc->end_line_ = 0;
-  lasc->end_col_ = 0;
-  lasc->end_offset_ = 0;
-
-  lasc->num_original_bytes_ = 0;
-  lasc->num_translated_bytes_ = 0;
-  return lasc;
-}
-
-static struct las_chunk *las_mlc_new_typed_tail_chunk(struct las_line_assembly *las, las_chunk_type_t lasct) {
-  if (las->mlc_num_chunks_ == las->mlc_num_chunks_allocated_) {
-    size_t num_to_alloc = las->mlc_num_chunks_allocated_ * 2 + 1;
-    if (num_to_alloc <= las->mlc_num_chunks_allocated_) {
-      LOGERROR("Error: overflow on reallocation\n");
-      return NULL;
-    }
-    if (num_to_alloc > (SIZE_MAX / sizeof(struct las_chunk))) {
-      LOGERROR("Error: overflow on reallocation\n");
-      return NULL;
-    }
-    if (num_to_alloc < 16) {
-      num_to_alloc = 16;
-    }
-    size_t size_to_allocate = num_to_alloc * sizeof(struct las_chunk);
-    void *p = realloc(las->mlc_chunks_, size_to_allocate);
-    if (!p) {
-      LOGERROR("Error: no memory\n");
-      return NULL;
-    }
-    las->mlc_chunks_ = (struct las_chunk *)p;
-    las->mlc_num_chunks_allocated_ = num_to_alloc;
-  }
-  struct las_chunk *lasc = las->mlc_chunks_ + las->mlc_num_chunks_++;
-  lasc->ct_ = lasct;
-  lasc->start_line_ = 0;
-  lasc->start_col_ = 0;
-  lasc->start_offset_ = 0;
-  lasc->end_line_ = 0;
-  lasc->end_col_ = 0;
-  lasc->end_offset_ = 0;
-
-  lasc->num_original_bytes_ = 0;
-  lasc->num_translated_bytes_ = 0;
-  return lasc;
-}
-
-static struct las_chunk *las_lc_typed_tail_chunk(struct las_line_assembly *las, las_chunk_type_t lasct) {
-  struct las_chunk *lasc = NULL;
-  if (las->lc_num_chunks_) {
-    lasc = las->lc_chunks_ + las->lc_num_chunks_ - 1;
-  }
-
-  if (!lasc ||
-      (lasc->ct_ != lasct) ||
-      (lasc->end_line_ != las->lc_tkr_.start_line_) ||
-      (lasc->end_col_ != las->lc_tkr_.start_col_) ||
-      (lasc->end_offset_ != las->lc_tkr_.start_offset_)) {
-    /* Chunk cannot be continguous with predecessor */
-    lasc = las_lc_new_typed_tail_chunk(las, lasct);
-    lasc->start_line_ = las->lc_tkr_.start_line_;
-    lasc->start_col_ = las->lc_tkr_.start_col_;
-    lasc->start_offset_ = las->lc_tkr_.start_offset_;
-  }
-  lasc->end_line_ = las->lc_tkr_.best_match_line_;
-  lasc->end_col_ = las->lc_tkr_.best_match_col_;
-  lasc->end_offset_ = las->lc_tkr_.best_match_offset_;
-
-  return lasc;
-}
-
-static struct las_chunk *las_mlc_typed_tail_chunk(struct las_line_assembly *las, las_chunk_type_t lasct) {
-  struct las_chunk *lasc = NULL;
-  if (las->mlc_num_chunks_) {
-    lasc = las->mlc_chunks_ + las->mlc_num_chunks_ - 1;
-  }
-
-  if (!lasc ||
-    (lasc->ct_ != lasct) ||
-    (lasc->end_line_ != las->mlc_tkr_.start_line_) ||
-    (lasc->end_col_ != las->mlc_tkr_.start_col_) ||
-    (lasc->end_offset_ != las->mlc_tkr_.start_offset_)) {
-    /* Chunk cannot be continguous with predecessor */
-    lasc = las_mlc_new_typed_tail_chunk(las, lasct);
-    lasc->start_line_ = las->mlc_tkr_.start_line_;
-    lasc->start_col_ = las->mlc_tkr_.start_col_;
-    lasc->start_offset_ = las->mlc_tkr_.start_offset_;
-  }
-  lasc->end_line_ = las->mlc_tkr_.best_match_line_;
-  lasc->end_col_ = las->mlc_tkr_.best_match_col_;
-  lasc->end_offset_ = las->mlc_tkr_.best_match_offset_;
-
-  return lasc;
-}
-
-static struct las_chunk *las_mlc_append_chunk(struct las_line_assembly *las, struct las_chunk *chunk, size_t num_translated) {
-  struct las_chunk *lasc = NULL;
-  if (las->mlc_num_chunks_) {
-    lasc = las->mlc_chunks_ + las->mlc_num_chunks_ - 1;
-  }
-
-  if (!lasc ||
-      (lasc->ct_ != chunk->ct_) ||
-      (lasc->end_line_ != chunk->start_line_) ||
-      (lasc->end_col_ != chunk->start_col_) ||
-      (lasc->end_offset_ != chunk->start_offset_)) {
-    lasc = las_mlc_new_typed_tail_chunk(las, chunk->ct_);
-    if (!lasc) {
-      return NULL;
-    }
-    lasc->start_line_ = chunk->start_line_;
-    lasc->start_col_ = chunk->start_col_;
-    lasc->start_offset_ = chunk->start_offset_;
-    lasc->end_line_ = lasc->start_line_;
-    lasc->end_col_ = lasc->start_col_;
-    lasc->end_offset_ = lasc->start_offset_;
-  }
-
-  if (chunk->end_line_ == chunk->start_line_) {
-
-  }
-}
-
-static int las_lc_append_same(struct las_line_assembly *las) {
-  int r;
-  struct las_chunk *lasc = las_lc_typed_tail_chunk(las, LAS_CT_SAME);
-  if (!lasc) {
-    return LAS_INTERNAL_ERROR;
-  }
-  lasc->num_original_bytes_ += las->lc_tkr_.token_size_;
-  lasc->num_translated_bytes_ += las->lc_tkr_.token_size_;
-
-  r = las_lc_append_match_to_original(las);
-  if (r) return r;
-  r = las_lc_append_match_to_translated(las);
-  return r;
-}
-
-static int las_lc_append_skip(struct las_line_assembly *las) {
-  int r;
-  struct las_chunk *lasc = las_lc_typed_tail_chunk(las, LAS_CT_SKIP);
-  if (!lasc) {
-    return LAS_INTERNAL_ERROR;
-  }
-  lasc->num_original_bytes_ += las->lc_tkr_.token_size_;
-
-  r = las_lc_append_match_to_original(las);
-  return r;
-}
 
 static int las_lc_input(struct las_line_assembly *las, const char *input, size_t input_size, int is_final_input) {
   int r;
   if (las->lc_clear_buffers_on_entry_) {
     las->lc_clear_buffers_on_entry_ = 0;
-    las->lc_num_original_ = las->lc_num_translated_ = 0;
-    las->lc_num_chunks_ = 0;
+    xlts_reset(&las->lc_buf_);
   }
   for (;;) {
     r = tkr_tokenizer_input(&las->lc_tkr_, input, input_size, is_final_input);
@@ -497,13 +153,13 @@ static int las_lc_input(struct las_line_assembly *las, const char *input, size_t
       return LAS_END_OF_INPUT;
     case TKR_MATCH:
       if (las->lc_tkr_.best_match_variant_ == LAS_LC_NEW_LINE) {
-        r = las_lc_append_same(las);
+        r = xlts_append_equal(&las->lc_buf_, las->lc_tkr_.start_line_, las->lc_tkr_.start_col_, las->lc_tkr_.start_offset_, las->lc_tkr_.token_size_, las->lc_tkr_.match_);
         if (r) return r;
         las->lc_clear_buffers_on_entry_ = 1;
         return LAS_MATCH;
       }
       else if (las->lc_tkr_.best_match_variant_ == LAS_LC_LINE_CONTINUATION) {
-        r = las_lc_append_skip(las);
+        r = xlts_append_original(&las->lc_buf_, las->lc_tkr_.start_line_, las->lc_tkr_.start_col_, las->lc_tkr_.start_offset_, las->lc_tkr_.token_size_, las->lc_tkr_.match_);
         if (r) return r;
       }
       else {
@@ -512,7 +168,7 @@ static int las_lc_input(struct las_line_assembly *las, const char *input, size_t
       }
       break;
     case TKR_SYNTAX_ERROR:
-      r = las_lc_append_same(las);
+      r = xlts_append_equal(&las->lc_buf_, las->lc_tkr_.start_line_, las->lc_tkr_.start_col_, las->lc_tkr_.start_offset_, las->lc_tkr_.token_size_, las->lc_tkr_.match_);
       if (r) return r;
       break;
     case TKR_INTERNAL_ERROR:
@@ -523,40 +179,51 @@ static int las_lc_input(struct las_line_assembly *las, const char *input, size_t
   }
 }
 
-static int las_mlc_append_same(struct las_line_assembly *las) {
-  return LAS_INTERNAL_ERROR;
-}
-
 static int las_mlc_input(struct las_line_assembly *las, int is_final_input) {
   int r;
   if (las->mlc_clear_buffers_on_entry_) {
     las->mlc_clear_buffers_on_entry_ = 0;
-    las->mlc_num_original_ = las->mlc_num_translated_ = 0;
-    las->mlc_num_chunks_ = 0; /* XXX: IS this how we're going to be doing it? */
+    xlts_clamp_remove(&las->mlc_buf_, &las->mlc_buf_early_termination_undo_);
+
+    xlts_strip_left_translated(&las->mlc_buf_, las->mlc_cumulative_line_size_);
+
+    las->mlc_cumulative_line_size_ = 0;
   }
+  
   for (;;) {
-    r = tkr_tokenizer_input(&las->mlc_tkr_, las->lc_translated_, las->lc_num_translated_, is_final_input);
+    r = tkr_tokenizer_input(&las->mlc_tkr_, las->lc_buf_.translated_, las->lc_buf_.num_translated_, is_final_input);
     switch (r) {
     case TKR_END_OF_INPUT:
       if (!las->mlc_last_line_emitted_) {
         las->mlc_last_line_emitted_ = 1;
         las->mlc_clear_buffers_on_entry_ = 1;
+        xlts_clamp_left_translated(&las->mlc_buf_, las->mlc_cumulative_line_size_, &las->mlc_buf_early_termination_undo_);
         return LAS_MATCH;
       }
       return LAS_END_OF_INPUT;
     case TKR_MATCH:
       if (las->mlc_tkr_.best_match_variant_ == LAS_MLC_C_STYLE_COMMENT) {
+        las->mlc_cumulative_line_size_ += las->mlc_tkr_.token_size_;
       }
       else if (las->mlc_tkr_.best_match_variant_ == LAS_MLC_CPP_STYLE_COMMENT) {
+        las->mlc_cumulative_line_size_ += las->mlc_tkr_.token_size_;
       }
       else if (las->mlc_tkr_.best_match_variant_ == LAS_MLC_NEW_LINE) {
+        las->mlc_cumulative_line_size_ += las->mlc_tkr_.token_size_;
+        las->mlc_clear_buffers_on_entry_ = 1;
+        r = xlts_clamp_left_translated(&las->mlc_buf_, las->mlc_cumulative_line_size_, &las->mlc_buf_early_termination_undo_);
+        if (r) return LAS_INTERNAL_ERROR;
+        return LAS_MATCH;
       }
       else {
         /* No more LAS MLC token types */
         assert(0);
       }
+      break;
     case TKR_SYNTAX_ERROR:
-
+      /* Non-match = regular character, pass it through */
+      las->mlc_cumulative_line_size_ += las->mlc_tkr_.token_size_;
+      break;
     case TKR_INTERNAL_ERROR:
       return LAS_INTERNAL_ERROR;
     case TKR_FEED_ME:
@@ -567,5 +234,56 @@ static int las_mlc_input(struct las_line_assembly *las, int is_final_input) {
 
 int las_input(struct las_line_assembly *las, const char *input, size_t input_size, int is_final_input) {
   /* for now... */
-  return las_lc_input(las, input, input_size, is_final_input);
+  int r;
+  if (las->las_input_reentry_from_match_) {
+    las->las_input_reentry_from_match_ = 0;
+    goto back_for_more;
+  }
+
+  r = las_lc_input(las, input, input_size, is_final_input);
+  while (r != LAS_FEED_ME) {
+    if (r == LAS_INTERNAL_ERROR) {
+      return r;
+    }
+    else if (r == LAS_END_OF_INPUT) {
+      /* Note we cannot pass is_final_input to las_mlc_input as there
+       * may be multiple matches (LAS_MATCH) from las_lc_input() before
+       * it emits no more input for las_mlc_input(). */
+      las->mlc_has_final_input_ = 1;
+    }
+    else {
+      assert(r == LAS_MATCH);
+
+      xlts_append(&las->mlc_buf_, &las->lc_buf_);
+    }
+
+    r = las_mlc_input(las, las->mlc_has_final_input_);
+    while (r != LAS_FEED_ME) {
+      if (r == LAS_INTERNAL_ERROR) {
+        return r;
+      }
+      else if (r == LAS_END_OF_INPUT) {
+        las->las_input_reentry_from_match_ = 0;
+        las->mlc_has_final_input_ = 0;
+        return LAS_END_OF_INPUT;
+      }
+      else {
+        assert(r == LAS_MATCH);
+      }
+
+      /* mlc_buf_ holds match for a single line */
+      las->las_input_reentry_from_match_ = 1; /* next invocation of las_input returns us at back_for_more */
+      return LAS_MATCH;
+back_for_more:
+
+      r = las_mlc_input(las, las->mlc_has_final_input_);
+    } /* while (r != LAS_FEED_ME) on mlc */
+
+    r = las_lc_input(las, input, input_size, is_final_input);
+  } /* while (r != LAS_FEED_ME) on lc */
+
+  /* Can only get here when las_lc_input() returns LAS_FEED_ME */
+  assert(r == LAS_FEED_ME);
+
+  return LAS_FEED_ME;
 }

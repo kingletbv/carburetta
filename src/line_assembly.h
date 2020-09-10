@@ -27,6 +27,11 @@
 #include "tokenizer.h"
 #endif
 
+#ifndef XLTS_H_INCLUDED
+#define XLTS_H_INCLUDED
+#include "xlts.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,26 +41,6 @@ extern "C" {
 #define LAS_INTERNAL_ERROR 3
 #define LAS_FEED_ME 4
   
-typedef enum las_chunk_type_enum {
-  LAS_CT_SKIP,
-  LAS_CT_SAME,
-} las_chunk_type_t;
-
-struct las_chunk {
-  las_chunk_type_t ct_;
-
-  int    start_line_;
-  int    start_col_;
-  size_t start_offset_;
-
-  int    end_line_;
-  int    end_col_;
-  size_t end_offset_;
-
-  size_t num_original_bytes_;
-  size_t num_translated_bytes_;
-};
-
 struct las_line_assembly {
   /* Line continuation translation phase */
   struct tkr_tokenizer lc_tkr_;
@@ -63,36 +48,20 @@ struct las_line_assembly {
   int lc_clear_buffers_on_entry_ : 1,
       lc_last_line_emitted_ : 1,
       mlc_clear_buffers_on_entry_ : 1,
-      mlc_last_line_emitted_ : 1;
+      mlc_last_line_emitted_ : 1,
+      las_input_reentry_from_match_ : 1,
+      mlc_has_final_input_ : 1;
 
-  size_t lc_num_original_;
-  size_t lc_num_original_allocated_;
-  char *lc_original_;
+  size_t mlc_cumulative_line_size_;
 
-  size_t lc_num_translated_;
-  size_t lc_num_translated_allocated_;
-  char *lc_translated_;
-
-  size_t lc_num_chunks_;
-  size_t lc_num_chunks_allocated_;
-  struct las_chunk *lc_chunks_;
+  struct xlts lc_buf_;
 
   /* Multi-line comment translation phase */
   struct tkr_tokenizer mlc_tkr_;
   
-  size_t mlc_num_original_;
-  size_t mlc_num_original_allocated_;
-  char *mlc_original_;
+  struct xlts mlc_buf_;
 
-  size_t mlc_num_translated_;
-  size_t mlc_num_translated_allocated_;
-  char *mlc_translated_;
-
-  size_t mlc_num_chunks_;
-  size_t mlc_num_chunks_allocated_;
-  struct las_chunk *mlc_chunks_;
-
-
+  struct xlts_clamp mlc_buf_early_termination_undo_;
 };
 
 int las_init();
