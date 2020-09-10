@@ -56,6 +56,8 @@ struct xlts {
 };
 
 
+void xlts_init(struct xlts *x);
+void xlts_cleanup(struct xlts *x);
 void xlts_reset(struct xlts *x);
 
 int xlts_append_xlat(struct xlts *x, size_t num_bytes, char *bytes);
@@ -64,7 +66,7 @@ int xlts_append_original(struct xlts *x, int line, int col, size_t offset, size_
 
 int xlts_append(struct xlts *dst, struct xlts *src);
 int xlts_append_left_translated(struct xlts *dst, struct xlts *src, size_t num_translated_bytes);
-int xlts_strip_left_translated(struct xlts *x, size_t num_translated_bytes);
+void xlts_strip_left_translated(struct xlts *x, size_t num_translated_bytes);
 
 /* xlts_clamp allows you to, temporarily, shorten the size of the string contained in an xlts, without
  * this causing re-allocations. It does this by inserting null terminators and resizing the original
@@ -74,6 +76,8 @@ int xlts_strip_left_translated(struct xlts *x, size_t num_translated_bytes);
  * call to xlts_clamp_remove() will produce unpredictable results. */
 int xlts_clamp_left_translated(struct xlts *x, size_t num_translated_bytes, struct xlts_clamp *clamp);
 void xlts_clamp_remove(struct xlts *x, struct xlts_clamp *clamp);
+
+void xlts_swap(struct xlts *a, struct xlts *b);
 
 #ifdef __cplusplus
 } /* extern "C" */

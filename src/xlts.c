@@ -100,7 +100,7 @@ static int xlts_append_strings(size_t *num, size_t *num_allocated, char **p, siz
 }
 
 static int xlts_append_chunk(struct xlts *x, xlts_chunk_type_t ct, int line, int col, size_t offset, size_t num_bytes) {
-  if (!x->num_chunks_) {
+  if (x->num_chunks_) {
     struct xlts_chunk *c = x->chunks_ + x->num_chunks_ - 1;
     if (ct == XLTS_XLAT) {
       if ((c->ct_ == XLTS_XLAT) &&
@@ -356,7 +356,7 @@ int xlts_append_left_translated(struct xlts *dst, struct xlts *src, size_t num_t
   return 0;
 }
 
-int xlts_strip_left_translated(struct xlts *x, size_t num_translated_bytes) {
+void xlts_strip_left_translated(struct xlts *x, size_t num_translated_bytes) {
   size_t idx;
   size_t num_bytes_remaining = num_translated_bytes;
   char *ori = x->original_;
@@ -401,12 +401,12 @@ int xlts_strip_left_translated(struct xlts *x, size_t num_translated_bytes) {
       }
       memcpy(x->chunks_, x->chunks_ + idx, sizeof(struct xlts_chunk) * (x->num_chunks_ - idx));
       x->num_chunks_ -= idx;
-      return 0;
+      return;
     }
   }
   /* num_translated_bytes exceeds total number of translated bytes, reset everything */
   xlts_reset(x);
-  return 0;
+  return;
 }
 
 int xlts_clamp_left_translated(struct xlts *x, size_t num_translated_bytes, struct xlts_clamp *clamp) {
@@ -478,6 +478,7 @@ int xlts_clamp_left_translated(struct xlts *x, size_t num_translated_bytes, stru
   return 0;
 }
 
+
 void xlts_clamp_remove(struct xlts *x, struct xlts_clamp *clamp) {
   if (x->original_) {
     x->original_[x->num_original_] = clamp->ori_term_;
@@ -491,4 +492,11 @@ void xlts_clamp_remove(struct xlts *x, struct xlts_clamp *clamp) {
     x->chunks_[x->num_chunks_ - 1] = clamp->chunk_tail_;
   }
   x->num_chunks_ = clamp->chunk_num_;
+}
+
+void xlts_swap(struct xlts *a, struct xlts *b) {
+  struct xlts swap;
+  swap = *a;
+  *a = *b;
+  *b = swap;
 }
