@@ -514,7 +514,7 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
     struct prd_sym_data *sym = stack->syms_ + stack->pos_ - 1;
     
     /* Fill in the sym from the tokenizer */
-    sym->text_ = strdup(tkr->match_);
+    sym->text_ = strdup(tkr_str(tkr));
   }
   else {
     re_error_tkr(tkr, "Syntax error \"%s\" not expected", &tkr->xmatch_.translated_);

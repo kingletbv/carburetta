@@ -33,7 +33,6 @@
     <ClCompile Include="lalr.c" />
     <ClCompile Include="line_assembly.c" />
     <ClCompile Include="line_defs.c" />
-    <ClCompile Include="line_splitter.c" />
     <ClCompile Include="log_function.c" />
     <ClCompile Include="mlx\chain.c" />
     <ClCompile Include="mlx\dfa.c" />
@@ -59,7 +58,6 @@
     <ClInclude Include="lalr.h" />
     <ClInclude Include="line_assembly.h" />
     <ClInclude Include="line_defs.h" />
-    <ClInclude Include="line_splitter.h" />
     <ClInclude Include="log_function.h" />
     <ClInclude Include="mlx\chain.h" />
     <ClInclude Include="mlx\dfa.h" />

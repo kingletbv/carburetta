@@ -48,10 +48,8 @@
     <ClCompile Include="mlx\tokenizer.c">
       <Filter>mlx</Filter>
     </ClCompile>
-    <ClCompile Include="line_defs.c" />
     <ClCompile Include="tokens.c" />
     <ClCompile Include="prd_gram.c" />
-    <ClCompile Include="line_splitter.c" />
     <ClCompile Include="lalr.c" />
     <ClCompile Include="line_assembly.c" />
     <ClCompile Include="decomment.c" />
@@ -59,6 +57,7 @@
       <Filter>mlx</Filter>
     </ClCompile>
     <ClCompile Include="report_error.c" />
+    <ClCompile Include="line_defs.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -104,10 +103,8 @@
     <ClInclude Include="mlx\tokenizer.h">
       <Filter>mlx</Filter>
     </ClInclude>
-    <ClInclude Include="line_defs.h" />
     <ClInclude Include="tokens.h" />
     <ClInclude Include="prd_gram.h" />
-    <ClInclude Include="line_splitter.h" />
     <ClInclude Include="lalr.h" />
     <ClInclude Include="line_assembly.h" />
     <ClInclude Include="decomment.h" />
@@ -115,6 +112,7 @@
       <Filter>mlx</Filter>
     </ClInclude>
     <ClInclude Include="report_error.h" />
+    <ClInclude Include="line_defs.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">
