@@ -78,6 +78,74 @@ void dct_cleanup() {
 }
 
 int dct_decomment(struct xlts *val) {
+  int r;
+  int has_comments = 0;
+  struct tkr_tokenizer tkr;
+  tkr_tokenizer_init(&tkr, &g_dct_scanner_);
+
+  struct xlts result;
+  xlts_init(&result);
+
+  size_t preamble = 0;
+  for (;;) {
+    r = tkr_tokenizer_inputx(&tkr, val, 1);
+    switch (r) {
+    case TKR_END_OF_INPUT:
+      if (!has_comments) {
+        /* There were no comments, no allocation needed, return val as we found it */
+        r = 0;
+        goto done;
+      }
+      else {
+        xlts_swap(val, &result);
+        r = 0;
+        goto done;
+      }
+    case TKR_MATCH:
+      if ((tkr.best_match_variant_ == DCT_C_STYLE_COMMENT) ||
+          (tkr.best_match_variant_ == DCT_CPP_STYLE_COMMENT)) {
+        if (!has_comments) {
+          has_comments = 1;
+          /* XXX: What about any leading originals?? */
+
+          r = xlts_append_left_translated(&result, val, preamble);
+          if (r) return TKR_INTERNAL_ERROR;
+        }
+        /* Replace whitespace with a single byte */
+        r = xlts_append_as_original(&result, &tkr.xmatch_);
+        if (r) return TKR_INTERNAL_ERROR;
+        r = xlts_append_xlat(&result, 1, " ");
+        if (r) return TKR_INTERNAL_ERROR;
+      }
+      else {
+        assert(0 && "Unknown match\n");
+      }
+      break;
+    case TKR_SYNTAX_ERROR:
+      if (!has_comments) {
+        /* Still no comment found, keep progressing on the more efficient idea there might not be one. */
+        preamble++;
+        break;
+      }
+      /* Copy over a single byte */
+      r = xlts_append(&result, &tkr.xmatch_);
+      if (r) {
+        r = TKR_INTERNAL_ERROR;
+        goto done;
+      }
+      break;
+    case TKR_INTERNAL_ERROR:
+      return TKR_INTERNAL_ERROR;
+    }
+  }
+
+done:
+  xlts_cleanup(&result);
+  tkr_tokenizer_cleanup(&tkr);
+  return r;
+}
+
+int dct_decomment2(struct xlts *val) {
   int has_comments = 0;
   struct tkr_tokenizer tkr;
   tkr_tokenizer_init(&tkr, &g_dct_scanner_);

@@ -134,6 +134,9 @@ void las_cleanup_line_assembly(struct las_line_assembly *las) {
   xlts_cleanup(&las->mlc_buf_);
 }
 
+void las_set_filename(struct las_line_assembly *las, const char *filename) {
+  las->lc_tkr_.filename_ = filename;
+}
 
 static int las_lc_input(struct las_line_assembly *las, const char *input, size_t input_size, int is_final_input) {
   int r;
@@ -142,7 +145,7 @@ static int las_lc_input(struct las_line_assembly *las, const char *input, size_t
     xlts_reset(&las->lc_buf_);
   }
   for (;;) {
-    r = tkr_tokenizer_input(&las->lc_tkr_, input, input_size, is_final_input);
+    r = tkr_tokenizer_inputs(&las->lc_tkr_, input, input_size, is_final_input);
     switch (r) {
     case TKR_END_OF_INPUT:
       if (!las->lc_last_line_emitted_) {
@@ -153,13 +156,13 @@ static int las_lc_input(struct las_line_assembly *las, const char *input, size_t
       return LAS_END_OF_INPUT;
     case TKR_MATCH:
       if (las->lc_tkr_.best_match_variant_ == LAS_LC_NEW_LINE) {
-        r = xlts_append_equal(&las->lc_buf_, las->lc_tkr_.start_line_, las->lc_tkr_.start_col_, las->lc_tkr_.start_offset_, las->lc_tkr_.token_size_, las->lc_tkr_.match_);
+        r = xlts_append(&las->lc_buf_, &las->lc_tkr_.xmatch_);
         if (r) return r;
         las->lc_clear_buffers_on_entry_ = 1;
         return LAS_MATCH;
       }
       else if (las->lc_tkr_.best_match_variant_ == LAS_LC_LINE_CONTINUATION) {
-        r = xlts_append_original(&las->lc_buf_, las->lc_tkr_.start_line_, las->lc_tkr_.start_col_, las->lc_tkr_.start_offset_, las->lc_tkr_.token_size_, las->lc_tkr_.match_);
+        r = xlts_append_as_original(&las->lc_buf_, &las->lc_tkr_.xmatch_);
         if (r) return r;
       }
       else {
@@ -168,7 +171,7 @@ static int las_lc_input(struct las_line_assembly *las, const char *input, size_t
       }
       break;
     case TKR_SYNTAX_ERROR:
-      r = xlts_append_equal(&las->lc_buf_, las->lc_tkr_.start_line_, las->lc_tkr_.start_col_, las->lc_tkr_.start_offset_, las->lc_tkr_.token_size_, las->lc_tkr_.match_);
+      r = xlts_append(&las->lc_buf_, &las->lc_tkr_.xmatch_);
       if (r) return r;
       break;
     case TKR_INTERNAL_ERROR:
@@ -191,7 +194,7 @@ static int las_mlc_input(struct las_line_assembly *las, int is_final_input) {
   }
   
   for (;;) {
-    r = tkr_tokenizer_input(&las->mlc_tkr_, las->lc_buf_.translated_, las->lc_buf_.num_translated_, is_final_input);
+    r = tkr_tokenizer_inputx(&las->mlc_tkr_, &las->lc_buf_, is_final_input);
     switch (r) {
     case TKR_END_OF_INPUT:
       if (!las->mlc_last_line_emitted_) {

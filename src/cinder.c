@@ -34,6 +34,11 @@
 #include "log_function.h"
 #endif
 
+#ifndef REPORT_ERROR_H_INCLUDED
+#define REPORT_ERROR_H_INCLUDED
+#include "report_error.h"
+#endif
+
 #ifndef SCANNER_H_INCLUDED
 #define SCANNER_H_INCLUDED
 #include "scanner.h"
@@ -121,10 +126,10 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct tkr
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
       if (isprint(tkr_tokens->match_[0])) {
-        LOGERROR("%s(%d): Character \"%s\" not expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->match_, tkr_tokens->start_col_);
+        re_error_tkr(tkr_tokens, "Syntax error character \"%s\" not expected", tkr_tokens->match_);
       }
       else {
-        LOGERROR("%s(%d): Character 0x%02x not expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->match_[0], tkr_tokens->start_col_);
+        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", tkr_tokens->match_[0]);
       }
     }
     else if (r == TKR_INTERNAL_ERROR) {
@@ -141,7 +146,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct tkr
             ate_percent = 1;
           }
           else {
-            LOGERROR("%s(%d): Syntax error, \"%%\" expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->start_col_);
+            re_error_tkr(tkr_tokens, "Syntax error, \"%%\" expected");
             return TKR_SYNTAX_ERROR;
           }
         }
@@ -155,11 +160,11 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct tkr
               directive = PCD_TOKEN_DIRECTIVE;
             }
             else if (!strcmp("debug_end", tkr_tokens->match_)) {
-              LOGERROR("%s(%d): %%debug_end encountered, terminating early\n", directive_line_match->filename_, directive_line_match->start_line_);
+              re_error_tkr(tkr_tokens, "%%debug_end encountered, terminating early");
               return TKR_INTERNAL_ERROR;
             }
             else {
-              LOGERROR("%s(%d): Syntax error, invalid directive at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->start_col_);
+              re_error_tkr(tkr_tokens, "Syntax error invalid directive");
               return TKR_SYNTAX_ERROR;
             }
           }
@@ -167,19 +172,19 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct tkr
         else {
           if (directive == PCD_NT_DIRECTIVE) {
             if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
-              TRACE("%s(%d): Non-terminal \"%s\" declared at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->match_, tkr_tokens->start_col_);
+              re_error_tkr(tkr_tokens, "Non-terminal \"%s\" declared", tkr_tokens->match_);
             }
             else {
-              LOGERROR("%s(%d): Syntax error, identifier expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->start_col_);
+              re_error_tkr(tkr_tokens, "Syntax error identifier expected");
               return TKR_SYNTAX_ERROR;
             }
           }
           else if (directive == PCD_TOKEN_DIRECTIVE) {
             if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
-              TRACE("%s(%d): Token \"%s\" declared at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->match_, tkr_tokens->start_col_);
+              re_error_tkr(tkr_tokens, "Token \"%s\" declared", tkr_tokens->match_);
             }
             else {
-              LOGERROR("%s(%d): Syntax error, identifier expected at column %d\n", tkr_tokens->filename_, tkr_tokens->start_line_, tkr_tokens->start_col_);
+              re_error_tkr(tkr_tokens, "Syntax error identifier expected");
               return TKR_SYNTAX_ERROR;
             }
           }
@@ -204,14 +209,14 @@ static int process_cinder_directive2(struct tkr_tokenizer *tkr_tokens, struct xl
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
-  r = tkr_tokenizer_input(tkr_tokens, directive_line_match->translated_, directive_line_match->num_translated_, 1);
+  r = tkr_tokenizer_inputx(tkr_tokens, directive_line_match, 1);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
-      if (isprint(tkr_tokens->match_[0])) {
-        LOGERROR("%s(%d): Character \"%s\" not expected at column %d\n", tkr_tokens->filename_, directive_line_match->chunks_[0].line_, tkr_tokens->match_, directive_line_match->chunks_[0].col_);
+      if (isprint(tkr_str(tkr_tokens)[0])) {
+        re_error_tkr(tkr_tokens, "Syntax error character \"%s\" not expected", tkr_str(tkr_tokens));
       }
       else {
-        LOGERROR("%s(%d): Character 0x%02x not expected at column %d\n", tkr_tokens->filename_, directive_line_match->chunks_[0].line_, tkr_tokens->match_[0], directive_line_match->chunks_[0].col_);
+        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", tkr_str(tkr_tokens)[0]);
       }
     }
     else if (r == TKR_INTERNAL_ERROR) {
@@ -228,25 +233,25 @@ static int process_cinder_directive2(struct tkr_tokenizer *tkr_tokens, struct xl
             ate_percent = 1;
           }
           else {
-            LOGERROR("%s(%d): Syntax error, \"%%\" expected at column %d\n", tkr_tokens->filename_, directive_line_match->chunks_[0].line_, directive_line_match->chunks_[0].col_);
+            re_error_tkr(tkr_tokens, "Syntax error, \"%%\" expected");
             return TKR_SYNTAX_ERROR;
           }
         }
         else if (!ate_directive) {
           if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
             ate_directive = 1;
-            if (!strcmp("nt", tkr_tokens->match_)) {
+            if (!strcmp("nt", tkr_str(tkr_tokens))) {
               directive = PCD_NT_DIRECTIVE;
             }
-            else if (!strcmp("token", tkr_tokens->match_)) {
+            else if (!strcmp("token", tkr_str(tkr_tokens))) {
               directive = PCD_TOKEN_DIRECTIVE;
             }
-            else if (!strcmp("debug_end", tkr_tokens->match_)) {
-              LOGERROR("%s(%d): %%debug_end encountered, terminating early\n", tkr_tokens->filename_, directive_line_match->chunks_[0].line_);
+            else if (!strcmp("debug_end", tkr_str(tkr_tokens))) {
+              re_error(directive_line_match, "%%debug_end encountered, terminating early");
               return TKR_INTERNAL_ERROR;
             }
             else {
-              LOGERROR("%s(%d): Syntax error, invalid directive at column %d\n", tkr_tokens->filename_, directive_line_match->chunks_[0].line_, directive_line_match->chunks_[0].col_);
+              re_error_tkr(tkr_tokens, "Syntax error invalid directive");
               return TKR_SYNTAX_ERROR;
             }
           }
@@ -254,19 +259,19 @@ static int process_cinder_directive2(struct tkr_tokenizer *tkr_tokens, struct xl
         else {
           if (directive == PCD_NT_DIRECTIVE) {
             if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
-              TRACE("%s(%d): Non-terminal \"%s\" declared at column %d\n", tkr_tokens->filename_, directive_line_match->chunks_[0].line_, tkr_tokens->match_, directive_line_match->chunks_[0].col_);
+              re_error_tkr(tkr_tokens, "Non-terminal \"%s\" declared", tkr_str(tkr_tokens));
             }
             else {
-              LOGERROR("%s(%d): Syntax error, identifier expected at column %d\n", tkr_tokens->filename_, directive_line_match->chunks_[0].line_, directive_line_match->chunks_[0].col_);
+              re_error_tkr(tkr_tokens, "Syntax error identifier expected");
               return TKR_SYNTAX_ERROR;
             }
           }
           else if (directive == PCD_TOKEN_DIRECTIVE) {
             if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
-              TRACE("%s(%d): Token \"%s\" declared at column %d\n", tkr_tokens->filename_, directive_line_match->chunks_[0].line_, tkr_tokens->match_, directive_line_match->chunks_[0].col_);
+              re_error_tkr(tkr_tokens, "Token \"%s\" declared", tkr_str(tkr_tokens));
             }
             else {
-              LOGERROR("%s(%d): Syntax error, identifier expected at column %d\n", tkr_tokens->filename_, directive_line_match->chunks_[0].line_, directive_line_match->chunks_[0].col_);
+              re_error_tkr(tkr_tokens, "Syntax error identifier expected");
               return TKR_SYNTAX_ERROR;
             }
           }
@@ -274,39 +279,37 @@ static int process_cinder_directive2(struct tkr_tokenizer *tkr_tokens, struct xl
       }
     }
 
-    r = tkr_tokenizer_input(tkr_tokens, directive_line_match->translated_, directive_line_match->num_translated_, 1);
+    r = tkr_tokenizer_inputx(tkr_tokens, directive_line_match, 1);
   }
 
   return r;
 }
 
-static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct tkr_tokenizer *tkr_lines, int is_final, struct prd_stack *prds) {
+static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct prd_stack *prds) {
   int r;
-  if (!is_final) {
-    tkr_tokens->filename_ = tkr_lines->filename_;
-    tkr_tokens->line_ = tkr_lines->best_match_line_;
-    tkr_tokens->col_ = tkr_lines->best_match_col_;
-  }
-  r = tkr_tokenizer_input(tkr_tokens, tkr_lines->match_, is_final ? 0 : tkr_lines->token_size_, is_final);
+  struct xlts empty;
+  xlts_init(&empty);
+  if (is_final) input_line = &empty;
+  r = tkr_tokenizer_inputx(tkr_tokens, input_line, is_final);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
       if (isprint(tkr_tokens->match_[0])) {
-        LOGERROR("%s(%d): Character \"%s\" not expected at column %d\n", tkr_tokens->filename_, tkr_tokens->best_match_line_, tkr_tokens->match_, tkr_tokens->best_match_col_);
+        re_error_tkr(tkr_tokens, "Syntax error character \"%s\" not expected", tkr_str(tkr_tokens));
       }
       else {
-        LOGERROR("%s(%d): Character 0x%02x not expected at column %d\n", tkr_tokens->filename_, tkr_tokens->best_match_line_, tkr_tokens->match_[0], tkr_tokens->best_match_col_);
+        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", tkr_str(tkr_tokens)[0]);
       }
     }
     else if (r == TKR_INTERNAL_ERROR) {
       return r;
     }
     else if (r == TKR_MATCH) {
-      printf("Match %s: \"%s\"\n", tok_token_type_to_str(tkr_tokens->best_match_action_), tkr_tokens->match_);
+      printf("Match %s: \"%s\"\n", tok_token_type_to_str(tkr_tokens->best_match_action_), tkr_str(tkr_tokens));
       r = prd_parse(prds, tkr_tokens, 0);
       switch (r) {
       case PRD_SUCCESS:
         /* This should not be possible without is_final==1 */
-        LOGERROR("%s(%d): Internal error, premature end of grammar at column %d\n", tkr_tokens->filename_, tkr_tokens->best_match_line_, tkr_tokens->best_match_col_);
+        re_error_tkr(tkr_tokens, "Internal error, premature end of grammar");
         return TKR_INTERNAL_ERROR;
         break;
       case PRD_SYNTAX_ERROR:
@@ -319,7 +322,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct tkr_tokenizer
       }
     }
 
-    r = tkr_tokenizer_input(tkr_tokens, tkr_lines->match_, is_final ? 0 : tkr_lines->token_size_, is_final);
+    r = tkr_tokenizer_inputx(tkr_tokens, input_line, is_final);
   }
 
   if (r == TKR_END_OF_INPUT) {
@@ -334,7 +337,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct tkr_tokenizer
     case PRD_NEXT:
       /* Grammar should not exit regularly awaiting next token when the next token is INPUT_END.
        * (INPUT_END, i.e. end_of_input==1, never shifts) */
-      LOGERROR("%s(%d): Internal error, grammar did not end at column %d\n", tkr_tokens->filename_, tkr_tokens->best_match_line_, tkr_tokens->best_match_col_);
+      re_error_tkr(tkr_tokens, "Internal error, grammar expected to end");
       return TKR_INTERNAL_ERROR;
     case PRD_INTERNAL_ERROR:
       return TKR_INTERNAL_ERROR;
@@ -408,6 +411,7 @@ int main(int argc, char **argv) {
     LOGERROR("Failed to open file \"%s\"\n", input_filename);
     return EXIT_FAILURE;
   }
+  las_set_filename(&line_assembly, input_filename);
 
   struct part *prologue = NULL;
   struct part *epilogue = NULL;
@@ -424,6 +428,9 @@ int main(int argc, char **argv) {
   struct xlts token_buf;
   xlts_init(&token_buf);
 
+  struct xlts comment_free_line;
+  xlts_init(&comment_free_line);
+
   do {
     num_bytes_read = fread(buf, sizeof(*buf), sizeof(buf) / sizeof(*buf), fp);
 
@@ -437,20 +444,23 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
       }
 
-      dct_decomment(&token_buf);
+      xlts_reset(&comment_free_line);
+      xlts_append(&comment_free_line, &token_buf);
+      dct_decomment(&comment_free_line);
 
-      r = tkr_tokenizer_input(&tkr_lines, token_buf.translated_, token_buf.num_translated_, 1);
+      r = tkr_tokenizer_inputx(&tkr_lines, &comment_free_line, 1);
+      //r = tkr_tokenizer_input(&tkr_lines, token_buf.translated_, token_buf.num_translated_, 1);
 
       if ((r == TKR_END_OF_INPUT) || (r == TKR_FEED_ME)) {
         LOGERROR("%s(%d): Internal error: all lines are expected to match.\n");
         return EXIT_FAILURE;
       }
       if (r == TKR_SYNTAX_ERROR) {
-        if (isprint(tkr_lines.match_[0])) {
-          LOGERROR("%s(%d): Character \"%s\" not expected at column %d\n", tkr_lines.filename_, tkr_lines.best_match_line_, tkr_lines.match_, tkr_lines.best_match_col_);
+        if (isprint(tkr_str(&tkr_lines)[0])) {
+          re_error_tkr(&tkr_lines, "Syntax error character \"%s\" not expected", tkr_str(&tkr_lines));
         }
         else {
-          LOGERROR("%s(%d): Character 0x%02x not expected at column %d\n", tkr_lines.filename_, tkr_lines.best_match_line_, tkr_lines.match_[0], tkr_lines.best_match_col_);
+          re_error_tkr(&tkr_lines, "Syntax error character 0x%02x not expected", tkr_str(&tkr_lines));
         }
       }
       else if (r == TKR_INTERNAL_ERROR) {
@@ -460,8 +470,8 @@ int main(int argc, char **argv) {
 
       if (r == TKR_MATCH) {
         printf("Match %s: ", ld_line_type_to_str(tkr_lines.best_match_action_));
-        printf("%s", tkr_lines.match_);
-        if (tkr_lines.match_[tkr_lines.token_size_ - 1] != '\n') {
+        printf("%s", tkr_str(&tkr_lines));
+        if (tkr_str(&tkr_lines)[tkr_lines.token_size_ - 1] != '\n') {
           /* Last line of input has no trailing newline */
           printf("\n");
         }
@@ -491,16 +501,16 @@ int main(int argc, char **argv) {
         else if (where_are_we == GRAMMAR) {
           switch (tkr_lines.best_match_variant_) {
           case LD_C_PREPROCESSOR:
-            LOGERROR("%s(%d): Error, preprocessor directives do not belong in grammar area\n", tkr_lines.filename_, tkr_lines.start_line_);
+            re_error_tkr(&tkr_lines, "Error, preprocessor directives do not belong in grammar area");
             return EXIT_SUCCESS;
           case LD_CINDER_SECTION_DELIMITER:
             /* Finish up */
-            r = process_tokens(&tkr_tokens, &tkr_lines, 1, &prds);
+            r = process_tokens(&tkr_tokens, &token_buf, 1, &prds);
             where_are_we = EPILOGUE;
             break;
           case LD_REGULAR:
           {
-            r = process_tokens(&tkr_tokens, &tkr_lines, 0, &prds);
+            r = process_tokens(&tkr_tokens, &token_buf, 0, &prds);
             break;
           }
           case LD_CINDER_DIRECTIVE:
@@ -514,7 +524,7 @@ int main(int argc, char **argv) {
         else /* (where_are_we == EPILOGUE) */ {
           switch (tkr_lines.best_match_variant_) {
           case LD_C_PREPROCESSOR:
-            append_part(&prologue, line_splitter.num_original_, line_splitter.original_);
+            append_part(&prologue, token_buf.num_original_, token_buf.original_);
             break;
           case LD_CINDER_SECTION_DELIMITER:
             where_are_we = GRAMMAR;
@@ -522,8 +532,8 @@ int main(int argc, char **argv) {
           case LD_REGULAR:
             /* XXX: Process this by individual tokens later ? */
             /* Preserve line continuations */
-            append_part(&prologue, line_splitter.num_original_, line_splitter.original_);
-            printf("%s", line_splitter.original_);
+            append_part(&prologue, token_buf.num_original_, token_buf.original_);
+            printf("%s", token_buf.original_);
             break;
           case LD_CINDER_DIRECTIVE:
             r = process_cinder_directive2(&tkr_tokens, &token_buf);
@@ -535,9 +545,10 @@ int main(int argc, char **argv) {
         }
       }
 
-      r = tkr_tokenizer_input(&tkr_lines, token_buf.translated_, token_buf.num_translated_, 1);
+      r = tkr_tokenizer_inputx(&tkr_lines, &comment_free_line, 1);
+      //r = tkr_tokenizer_input(&tkr_lines, token_buf.translated_, token_buf.num_translated_, 1);
       if ((r != TKR_END_OF_INPUT) && (r != TKR_INTERNAL_ERROR)) {
-        LOGERROR("%s(%d): Internal error: lines from a single line are expected to match a single time.\n");
+        re_error(&comment_free_line, "Internal error: lines from a single line are expected to match a single time");
         return EXIT_FAILURE;
       }
 
@@ -671,7 +682,7 @@ int main(int argc, char **argv) {
   } while (num_bytes_read);
 
   /* Finish */
-  r = process_tokens(&tkr_tokens, &tkr_lines, 0, &prds);
+  r = process_tokens(&tkr_tokens, &token_buf, 1, &prds);
 
   xlts_cleanup(&token_buf);
 

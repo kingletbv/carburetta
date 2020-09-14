@@ -69,7 +69,7 @@ void las_cleanup();
 
 void las_init_line_assembly(struct las_line_assembly *las);
 void las_cleanup_line_assembly(struct las_line_assembly *las);
-
+void las_set_filename(struct las_line_assembly *las, const char *filename);
 int las_input(struct las_line_assembly *las, const char *input, size_t input_size, int is_final_input);
 
 

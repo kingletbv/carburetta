@@ -54,6 +54,11 @@
 #include "klt_logger.h"
 #endif
 
+#ifndef REPORT_ERROR_H_INCLUDED
+#define REPORT_ERROR_H_INCLUDED
+#include "report_error.h"
+#endif
+
 #ifndef PRD_GRAM_H_INCLUDED
 #define PRD_GRAM_H_INCLUDED
 #include "prd_gram.h"
@@ -427,10 +432,10 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
   if (!action) {
     /* Syntax error */
     if (sym != INPUT_END) {
-      LOGERROR("%s(%d): Syntax error \"%s\" not expected at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+      re_error_tkr(tkr, "Syntax error \"%s\" not expected", &tkr->xmatch_.translated_);
     }
     else {
-      LOGERROR("%s(%d): Syntax error end of input not expected at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->best_match_col_);
+      re_error_tkr(tkr, "Syntax error end of input not expected", &tkr->xmatch_.translated_);
     }
     /* XXX: Pop until we transition */
     return PRD_SYNTAX_ERROR;
@@ -468,11 +473,11 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
     action = parse_table[num_columns * current_state + (nonterminal - minimum_sym)];
 
     if (!action) {
-      LOGERROR("%s(%d): Internal error \"%s\" cannot shift an already reduced nonterminal at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+      re_error_tkr(tkr, "Internal error \"%s\" cannot shift an already reduced nonterminal", &tkr->xmatch_.translated_);
       return PRD_INTERNAL_ERROR;
     }
     if (action < 0) {
-      LOGERROR("%s(%d): Internal error \"%s\" reduced non-terminal not shifting at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+      re_error_tkr(tkr, "Internal error \"%s\" reduced non-terminal not shifting", &tkr->xmatch_.translated_);
       return PRD_INTERNAL_ERROR;
     }
 #if USE_XLALR
@@ -489,10 +494,10 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
     if (!action) {
       /* Syntax error */
       if (sym != INPUT_END) {
-        LOGERROR("%s(%d): Syntax error \"%s\" not expected at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+        re_error_tkr(tkr, "Syntax error \"%s\" not expected", &tkr->xmatch_.translated_);
       }
       else {
-        LOGERROR("%s(%d): Syntax error end of input not expected at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->best_match_col_);
+        re_error_tkr(tkr, "Syntax error end of input not expected", &tkr->xmatch_.translated_);
       }
       return PRD_SYNTAX_ERROR;
     }
@@ -512,7 +517,7 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
     sym->text_ = strdup(tkr->match_);
   }
   else {
-    LOGERROR("%s(%d): Syntax error \"%s\" not expected at column %d\n", tkr->filename_, tkr->best_match_line_, tkr->match_, tkr->best_match_col_);
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", &tkr->xmatch_.translated_);
     return PRD_SYNTAX_ERROR;
   }
 
