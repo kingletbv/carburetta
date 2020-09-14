@@ -58,6 +58,7 @@
     <ClCompile Include="mlx\xlts.c">
       <Filter>mlx</Filter>
     </ClCompile>
+    <ClCompile Include="report_error.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -113,6 +114,7 @@
     <ClInclude Include="mlx\xlts.h">
       <Filter>mlx</Filter>
     </ClInclude>
+    <ClInclude Include="report_error.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">
