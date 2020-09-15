@@ -106,8 +106,6 @@ int dct_decomment(struct xlts *val) {
           (tkr.best_match_variant_ == DCT_CPP_STYLE_COMMENT)) {
         if (!has_comments) {
           has_comments = 1;
-          /* XXX: What about any leading originals?? */
-
           r = xlts_append_left_translated(&result, val, preamble);
           if (r) return TKR_INTERNAL_ERROR;
         }
