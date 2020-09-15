@@ -64,12 +64,6 @@
 #include "prd_gram.h"
 #endif
 
-#define USE_LALR 1
-#define USE_XLALR 0
-#if USE_LALR && USE_XLALR
-#error Either set USE_LALR or set USE_XLALR, cannot have both
-#endif
-
 #define PRD_SYMBOL_ENUM \
   xx(NT_END) \
   xx(RULE_END) \
@@ -123,43 +117,6 @@ void prd_stack_cleanup(struct prd_stack *stack) {
   if (stack->syms_) free(stack->syms_);
 }
 
-static int g_grammar_[] = {
-  PRD_GRAMMAR, NT_END, RULE_END,
-  PRD_GRAMMAR, NT_END, PRD_GRAMMAR, PRD_PRODUCTION, RULE_END,
-
-  PRD_PRODUCTION, NT_END, PRD_NONTERMINAL, PRD_COLON, PRD_RULE, PRD_SEMICOLON, RULE_END,
-  PRD_PRODUCTION, NT_END, PRD_NONTERMINAL, PRD_COLON, PRD_RULE, PRD_START_C_TOKENIZER, PRD_STMT_ACTION, PRD_END_C_TOKENIZER, PRD_SEMICOLON, RULE_END,
-  PRD_PRODUCTION, NT_END, PRD_NONTERMINAL, PRD_COLON, PRD_RULE, PRD_START_C_TOKENIZER, PRD_COMP_ACTION, PRD_END_C_TOKENIZER, PRD_SEMICOLON, RULE_END,
-
-  PRD_NONTERMINAL, NT_END, PRD_IDENT, RULE_END,
-
-  PRD_RULE, NT_END, RULE_END,
-  PRD_RULE, NT_END, PRD_RULE, PRD_IDENT, RULE_END,
-
-  PRD_STMT_ACTION, NT_END, PRD_EQUALS, RULE_END,
-  PRD_STMT_ACTION, NT_END, PRD_STMT_ACTION, PRD_IDENT, RULE_END,
-  PRD_STMT_ACTION, NT_END, PRD_STMT_ACTION, PRD_COLON, RULE_END,
-  PRD_STMT_ACTION, NT_END, PRD_STMT_ACTION, PRD_TOKEN, RULE_END,
-  PRD_STMT_ACTION, NT_END, PRD_STMT_ACTION, PRD_PAR_OPEN, PRD_ACTION_SEQUENCE, PRD_PAR_CLOSE, RULE_END,
-  PRD_STMT_ACTION, NT_END, PRD_STMT_ACTION, PRD_CUBRACE_OPEN, PRD_ACTION_SEQUENCE, PRD_CUBRACE_CLOSE, RULE_END,
-
-  PRD_COMP_ACTION, NT_END, PRD_CUBRACE_OPEN, PRD_ACTION_SEQUENCE, PRD_CUBRACE_CLOSE, RULE_END,
-
-  PRD_ACTION_SEQUENCE, NT_END, RULE_END,
-  PRD_ACTION_SEQUENCE, NT_END, PRD_ACTION_SEQUENCE, PRD_IDENT, RULE_END,
-  PRD_ACTION_SEQUENCE, NT_END, PRD_ACTION_SEQUENCE, PRD_COLON, RULE_END,
-  PRD_ACTION_SEQUENCE, NT_END, PRD_ACTION_SEQUENCE, PRD_EQUALS, RULE_END,
-  PRD_ACTION_SEQUENCE, NT_END, PRD_ACTION_SEQUENCE, PRD_SEMICOLON, RULE_END,
-  PRD_ACTION_SEQUENCE, NT_END, PRD_ACTION_SEQUENCE, PRD_TOKEN, RULE_END,
-  PRD_ACTION_SEQUENCE, NT_END, PRD_ACTION_SEQUENCE, PRD_PAR_OPEN, PRD_ACTION_SEQUENCE, PRD_PAR_CLOSE, RULE_END,
-  PRD_ACTION_SEQUENCE, NT_END, PRD_ACTION_SEQUENCE, PRD_CUBRACE_OPEN, PRD_ACTION_SEQUENCE, PRD_CUBRACE_CLOSE, RULE_END,
-
-  PRD_START_C_TOKENIZER, NT_END, RULE_END, /* start strict C-style ident interpretation */
-  PRD_END_C_TOKENIZER, NT_END, RULE_END,   /* end strict C-style ident interpretation */
-
-  GRAMMAR_END
-};
-
 static int g_lalr_grammar_[] = {
   PRD_GRAMMAR,          RULE_END,
   PRD_GRAMMAR,          PRD_GRAMMAR, PRD_PRODUCTION, RULE_END,
@@ -201,7 +158,6 @@ static int g_lalr_grammar_[] = {
 static int prd_get_parsetable(int **parse_table, size_t **production_lengths, int **production_syms,
                               int *minimum_sym, size_t *num_columns, size_t *num_rows, size_t *num_productions) {
   size_t row, col;
-#if USE_LALR
   lr_generator_t lalr_gen;
   lr_init(&lalr_gen);
 
@@ -244,51 +200,6 @@ static int prd_get_parsetable(int **parse_table, size_t **production_lengths, in
   lr_cleanup(&lalr_gen);
 
   return 0;
-#endif
-#if USE_XLALR
-  xlr_gen_t xlalr_gen;
-  xlr_init(&xlalr_gen);
-  xlr_error_t err;
-  err = xlr_generate(&xlalr_gen, g_grammar_, RULE_END, GRAMMAR_END, INPUT_END, NT_END, SYNTH_S);
-  if (err != XLR_OK) {
-    return err;
-  }
-
-  *minimum_sym = xlalr_gen.min_s;
-  *num_columns = 1 + xlalr_gen.max_s - xlalr_gen.min_s;
-  *num_rows = xlalr_gen.nr_states;
-  *num_productions = xlalr_gen.nr_productions;
-  *parse_table = (int *)malloc(*num_columns * *num_rows * sizeof(int));
-  *production_lengths = (size_t *)malloc(*num_productions * sizeof(size_t));
-  *production_syms = (int *)malloc(*num_productions * sizeof(int));
-  for (row = 0; row < *num_rows; ++row) {
-    for (col = 0; col < *num_columns; ++col) {
-      xlr_action_t *action = xlalr_gen.action_table[*num_columns * row + col];
-      if (action && action->chain != action) {
-        LOGERROR("Conflicts found\n");
-        return XLR_CONFLICTS;
-      }
-      if (!action) {
-        /* 0 = no action, syntax error */
-        (*parse_table)[*num_columns * row + col] = 0;
-      }
-      else if (action->action == XLR_SHIFT) {
-        /* positive = shift + 1 */
-        (*parse_table)[*num_columns * row + col] = action->state->ordinal + 1;
-      }
-      else if (action->action == XLR_REDUCE) {
-        (*parse_table)[*num_columns * row + col] = -action->production - 1;
-      }
-    }
-  }
-  for (row = 0; row < *num_productions; ++row) {
-    (*production_lengths)[row] = xlalr_gen.productions[row].production_length;
-    (*production_syms)[row] = xlalr_gen.productions[row].reduction_syms[0];
-  }
-  xlr_cleanup(&xlalr_gen);
-
-  return err;
-#endif
 }
 
 
@@ -480,12 +391,7 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
       re_error_tkr(tkr, "Internal error \"%s\" reduced non-terminal not shifting", &tkr->xmatch_.translated_);
       return PRD_INTERNAL_ERROR;
     }
-#if USE_XLALR
-    push_state(stack, action - 1 /* action for a shift is ordinal + 1 */);
-#endif
-#if USE_LALR
     push_state(stack, action /* action for a shift is the ordinal */);
-#endif
     struct prd_sym_data *sd = stack->syms_ + stack->pos_ - 1;
     sd->text_ = strdup(prd_sym_to_cstr(production_syms[production]));
 
@@ -505,12 +411,7 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
 
   /* Shift token onto stack */
   if (action > 0 /* shift? */) {
-#if USE_XLALR
-    push_state(stack, action - 1 /* action for a shift is ordinal + 1 */);
-#endif
-#if USE_LALR
     push_state(stack, action /* action for a shift is the ordinal */);
-#endif
     struct prd_sym_data *sym = stack->syms_ + stack->pos_ - 1;
     
     /* Fill in the sym from the tokenizer */
