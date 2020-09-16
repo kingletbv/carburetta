@@ -43,6 +43,7 @@
     <ClCompile Include="mlx\xlts.c" />
     <ClCompile Include="prd_gram.c" />
     <ClCompile Include="report_error.c" />
+    <ClCompile Include="symbol.c" />
     <ClCompile Include="tokens.c" />
   </ItemGroup>
   <ItemGroup>
@@ -68,6 +69,7 @@
     <ClInclude Include="mlx\xlts.h" />
     <ClInclude Include="prd_gram.h" />
     <ClInclude Include="report_error.h" />
+    <ClInclude Include="symbol.h" />
     <ClInclude Include="tokens.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

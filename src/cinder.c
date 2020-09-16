@@ -74,6 +74,11 @@
 #include "prd_gram.h"
 #endif
 
+#ifndef SYMBOL_H_INCLUDED
+#define SYMBOL_H_INCLUDED
+#include "symbol.h"
+#endif
+
 struct part {
   struct part *next_;
   size_t num_chars_;
@@ -105,7 +110,7 @@ static struct part *append_part(struct part **tailptr, size_t num_chars, char *c
 }
 
 
-static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlts *directive_line_match) {
+static int process_cinder_directive(struct symbol_table *st, struct tkr_tokenizer *tkr_tokens, struct xlts *directive_line_match) {
   int r;
   int ate_percent = 0;
   int ate_directive = 0;
@@ -165,7 +170,14 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
         else {
           if (directive == PCD_NT_DIRECTIVE) {
             if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
-              re_error_tkr(tkr_tokens, "Non-terminal \"%s\" declared", tkr_str(tkr_tokens));
+              int is_new = -1;
+              struct symbol *sym = symbol_find_or_add(st, SYM_NONTERMINAL, &tkr_tokens->xmatch_, &is_new);
+              if (!is_new) {
+                re_error_tkr(tkr_tokens, "Non-terminal \"%s\" already declared at line %d", tkr_str(tkr_tokens), xlts_line(&sym->def_));
+              }
+              else {
+                re_error_tkr(tkr_tokens, "Non-terminal \"%s\" declared", tkr_str(tkr_tokens));
+              }
             }
             else {
               re_error_tkr(tkr_tokens, "Syntax error identifier expected");
@@ -174,7 +186,14 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
           }
           else if (directive == PCD_TOKEN_DIRECTIVE) {
             if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
-              re_error_tkr(tkr_tokens, "Token \"%s\" declared", tkr_str(tkr_tokens));
+              int is_new = -1;
+              struct symbol *sym = symbol_find_or_add(st, SYM_NONTERMINAL, &tkr_tokens->xmatch_, &is_new);
+              if (!is_new) {
+                re_error_tkr(tkr_tokens, "Token \"%s\" already declared at line %d", tkr_str(tkr_tokens), xlts_line(&sym->def_));
+              }
+              else {
+                re_error_tkr(tkr_tokens, "Token \"%s\" declared", tkr_str(tkr_tokens));
+              }
             }
             else {
               re_error_tkr(tkr_tokens, "Syntax error identifier expected");
@@ -191,7 +210,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   return r;
 }
 
-static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct prd_stack *prds) {
+static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct prd_stack *prds, struct symbol_table *st) {
   int r;
   struct xlts empty;
   xlts_init(&empty);
@@ -210,8 +229,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
       return r;
     }
     else if (r == TKR_MATCH) {
-      printf("Match %s: \"%s\"\n", tok_token_type_to_str(tkr_tokens->best_match_action_), tkr_str(tkr_tokens));
-      r = prd_parse(prds, tkr_tokens, 0);
+      r = prd_parse(prds, tkr_tokens, 0, st);
       switch (r) {
       case PRD_SUCCESS:
         /* This should not be possible without is_final==1 */
@@ -232,7 +250,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
   }
 
   if (r == TKR_END_OF_INPUT) {
-    r = prd_parse(prds, tkr_tokens, 1);
+    r = prd_parse(prds, tkr_tokens, 1, st);
     switch (r) {
     case PRD_SUCCESS:
       return TKR_END_OF_INPUT;
@@ -260,7 +278,11 @@ int main(int argc, char **argv) {
 
   LOG("We've started..\n");
 
-  prd_init();
+  r = prd_init();
+  if (r) {
+    LOGERROR("Failed to initialize prd\n");
+    return EXIT_FAILURE;
+  }
   r = ldl_init();
   if (r) {
     LOGERROR("Failed to initialize ldl\n");
@@ -290,6 +312,9 @@ int main(int argc, char **argv) {
 
   struct tkr_tokenizer tkr_tokens;
   tok_init_tkr_tokenizer(&tkr_tokens);
+
+  struct symbol_table symtab;
+  symbol_table_init(&symtab);
 
   struct prd_stack prds;
   prd_stack_init(&prds);
@@ -363,12 +388,6 @@ int main(int argc, char **argv) {
       }
 
       if (r == TKR_MATCH) {
-        printf("Match %s: ", ld_line_type_to_str(tkr_lines.best_match_action_));
-        printf("%s", tkr_str(&tkr_lines));
-        if (tkr_str(&tkr_lines)[tkr_lines.token_size_ - 1] != '\n') {
-          /* Last line of input has no trailing newline */
-          printf("\n");
-        }
         if (where_are_we == PROLOGUE) {
           switch (tkr_lines.best_match_variant_) {
           case LD_C_PREPROCESSOR:
@@ -385,7 +404,7 @@ int main(int argc, char **argv) {
             printf("%s", token_buf.original_);
             break;
           case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_tokens, &token_buf);
+            r = process_cinder_directive(&symtab, &tkr_tokens, &token_buf);
             if (r == TKR_INTERNAL_ERROR) {
               return EXIT_FAILURE;
             }
@@ -399,16 +418,34 @@ int main(int argc, char **argv) {
             return EXIT_SUCCESS;
           case LD_CINDER_SECTION_DELIMITER:
             /* Finish up */
-            r = process_tokens(&tkr_tokens, &token_buf, 1, &prds);
+            r = process_tokens(&tkr_tokens, &token_buf, 1, &prds, &symtab);
+
+            if (!prds.have_errors_) {
+              /* Print all productions */
+              size_t n, prod_idx;
+              for (prod_idx = 0; prod_idx < prds.num_productions_; ++prod_idx) {
+                struct prd_production *pd = prds.productions_ + prod_idx;
+                fprintf(stderr, "%s: ", pd->nt_.id_.translated_);
+                for (n = 0; n < pd->num_syms_; ++n) {
+                  fprintf(stderr, "%s%s", pd->syms_[n].id_.translated_, (n == (pd->num_syms_ - 1)) ? "" : " ");
+                }
+                fprintf(stderr, " ===> ");
+                for (n = 0; n < pd->num_snippets_; ++n) {
+                  fprintf(stderr, "%s", pd->snippets_[n].code_.translated_);
+                }
+                fprintf(stderr, "\n");
+              }
+            }
+
             where_are_we = EPILOGUE;
             break;
           case LD_REGULAR:
           {
-            r = process_tokens(&tkr_tokens, &token_buf, 0, &prds);
+            r = process_tokens(&tkr_tokens, &token_buf, 0, &prds, &symtab);
             break;
           }
           case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_tokens, &token_buf);
+            r = process_cinder_directive(&symtab, &tkr_tokens, &token_buf);
             if (r == TKR_INTERNAL_ERROR) {
               return EXIT_FAILURE;
             }
@@ -430,7 +467,7 @@ int main(int argc, char **argv) {
             printf("%s", token_buf.original_);
             break;
           case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_tokens, &token_buf);
+            r = process_cinder_directive(&symtab, &tkr_tokens, &token_buf);
             if (r == TKR_INTERNAL_ERROR) {
               return EXIT_FAILURE;
             }
@@ -452,11 +489,13 @@ int main(int argc, char **argv) {
   } while (num_bytes_read);
 
   /* Finish */
-  r = process_tokens(&tkr_tokens, &token_buf, 1, &prds);
+  r = process_tokens(&tkr_tokens, &token_buf, 1, &prds, &symtab);
 
   xlts_cleanup(&token_buf);
 
   prd_stack_cleanup(&prds);
+
+  symbol_table_cleanup(&symtab);
 
   tkr_tokenizer_cleanup(&tkr_tokens);
 

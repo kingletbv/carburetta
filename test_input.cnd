@@ -4,9 +4,22 @@ pdrol
 %token echo/* multi-line 
 comment */foxtrot
 
+%nt alpha
+%token bravo charlie delta
+%nt echo
+%token foxtrot golf-lima
+
+echo: alpha {
+}
+
 alpha: bravo charlie delta = call();
 
-echo: foxtrot golf-lima = fail-me call();
+echo: foxtrot golf-lima = fail-me = 5, 
+call();
+
+echo: foxtrot foxtrot = for (;;) { alpha = beta; };
+
+alpha: bravo;
 
 %%
 
@@ -14,6 +27,8 @@ echo: foxtrot golf-lima = fail-me call();
 bravo charlie-delta
 %token echo /* comment */ foxtrot
 
+%token have-conflict
+%nt HaVe_CoNfLiCt
 %debug_end
 
 Hello from the test file
@@ -24,3 +39,4 @@ Third line.
 % Line for directives
 # C preprocessor has something to say
 Z
+

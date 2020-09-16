@@ -58,6 +58,7 @@
     </ClCompile>
     <ClCompile Include="report_error.c" />
     <ClCompile Include="line_defs.c" />
+    <ClCompile Include="symbol.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -113,6 +114,7 @@
     </ClInclude>
     <ClInclude Include="report_error.h" />
     <ClInclude Include="line_defs.h" />
+    <ClInclude Include="symbol.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">
