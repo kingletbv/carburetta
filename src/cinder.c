@@ -175,9 +175,6 @@ static int process_cinder_directive(struct symbol_table *st, struct tkr_tokenize
               if (!is_new) {
                 re_error_tkr(tkr_tokens, "Non-terminal \"%s\" already declared at line %d", tkr_str(tkr_tokens), xlts_line(&sym->def_));
               }
-              else {
-                re_error_tkr(tkr_tokens, "Non-terminal \"%s\" declared", tkr_str(tkr_tokens));
-              }
             }
             else {
               re_error_tkr(tkr_tokens, "Syntax error identifier expected");
@@ -190,9 +187,6 @@ static int process_cinder_directive(struct symbol_table *st, struct tkr_tokenize
               struct symbol *sym = symbol_find_or_add(st, SYM_NONTERMINAL, &tkr_tokens->xmatch_, &is_new);
               if (!is_new) {
                 re_error_tkr(tkr_tokens, "Token \"%s\" already declared at line %d", tkr_str(tkr_tokens), xlts_line(&sym->def_));
-              }
-              else {
-                re_error_tkr(tkr_tokens, "Token \"%s\" declared", tkr_str(tkr_tokens));
               }
             }
             else {
@@ -351,6 +345,8 @@ int main(int argc, char **argv) {
   struct xlts comment_free_line;
   xlts_init(&comment_free_line);
 
+  int have_error = 0;
+
   do {
     num_bytes_read = fread(buf, sizeof(*buf), sizeof(buf) / sizeof(*buf), fp);
 
@@ -368,18 +364,27 @@ int main(int argc, char **argv) {
       dct_decomment(&comment_free_line);
 
       r = tkr_tokenizer_inputx(&tkr_lines, &comment_free_line, 1);
-      //r = tkr_tokenizer_input(&tkr_lines, token_buf.translated_, token_buf.num_translated_, 1);
+
+      /* Empty line cannot be matched as a match requires at least a single byte to be processed to force progress; 
+       * manually override that case to match LD_REGULAR */
+      if ((r == TKR_END_OF_INPUT) && (comment_free_line.num_translated_ == 0)) {
+        r = TKR_MATCH;
+        tkr_lines.best_match_action_ = LD_REGULAR;
+        tkr_lines.best_match_variant_ = LD_REGULAR;
+      }
 
       if ((r == TKR_END_OF_INPUT) || (r == TKR_FEED_ME)) {
-        LOGERROR("%s(%d): Internal error: all lines are expected to match.\n");
+        LOGERROR("%s(%d): Internal error: all lines are expected to match.\n", line_assembly.lc_tkr_.filename_, line_assembly.lc_tkr_.input_line_);
         return EXIT_FAILURE;
       }
       if (r == TKR_SYNTAX_ERROR) {
         if (isprint(tkr_str(&tkr_lines)[0])) {
           re_error_tkr(&tkr_lines, "Syntax error character \"%s\" not expected", tkr_str(&tkr_lines));
+          have_error = 1;
         }
         else {
           re_error_tkr(&tkr_lines, "Syntax error character 0x%02x not expected", tkr_str(&tkr_lines));
+          have_error = 1;
         }
       }
       else if (r == TKR_INTERNAL_ERROR) {
@@ -408,6 +413,9 @@ int main(int argc, char **argv) {
             if (r == TKR_INTERNAL_ERROR) {
               return EXIT_FAILURE;
             }
+            else if (r) {
+              have_error = 1;
+            }
             break;
           }
         }
@@ -415,27 +423,11 @@ int main(int argc, char **argv) {
           switch (tkr_lines.best_match_variant_) {
           case LD_C_PREPROCESSOR:
             re_error_tkr(&tkr_lines, "Error, preprocessor directives do not belong in grammar area");
-            return EXIT_SUCCESS;
+            have_error = 1;
+            break;
           case LD_CINDER_SECTION_DELIMITER:
             /* Finish up */
             r = process_tokens(&tkr_tokens, &token_buf, 1, &prds, &symtab);
-
-            if (!prds.have_errors_) {
-              /* Print all productions */
-              size_t n, prod_idx;
-              for (prod_idx = 0; prod_idx < prds.num_productions_; ++prod_idx) {
-                struct prd_production *pd = prds.productions_ + prod_idx;
-                fprintf(stderr, "%s: ", pd->nt_.id_.translated_);
-                for (n = 0; n < pd->num_syms_; ++n) {
-                  fprintf(stderr, "%s%s", pd->syms_[n].id_.translated_, (n == (pd->num_syms_ - 1)) ? "" : " ");
-                }
-                fprintf(stderr, " ===> ");
-                for (n = 0; n < pd->num_snippets_; ++n) {
-                  fprintf(stderr, "%s", pd->snippets_[n].code_.translated_);
-                }
-                fprintf(stderr, "\n");
-              }
-            }
 
             where_are_we = EPILOGUE;
             break;
@@ -449,6 +441,9 @@ int main(int argc, char **argv) {
             if (r == TKR_INTERNAL_ERROR) {
               return EXIT_FAILURE;
             }
+            else if (r) {
+              have_error = 1;
+            }
             break;
           }
         }
@@ -461,15 +456,16 @@ int main(int argc, char **argv) {
             where_are_we = GRAMMAR;
             break;
           case LD_REGULAR:
-            /* XXX: Process this by individual tokens later ? */
             /* Preserve line continuations */
             append_part(&prologue, token_buf.num_original_, token_buf.original_);
-            printf("%s", token_buf.original_);
             break;
           case LD_CINDER_DIRECTIVE:
             r = process_cinder_directive(&symtab, &tkr_tokens, &token_buf);
             if (r == TKR_INTERNAL_ERROR) {
               return EXIT_FAILURE;
+            }
+            else if (r) {
+              have_error = 1;
             }
             break;
           }
@@ -488,8 +484,23 @@ int main(int argc, char **argv) {
 
   } while (num_bytes_read);
 
-  /* Finish */
-  r = process_tokens(&tkr_tokens, &token_buf, 1, &prds, &symtab);
+  /* Finished parsing */
+  if (!prds.have_errors_) {
+    /* Print all productions */
+    size_t n, prod_idx;
+    for (prod_idx = 0; prod_idx < prds.num_productions_; ++prod_idx) {
+      struct prd_production *pd = prds.productions_ + prod_idx;
+      fprintf(stderr, "%s: ", pd->nt_.id_.translated_);
+      for (n = 0; n < pd->num_syms_; ++n) {
+        fprintf(stderr, "%s%s", pd->syms_[n].id_.translated_, (n == (pd->num_syms_ - 1)) ? "" : " ");
+      }
+      fprintf(stderr, " ===> ");
+      for (n = 0; n < pd->num_snippets_; ++n) {
+        fprintf(stderr, "%s", pd->snippets_[n].code_.translated_);
+      }
+      fprintf(stderr, "\n");
+    }
+  }
 
   xlts_cleanup(&token_buf);
 
