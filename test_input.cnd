@@ -28,15 +28,15 @@ bravo charlie-delta
 %token echo /* comment */ foxtrot
 
 %token have-conflict
-%nt HaVe_CoNfLiCt
-%debug_end
+//%nt HaVe_CoNfLiCt
+//%debug_end
 
 Hello from the test file
 SPIT
 Second line
 Third line.
-  %%  
-% Line for directives
+  
+//% Line for directives
 # C preprocessor has something to say
 Z
 
