@@ -1,3 +1,8 @@
+#if 1
+/* Use prd_gram_gen.c implementation */
+#include "prd_gram_gen.c"
+#else /* Use prd_gram.c implementation */
+
 #ifndef STDIO_H_INCLUDED
 #define STDIO_H_INCLUDED
 #include <stdio.h>
@@ -210,32 +215,6 @@ static int prd_get_parsetable(int **parse_table, size_t **production_lengths, in
   lr_cleanup(&lalr_gen);
 
   return 0;
-}
-
-
-static int minimum_sym;
-static size_t num_columns;
-static size_t num_rows;
-static size_t num_productions;
-static int *parse_table = NULL;
-static size_t *production_lengths = NULL;
-static int *production_syms = NULL;
-
-int prd_init(void) {
-  int res;
-  res = prd_get_parsetable(&parse_table, &production_lengths, &production_syms, &minimum_sym, &num_columns, &num_rows, &num_productions);
-  if (res != XLR_OK) {
-    LOGERROR("Failed to generate parse table.\n");
-    return res;
-  }
-
-  return 0;
-}
-
-void prd_cleanup(void) {
-  if (parse_table) free(parse_table);
-  if (production_lengths) free(production_lengths);
-  if (production_syms) free(production_syms);
 }
 
 static void prd_production_sym_init(struct prd_production_sym *pps) {
@@ -464,6 +443,33 @@ static int prd_append_token_to_snippets(struct prd_production *pd, struct xlts *
   return 0;
 }
 
+/****************************** ---- Start of Initially generated piece ---- ***********************/
+
+static int minimum_sym;
+static size_t num_columns;
+static size_t num_rows;
+static size_t num_productions;
+static int *parse_table = NULL;
+static size_t *production_lengths = NULL;
+static int *production_syms = NULL;
+
+int prd_init(void) {
+  int res;
+  res = prd_get_parsetable(&parse_table, &production_lengths, &production_syms, &minimum_sym, &num_columns, &num_rows, &num_productions);
+  if (res != XLR_OK) {
+    LOGERROR("Failed to generate parse table.\n");
+    return res;
+  }
+
+  return 0;
+}
+
+void prd_cleanup(void) {
+  if (parse_table) free(parse_table);
+  if (production_lengths) free(production_lengths);
+  if (production_syms) free(production_syms);
+}
+
 static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, struct prd_sym_data *syms, struct symbol_table *st) {
   int r;
   size_t n;
@@ -650,6 +656,8 @@ static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int produc
   return PRD_SUCCESS;
 }
 
+/****************************** ---- End of Initially generated piece ---- ***********************/
+
 int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;
   int r;
@@ -769,3 +777,106 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
   return PRD_NEXT;
 }
 
+int prd_debug_compare_scanners(lr_generator_t *lr) {
+  int mismatch = 0;
+  if (lr->min_sym != minimum_sym) {
+    LOGERROR("min_sym mismatch\n");
+    mismatch = 1;
+  }
+  if ((1 + lr->max_sym - lr->min_sym) != num_columns) {
+    LOGERROR("num_columns mismatch\n");
+    mismatch = 1;
+  }
+  if (lr->nr_states != num_rows) {
+    LOGERROR("num_rows mismatch\n");
+    mismatch = 1;
+  }
+  if (lr->nr_productions != num_productions) {
+    LOGERROR("num_productions mismatch\n");
+    mismatch = 1;
+  }
+  size_t row, col;
+
+  for (row = 0; row < num_rows; ++row) {
+    for (col = 0; col < num_columns; ++col) {
+      if (lr->parse_table[num_columns * row + col] != parse_table[num_columns * row + col]) {
+        LOGERROR("Parse table mismatch\n");
+        mismatch = 1;
+        goto after_table;
+      }
+    }
+  }
+
+  FILE *outfp = stderr;
+  lr_generator_t lalr;
+  lalr = *lr;
+  size_t num_columns = (size_t)(1 + lalr.max_sym - lalr.min_sym);
+  fprintf(outfp, "static int minimum_sym = %d;\n", lalr.min_sym);
+  fprintf(outfp, "static size_t num_columns = %zu;\n", num_columns);
+  fprintf(outfp, "static size_t num_rows = %zu;\n", (size_t)lalr.nr_states);
+  fprintf(outfp, "static size_t num_productions = %zu;\n", lalr.nr_productions);
+  fprintf(outfp, "static int parse_table[] = {\n");
+
+  char *column_widths = (char *)malloc(num_columns);
+  if (!column_widths) {
+    LOGERROR("Error, no memory\n");
+    return -1;
+  }
+
+  for (col = 0; col < num_columns; ++col) {
+    column_widths[col] = 1;
+    for (row = 0; row < lalr.nr_states; ++row) {
+      int action = lalr.parse_table[row * num_columns + col];
+      int width_needed = 1;
+      if (action <= -1000) {
+        width_needed = 5;
+      }
+      else if (action <= -100) {
+        width_needed = 4;
+      }
+      else if (action <= -10) {
+        width_needed = 3;
+      }
+      else if (action < 100) {
+        width_needed = 2;
+      }
+      else if (action < 1000) {
+        width_needed = 3;
+      }
+      else if (action < 10000) {
+        width_needed = 4;
+      }
+      else {
+        width_needed = 5;
+      }
+      if (width_needed > column_widths[col]) {
+        column_widths[col] = width_needed;
+      }
+    }
+  }
+  for (row = 0; row < lalr.nr_states; ++row) {
+    for (col = 0; col < num_columns; ++col) {
+      int action = lalr.parse_table[row * num_columns + col];
+
+      fprintf(outfp, "%*d,%s", column_widths[col], action, col == (num_columns - 1) ? "\n" : "");
+    }
+  }
+  free(column_widths);
+  fprintf(outfp, "};\n");
+  fprintf(outfp, "static size_t production_lengths[] = {\n");
+  for (row = 0; row < lalr.nr_productions; ++row) {
+    fprintf(outfp, " %d%s\n", lalr.production_lengths[row], (row == lalr.nr_productions - 1) ? "" : ",");
+  }
+  fprintf(outfp, "};\n");
+  fprintf(outfp, "static int production_syms[] = {\n");
+  for (row = 0; row < lalr.nr_productions; ++row) {
+    fprintf(outfp, " %d%s\n", lalr.production_lengths[row], (row == lalr.nr_productions - 1) ? "" : ",");
+  }
+  fprintf(outfp, "};\n");
+
+
+after_table:
+  return 0;
+}
+
+#endif /* implementation switch (see top) */

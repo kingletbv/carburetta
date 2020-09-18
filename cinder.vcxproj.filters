@@ -59,6 +59,9 @@
     <ClCompile Include="report_error.c" />
     <ClCompile Include="line_defs.c" />
     <ClCompile Include="symbol.c" />
+    <ClCompile Include="grammar_table.c" />
+    <ClCompile Include="prd_gram_gen.c" />
+    <ClCompile Include="snippet.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -115,6 +118,8 @@
     <ClInclude Include="report_error.h" />
     <ClInclude Include="line_defs.h" />
     <ClInclude Include="symbol.h" />
+    <ClInclude Include="grammar_table.h" />
+    <ClInclude Include="snippet.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">

@@ -127,7 +127,7 @@ struct symbol *symbol_find_or_add(struct symbol_table *st, sym_type_t symtype, s
   sym = last = st->hash_table_[idx];
   if (sym) {
     do {
-      sym = sym->next_;
+      sym = sym->hash_chain_;
 
       if (!sym_cmp(sym->def_.translated_, id->translated_)) {
         *is_new = 0;
@@ -142,9 +142,9 @@ struct symbol *symbol_find_or_add(struct symbol_table *st, sym_type_t symtype, s
     return NULL;
   }
   sym->st_ = symtype;
-  sym->hash_chain_ = last ? last->next_ : sym;
+  sym->hash_chain_ = last ? last->hash_chain_ : sym;
   if (last) {
-    last->next_ = sym;
+    last->hash_chain_ = sym;
   }
   st->hash_table_[idx] = sym;
   sym->ordinal_ = 0;
@@ -184,7 +184,7 @@ struct symbol *symbol_find(struct symbol_table *st, const char *id) {
   if (sym) {
 
     do {
-      sym = sym->next_;
+      sym = sym->hash_chain_;
       
       if (!sym_cmp(sym->def_.translated_, id)) {
         return sym;

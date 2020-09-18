@@ -21,6 +21,11 @@
 #include "tokens.h"
 #endif
 
+#ifndef SNIPPET_H_INCLUDED
+#define SNIPPET_H_INCLUDED
+#include "snippet.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,15 +44,6 @@ struct prd_production_sym {
   struct xlts id_;
 };
 
-struct prd_snippet {
-  /* Tokens passed into prd_parse (via tkr) that make up the snippet of code.
-   * We record the original match and variant so this does not have to be parsed
-   * again. */
-  token_type_t original_match_;
-  token_type_t original_variant_;
-  struct xlts code_;
-};
-
 struct prd_production {
   /* Non-terminal the production reduces to */
   struct prd_production_sym nt_;
@@ -58,9 +54,7 @@ struct prd_production {
   struct prd_production_sym *syms_;
 
   /* Action sequence that executes when the production matches */
-  size_t num_snippets_;
-  size_t num_snippets_allocated_;
-  struct prd_snippet *snippets_;
+  struct snippet action_sequence_;
 };
 
 struct prd_sym_data {
@@ -93,7 +87,6 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
 void prd_stack_init(struct prd_stack *stack);
 int prd_reset(struct prd_stack *stack);
 void prd_stack_cleanup(struct prd_stack *stack);
-
 
 #ifdef __cplusplus
 } /* extern "C" */

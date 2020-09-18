@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="cinder.c" />
     <ClCompile Include="decomment.c" />
+    <ClCompile Include="grammar_table.c" />
     <ClCompile Include="helpers\aes.c" />
     <ClCompile Include="helpers\cpp_helpers.cpp" />
     <ClCompile Include="helpers\gf8.c" />
@@ -42,12 +43,20 @@
     <ClCompile Include="mlx\xlalr.c" />
     <ClCompile Include="mlx\xlts.c" />
     <ClCompile Include="prd_gram.c" />
+    <ClCompile Include="prd_gram_gen.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="report_error.c" />
+    <ClCompile Include="snippet.c" />
     <ClCompile Include="symbol.c" />
     <ClCompile Include="tokens.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="decomment.h" />
+    <ClInclude Include="grammar_table.h" />
     <ClInclude Include="helpers\aes.h" />
     <ClInclude Include="helpers\gf8.h" />
     <ClInclude Include="helpers\helpers.h" />
@@ -69,6 +78,7 @@
     <ClInclude Include="mlx\xlts.h" />
     <ClInclude Include="prd_gram.h" />
     <ClInclude Include="report_error.h" />
+    <ClInclude Include="snippet.h" />
     <ClInclude Include="symbol.h" />
     <ClInclude Include="tokens.h" />
   </ItemGroup>

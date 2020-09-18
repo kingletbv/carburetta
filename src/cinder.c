@@ -74,6 +74,16 @@
 #include "prd_gram.h"
 #endif
 
+#ifndef GRAMMAR_TABLE_H_INCLUDED
+#define GRAMMAR_TABLE_H_INCLUDED
+#include "grammar_table.h"
+#endif
+
+#ifndef LALR_H_INCLUDED
+#define LALR_H_INCLUDED
+#include "lalr.h"
+#endif
+
 #ifndef SYMBOL_H_INCLUDED
 #define SYMBOL_H_INCLUDED
 #include "symbol.h"
@@ -109,14 +119,31 @@ static struct part *append_part(struct part **tailptr, size_t num_chars, char *c
   return p;
 }
 
+struct cinder_context {
+  struct snippet token_type_;
+  struct symbol_table symtab_;
+};
 
-static int process_cinder_directive(struct symbol_table *st, struct tkr_tokenizer *tkr_tokens, struct xlts *directive_line_match) {
+void cinder_context_init(struct cinder_context *cc) {
+  snippet_init(&cc->token_type_);
+  symbol_table_init(&cc->symtab_);
+}
+
+void cinder_context_cleanup(struct cinder_context *cc) {
+  symbol_table_cleanup(&cc->symtab_);
+  snippet_cleanup(&cc->token_type_);
+}
+
+
+static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlts *directive_line_match, struct cinder_context *cc) {
   int r;
   int ate_percent = 0;
   int ate_directive = 0;
+  struct symbol_table *st = &cc->symtab_;
   enum {
     PCD_NT_DIRECTIVE,
-    PCD_TOKEN_DIRECTIVE
+    PCD_TOKEN_DIRECTIVE,
+    PCD_TOKEN_TYPE_DIRECTIVE
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
@@ -157,6 +184,10 @@ static int process_cinder_directive(struct symbol_table *st, struct tkr_tokenize
             else if (!strcmp("token", tkr_str(tkr_tokens))) {
               directive = PCD_TOKEN_DIRECTIVE;
             }
+            else if (!strcmp("token_type", tkr_str(tkr_tokens))) {
+              directive = PCD_TOKEN_TYPE_DIRECTIVE;
+              snippet_clear(&cc->token_type_);
+            }
             else if (!strcmp("debug_end", tkr_str(tkr_tokens))) {
               re_error(directive_line_match, "%%debug_end encountered, terminating early");
               return TKR_INTERNAL_ERROR;
@@ -184,7 +215,7 @@ static int process_cinder_directive(struct symbol_table *st, struct tkr_tokenize
           else if (directive == PCD_TOKEN_DIRECTIVE) {
             if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
               int is_new = -1;
-              struct symbol *sym = symbol_find_or_add(st, SYM_NONTERMINAL, &tkr_tokens->xmatch_, &is_new);
+              struct symbol *sym = symbol_find_or_add(st, SYM_TERMINAL, &tkr_tokens->xmatch_, &is_new);
               if (!is_new) {
                 re_error_tkr(tkr_tokens, "Token \"%s\" already declared at line %d", tkr_str(tkr_tokens), xlts_line(&sym->def_));
               }
@@ -194,11 +225,28 @@ static int process_cinder_directive(struct symbol_table *st, struct tkr_tokenize
               return TKR_SYNTAX_ERROR;
             }
           }
+          else if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
+            /* Trim simple whitespace off the head end, otherwise simply copy. */
+            /* XXX: Continue with this! */
+            if (cc->token_type_.num_tokens_ || (tkr_tokens->best_match_variant_ != TOK_WHITESPACE_CHAR)) {
+              r = snippet_append_tkr(&cc->token_type_, tkr_tokens);
+              if (r) {
+                return TKR_INTERNAL_ERROR;
+              }
+            }
+          }
         }
       }
     }
 
     r = tkr_tokenizer_inputx(tkr_tokens, directive_line_match, 1);
+  }
+
+  if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
+    /* Trim simple whitespace off the tail end */
+    while (cc->token_type_.num_tokens_ && (cc->token_type_.tokens_[cc->token_type_.num_tokens_ - 1].variant_ == TOK_WHITESPACE_CHAR)) {
+      snippet_pop_last_token(&cc->token_type_);
+    }
   }
 
   return r;
@@ -307,23 +355,38 @@ int main(int argc, char **argv) {
   struct tkr_tokenizer tkr_tokens;
   tok_init_tkr_tokenizer(&tkr_tokens);
 
-  struct symbol_table symtab;
-  symbol_table_init(&symtab);
+  struct cinder_context cc;
+  cinder_context_init(&cc);
 
   struct prd_stack prds;
   prd_stack_init(&prds);
 
+  struct grammar_table gt;
+  gt_grammar_table_init(&gt);
+
+  lr_generator_t lalr;
+  lr_init(&lalr);
+
+  struct xlts token_buf;
+  xlts_init(&token_buf);
+
+  struct xlts comment_free_line;
+  xlts_init(&comment_free_line);
+
   r = prd_reset(&prds);
   if (r) {
     LOGERROR("Internal error, failed to reset parsing stack\n");
-    return EXIT_FAILURE;
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
   }
 
-  const char *input_filename = "test_input.cnd";
+  //const char *input_filename = "test_input.cnd";
+  const char *input_filename = "prd_grammar.cnd";
   FILE *fp = fopen(input_filename, "rb");
   if (!fp) {
     LOGERROR("Failed to open file \"%s\"\n", input_filename);
-    return EXIT_FAILURE;
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
   }
   las_set_filename(&line_assembly, input_filename);
 
@@ -339,12 +402,6 @@ int main(int argc, char **argv) {
   size_t num_bytes_read;
   static char buf[2400];
 
-  struct xlts token_buf;
-  xlts_init(&token_buf);
-
-  struct xlts comment_free_line;
-  xlts_init(&comment_free_line);
-
   int have_error = 0;
 
   do {
@@ -356,7 +413,8 @@ int main(int argc, char **argv) {
       xlts_reset(&token_buf);
       r = xlts_append(&token_buf, &line_assembly.mlc_buf_);
       if (r) {
-        return EXIT_FAILURE;
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
       }
 
       xlts_reset(&comment_free_line);
@@ -375,7 +433,8 @@ int main(int argc, char **argv) {
 
       if ((r == TKR_END_OF_INPUT) || (r == TKR_FEED_ME)) {
         LOGERROR("%s(%d): Internal error: all lines are expected to match.\n", line_assembly.lc_tkr_.filename_, line_assembly.lc_tkr_.input_line_);
-        return EXIT_FAILURE;
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
       }
       if (r == TKR_SYNTAX_ERROR) {
         if (isprint(tkr_str(&tkr_lines)[0])) {
@@ -406,12 +465,12 @@ int main(int argc, char **argv) {
             /* XXX: Process this by individual tokens later ? */
             /* Preserve line continuations */
             append_part(&prologue, token_buf.num_original_, token_buf.original_);
-            printf("%s", token_buf.original_);
             break;
           case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&symtab, &tkr_tokens, &token_buf);
+            r = process_cinder_directive(&tkr_tokens, &token_buf, &cc);
             if (r == TKR_INTERNAL_ERROR) {
-              return EXIT_FAILURE;
+              r = EXIT_FAILURE;
+              goto cleanup_exit;
             }
             else if (r) {
               have_error = 1;
@@ -427,19 +486,20 @@ int main(int argc, char **argv) {
             break;
           case LD_CINDER_SECTION_DELIMITER:
             /* Finish up */
-            r = process_tokens(&tkr_tokens, &token_buf, 1, &prds, &symtab);
+            r = process_tokens(&tkr_tokens, &token_buf, 1, &prds, &cc.symtab_);
 
             where_are_we = EPILOGUE;
             break;
           case LD_REGULAR:
           {
-            r = process_tokens(&tkr_tokens, &token_buf, 0, &prds, &symtab);
+            r = process_tokens(&tkr_tokens, &token_buf, 0, &prds, &cc.symtab_);
             break;
           }
           case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&symtab, &tkr_tokens, &token_buf);
+            r = process_cinder_directive(&tkr_tokens, &token_buf, &cc);
             if (r == TKR_INTERNAL_ERROR) {
-              return EXIT_FAILURE;
+              r = EXIT_FAILURE;
+              goto cleanup_exit;
             }
             else if (r) {
               have_error = 1;
@@ -450,19 +510,41 @@ int main(int argc, char **argv) {
         else /* (where_are_we == EPILOGUE) */ {
           switch (tkr_lines.best_match_variant_) {
           case LD_C_PREPROCESSOR:
-            append_part(&prologue, token_buf.num_original_, token_buf.original_);
+            append_part(&epilogue, token_buf.num_original_, token_buf.original_);
             break;
           case LD_CINDER_SECTION_DELIMITER:
+            /* Going back to the grammar, append the epilogue we gathered to the prologue as it is
+             * actually inline code. */
+            {
+            struct part *prologue_head, *prologue_tail, *epilogue_head, *epilogue_tail;
+            prologue_tail = prologue;
+            prologue_head = prologue ? prologue->next_ : NULL;
+            epilogue_tail = epilogue;
+            epilogue_head = epilogue ? epilogue->next_ : NULL;
+            if (epilogue_head) {
+              if (!prologue_head) {
+                prologue = epilogue_head;
+                epilogue = NULL;
+              }
+              else {
+                epilogue_tail->next_ = prologue_head;
+                prologue_tail->next_ = epilogue_head;
+                prologue = epilogue_tail;
+                epilogue = NULL;
+              }
+            }
+            }
             where_are_we = GRAMMAR;
             break;
           case LD_REGULAR:
             /* Preserve line continuations */
-            append_part(&prologue, token_buf.num_original_, token_buf.original_);
+            append_part(&epilogue, token_buf.num_original_, token_buf.original_);
             break;
           case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&symtab, &tkr_tokens, &token_buf);
+            r = process_cinder_directive(&tkr_tokens, &token_buf, &cc);
             if (r == TKR_INTERNAL_ERROR) {
-              return EXIT_FAILURE;
+              r = EXIT_FAILURE;
+              goto cleanup_exit;
             }
             else if (r) {
               have_error = 1;
@@ -476,7 +558,8 @@ int main(int argc, char **argv) {
       //r = tkr_tokenizer_input(&tkr_lines, token_buf.translated_, token_buf.num_translated_, 1);
       if ((r != TKR_END_OF_INPUT) && (r != TKR_INTERNAL_ERROR)) {
         re_error(&comment_free_line, "Internal error: lines from a single line are expected to match a single time");
-        return EXIT_FAILURE;
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
       }
 
       r = las_input(&line_assembly, buf, num_bytes_read, !num_bytes_read);
@@ -485,28 +568,322 @@ int main(int argc, char **argv) {
   } while (num_bytes_read);
 
   /* Finished parsing */
-  if (!prds.have_errors_) {
-    /* Print all productions */
-    size_t n, prod_idx;
-    for (prod_idx = 0; prod_idx < prds.num_productions_; ++prod_idx) {
-      struct prd_production *pd = prds.productions_ + prod_idx;
-      fprintf(stderr, "%s: ", pd->nt_.id_.translated_);
-      for (n = 0; n < pd->num_syms_; ++n) {
-        fprintf(stderr, "%s%s", pd->syms_[n].id_.translated_, (n == (pd->num_syms_ - 1)) ? "" : " ");
+  if (prds.have_errors_) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+
+  LOG("Parsing completed successfully\n");
+  
+  /* Number all symbols */
+  struct symbol *sym;
+  int NT_END = 0, RULE_END = 1, GRAMMAR_END = 2;
+  int next_ordinal = 3;
+  sym = cc.symtab_.terminals_;
+  if (sym) {
+    do {
+      sym = sym->next_;
+
+      sym->ordinal_ = next_ordinal++;
+    } while (sym != cc.symtab_.terminals_);
+  }
+  int INPUT_END = next_ordinal++;
+  sym = cc.symtab_.non_terminals_;
+  if (sym) {
+    do {
+      sym = sym->next_;
+
+      sym->ordinal_ = next_ordinal++;
+    } while (sym != cc.symtab_.non_terminals_);
+  }
+  int SYNTHETIC_S = next_ordinal++;
+
+  r = gt_transcribe_grammar(&gt, prds.num_productions_, prds.productions_, RULE_END, GRAMMAR_END);
+  if (r) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+
+  r = gt_generate_lalr(&gt, &lalr, RULE_END, GRAMMAR_END, INPUT_END, SYNTHETIC_S);
+  if (r) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+
+  const char *output_filename = "prd_gram_gen.c";
+  FILE *outfp;
+  outfp = fopen(output_filename, "wb");
+  if (!outfp) {
+    int err = errno;
+    LOGERROR("Failed to open file \"%s\" for writing: %s\n", output_filename, strerror(err));
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+
+  struct part *pt;
+  pt = prologue;
+  if (pt) {
+    do {
+      pt = pt->next_;
+
+      size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
+      if (written != pt->num_chars_) {
+        int err = errno;
+        LOGERROR("Failed to write to \"%s\": %s\n", output_filename, strerror(err));
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
       }
-      fprintf(stderr, " ===> ");
-      for (n = 0; n < pd->num_snippets_; ++n) {
-        fprintf(stderr, "%s", pd->snippets_[n].code_.translated_);
+
+    } while (pt != prologue);
+  }
+
+  fprintf(outfp, "/* --------- HERE GOES THE GENERATED FLUFF ------------ */\n");
+
+#if 0
+  static int minimum_sym;
+  static size_t num_columns;
+  static size_t num_rows;
+  static size_t num_productions;
+  static int *parse_table = NULL;
+  static size_t *production_lengths = NULL;
+  static int *production_syms = NULL;
+#endif
+  size_t num_columns = (size_t)(1 + lalr.max_sym - lalr.min_sym);
+  fprintf(outfp, "static int minimum_sym = %d;\n", lalr.min_sym);
+  fprintf(outfp, "static size_t num_columns = %zu;\n", num_columns);
+  fprintf(outfp, "static size_t num_rows = %zu;\n", (size_t)lalr.nr_states);
+  fprintf(outfp, "static size_t num_productions = %zu;\n", lalr.nr_productions);
+  fprintf(outfp, "static int parse_table[] = {\n");
+  size_t row, col;
+  char *column_widths = (char *)malloc(num_columns);
+  if (!column_widths) {
+    LOGERROR("Error, no memory\n");
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+
+  for (col = 0; col < num_columns; ++col) {
+    column_widths[col] = 1;
+    for (row = 0; row < lalr.nr_states; ++row) {
+      int action = lalr.parse_table[row * num_columns + col];
+      int width_needed = 1;
+      if (action <= -1000) {
+        width_needed = 5;
       }
-      fprintf(stderr, "\n");
+      else if (action <= -100) {
+        width_needed = 4;
+      }
+      else if (action <= -10) {
+        width_needed = 3;
+      }
+      else if (action < 100) {
+        width_needed = 2;
+      }
+      else if (action < 1000) {
+        width_needed = 3;
+      }
+      else if (action < 10000) {
+        width_needed = 4;
+      }
+      else {
+        width_needed = 5;
+      }
+      if (width_needed > column_widths[col]) {
+        column_widths[col] = width_needed;
+      }
     }
   }
+  for (row = 0; row < lalr.nr_states; ++row) {
+    for (col = 0; col < num_columns; ++col) {
+      int action = lalr.parse_table[row * num_columns + col];
+
+      fprintf(outfp, "%*d,%s", column_widths[col], action, col == (num_columns - 1) ? "\n" : "");
+    }
+  }
+  free(column_widths);
+  fprintf(outfp, "};\n");
+  fprintf(outfp, "static size_t production_lengths[] = {\n");
+  for (row = 0; row < lalr.nr_productions; ++row) {
+    fprintf(outfp, " %d%s\n", lalr.production_lengths[row], (row == lalr.nr_productions - 1) ? "" : ",");
+  }
+  fprintf(outfp, "};\n");
+  fprintf(outfp, "static int production_syms[] = {\n");
+  for (row = 0; row < lalr.nr_productions; ++row) {
+    fprintf(outfp, " %d%s\n", lalr.productions[row][0], (row == lalr.nr_productions - 1) ? "" : ",");
+  }
+  fprintf(outfp, "};\n");
+
+  /* For each state, what is the top-most symbol on the stack? */
+  fprintf(outfp, "static int state_syms[] = {\n");
+
+  int *state_syms = (int *)malloc(sizeof(int) * (size_t)lalr.nr_states);
+  if (!state_syms) {
+    LOGERROR("Error, no memory\n");
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+  for (row = 0; row < lalr.nr_states; ++row) {
+    state_syms[row] = -1;
+  }
+  for (row = 0; row < lalr.nr_states; ++row) {
+    for (col = 0; col < num_columns; ++col) {
+      int action = lalr.parse_table[row * num_columns + col];
+      if (action > 0) {
+        /* We're shifting to a destination state. */
+        int sym_shifting = ((int)col) + lalr.min_sym;
+        int state_shifting_to = action;
+        if (state_syms[state_shifting_to] != sym_shifting) {
+          if (state_syms[state_shifting_to] == -1) {
+            state_syms[state_shifting_to] = sym_shifting;
+          }
+          else {
+            LOGERROR("Inconsistent state entry: each state should be entered by 1 unique symbol\n");
+            free(state_syms);
+            r = EXIT_FAILURE;
+            goto cleanup_exit;
+          }
+        }
+      }
+    }
+  }
+  for (row = 0; row < lalr.nr_states; ++row) {
+    fprintf(outfp, " %d%s\n", state_syms[row], (row == lalr.nr_states - 1) ? "" : ",");
+  }
+  fprintf(outfp, "};\n");
+  free(state_syms);
+
+  const char *symbol_prefix = "PRD_";
+  fprintf(outfp, "#define NT_END %d\n", NT_END);
+  fprintf(outfp, "#define RULE_END %d\n", RULE_END);
+  fprintf(outfp, "#define GRAMMAR_END %d\n", GRAMMAR_END);
+  sym = cc.symtab_.terminals_;
+  if (sym) {
+    do {
+      sym = sym->next_;
+
+      char *ident = malloc(1 + sym->def_.num_translated_);
+      char *s = ident;
+      const char *p;
+      if (!ident) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+      /* Transform into C identifier */
+      for (p = sym->def_.translated_; p < (sym->def_.translated_ + sym->def_.num_translated_); ++p) {
+        int c = *p;
+        if ((c >= 'a') && (c <= 'z')) c = c - 'a' + 'A';
+        if (c == '-') c = '_';
+        *s++ = c;
+      }
+      *s++ = '\0';
+
+      fprintf(outfp, "#define %s%s %d\n", symbol_prefix, ident, sym->ordinal_);
+      free(ident);
+    } while (sym != cc.symtab_.terminals_);
+  }
+  fprintf(outfp, "\n");
+  fprintf(outfp, "#define INPUT_END %d\n", INPUT_END);
+  sym = cc.symtab_.non_terminals_;
+  if (sym) {
+    do {
+      sym = sym->next_;
+
+      char *ident = malloc(1 + sym->def_.num_translated_);
+      char *s = ident;
+      const char *p;
+      if (!ident) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+      /* Transform into C identifier */
+      for (p = sym->def_.translated_; p < (sym->def_.translated_ + sym->def_.num_translated_); ++p) {
+        int c = *p;
+        if ((c >= 'a') && (c <= 'z')) c = c - 'a' + 'A';
+        if (c == '-') c = '_';
+        *s++ = c;
+      }
+      *s++ = '\0';
+
+      fprintf(outfp, "#define %s%s %d\n", symbol_prefix, ident, sym->ordinal_);
+      free(ident);
+    } while (sym != cc.symtab_.non_terminals_);
+  }
+  fprintf(outfp, "#define SYNTHETIC_S %d\n", SYNTHETIC_S);
+
+
+  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, struct prd_sym_data *syms, struct symbol_table *st) {\n");
+  fprintf(outfp, "  int r;\n"
+                 "  size_t n;\n"
+                 "  struct prd_production *pd;\n"
+                 "  struct symbol *sym;\n"
+                 "  switch (production) {\n");
+  for (row = 0; row < prds.num_productions_; ++row) {
+    struct prd_production *pd = prds.productions_ + row;
+    int extra_wrap = 1;
+    if (pd->action_sequence_.num_tokens_ && (pd->action_sequence_.tokens_[0].variant_ == TOK_CUBRACE_OPEN)) {
+      /* Already in curly braces.. */
+      extra_wrap = 0;
+    }
+    if (extra_wrap) {
+      fprintf(outfp, "  case %d: {\n", (int)row + 1);
+    }
+    else {
+      fprintf(outfp, "  case %d: ", (int)row + 1);
+    }
+    for (col = 0; col < pd->action_sequence_.num_tokens_; ++col) {
+      /* Print the original code, to preserve formatting and line continuations */
+      /* XXX: WANT TO BE PARSING FOR $$ $0 $1 and so on! */
+      fprintf(outfp, pd->action_sequence_.tokens_[col].text_.original_);
+    }
+    if (extra_wrap) {
+      fprintf(outfp, "\n"
+                     "  }\n"
+                     "  break;\n");
+    }
+    else {
+      fprintf(outfp, "\n"
+                     "  break;\n");
+    }
+  }
+  fprintf(outfp, "  } /* switch */\n"
+                 "  return PRD_SUCCESS;\n"
+                 "}\n");
+
+  fprintf(outfp, "/* --------- HERE ENDS THE GENERATED FLUFF ------------ */\n");
+
+
+  pt = epilogue;
+  if (pt) {
+    do {
+      pt = pt->next_;
+
+      size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
+      if (written != pt->num_chars_) {
+        int err = errno;
+        LOGERROR("Failed to write to \"%s\": %s\n", output_filename, strerror(err));
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+
+    } while (pt != epilogue);
+  }
+  
+  fclose(outfp);
+
+  r = EXIT_SUCCESS;
+cleanup_exit:
+
+  xlts_cleanup(&comment_free_line);
 
   xlts_cleanup(&token_buf);
 
-  prd_stack_cleanup(&prds);
+  lr_cleanup(&lalr);
 
-  symbol_table_cleanup(&symtab);
+  gt_grammar_table_cleanup(&gt);
+
+  cinder_context_cleanup(&cc);
+
+  prd_stack_cleanup(&prds);
 
   tkr_tokenizer_cleanup(&tkr_tokens);
 
@@ -520,7 +897,7 @@ int main(int argc, char **argv) {
   ldl_cleanup();
   prd_cleanup();
 
-  LOG("We've finished\n");
+  LOG("We've finished%s\n", (r == EXIT_SUCCESS) ? "" : " in failure...");
 
-  return EXIT_SUCCESS;
+  return r;
 }
