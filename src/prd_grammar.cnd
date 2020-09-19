@@ -125,108 +125,6 @@ void prd_prod_swap(struct prd_production *a, struct prd_production *b) {
   *b = swap;
 }
 
-static void prd_sym_data_init(struct prd_sym_data *psd) {
-  psd->p_ = NULL;
-  psd->sym_ = NULL;
-  prd_prod_init(&psd->prod_);
-  xlts_init(&psd->text_);
-  psd->match_ = 0;
-  psd->variant_ = 0;
-}
-
-static void prd_sym_data_cleanup(struct prd_sym_data *psd) {
-  prd_prod_cleanup(&psd->prod_);
-  xlts_cleanup(&psd->text_);
-}
-
-static int push_state(struct prd_stack *stack, int state) {
-  if (stack->num_stack_allocated_ == stack->pos_) {
-    size_t new_num_allocated = 0;
-    if (stack->num_stack_allocated_) {
-      new_num_allocated = stack->num_stack_allocated_ * 2;
-      if (new_num_allocated <= stack->num_stack_allocated_) {
-        LOGERROR("Overflow in allocation\n");
-        return EOVERFLOW;
-      }
-    }
-    else {
-      new_num_allocated = 16;
-    }
-
-    if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
-      LOGERROR("Overflow in allocation\n");
-      return EOVERFLOW;
-    }
-    if (new_num_allocated > (SIZE_MAX / sizeof(int))) {
-      LOGERROR("Overflow in allocation\n");
-      return EOVERFLOW;
-    }
-
-    void *p = realloc(stack->syms_, new_num_allocated * sizeof(struct prd_sym_data));
-    if (!p) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-    }
-    stack->syms_ = (struct prd_sym_data *)p;
-    void *p2 = realloc(stack->states_, new_num_allocated * sizeof(int));
-    if (!p2) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-    }
-    stack->states_ = p2;
-    stack->num_stack_allocated_ = new_num_allocated;
-  }
-  stack->states_[stack->pos_++] = state;
-  return 0;
-}
-
-static int top_state(struct prd_stack *stack) {
-  assert(stack->pos_ && "Invalid stack position, should never be empty");
-  return stack->states_[stack->pos_ - 1];
-}
-
-static void popn_state(struct prd_stack *stack, size_t num_pops) {
-  assert((stack->pos_ > num_pops) && "Cannot pop down to zero or below");
-  stack->pos_ -= num_pops;
-}
-
-int prd_reset(struct prd_stack *stack) {
-  int r;
-  stack->pos_ = 0;
-  r = push_state(stack, 0);
-  if (r) {
-    return r;
-  }
-  stack->syms_[0].p_ = NULL;
-  xlts_init(&stack->syms_[0].text_);
-  return 0;
-}
-
-
-static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *loc) {
-  if (pd->num_syms_ == pd->num_syms_allocated_) {
-    size_t new_num = pd->num_syms_allocated_ * 2 + 1;
-    if (new_num < 7) new_num = 7;
-    if (new_num <= pd->num_syms_allocated_) {
-      re_error(loc, "Internal error, overflow on allocation");
-      return PRD_INTERNAL_ERROR;
-    }
-    if (new_num > (SIZE_MAX / sizeof(struct prd_production_sym))) {
-      re_error(loc, "Internal error, overflow on allocation");
-      return PRD_INTERNAL_ERROR;
-    }
-    size_t size_to_alloc = new_num * sizeof(struct prd_production_sym);
-    void *p = realloc(pd->syms_, size_to_alloc);
-    if (!p) {
-      re_error(loc, "Internal error, no memory");
-      return PRD_INTERNAL_ERROR;
-    }
-    pd->syms_ = (struct prd_production_sym *)p;
-    pd->num_syms_allocated_ = new_num;
-  }
-  return 0;
-}
-
 static int prd_stack_check_production_reserve(struct prd_stack *ps) {
   if (ps->num_productions_ == ps->num_productions_allocated_) {
     size_t new_num = ps->num_productions_allocated_ * 2 + 1;
@@ -261,11 +159,36 @@ void prd_cleanup(void) {
   /* No-op; all tables are static */
 }
 
+static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *loc) {
+  if (pd->num_syms_ == pd->num_syms_allocated_) {
+    size_t new_num = pd->num_syms_allocated_ * 2 + 1;
+    if (new_num < 7) new_num = 7;
+    if (new_num <= pd->num_syms_allocated_) {
+      re_error(loc, "Internal error, overflow on allocation");
+      return PRD_INTERNAL_ERROR;
+    }
+    if (new_num > (SIZE_MAX / sizeof(struct prd_production_sym))) {
+      re_error(loc, "Internal error, overflow on allocation");
+      return PRD_INTERNAL_ERROR;
+    }
+    size_t size_to_alloc = new_num * sizeof(struct prd_production_sym);
+    void *p = realloc(pd->syms_, size_to_alloc);
+    if (!p) {
+      re_error(loc, "Internal error, no memory");
+      return PRD_INTERNAL_ERROR;
+    }
+    pd->syms_ = (struct prd_production_sym *)p;
+    pd->num_syms_allocated_ = new_num;
+  }
+  return 0;
+}
+
+
 %token ident colon equals semicolon token par-open par-close cubrace-open cubrace-close
 %nt grammar rule production action-sequence stmt-action start-c-tokenizer end-c-tokenizer accept-whitespace
 
-%token_type struct snippet
-
+%token_type struct xlts 
+%nt_type rule: struct snippet $[5]
 
 %%
 
@@ -496,6 +419,84 @@ accept-whitespace: {
 
 
 %%
+
+
+static void prd_sym_data_init(struct prd_sym_data *psd) {
+  psd->p_ = NULL;
+  psd->sym_ = NULL;
+  prd_prod_init(&psd->prod_);
+  xlts_init(&psd->text_);
+  psd->match_ = 0;
+  psd->variant_ = 0;
+}
+
+static void prd_sym_data_cleanup(struct prd_sym_data *psd) {
+  prd_prod_cleanup(&psd->prod_);
+  xlts_cleanup(&psd->text_);
+}
+
+static int push_state(struct prd_stack *stack, int state) {
+  if (stack->num_stack_allocated_ == stack->pos_) {
+    size_t new_num_allocated = 0;
+    if (stack->num_stack_allocated_) {
+      new_num_allocated = stack->num_stack_allocated_ * 2;
+      if (new_num_allocated <= stack->num_stack_allocated_) {
+        LOGERROR("Overflow in allocation\n");
+        return EOVERFLOW;
+      }
+    }
+    else {
+      new_num_allocated = 16;
+    }
+
+    if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
+      LOGERROR("Overflow in allocation\n");
+      return EOVERFLOW;
+    }
+    if (new_num_allocated > (SIZE_MAX / sizeof(int))) {
+      LOGERROR("Overflow in allocation\n");
+      return EOVERFLOW;
+    }
+
+    void *p = realloc(stack->syms_, new_num_allocated * sizeof(struct prd_sym_data));
+    if (!p) {
+      LOGERROR("Out of memory\n");
+      return ENOMEM;
+    }
+    stack->syms_ = (struct prd_sym_data *)p;
+    void *p2 = realloc(stack->states_, new_num_allocated * sizeof(int));
+    if (!p2) {
+      LOGERROR("Out of memory\n");
+      return ENOMEM;
+    }
+    stack->states_ = p2;
+    stack->num_stack_allocated_ = new_num_allocated;
+  }
+  stack->states_[stack->pos_++] = state;
+  return 0;
+}
+
+static int top_state(struct prd_stack *stack) {
+  assert(stack->pos_ && "Invalid stack position, should never be empty");
+  return stack->states_[stack->pos_ - 1];
+}
+
+static void popn_state(struct prd_stack *stack, size_t num_pops) {
+  assert((stack->pos_ > num_pops) && "Cannot pop down to zero or below");
+  stack->pos_ -= num_pops;
+}
+
+int prd_reset(struct prd_stack *stack) {
+  int r;
+  stack->pos_ = 0;
+  r = push_state(stack, 0);
+  if (r) {
+    return r;
+  }
+  stack->syms_[0].p_ = NULL;
+  xlts_init(&stack->syms_[0].text_);
+  return 0;
+}
 
 
 int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
