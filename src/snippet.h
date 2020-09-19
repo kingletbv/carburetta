@@ -35,6 +35,8 @@ int snippet_append(struct snippet *s, uintptr_t match, uintptr_t variant, struct
 int snippet_append_tkr(struct snippet *s, struct tkr_tokenizer *tkr);
 int snippet_append_snippet(struct snippet *d, const struct snippet *s);
 void snippet_pop_last_token(struct snippet *s);
+uint64_t snippet_hash(const struct snippet *s);
+int snippet_cmp(const struct snippet *left, const struct snippet *right);
 
 #ifdef __cplusplus
 } /* extern "C" */

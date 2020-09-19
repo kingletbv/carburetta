@@ -18,6 +18,11 @@
 #include <ctype.h>
 #endif
 
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
+#include <assert.h>
+#endif
+
 #ifndef HELPERS_H_INCLUDED
 #define HELPERS_H_INCLUDED
 #include "helpers.h"
@@ -89,6 +94,11 @@
 #include "symbol.h"
 #endif
 
+#ifndef TYPESTR_H_INCLUDED
+#define TYPESTR_H_INCLUDED
+#include "typestr.h"
+#endif
+
 struct part {
   struct part *next_;
   size_t num_chars_;
@@ -122,16 +132,19 @@ static struct part *append_part(struct part **tailptr, size_t num_chars, char *c
 struct cinder_context {
   struct snippet token_type_;
   struct symbol_table symtab_;
+  struct typestr_table tstab_;
 };
 
 void cinder_context_init(struct cinder_context *cc) {
   snippet_init(&cc->token_type_);
   symbol_table_init(&cc->symtab_);
+  typestr_table_init(&cc->tstab_);
 }
 
 void cinder_context_cleanup(struct cinder_context *cc) {
   symbol_table_cleanup(&cc->symtab_);
   snippet_cleanup(&cc->token_type_);
+  typestr_table_cleanup(&cc->tstab_);
 }
 
 
@@ -139,11 +152,19 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   int r;
   int ate_percent = 0;
   int ate_directive = 0;
+  int ate_colon_seperator = 0;
+  int found_a_placeholder = 0;
   struct symbol_table *st = &cc->symtab_;
+  struct symbol **typed_symbols = NULL;
+  size_t num_typed_symbols = 0;
+  size_t num_typed_symbols_allocated = 0;
+  struct snippet type_snippet;
+  snippet_init(&type_snippet);
   enum {
     PCD_NT_DIRECTIVE,
     PCD_TOKEN_DIRECTIVE,
-    PCD_TOKEN_TYPE_DIRECTIVE
+    PCD_TOKEN_TYPE_DIRECTIVE,
+    PCD_NT_TYPE_DIRECTIVE
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
@@ -158,7 +179,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
       }
     }
     else if (r == TKR_INTERNAL_ERROR) {
-      return r;
+      goto cleanup_exit;
     }
     else if (r == TKR_MATCH) {
       if (tkr_tokens->best_match_variant_ == TOK_WHITESPACE) {
@@ -172,7 +193,8 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
           }
           else {
             re_error_tkr(tkr_tokens, "Syntax error, \"%%\" expected");
-            return TKR_SYNTAX_ERROR;
+            r = TKR_SYNTAX_ERROR;
+            goto cleanup_exit;
           }
         }
         else if (!ate_directive) {
@@ -188,13 +210,18 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
               directive = PCD_TOKEN_TYPE_DIRECTIVE;
               snippet_clear(&cc->token_type_);
             }
+            else if (!strcmp("nt_type", tkr_str(tkr_tokens))) {
+              directive = PCD_NT_TYPE_DIRECTIVE;
+            }
             else if (!strcmp("debug_end", tkr_str(tkr_tokens))) {
               re_error(directive_line_match, "%%debug_end encountered, terminating early");
-              return TKR_INTERNAL_ERROR;
+              r = TKR_INTERNAL_ERROR;
+              goto cleanup_exit;
             }
             else {
               re_error_tkr(tkr_tokens, "Syntax error invalid directive");
-              return TKR_SYNTAX_ERROR;
+              r = TKR_SYNTAX_ERROR;
+              goto cleanup_exit;
             }
           }
         }
@@ -209,7 +236,8 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             }
             else {
               re_error_tkr(tkr_tokens, "Syntax error identifier expected");
-              return TKR_SYNTAX_ERROR;
+              r = TKR_SYNTAX_ERROR;
+              goto cleanup_exit;
             }
           }
           else if (directive == PCD_TOKEN_DIRECTIVE) {
@@ -222,16 +250,115 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             }
             else {
               re_error_tkr(tkr_tokens, "Syntax error identifier expected");
-              return TKR_SYNTAX_ERROR;
+              r = TKR_SYNTAX_ERROR;
+              goto cleanup_exit;
             }
           }
           else if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
             /* Trim simple whitespace off the head end, otherwise simply copy. */
             /* XXX: Continue with this! */
-            if (cc->token_type_.num_tokens_ || (tkr_tokens->best_match_variant_ != TOK_WHITESPACE_CHAR)) {
+            if (cc->token_type_.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+              if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
+                if (strcmp("$", tkr_str(tkr_tokens))) {
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a type string may only have a single \"$\" special identifier as a declarator identifier placeholder", tkr_str(tkr_tokens));
+                  r = TKR_SYNTAX_ERROR;
+                  goto cleanup_exit;
+                }
+                if (found_a_placeholder) {
+                  re_error_tkr(tkr_tokens, "Error: a type string may have at most 1 declarator identifier placeholder");
+                  r = TKR_SYNTAX_ERROR;
+                  goto cleanup_exit;
+                }
+                found_a_placeholder = 1;
+              }
               r = snippet_append_tkr(&cc->token_type_, tkr_tokens);
               if (r) {
-                return TKR_INTERNAL_ERROR;
+                r = TKR_INTERNAL_ERROR;
+                goto cleanup_exit;
+              }
+            }
+          }
+          else if (directive == PCD_NT_TYPE_DIRECTIVE) {
+            if (!ate_colon_seperator) {
+              if (tkr_tokens->best_match_action_ != TOK_COLON) {
+                if (tkr_tokens->best_match_action_ == TOK_IDENT) {
+                  struct symbol *sym = symbol_find(st, tkr_str(tkr_tokens));
+                  if (!sym) {
+                    re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal\n", tkr_str(tkr_tokens));
+                    r = TKR_SYNTAX_ERROR;
+                    goto cleanup_exit;
+                  }
+                  else if (sym->st_ != SYM_NONTERMINAL) {
+                    re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal but a token.\n", tkr_str(tkr_tokens));
+                    r = TKR_SYNTAX_ERROR;
+                    goto cleanup_exit;
+                  }
+                  else {
+                    size_t n;
+                    for (n = 0; n < num_typed_symbols; ++n) {
+                      if (sym == typed_symbols[n]) {
+                        re_error_tkr(tkr_tokens, "Error: \"%s\" appears more than once in type directive\n", tkr_str(tkr_tokens));
+                        r = TKR_SYNTAX_ERROR;
+                        goto cleanup_exit;
+                      }
+                    }
+                    if (num_typed_symbols == num_typed_symbols_allocated) {
+                      size_t new_num_alloc = num_typed_symbols_allocated * 2 + 1;
+                      if (new_num_alloc < num_typed_symbols_allocated) {
+                        re_error_tkr(tkr_tokens, "Error: overflow on allocation\n");
+                        r = TKR_INTERNAL_ERROR;
+                        goto cleanup_exit;
+                      }
+                      if (new_num_alloc > (SIZE_MAX / sizeof(struct symbol *))) {
+                        re_error_tkr(tkr_tokens, "Error: overflow on allocation\n");
+                        r = TKR_INTERNAL_ERROR;
+                        goto cleanup_exit;
+                      }
+                      size_t alloc_size = new_num_alloc * sizeof(struct symbol *);
+                      void *p = realloc(typed_symbols, alloc_size);
+                      if (!p) {
+                        re_error_tkr(tkr_tokens, "Error: no memory\n");
+                        r = TKR_INTERNAL_ERROR;
+                        goto cleanup_exit;
+                      }
+                      typed_symbols = (struct symbol **)p;
+                      num_typed_symbols_allocated = new_num_alloc;
+                    }
+                    typed_symbols[num_typed_symbols++] = sym;
+                  }
+                }
+                else {
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal\n", tkr_str(tkr_tokens));
+                  r = TKR_SYNTAX_ERROR;
+                  goto cleanup_exit;
+                }
+              }
+              else {
+                ate_colon_seperator = 1;
+              }
+            }
+            else {
+              /* ate_colon_seperator -- everything else is part of the type, use the same logic
+               * as for token_type */
+              if (type_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+                if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
+                  if (strcmp("$", tkr_str(tkr_tokens))) {
+                    re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a type string may only have a single \"$\" special identifier as a declarator identifier placeholder", tkr_str(tkr_tokens));
+                    r = TKR_SYNTAX_ERROR;
+                    goto cleanup_exit;
+                  }
+                  if (found_a_placeholder) {
+                    re_error_tkr(tkr_tokens, "Error: a type string may have at most 1 declarator identifier placeholder");
+                    r = TKR_SYNTAX_ERROR;
+                    goto cleanup_exit;
+                  }
+                  found_a_placeholder = 1;
+                }
+                r = snippet_append_tkr(&type_snippet, tkr_tokens);
+                if (r) {
+                  r = TKR_INTERNAL_ERROR;
+                  goto cleanup_exit;
+                }
               }
             }
           }
@@ -242,12 +369,43 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     r = tkr_tokenizer_inputx(tkr_tokens, directive_line_match, 1);
   }
 
+  assert(r != TKR_FEED_ME); /* should not ask to get fed on final input */
+
+  if (directive == PCD_NT_TYPE_DIRECTIVE) {
+    /* Trim simple whitespace off the tail end */
+    while (type_snippet.num_tokens_ && 
+           ((type_snippet.tokens_[type_snippet.num_tokens_ - 1].match_ == TOK_WHITESPACE) ||
+            (type_snippet.tokens_[type_snippet.num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
+      snippet_pop_last_token(&type_snippet);
+    }
+    size_t n;
+    fprintf(stderr, "%%token_type");
+    for (n = 0; n < type_snippet.num_tokens_; ++n) {
+      fprintf(stderr, " %s", type_snippet.tokens_[n].text_.translated_);
+    }
+    fprintf(stderr, "\n");
+    for (n = 0; n < num_typed_symbols; ++n) {
+      struct symbol *sym = typed_symbols[n];
+      snippet_cleanup(&sym->type_snippet_);
+      r = snippet_append_snippet(&sym->type_snippet_, &type_snippet);
+      if (r) goto cleanup_exit;
+    }
+  }
+
   if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
     /* Trim simple whitespace off the tail end */
-    while (cc->token_type_.num_tokens_ && (cc->token_type_.tokens_[cc->token_type_.num_tokens_ - 1].variant_ == TOK_WHITESPACE_CHAR)) {
+    while (cc->token_type_.num_tokens_ && 
+          ((cc->token_type_.tokens_[cc->token_type_.num_tokens_ - 1].match_ == TOK_WHITESPACE) ||
+           (cc->token_type_.tokens_[cc->token_type_.num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
       snippet_pop_last_token(&cc->token_type_);
     }
   }
+
+  r = 0;
+
+cleanup_exit:
+  snippet_cleanup(&type_snippet);
+  if (typed_symbols) free(typed_symbols);
 
   return r;
 }
@@ -423,7 +581,7 @@ int main(int argc, char **argv) {
 
       r = tkr_tokenizer_inputx(&tkr_lines, &comment_free_line, 1);
 
-      /* Empty line cannot be matched as a match requires at least a single byte to be processed to force progress; 
+      /* Empty line cannot be matched as a match requires at least a single byte to be processed to force progress;
        * manually override that case to match LD_REGULAR */
       if ((r == TKR_END_OF_INPUT) && (comment_free_line.num_translated_ == 0)) {
         r = TKR_MATCH;
@@ -515,7 +673,7 @@ int main(int argc, char **argv) {
           case LD_CINDER_SECTION_DELIMITER:
             /* Going back to the grammar, append the epilogue we gathered to the prologue as it is
              * actually inline code. */
-            {
+          {
             struct part *prologue_head, *prologue_tail, *epilogue_head, *epilogue_tail;
             prologue_tail = prologue;
             prologue_head = prologue ? prologue->next_ : NULL;
@@ -533,9 +691,9 @@ int main(int argc, char **argv) {
                 epilogue = NULL;
               }
             }
-            }
-            where_are_we = GRAMMAR;
-            break;
+          }
+          where_are_we = GRAMMAR;
+          break;
           case LD_REGULAR:
             /* Preserve line continuations */
             append_part(&epilogue, token_buf.num_original_, token_buf.original_);
@@ -573,10 +731,62 @@ int main(int argc, char **argv) {
     goto cleanup_exit;
   }
 
+  /* Assign types to all symbols */
+  struct symbol *sym;
+  struct typestr *token_ts = NULL;
+  if (cc.token_type_.num_tokens_) {
+    int is_new;
+    token_ts = typestr_find_or_add(&cc.tstab_, &cc.token_type_, &is_new);
+    if (!token_ts) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+  }
+
+  sym = cc.symtab_.terminals_;
+  if (sym) {
+    do {
+      sym = sym->next_;
+
+      if (!sym->type_snippet_.num_tokens_) {
+        sym->assigned_type_ = token_ts;
+      }
+      else {
+        int is_new;
+        struct typestr *ts = typestr_find_or_add(&cc.tstab_, &sym->type_snippet_, &is_new);
+        if (!ts) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        sym->assigned_type_ = ts;
+      }
+    } while (sym != cc.symtab_.terminals_);
+  }
+  sym = cc.symtab_.non_terminals_;
+  if (sym) {
+    do {
+      sym = sym->next_;
+
+      if (!sym->type_snippet_.num_tokens_) {
+        sym->assigned_type_ = NULL;
+      }
+      else {
+        int is_new;
+        struct typestr *ts = typestr_find_or_add(&cc.tstab_, &sym->type_snippet_, &is_new);
+        if (!ts) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        sym->assigned_type_ = ts;
+      }
+
+    } while (sym != cc.symtab_.non_terminals_);
+  }
+
+
   LOG("Parsing completed successfully\n");
   
   /* Number all symbols */
-  struct symbol *sym;
   int NT_END = 0, RULE_END = 1, GRAMMAR_END = 2;
   int next_ordinal = 3;
   sym = cc.symtab_.terminals_;
@@ -639,15 +849,34 @@ int main(int argc, char **argv) {
 
   fprintf(outfp, "/* --------- HERE GOES THE GENERATED FLUFF ------------ */\n");
 
-#if 0
-  static int minimum_sym;
-  static size_t num_columns;
-  static size_t num_rows;
-  static size_t num_productions;
-  static int *parse_table = NULL;
-  static size_t *production_lengths = NULL;
-  static int *production_syms = NULL;
-#endif
+  fprintf(outfp, "union prd_sym_data_union {\n");
+  size_t ts_idx;
+  for (ts_idx = 0; ts_idx < cc.tstab_.num_typestrs_; ++ts_idx) {
+    struct typestr *ts;
+    ts = cc.tstab_.typestrs_[ts_idx];
+    int found_placeholder = 0;
+
+    fprintf(outfp, " ");
+    size_t tok_idx;
+    for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
+      struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
+      if (st->variant_ != TOK_SPECIAL_IDENT) {
+        fprintf(outfp, "%s%s", tok_idx ? " " : "", st->text_.translated_);
+      }
+      else {
+        found_placeholder = 1;
+        fprintf(outfp, " uv%d", ts->ordinal_);
+      }
+    }
+    if (!found_placeholder) {
+      /* Placeholder is implied at the end */
+      fprintf(outfp, " uv%d", ts->ordinal_);
+    }
+    fprintf(outfp, ";\n");
+  }
+  fprintf(outfp, "};\n");
+
+
   size_t num_columns = (size_t)(1 + lalr.max_sym - lalr.min_sym);
   fprintf(outfp, "static int minimum_sym = %d;\n", lalr.min_sym);
   fprintf(outfp, "static size_t num_columns = %zu;\n", num_columns);
@@ -813,7 +1042,6 @@ int main(int argc, char **argv) {
 
   fprintf(outfp, "static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, struct prd_sym_data *syms, struct symbol_table *st) {\n");
   fprintf(outfp, "  int r;\n"
-                 "  size_t n;\n"
                  "  struct prd_production *pd;\n"
                  "  struct symbol *sym;\n"
                  "  switch (production) {\n");

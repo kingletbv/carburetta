@@ -78,10 +78,17 @@ void symbol_table_cleanup(struct symbol_table *st) {
 
 
 void symbol_init(struct symbol *sym) {
+  sym->st_ = SYM_UNDEFINED;
   xlts_init(&sym->def_);
+  sym->ordinal_ = 0;
+  sym->next_ = NULL;
+  sym->hash_chain_ = NULL;
+  snippet_init(&sym->type_snippet_);
+  sym->assigned_type_ = NULL;
 }
 
 void symbol_cleanup(struct symbol *sym) {
+  snippet_cleanup(&sym->type_snippet_);
   xlts_cleanup(&sym->def_);
 }
 
@@ -141,6 +148,7 @@ struct symbol *symbol_find_or_add(struct symbol_table *st, sym_type_t symtype, s
   if (!sym) {
     return NULL;
   }
+  symbol_init(sym);
   sym->st_ = symtype;
   sym->hash_chain_ = last ? last->hash_chain_ : sym;
   if (last) {
@@ -148,7 +156,6 @@ struct symbol *symbol_find_or_add(struct symbol_table *st, sym_type_t symtype, s
   }
   st->hash_table_[idx] = sym;
   sym->ordinal_ = 0;
-  xlts_init(&sym->def_);
   xlts_append(&sym->def_, id);
   if (symtype == SYM_NONTERMINAL) {
     if (st->non_terminals_) {

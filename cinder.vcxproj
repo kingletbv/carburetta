@@ -53,6 +53,7 @@
     <ClCompile Include="snippet.c" />
     <ClCompile Include="symbol.c" />
     <ClCompile Include="tokens.c" />
+    <ClCompile Include="typestr.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="decomment.h" />
@@ -81,6 +82,7 @@
     <ClInclude Include="snippet.h" />
     <ClInclude Include="symbol.h" />
     <ClInclude Include="tokens.h" />
+    <ClInclude Include="typestr.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

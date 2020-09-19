@@ -6,6 +6,11 @@
 #include "xlts.h"
 #endif
 
+#ifndef SNIPPET_H_INCLUDED
+#define SNIPPET_H_INCLUDED
+#include "snippet.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,6 +18,7 @@ extern "C" {
 #define SYMBOL_TABLE_SIZE 127
 
 typedef enum sym_type_enum {
+  SYM_UNDEFINED,
   SYM_TERMINAL,
   SYM_NONTERMINAL
 } sym_type_t;
@@ -32,6 +38,16 @@ struct symbol {
 
   /* Next in hash table */
   struct symbol *hash_chain_;
+
+  /* Snippet describing target language specific type string assigned to symbol.
+   * The snippet may hold a single "$" TOK_SPECIAL_IDENT as a placeholder for
+   * the declarator identifier of such a type string. If no such a placeholder
+   * is found, the placeholder for the identifier is implied at the end. */
+  struct snippet type_snippet_;
+
+  /* Assigned type; representing both the type (as type_snippet) and its field
+   * value in the union of symbol data on the stack. */
+  struct typestr *assigned_type_;
 };
 
 struct symbol_table {
