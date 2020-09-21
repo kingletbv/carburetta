@@ -43,7 +43,7 @@
 #define ENUM_LC_TOKENS \
 xz(LAS_LC_UNKNOWN) \
 xx("\\r\\n|\\n", LAS_LC_NEW_LINE) \
-xx("\\\\\\r\\n|\\n", LAS_LC_LINE_CONTINUATION)
+xx("\\\\\\r\\n|\\\\\\n", LAS_LC_LINE_CONTINUATION)
 
 #define ENUM_MLC_TOKENS \
 xz(LAS_MLC_UNKNOWN) \
