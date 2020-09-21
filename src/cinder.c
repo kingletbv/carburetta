@@ -529,7 +529,7 @@ cleanup_exit:
   return r;
 }
 
-static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct prd_stack *prds, struct symbol_table *st) {
+static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct prd_stack *prds, struct prd_grammar *g, struct symbol_table *st) {
   int r;
   struct xlts empty;
   xlts_init(&empty);
@@ -548,7 +548,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
       return r;
     }
     else if (r == TKR_MATCH) {
-      r = prd_parse(prds, tkr_tokens, 0, st);
+      r = prd_parse(prds, g, tkr_tokens, 0, st);
       switch (r) {
       case PRD_SUCCESS:
         /* This should not be possible without is_final==1 */
@@ -569,7 +569,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
   }
 
   if (r == TKR_END_OF_INPUT) {
-    r = prd_parse(prds, tkr_tokens, 1, st);
+    r = prd_parse(prds, g, tkr_tokens, 1, st);
     switch (r) {
     case PRD_SUCCESS:
       return TKR_END_OF_INPUT;
@@ -638,6 +638,9 @@ int main(int argc, char **argv) {
   struct prd_stack prds;
   prd_stack_init(&prds);
 
+  struct prd_grammar prdg;
+  prd_grammar_init(&prdg);
+
   struct grammar_table gt;
   gt_grammar_table_init(&gt);
 
@@ -652,7 +655,7 @@ int main(int argc, char **argv) {
 
   int *state_syms = NULL;
 
-  r = prd_reset(&prds);
+  r = prd_stack_reset(&prds);
   if (r) {
     LOGERROR("Internal error, failed to reset parsing stack\n");
     r = EXIT_FAILURE;
@@ -765,13 +768,13 @@ int main(int argc, char **argv) {
             break;
           case LD_CINDER_SECTION_DELIMITER:
             /* Finish up */
-            r = process_tokens(&tkr_tokens, &token_buf, 1, &prds, &cc.symtab_);
+            r = process_tokens(&tkr_tokens, &token_buf, 1, &prds, &prdg, &cc.symtab_);
 
             where_are_we = EPILOGUE;
             break;
           case LD_REGULAR:
           {
-            r = process_tokens(&tkr_tokens, &token_buf, 0, &prds, &cc.symtab_);
+            r = process_tokens(&tkr_tokens, &token_buf, 0, &prds, &prdg, &cc.symtab_);
             break;
           }
           case LD_CINDER_DIRECTIVE:
@@ -847,7 +850,7 @@ int main(int argc, char **argv) {
   } while (num_bytes_read);
 
   /* Finished parsing */
-  if (prds.have_errors_) {
+  if (prdg.have_errors_) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -929,7 +932,7 @@ int main(int argc, char **argv) {
   }
   int SYNTHETIC_S = next_ordinal++;
 
-  r = gt_transcribe_grammar(&gt, prds.num_productions_, prds.productions_, RULE_END, GRAMMAR_END);
+  r = gt_transcribe_grammar(&gt, prdg.num_productions_, prdg.productions_, RULE_END, GRAMMAR_END);
   if (r) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
@@ -1160,13 +1163,13 @@ int main(int argc, char **argv) {
   fprintf(outfp, "#define SYNTHETIC_S %d\n", SYNTHETIC_S);
 
 
-  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, union prd_sym_data_union *dst_sym_data, struct prd_sym_data *syms, union prd_sym_data_union *sym_data, struct symbol_table *st) {\n");
+  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, union prd_sym_data_union *dst_sym_data, struct prd_sym_data *syms, union prd_sym_data_union *sym_data, struct symbol_table *st) {\n");
   fprintf(outfp, "  int r;\n"
                  "  struct prd_production *pd;\n"
                  "  struct symbol *sym;\n"
                  "  switch (production) {\n");
-  for (row = 0; row < prds.num_productions_; ++row) {
-    struct prd_production *pd = prds.productions_ + row;
+  for (row = 0; row < prdg.num_productions_; ++row) {
+    struct prd_production *pd = prdg.productions_ + row;
     fprintf(outfp, "  case %d: {\n    ", (int)row + 1);
     /* Emit dst_sym_data constructor first */
     if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
@@ -1247,7 +1250,7 @@ int main(int argc, char **argv) {
 
   /* Emit the parse function */
   fprintf(outfp,
-    "static int parse(struct prd_stack *stack, int sym, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {\n"
+    "static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {\n"
     "  int current_state = stack->states_[stack->pos_ - 1];\n"
     "  int action = parse_table[num_columns * current_state + (sym - minimum_sym)];\n"
     "  if (!action) {\n"
@@ -1276,7 +1279,7 @@ int main(int argc, char **argv) {
     "    union prd_sym_data_union nonterminal_sym_data_reduced_to;\n"
     "    prd_sym_data_init(&nonterminal_data_reduced_to);\n"
     "    int r;\n"
-    "    r = reduce(stack, tkr, production, &nonterminal_data_reduced_to, &nonterminal_sym_data_reduced_to, stack->syms_ + stack->pos_ - production_length, stack->sym_data_ + stack->pos_ - production_length, st);\n"
+    "    r = reduce(stack, g, tkr, production, &nonterminal_data_reduced_to, &nonterminal_sym_data_reduced_to, stack->syms_ + stack->pos_ - production_length, stack->sym_data_ + stack->pos_ - production_length, st);\n"
     "    if (r) {\n"
     "      /* Semantic error */\n"
     "      return r;\n"
@@ -1463,6 +1466,8 @@ cleanup_exit:
   gt_grammar_table_cleanup(&gt);
 
   cinder_context_cleanup(&cc);
+
+  prd_grammar_cleanup(&prdg);
 
   prd_stack_cleanup(&prds);
 

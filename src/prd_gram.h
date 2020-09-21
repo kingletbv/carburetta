@@ -65,13 +65,16 @@ struct prd_sym_data {
 };
 
 struct prd_stack {
-  int have_errors_ : 1; /* if non-zero, errors were issued and compilation failed */
-  int accept_whitespace_ : 1; /* if non-zero, whitespace is passed on to the grammar as PRD_TOKEN */
   size_t pos_;
   size_t num_stack_allocated_; /* size in elements of states and syms */
   int *states_;
   struct prd_sym_data *syms_;
   union prd_sym_data_union *sym_data_;
+};
+
+struct prd_grammar {
+  int have_errors_ : 1; /* if non-zero, errors were issued and compilation failed */
+  int accept_whitespace_ : 1; /* if non-zero, whitespace is passed on to the grammar as PRD_TOKEN */
 
   /* Productions making up the entire grammar */
   size_t num_productions_;
@@ -81,11 +84,14 @@ struct prd_stack {
 
 int prd_init(void);
 void prd_cleanup(void);
-int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
+int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
 
 void prd_stack_init(struct prd_stack *stack);
-int prd_reset(struct prd_stack *stack);
+int prd_stack_reset(struct prd_stack *stack);
 void prd_stack_cleanup(struct prd_stack *stack);
+
+void prd_grammar_init(struct prd_grammar *g);
+void prd_grammar_cleanup(struct prd_grammar *g);
 
 #ifdef __cplusplus
 } /* extern "C" */

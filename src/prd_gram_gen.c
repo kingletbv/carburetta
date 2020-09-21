@@ -63,20 +63,31 @@ typedef enum prd_symbol_enum {
 static void prd_prod_init(struct prd_production *ppd);
 static void prd_prod_cleanup(struct prd_production *ppd);
 
+void prd_grammar_init(struct prd_grammar *g) {
+  g->have_errors_ = 0;
+  g->accept_whitespace_ = 0;
+  g->num_productions_ = g->num_productions_allocated_ = 0;
+  g->productions_ = NULL;
+}
+
+void prd_grammar_cleanup(struct prd_grammar *g) {
+  size_t n;
+
+  for (n = 0; n < g->num_productions_; ++n) {
+    prd_prod_cleanup(g->productions_ + n);
+  }
+  if (g->productions_) free(g->productions_);
+}
+
 void prd_stack_init(struct prd_stack *stack) {
-  stack->have_errors_ = 0;
-  stack->accept_whitespace_ = 0;
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
   stack->states_ = NULL;
   stack->syms_ = NULL;
   stack->sym_data_ = NULL;
-  stack->num_productions_ = stack->num_productions_allocated_ = 0;
-  stack->productions_ = NULL;
 }
 
 void prd_stack_cleanup(struct prd_stack *stack) {
-  
   size_t n;
   for (n = 0; n < stack->pos_; ++n) {
     xlts_cleanup(&stack->syms_[n].text_);
@@ -88,11 +99,6 @@ void prd_stack_cleanup(struct prd_stack *stack) {
 
   if (stack->syms_) free(stack->syms_);
   if (stack->sym_data_) free(stack->sym_data_);
-
-  for (n = 0; n < stack->num_productions_; ++n) {
-    prd_prod_cleanup(stack->productions_ + n);
-  }
-  if (stack->productions_) free(stack->productions_);
 }
 
 static void prd_production_sym_init(struct prd_production_sym *pps) {
@@ -130,11 +136,11 @@ void prd_prod_swap(struct prd_production *a, struct prd_production *b) {
   *b = swap;
 }
 
-static int prd_stack_check_production_reserve(struct prd_stack *ps) {
-  if (ps->num_productions_ == ps->num_productions_allocated_) {
-    size_t new_num = ps->num_productions_allocated_ * 2 + 1;
+static int prd_grammar_check_production_reserve(struct prd_grammar *g) {
+  if (g->num_productions_ == g->num_productions_allocated_) {
+    size_t new_num = g->num_productions_allocated_ * 2 + 1;
     if (new_num < 7) new_num = 7;
-    if (new_num <= ps->num_productions_allocated_) {
+    if (new_num <= g->num_productions_allocated_) {
       LOGERROR("Internal error, overflow on allocation");
       return PRD_INTERNAL_ERROR;
     }
@@ -143,13 +149,13 @@ static int prd_stack_check_production_reserve(struct prd_stack *ps) {
       return PRD_INTERNAL_ERROR;
     }
     size_t size_to_alloc = new_num * sizeof(struct prd_production);
-    void *p = realloc(ps->productions_, size_to_alloc);
+    void *p = realloc(g->productions_, size_to_alloc);
     if (!p) {
       LOGERROR("Internal error, no memory");
       return PRD_INTERNAL_ERROR;
     }
-    ps->productions_ = (struct prd_production *)p;
-    ps->num_productions_allocated_ = new_num;
+    g->productions_ = (struct prd_production *)p;
+    g->num_productions_allocated_ = new_num;
   }
 
   return 0;
@@ -203,7 +209,6 @@ static void prd_sym_data_cleanup(struct prd_sym_data *psd) {
 
 /* XXX: Implementation of these may rely on union prd_sym_data_union which will be generated; forward declare, provide implementation below, until we generate these as well. */
 static int push_state(struct prd_stack *stack, int state);
-static void popn_state(struct prd_stack *stack, size_t num_pops);
 
 
 
@@ -382,7 +387,7 @@ static int state_syms[] = {
 #define PRD_END_C_TOKENIZER 19
 #define PRD_ACCEPT_WHITESPACE 20
 #define SYNTHETIC_S 21
-static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, union prd_sym_data_union *dst_sym_data, struct prd_sym_data *syms, union prd_sym_data_union *sym_data, struct symbol_table *st) {
+static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, union prd_sym_data_union *dst_sym_data, struct prd_sym_data *syms, union prd_sym_data_union *sym_data, struct symbol_table *st) {
   int r;
   struct prd_production *pd;
   struct symbol *sym;
@@ -393,10 +398,10 @@ static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int produc
   break;
   case 2: {
     {
-	/* Store the PRD_PRODUCTION in the prd_stack->productions_ array */
-	r = prd_stack_check_production_reserve(stack);
+	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
+	r = prd_grammar_check_production_reserve(g);
 	if (r) return r;
-	pd = stack->productions_ + stack->num_productions_++;
+	pd = g->productions_ + g->num_productions_++;
 	prd_prod_init(pd);
 	prd_prod_swap(pd, &syms[1].prod_);
 }
@@ -411,7 +416,7 @@ static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int produc
 	sym = symbol_find(st, syms[0].text_.translated_);
 	if (!sym) {
 		re_error(&syms[1].text_, "Error, symbol \"\" not declared as %nt", syms[0].text_.translated_);
-		stack->have_errors_ = 1;
+		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
 
@@ -431,7 +436,7 @@ static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int produc
 	sym = symbol_find(st, syms[0].text_.translated_);
 	if (!sym) {
 		re_error(&syms[1].text_, "Error, symbol \"\" not declared as %nt", syms[0].text_.translated_);
-		stack->have_errors_ = 1;
+		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
 
@@ -459,7 +464,7 @@ static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int produc
 	sym = symbol_find(st, syms[0].text_.translated_);
 	if (!sym) {
 		re_error(&syms[1].text_, "Error, symbol \"\" not declared as %nt", syms[0].text_.translated_);
-		stack->have_errors_ = 1;
+		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
 
@@ -501,7 +506,7 @@ static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int produc
 	sym = symbol_find(st, syms[1].text_.translated_);
 	if (!sym) {
 		re_error(&syms[1].text_, "Error, symbol \"\" not declared as %nt or %token", syms[1].text_.translated_);
-		stack->have_errors_ = 1;
+		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
 	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
@@ -748,7 +753,7 @@ static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int produc
   case 24: {
     {
 	tok_switch_to_nonterminal_idents(tkr);
-	stack->accept_whitespace_ = 0; /* Reset to normal tokens */
+	g->accept_whitespace_ = 0; /* Reset to normal tokens */
 }
   }
   break;
@@ -757,14 +762,14 @@ static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int produc
 	/* Welcome whitespace from this point. Note that this point is *after* the lookahead at the point
 	 * that the PRD_ACCEPT_WHITESPACE non-terminal appears. Therefore, it is *after* the EQUALS sign and
 	 * *after* the curly opening brace. */
-	stack->accept_whitespace_ = 1;
+	g->accept_whitespace_ = 1;
 }
   }
   break;
   } /* switch */
   return PRD_SUCCESS;
 }
-static int parse(struct prd_stack *stack, int sym, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
+static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int current_state = stack->states_[stack->pos_ - 1];
   int action = parse_table[num_columns * current_state + (sym - minimum_sym)];
   if (!action) {
@@ -793,7 +798,7 @@ static int parse(struct prd_stack *stack, int sym, struct tkr_tokenizer *tkr, in
     union prd_sym_data_union nonterminal_sym_data_reduced_to;
     prd_sym_data_init(&nonterminal_data_reduced_to);
     int r;
-    r = reduce(stack, tkr, production, &nonterminal_data_reduced_to, &nonterminal_sym_data_reduced_to, stack->syms_ + stack->pos_ - production_length, stack->sym_data_ + stack->pos_ - production_length, st);
+    r = reduce(stack, g, tkr, production, &nonterminal_data_reduced_to, &nonterminal_sym_data_reduced_to, stack->syms_ + stack->pos_ - production_length, stack->sym_data_ + stack->pos_ - production_length, st);
     if (r) {
       /* Semantic error */
       return r;
@@ -963,12 +968,7 @@ static int push_state(struct prd_stack *stack, int state) {
   return 0;
 }
 
-static void popn_state(struct prd_stack *stack, size_t num_pops) {
-  assert((stack->pos_ > num_pops) && "Cannot pop down to zero or below");
-  stack->pos_ -= num_pops;
-}
-
-int prd_reset(struct prd_stack *stack) {
+int prd_stack_reset(struct prd_stack *stack) {
   int r;
   stack->pos_ = 0;
   r = push_state(stack, 0);
@@ -980,12 +980,12 @@ int prd_reset(struct prd_stack *stack) {
 }
 
 
-int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
+int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;
 
   if (!end_of_input) {
     token_type_t tkt = (token_type_t)tkr->best_match_variant_;
-    if (!stack->accept_whitespace_ && (tkt == TOK_WHITESPACE)) {
+    if (!g->accept_whitespace_ && (tkt == TOK_WHITESPACE)) {
       /* Eat whitespace */
       return PRD_NEXT;
     }
@@ -1005,5 +1005,5 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
     sym = INPUT_END;
   }
 
-  return parse(stack, sym, tkr, end_of_input, st);
+  return parse(stack, sym, g, tkr, end_of_input, st);
 }
