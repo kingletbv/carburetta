@@ -203,3 +203,24 @@ struct symbol *symbol_find(struct symbol_table *st, const char *id) {
   return NULL; /* not found */
 }
 
+struct symbol *symbol_find_by_ordinal(struct symbol_table *st, int n) {
+  struct symbol *sym;
+  sym = st->terminals_;
+  if (sym) {
+    do {
+      if (sym->ordinal_ == n) return sym;
+
+      sym = sym->next_;
+    } while (sym != st->terminals_);
+  }
+
+  sym = st->non_terminals_;
+  if (sym) {
+    do {
+      if (sym->ordinal_ == n) return sym;
+
+      sym = sym->next_;
+    } while (sym != st->non_terminals_);
+  }
+  return NULL;
+}

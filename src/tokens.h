@@ -91,7 +91,9 @@ xx("L?\"(\\\\.|[^\"])*\"", TOK_STRING_LIT) \
 xx("L?\'(\\\\.|[^\'])*\'", TOK_CHAR_LIT) \
 \
 xx("[a-zA-Z_][0-9a-zA-Z_]*", TOK_IDENT) \
-xx("\\$[0-9a-zA-Z_\\-]*", TOK_SPECIAL_IDENT) /* special identifier with - characters allowed, leads with $ sign */ \
+xz(TOK_SPECIAL_IDENT) \
+xy("\\$[0-9a-zA-Z_\\-]*", TOK_SPECIAL_IDENT_STR, TOK_SPECIAL_IDENT) /* special identifier with - characters allowed, leads with $ sign */ \
+xy("\\$\\$", TOK_SPECIAL_IDENT_DST, TOK_SPECIAL_IDENT) /* special identifier $$ (can only be 1) */ \
 \
 xz(TOK_WHITESPACE) \
 xy("/\\*([^\\*]|[\\r\\n]|(\\*+([^\\*/]|[\\r\\n])))*\\*/", TOK_C_STYLE_COMMENT, TOK_WHITESPACE) \
@@ -163,7 +165,9 @@ xx("L?\'(\\\\.|[^\'])*\'", TOK_CHAR_LIT) \
 \
 xx("[a-zA-Z_][0-9a-zA-Z_]*", TOK_IDENT) \
 xx("[a-zA-Z_\\-][0-9a-zA-Z_\\-]*", TOK_IDENT) /* identifier with - characters allowed */ \
-xx("\\$[0-9a-zA-Z_\\-]*", TOK_SPECIAL_IDENT) /* special identifier with - characters allowed, leads with $ sign */ \
+xz(TOK_SPECIAL_IDENT) \
+xy("\\$[0-9a-zA-Z_\\-]*", TOK_SPECIAL_IDENT_STR, TOK_SPECIAL_IDENT) /* special identifier with - characters allowed, leads with $ sign */ \
+xy("\\$\\$", TOK_SPECIAL_IDENT_DST, TOK_SPECIAL_IDENT) /* special identifier $$ (can only be 1) */ \
 \
 xz(TOK_WHITESPACE) \
 xy("/\\*([^\\*]|[\\r\\n]|(\\*+([^\\*/]|[\\r\\n])))*\\*/", TOK_C_STYLE_COMMENT, TOK_WHITESPACE) \

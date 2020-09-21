@@ -26,6 +26,9 @@ struct typestr {
   struct snippet typestr_snippet_;
   
   int ordinal_;
+
+  struct snippet constructor_snippet_;
+  struct snippet destructor_snippet_;
 };
 
 struct typestr_table {

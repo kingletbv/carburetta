@@ -58,10 +58,14 @@ static void typestr_init(struct typestr *ts) {
   ts->hash_ = 0;
   snippet_init(&ts->typestr_snippet_);
   ts->ordinal_ = 0;
+  snippet_init(&ts->constructor_snippet_);
+  snippet_init(&ts->destructor_snippet_);
 }
 
 static void typestr_cleanup(struct typestr *ts) {
   snippet_cleanup(&ts->typestr_snippet_);
+  snippet_cleanup(&ts->constructor_snippet_);
+  snippet_cleanup(&ts->destructor_snippet_);
 }
 
 struct typestr *typestr_find_or_add(struct typestr_table *tt, const struct snippet *typestr_snippet, int *is_new) {
@@ -114,7 +118,7 @@ struct typestr *typestr_find_or_add(struct typestr_table *tt, const struct snipp
   }
   typestr_init(ts);
   tt->typestrs_[tt->num_typestrs_] = ts;
-  ts->ordinal_ = tt->num_typestrs_++;
+  ts->ordinal_ = (int)tt->num_typestrs_++;
   
   if (tt->hash_table_[idx]) {
     ts->hash_chain_ = tt->hash_table_[idx]->hash_chain_;

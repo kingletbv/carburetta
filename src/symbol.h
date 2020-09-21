@@ -30,7 +30,7 @@ struct symbol {
   /* Name and source location of definition */
   struct xlts def_;
 
-  /* Assigned ordinal for generating tables */
+  /* Assigned symbol ordinal for generating tables */
   int ordinal_;
 
   /* Next in symbol_table::terminals_ or symbol_table::non_terminals_ */
@@ -71,6 +71,9 @@ struct symbol *symbol_find_or_add(struct symbol_table *st, sym_type_t symtype, s
 
 /* Finds a symbol, returns NULL if the symbol could not be found. */
 struct symbol *symbol_find(struct symbol_table *st, const char *id);
+
+/* Finds a symbol by its ordinal value (note: inefficient O(n) implementation!) */
+struct symbol *symbol_find_by_ordinal(struct symbol_table *st, int n);
 
 #ifdef __cplusplus
 } /* extern "C" */

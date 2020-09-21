@@ -58,8 +58,6 @@ struct prd_production {
 };
 
 struct prd_sym_data {
-  void *p_;
-  struct symbol *sym_; /* Resolved sym pointer */
   struct prd_production prod_; /* Note: Statically allocated, cannot rely on pointer stability */
   token_type_t match_; /* match_ & variant_ for shifted terminal tokens */
   token_type_t variant_;
@@ -73,6 +71,7 @@ struct prd_stack {
   size_t num_stack_allocated_; /* size in elements of states and syms */
   int *states_;
   struct prd_sym_data *syms_;
+  union prd_sym_data_union *sym_data_;
 
   /* Productions making up the entire grammar */
   size_t num_productions_;

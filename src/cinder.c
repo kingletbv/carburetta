@@ -133,18 +133,25 @@ struct cinder_context {
   struct snippet token_type_;
   struct symbol_table symtab_;
   struct typestr_table tstab_;
+  struct typestr *most_recent_typestr_;
+  struct typestr *token_assigned_type_;
+  struct snippet token_action_snippet_;
 };
 
 void cinder_context_init(struct cinder_context *cc) {
   snippet_init(&cc->token_type_);
   symbol_table_init(&cc->symtab_);
   typestr_table_init(&cc->tstab_);
+  cc->most_recent_typestr_ = NULL;
+  cc->token_assigned_type_ = NULL;
+  snippet_init(&cc->token_action_snippet_);
 }
 
 void cinder_context_cleanup(struct cinder_context *cc) {
-  symbol_table_cleanup(&cc->symtab_);
   snippet_cleanup(&cc->token_type_);
+  symbol_table_cleanup(&cc->symtab_);
   typestr_table_cleanup(&cc->tstab_);
+  snippet_cleanup(&cc->token_action_snippet_);
 }
 
 
@@ -158,13 +165,16 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   struct symbol **typed_symbols = NULL;
   size_t num_typed_symbols = 0;
   size_t num_typed_symbols_allocated = 0;
-  struct snippet type_snippet;
-  snippet_init(&type_snippet);
+  struct snippet dir_snippet;
+  snippet_init(&dir_snippet);
   enum {
     PCD_NT_DIRECTIVE,
     PCD_TOKEN_DIRECTIVE,
     PCD_TOKEN_TYPE_DIRECTIVE,
-    PCD_NT_TYPE_DIRECTIVE
+    PCD_NT_TYPE_DIRECTIVE,
+    PCD_CONSTRUCTOR_DIRECTIVE,
+    PCD_DESTRUCTOR_DIRECTIVE,
+    PCD_TOKEN_ACTION_DIRECTIVE
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
@@ -182,7 +192,21 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
       goto cleanup_exit;
     }
     else if (r == TKR_MATCH) {
-      if (tkr_tokens->best_match_variant_ == TOK_WHITESPACE) {
+      int eat_whitespace = 0;
+
+      if (ate_directive) {
+        if ((directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
+            (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
+            (directive == PCD_TOKEN_ACTION_DIRECTIVE)) {
+          eat_whitespace = 0;
+          /* Keep whitespace for all code directives */
+        }
+        else {
+          /* Consume whitespace for all type directives */
+          eat_whitespace = 1;
+        }
+      }
+      if (eat_whitespace && (tkr_tokens->best_match_variant_ == TOK_WHITESPACE)) {
         /* eat silently */
       }
       else {
@@ -212,6 +236,21 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             }
             else if (!strcmp("nt_type", tkr_str(tkr_tokens))) {
               directive = PCD_NT_TYPE_DIRECTIVE;
+            }
+            else if (!strcmp("constructor", tkr_str(tkr_tokens))) {
+              directive = PCD_CONSTRUCTOR_DIRECTIVE;
+              if (!cc->most_recent_typestr_) {
+                re_error_tkr(tkr_tokens, "%%constructor must follow %%token_type or %%nt_type directive");
+              }
+            }
+            else if (!strcmp("destructor", tkr_str(tkr_tokens))) {
+              directive = PCD_DESTRUCTOR_DIRECTIVE;
+              if (!cc->most_recent_typestr_) {
+                re_error_tkr(tkr_tokens, "%%destructor must follow %%token_type or %%nt_type directive");
+              }
+            }
+            else if (!strcmp("token_action", tkr_str(tkr_tokens))) {
+              directive = PCD_TOKEN_ACTION_DIRECTIVE;
             }
             else if (!strcmp("debug_end", tkr_str(tkr_tokens))) {
               re_error(directive_line_match, "%%debug_end encountered, terminating early");
@@ -340,7 +379,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             else {
               /* ate_colon_seperator -- everything else is part of the type, use the same logic
                * as for token_type */
-              if (type_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+              if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
                 if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
                   if (strcmp("$", tkr_str(tkr_tokens))) {
                     re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a type string may only have a single \"$\" special identifier as a declarator identifier placeholder", tkr_str(tkr_tokens));
@@ -354,11 +393,56 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
                   }
                   found_a_placeholder = 1;
                 }
-                r = snippet_append_tkr(&type_snippet, tkr_tokens);
+                r = snippet_append_tkr(&dir_snippet, tkr_tokens);
                 if (r) {
                   r = TKR_INTERNAL_ERROR;
                   goto cleanup_exit;
                 }
+              }
+            }
+          }
+          else if (directive == PCD_CONSTRUCTOR_DIRECTIVE) {
+            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+              if ((tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) &&
+                  (tkr_tokens->best_match_action_ != TOK_SPECIAL_IDENT_DST)) {
+                re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a constructor may only have a single \"$$\" special identifier as the object to initialize", tkr_str(tkr_tokens));
+                r = TKR_SYNTAX_ERROR;
+                goto cleanup_exit;
+              }
+              r = snippet_append_tkr(&dir_snippet, tkr_tokens);
+              if (r) {
+                r = TKR_INTERNAL_ERROR;
+                goto cleanup_exit;
+              }
+            }
+          }
+          else if (directive == PCD_DESTRUCTOR_DIRECTIVE) {
+            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+              if ((tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) &&
+                  (tkr_tokens->best_match_action_ != TOK_SPECIAL_IDENT_DST)) {
+                re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a destructor may only have a single \"$$\" special identifier as the object to deconstruct", tkr_str(tkr_tokens));
+                r = TKR_SYNTAX_ERROR;
+                goto cleanup_exit;
+              }
+              r = snippet_append_tkr(&dir_snippet, tkr_tokens);
+              if (r) {
+                r = TKR_INTERNAL_ERROR;
+                goto cleanup_exit;
+              }
+            }
+          }
+          else if (directive == PCD_TOKEN_ACTION_DIRECTIVE) {
+            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+              if ((tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) &&
+                  (tkr_tokens->best_match_action_ != TOK_SPECIAL_IDENT_DST)) {
+                re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a token action may only have a single \"$$\" special identifier as the object to construct", tkr_str(tkr_tokens));
+                r = TKR_SYNTAX_ERROR;
+                goto cleanup_exit;
+              }
+              r = snippet_append_tkr(&dir_snippet, tkr_tokens);
+              if (r) {
+                r = TKR_INTERNAL_ERROR;
+                goto cleanup_exit;
               }
             }
           }
@@ -371,24 +455,33 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
 
   assert(r != TKR_FEED_ME); /* should not ask to get fed on final input */
 
-  if (directive == PCD_NT_TYPE_DIRECTIVE) {
+  if ((directive == PCD_NT_TYPE_DIRECTIVE) ||
+      (directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
+      (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
+      (directive == PCD_TOKEN_ACTION_DIRECTIVE)) {
     /* Trim simple whitespace off the tail end */
-    while (type_snippet.num_tokens_ && 
-           ((type_snippet.tokens_[type_snippet.num_tokens_ - 1].match_ == TOK_WHITESPACE) ||
-            (type_snippet.tokens_[type_snippet.num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
-      snippet_pop_last_token(&type_snippet);
+    while (dir_snippet.num_tokens_ && 
+           ((dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].match_ == TOK_WHITESPACE) ||
+            (dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
+      snippet_pop_last_token(&dir_snippet);
     }
+  }
+
+  if (directive == PCD_NT_TYPE_DIRECTIVE) {
     size_t n;
-    fprintf(stderr, "%%token_type");
-    for (n = 0; n < type_snippet.num_tokens_; ++n) {
-      fprintf(stderr, " %s", type_snippet.tokens_[n].text_.translated_);
+    int is_new;
+    struct typestr *nt_ts = typestr_find_or_add(&cc->tstab_, &dir_snippet, &is_new);
+    if (!nt_ts) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
     }
-    fprintf(stderr, "\n");
+    cc->most_recent_typestr_ = nt_ts;
     for (n = 0; n < num_typed_symbols; ++n) {
       struct symbol *sym = typed_symbols[n];
-      snippet_cleanup(&sym->type_snippet_);
-      r = snippet_append_snippet(&sym->type_snippet_, &type_snippet);
+      snippet_clear(&sym->type_snippet_);
+      r = snippet_append_snippet(&sym->type_snippet_, &dir_snippet);
       if (r) goto cleanup_exit;
+      sym->assigned_type_ = nt_ts;
     }
   }
 
@@ -399,12 +492,38 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
            (cc->token_type_.tokens_[cc->token_type_.num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
       snippet_pop_last_token(&cc->token_type_);
     }
+    int is_new;
+    struct typestr *token_ts = typestr_find_or_add(&cc->tstab_, &cc->token_type_, &is_new);
+    if (!token_ts) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    cc->token_assigned_type_ = token_ts;
+    cc->most_recent_typestr_ = token_ts;
+  }
+
+  if (directive == PCD_CONSTRUCTOR_DIRECTIVE) {
+    snippet_clear(&cc->most_recent_typestr_->constructor_snippet_);
+    r = snippet_append_snippet(&cc->most_recent_typestr_->constructor_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_DESTRUCTOR_DIRECTIVE) {
+    snippet_clear(&cc->most_recent_typestr_->destructor_snippet_);
+    r = snippet_append_snippet(&cc->most_recent_typestr_->destructor_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_TOKEN_ACTION_DIRECTIVE) {
+    snippet_clear(&cc->token_action_snippet_);
+    r = snippet_append_snippet(&cc->token_action_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
   }
 
   r = 0;
 
 cleanup_exit:
-  snippet_cleanup(&type_snippet);
+  snippet_cleanup(&dir_snippet);
   if (typed_symbols) free(typed_symbols);
 
   return r;
@@ -530,6 +649,8 @@ int main(int argc, char **argv) {
 
   struct xlts comment_free_line;
   xlts_init(&comment_free_line);
+
+  int *state_syms = NULL;
 
   r = prd_reset(&prds);
   if (r) {
@@ -865,12 +986,12 @@ int main(int argc, char **argv) {
       }
       else {
         found_placeholder = 1;
-        fprintf(outfp, " uv%d", ts->ordinal_);
+        fprintf(outfp, " uv%d_", ts->ordinal_);
       }
     }
     if (!found_placeholder) {
       /* Placeholder is implied at the end */
-      fprintf(outfp, " uv%d", ts->ordinal_);
+      fprintf(outfp, " uv%d_", ts->ordinal_);
     }
     fprintf(outfp, ";\n");
   }
@@ -945,7 +1066,7 @@ int main(int argc, char **argv) {
   /* For each state, what is the top-most symbol on the stack? */
   fprintf(outfp, "static int state_syms[] = {\n");
 
-  int *state_syms = (int *)malloc(sizeof(int) * (size_t)lalr.nr_states);
+  state_syms = (int *)malloc(sizeof(int) * (size_t)lalr.nr_states);
   if (!state_syms) {
     LOGERROR("Error, no memory\n");
     r = EXIT_FAILURE;
@@ -979,7 +1100,6 @@ int main(int argc, char **argv) {
     fprintf(outfp, " %d%s\n", state_syms[row], (row == lalr.nr_states - 1) ? "" : ",");
   }
   fprintf(outfp, "};\n");
-  free(state_syms);
 
   const char *symbol_prefix = "PRD_";
   fprintf(outfp, "#define NT_END %d\n", NT_END);
@@ -1040,42 +1160,274 @@ int main(int argc, char **argv) {
   fprintf(outfp, "#define SYNTHETIC_S %d\n", SYNTHETIC_S);
 
 
-  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, struct prd_sym_data *syms, struct symbol_table *st) {\n");
+  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, union prd_sym_data_union *dst_sym_data, struct prd_sym_data *syms, union prd_sym_data_union *sym_data, struct symbol_table *st) {\n");
   fprintf(outfp, "  int r;\n"
                  "  struct prd_production *pd;\n"
                  "  struct symbol *sym;\n"
                  "  switch (production) {\n");
   for (row = 0; row < prds.num_productions_; ++row) {
     struct prd_production *pd = prds.productions_ + row;
-    int extra_wrap = 1;
-    if (pd->action_sequence_.num_tokens_ && (pd->action_sequence_.tokens_[0].variant_ == TOK_CUBRACE_OPEN)) {
-      /* Already in curly braces.. */
-      extra_wrap = 0;
+    fprintf(outfp, "  case %d: {\n    ", (int)row + 1);
+    /* Emit dst_sym_data constructor first */
+    if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
+      struct snippet *constructor = &pd->nt_.sym_->assigned_type_->constructor_snippet_;
+      for (col = 0; col < constructor->num_tokens_; ++col) {
+        if (constructor->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+          /* Insert destination sym at appropriate ordinal value type. */
+          fprintf(outfp, "(dst_sym_data->uv%d_)", pd->nt_.sym_->assigned_type_->ordinal_);
+        }
+        else {
+          /* Regular token, just emit as-is */
+          fprintf(outfp, constructor->tokens_[col].text_.original_);
+        }
+      }
+      /* Close this compound block and open the one for the action */
+      fprintf(outfp, "\n  }\n  {\n  ");
     }
-    if (extra_wrap) {
-      fprintf(outfp, "  case %d: {\n", (int)row + 1);
-    }
-    else {
-      fprintf(outfp, "  case %d: ", (int)row + 1);
-    }
+
     for (col = 0; col < pd->action_sequence_.num_tokens_; ++col) {
       /* Print the original code, to preserve formatting and line continuations */
-      /* XXX: WANT TO BE PARSING FOR $$ $0 $1 and so on! */
-      fprintf(outfp, pd->action_sequence_.tokens_[col].text_.original_);
+      if (pd->action_sequence_.tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+        /* Expansion of special destination sym identifier */
+        /* Destination sym -- do we have a datatype for it ? */
+        struct symbol *dst_sym = pd->nt_.sym_;
+        assert(dst_sym);
+        if (!dst_sym->assigned_type_) {
+          re_error(&pd->action_sequence_.tokens_[col].text_, "$$ cannot resolve to a data type for non-terminal %s\n", pd->nt_.id_.translated_);
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "(dst_sym_data->uv%d_)", dst_sym->assigned_type_->ordinal_);
+      }
+      else if (pd->action_sequence_.tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) {
+        /* Expansion of another sym identifier */
+        size_t n;
+        int failed = 0;
+        size_t special_index = 0;
+        for (n = 1; n < pd->action_sequence_.tokens_[col].text_.num_translated_; ++n) {
+          char c = pd->action_sequence_.tokens_[col].text_.translated_[n];
+          if (!isdigit(c)) {
+            re_error(&pd->action_sequence_.tokens_[col].text_, "Unrecognized special identifier\n");
+            failed = 1;
+            break;
+          }
+          if (mul_size_t(10, special_index, NULL, &special_index)) {
+            re_error(&pd->action_sequence_.tokens_[col].text_, "Overflow on symbol index\n");
+            failed = 1;
+            break;
+          }
+        }
+        if (special_index >= pd->num_syms_) {
+          re_error(&pd->action_sequence_.tokens_[col].text_, "Symbol index exceeds number of symbols in production\n");
+          failed = 1;
+        }
+        if (failed) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        struct symbol *sym = pd->syms_[special_index].sym_;
+        if (!sym->assigned_type_) {
+          re_error(&pd->action_sequence_.tokens_[col].text_, "%s cannot resolve to a data type for a symbol\n", pd->action_sequence_.tokens_[col].text_.translated_);
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "(sym_data[%zu].uv%d_)", special_index, sym->assigned_type_->ordinal_);
+      }
+      else {
+        fprintf(outfp, pd->action_sequence_.tokens_[col].text_.original_);
+      }
     }
-    if (extra_wrap) {
-      fprintf(outfp, "\n"
-                     "  }\n"
-                     "  break;\n");
-    }
-    else {
-      fprintf(outfp, "\n"
-                     "  break;\n");
-    }
+    fprintf(outfp, "\n"
+                    "  }\n"
+                    "  break;\n");
   }
   fprintf(outfp, "  } /* switch */\n"
                  "  return PRD_SUCCESS;\n"
                  "}\n");
+
+  /* Emit the parse function */
+  fprintf(outfp,
+    "static int parse(struct prd_stack *stack, int sym, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {\n"
+    "  int current_state = stack->states_[stack->pos_ - 1];\n"
+    "  int action = parse_table[num_columns * current_state + (sym - minimum_sym)];\n"
+    "  if (!action) {\n"
+    "    /* Syntax error */\n"
+    "    if (sym != INPUT_END) {\n"
+    "      re_error_tkr(tkr, \"Syntax error \\\"%%s\\\" not expected\", tkr->xmatch_.translated_);\n"
+    "    }\n"
+    "    else {\n"
+    "      re_error_tkr(tkr, \"Syntax error end of input not expected\");\n"
+    "    }\n"
+    "    /* XXX: Pop until we transition */\n"
+    "    return PRD_SYNTAX_ERROR;\n"
+    "  }\n"
+    "  while (action < 0) {\n"
+    "    /* While we're reducing.. */\n"
+    "    int production = -action - 1;\n"
+    "    size_t production_length = production_lengths[production];\n"
+    "    int nonterminal = production_syms[production];\n"
+    "\n"
+    "    if (0 == production) {\n"
+    "      /* Synth S we're done. */\n"
+    "      return PRD_SUCCESS;\n"
+    "    }\n"
+    "\n"
+    "    struct prd_sym_data nonterminal_data_reduced_to;\n"
+    "    union prd_sym_data_union nonterminal_sym_data_reduced_to;\n"
+    "    prd_sym_data_init(&nonterminal_data_reduced_to);\n"
+    "    int r;\n"
+    "    r = reduce(stack, tkr, production, &nonterminal_data_reduced_to, &nonterminal_sym_data_reduced_to, stack->syms_ + stack->pos_ - production_length, stack->sym_data_ + stack->pos_ - production_length, st);\n"
+    "    if (r) {\n"
+    "      /* Semantic error */\n"
+    "      return r;\n"
+    "    }\n"
+    "\n"
+    "    /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
+    "     * push nonterminal_data_reduced_to */\n"
+    "    size_t prd_sym_idx;\n"
+    "    for (prd_sym_idx = stack->pos_ - production_length; prd_sym_idx < stack->pos_; ++prd_sym_idx) {\n"
+    "      prd_sym_data_cleanup(stack->syms_ + prd_sym_idx);\n");
+
+  fprintf(outfp,
+    "      switch (stack->states_[prd_sym_idx]) {\n"
+  );
+  size_t typestr_idx;
+  for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
+    struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
+    if (ts->destructor_snippet_.num_tokens_) {
+      int have_cases = 0; /* always true if all types are always used */
+      /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
+      size_t state_idx;
+      for (state_idx = 0; state_idx < lalr.nr_states; ++state_idx) {
+        struct symbol *sym = symbol_find_by_ordinal(&cc.symtab_, state_syms[state_idx]);
+        if (!sym) continue;
+        if (sym->assigned_type_ == ts) {
+          fprintf(outfp, "      case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+          have_cases = 1;
+        }
+      }
+      if (have_cases) {
+        fprintf(outfp, "      {\n      ");
+        struct snippet *action = &ts->destructor_snippet_;
+        for (col = 0; col < action->num_tokens_; ++col) {
+          if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+            /* Insert destination sym at appropriate ordinal value type. */
+            fprintf(outfp, "((stack->sym_data_ + prd_sym_idx)->uv%d_)", ts->ordinal_);
+          }
+          else {
+            /* Regular token, just emit as-is */
+            fprintf(outfp, action->tokens_[col].text_.translated_);
+          }
+        }
+        /* Close this compound block  */
+        fprintf(outfp, "\n      }\n      break;\n");
+      }
+    }
+  }
+  /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
+  fprintf(outfp,
+    "      }\n");
+
+  fprintf(outfp,
+    "    }\n"
+    "\n"
+    "    stack->pos_ -= production_length;\n"
+    "\n"
+    "    current_state = stack->states_[stack->pos_ - 1];\n"
+    "    action = parse_table[num_columns * current_state + (nonterminal - minimum_sym)];\n"
+    "\n"
+    "    if (!action) {\n"
+    "      re_error_tkr(tkr, \"Internal error \\\"%%s\\\" cannot shift an already reduced nonterminal\", tkr->xmatch_.translated_);\n"
+    "      return PRD_INTERNAL_ERROR;\n"
+    "    }\n"
+    "    if (action < 0) {\n"
+    "      re_error_tkr(tkr, \"Internal error \\\"%%s\\\" reduced non-terminal not shifting\", tkr->xmatch_.translated_);\n"
+    "      return PRD_INTERNAL_ERROR;\n"
+    "    }\n"
+    "    push_state(stack, action /* action for a shift is the ordinal */);\n"
+    "    struct prd_sym_data *sd = stack->syms_ + stack->pos_ - 1;\n"
+    "    *sd = nonterminal_data_reduced_to;\n"
+    "    union prd_sym_data_union *sdu = stack->sym_data_ + stack->pos_ - 1;\n"
+    "    *sdu = nonterminal_sym_data_reduced_to;\n"
+  "\n"
+    "    current_state = stack->states_[stack->pos_ - 1];\n"
+    "    action = parse_table[num_columns * current_state + (sym - minimum_sym)];\n"
+    "    if (!action) {\n"
+    "      /* Syntax error */\n"
+    "      if (sym != INPUT_END) {\n"
+    "        re_error_tkr(tkr, \"Syntax error \\\"%%s\\\" not expected\", tkr->xmatch_.translated_);\n"
+    "      }\n"
+    "      else {\n"
+    "        re_error_tkr(tkr, \"Syntax error end of input not expected\");\n"
+    "      }\n"
+    "      return PRD_SYNTAX_ERROR;\n"
+    "    }\n"
+    "  }\n"
+    "\n"
+    "  /* Shift token onto stack */\n"
+    "  if (action > 0 /* shift? */) {\n"
+    "    push_state(stack, action /* action for a shift is the ordinal */);\n"
+    "    struct prd_sym_data *sym = stack->syms_ + stack->pos_ - 1;\n"
+    "\n"
+    "    /* Fill in the sym from the tokenizer */\n");
+  int need_sym_data = 0;
+  if (cc.token_assigned_type_ && cc.token_assigned_type_->constructor_snippet_.num_tokens_) {
+    need_sym_data = 1;
+  }
+  if (cc.token_action_snippet_.num_tokens_) {
+    need_sym_data = 1;
+  }
+  if (need_sym_data) {
+    fprintf(outfp, "    union prd_sym_data_union *sym_data = stack->sym_data_ + stack->pos_ - 1;\n");
+  }
+  if (cc.token_assigned_type_ && cc.token_assigned_type_->constructor_snippet_.num_tokens_) {
+    fprintf(outfp, "    {\n      ");
+    struct snippet *constructor = &cc.token_assigned_type_->constructor_snippet_;
+    for (col = 0; col < constructor->num_tokens_; ++col) {
+      if (constructor->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+        /* Insert destination sym at appropriate ordinal value type. */
+        fprintf(outfp, "(sym_data->uv%d_)", cc.token_assigned_type_->ordinal_);
+      }
+      else {
+        /* Regular token, just emit as-is */
+        fprintf(outfp, constructor->tokens_[col].text_.translated_);
+      }
+    }
+    /* Close this compound block and open the one for the action */
+    fprintf(outfp, "\n    }\n");
+  }
+  if (cc.token_action_snippet_.num_tokens_) {
+    fprintf(outfp, "    {\n      ");
+    struct snippet *action = &cc.token_action_snippet_;
+    for (col = 0; col < action->num_tokens_; ++col) {
+      if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+        /* Insert destination sym at appropriate ordinal value type. */
+        fprintf(outfp, "(sym_data->uv%d_)", cc.token_assigned_type_->ordinal_);
+      }
+      else {
+        /* Regular token, just emit as-is */
+        fprintf(outfp, action->tokens_[col].text_.translated_);
+      }
+    }
+    /* Close this compound block and open the one for the action */
+    fprintf(outfp, "\n    }\n");
+  }
+
+  fprintf(outfp,
+    "    prd_sym_data_init(sym);\n"
+    "    xlts_append(&sym->text_, &tkr->xmatch_);\n"
+    "    sym->match_ = tkr->best_match_action_;\n"
+    "    sym->variant_ = tkr->best_match_variant_;\n"
+    "  }\n"
+    "  else {\n"
+    "    re_error_tkr(tkr, \"Syntax error \\\"%%s\\\" not expected\", tkr->xmatch_.translated_);\n"
+    "    return PRD_SYNTAX_ERROR;\n"
+    "  }\n"
+    "\n"
+    "  return PRD_NEXT;\n"
+    "}\n"
+  );
+
 
   fprintf(outfp, "/* --------- HERE ENDS THE GENERATED FLUFF ------------ */\n");
 
@@ -1100,6 +1452,7 @@ int main(int argc, char **argv) {
 
   r = EXIT_SUCCESS;
 cleanup_exit:
+  if (state_syms) free(state_syms);
 
   xlts_cleanup(&comment_free_line);
 

@@ -70,19 +70,24 @@ void prd_stack_init(struct prd_stack *stack) {
   stack->num_stack_allocated_ = 0;
   stack->states_ = NULL;
   stack->syms_ = NULL;
+  stack->sym_data_ = NULL;
   stack->num_productions_ = stack->num_productions_allocated_ = 0;
   stack->productions_ = NULL;
 }
 
 void prd_stack_cleanup(struct prd_stack *stack) {
-  if (stack->states_) free(stack->states_);
   
   size_t n;
   for (n = 0; n < stack->pos_; ++n) {
     xlts_cleanup(&stack->syms_[n].text_);
+	/* XXX: How do we dispatch to destructor ? 
+	 * XXX: Destructor suppor from stack->states_[n]! */
   }
 
+  if (stack->states_) free(stack->states_);
+
   if (stack->syms_) free(stack->syms_);
+  if (stack->sym_data_) free(stack->sym_data_);
 
   for (n = 0; n < stack->num_productions_; ++n) {
     prd_prod_cleanup(stack->productions_ + n);
@@ -184,15 +189,45 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
 }
 
 
+static void prd_sym_data_init(struct prd_sym_data *psd) {
+  prd_prod_init(&psd->prod_);
+  xlts_init(&psd->text_);
+  psd->match_ = 0;
+  psd->variant_ = 0;
+}
+
+static void prd_sym_data_cleanup(struct prd_sym_data *psd) {
+  prd_prod_cleanup(&psd->prod_);
+  xlts_cleanup(&psd->text_);
+}
+
+/* XXX: Implementation of these may rely on union prd_sym_data_union which will be generated; forward declare, provide implementation below, until we generate these as well. */
+static int push_state(struct prd_stack *stack, int state);
+
+
 %token ident colon equals semicolon token par-open par-close cubrace-open cubrace-close
 %nt grammar rule production action-sequence stmt-action start-c-tokenizer end-c-tokenizer accept-whitespace
 
-%token_type struct xlts 
-%nt_type rule: struct snippet $[5]
+%token_type struct { \
+  token_type_t match_; \
+  token_type_t variant_; \
+  struct xlts text_; \
+}
+%constructor $$.match_ = $$.variant_ = 0; \
+             xlts_init(&$$.text_);
+%destructor xlts_cleanup(&$$.text_);
+
+%token_action $$.match_ = tkr->best_match_action_; \
+              $$.variant_ = tkr->best_match_variant_; \
+			  xlts_append(&$$.text_, &tkr->xmatch_);
+
+%nt_type rule production action-sequence stmt-action: struct prd_production
+%constructor prd_prod_init(&$$);
+%destructor prd_prod_cleanup(&$$);
 
 %%
 
-grammar: ;
+grammar: { }
 grammar: grammar production {
 	/* Store the PRD_PRODUCTION in the prd_stack->productions_ array */
 	r = prd_stack_check_production_reserve(stack);
@@ -344,6 +379,7 @@ stmt-action: stmt-action CUBRACE_OPEN action-sequence CUBRACE_CLOSE {
 
 action-sequence: ; /* Return vacuous prd_production */
 action-sequence: action-sequence IDENT {
+    $0;
 	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
 	pd = &dst_sym->prod_;
 	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
@@ -420,21 +456,6 @@ accept-whitespace: {
 
 %%
 
-
-static void prd_sym_data_init(struct prd_sym_data *psd) {
-  psd->p_ = NULL;
-  psd->sym_ = NULL;
-  prd_prod_init(&psd->prod_);
-  xlts_init(&psd->text_);
-  psd->match_ = 0;
-  psd->variant_ = 0;
-}
-
-static void prd_sym_data_cleanup(struct prd_sym_data *psd) {
-  prd_prod_cleanup(&psd->prod_);
-  xlts_cleanup(&psd->text_);
-}
-
 static int push_state(struct prd_stack *stack, int state) {
   if (stack->num_stack_allocated_ == stack->pos_) {
     size_t new_num_allocated = 0;
@@ -457,6 +478,9 @@ static int push_state(struct prd_stack *stack, int state) {
       LOGERROR("Overflow in allocation\n");
       return EOVERFLOW;
     }
+	if (new_num_allocated > (SIZE_MAX / sizeof(union prd_sym_data_union))) {
+      LOGERROR("Overflow in allocation\n");
+	}
 
     void *p = realloc(stack->syms_, new_num_allocated * sizeof(struct prd_sym_data));
     if (!p) {
@@ -470,20 +494,16 @@ static int push_state(struct prd_stack *stack, int state) {
       return ENOMEM;
     }
     stack->states_ = p2;
+	void *p3 = realloc(stack->sym_data_, new_num_allocated * sizeof(union prd_sym_data_union));
+    if (!p3) {
+      LOGERROR("Out of memory\n");
+      return ENOMEM;
+    }
+	stack->sym_data_ = (union prd_sym_data_union *)p3;
     stack->num_stack_allocated_ = new_num_allocated;
   }
   stack->states_[stack->pos_++] = state;
   return 0;
-}
-
-static int top_state(struct prd_stack *stack) {
-  assert(stack->pos_ && "Invalid stack position, should never be empty");
-  return stack->states_[stack->pos_ - 1];
-}
-
-static void popn_state(struct prd_stack *stack, size_t num_pops) {
-  assert((stack->pos_ > num_pops) && "Cannot pop down to zero or below");
-  stack->pos_ -= num_pops;
 }
 
 int prd_reset(struct prd_stack *stack) {
@@ -493,7 +513,6 @@ int prd_reset(struct prd_stack *stack) {
   if (r) {
     return r;
   }
-  stack->syms_[0].p_ = NULL;
   xlts_init(&stack->syms_[0].text_);
   return 0;
 }
@@ -501,7 +520,6 @@ int prd_reset(struct prd_stack *stack) {
 
 int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;
-  int r;
 
   if (!end_of_input) {
     token_type_t tkt = (token_type_t)tkr->best_match_variant_;
@@ -525,92 +543,5 @@ int prd_parse(struct prd_stack *stack, struct tkr_tokenizer *tkr, int end_of_inp
     sym = INPUT_END;
   }
 
-  int current_state = top_state(stack);
-  int action = parse_table[num_columns * current_state + (sym - minimum_sym)];
-  if (!action) {
-    /* Syntax error */
-    if (sym != INPUT_END) {
-      re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_);
-    }
-    else {
-      re_error_tkr(tkr, "Syntax error end of input not expected", tkr->xmatch_.translated_);
-    }
-    /* XXX: Pop until we transition */
-    return PRD_SYNTAX_ERROR;
-  }
-  while (action < 0) {
-    /* While we're reducing.. */
-    int production = -action - 1;
-    size_t production_length = production_lengths[production];
-    int nonterminal = production_syms[production];
-
-    if (0 == production) {
-      /* Synth S we're done. */
-
-      return PRD_SUCCESS;
-    }
-
-    struct prd_sym_data nonterminal_data_reduced_to;
-    prd_sym_data_init(&nonterminal_data_reduced_to);
-    r = reduce(stack, tkr, production, &nonterminal_data_reduced_to, stack->syms_ + stack->pos_ - production_length, st);
-    if (r) {
-      /* Semantic error */
-      return r;
-    }
-
-    /* Free symdata for every symbol in the production, including the first slot where we will soon
-     * push nonterminal_data_reduced_to */
-    size_t n;
-    for (n = stack->pos_ - production_length; n < stack->pos_; ++n) {
-      prd_sym_data_cleanup(stack->syms_ + n);
-    }
-
-    popn_state(stack, production_length);
-
-    current_state = top_state(stack);
-    action = parse_table[num_columns * current_state + (nonterminal - minimum_sym)];
-
-    if (!action) {
-      re_error_tkr(tkr, "Internal error \"%s\" cannot shift an already reduced nonterminal", tkr->xmatch_.translated_);
-      return PRD_INTERNAL_ERROR;
-    }
-    if (action < 0) {
-      re_error_tkr(tkr, "Internal error \"%s\" reduced non-terminal not shifting", tkr->xmatch_.translated_);
-      return PRD_INTERNAL_ERROR;
-    }
-    push_state(stack, action /* action for a shift is the ordinal */);
-    struct prd_sym_data *sd = stack->syms_ + stack->pos_ - 1;
-    *sd = nonterminal_data_reduced_to;
-
-    current_state = top_state(stack);
-    action = parse_table[num_columns * current_state + (sym - minimum_sym)];
-    if (!action) {
-      /* Syntax error */
-      if (sym != INPUT_END) {
-        re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_);
-      }
-      else {
-        re_error_tkr(tkr, "Syntax error end of input not expected", tkr->xmatch_.translated_);
-      }
-      return PRD_SYNTAX_ERROR;
-    }
-  }
-
-  /* Shift token onto stack */
-  if (action > 0 /* shift? */) {
-    push_state(stack, action /* action for a shift is the ordinal */);
-    struct prd_sym_data *sym = stack->syms_ + stack->pos_ - 1;
-    
-    /* Fill in the sym from the tokenizer */
-    prd_sym_data_init(sym);
-    xlts_append(&sym->text_, &tkr->xmatch_);
-    sym->match_ = tkr->best_match_action_;
-    sym->variant_ = tkr->best_match_variant_;
-  }
-  else {
-    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_);
-    return PRD_SYNTAX_ERROR;
-  }
-
-  return PRD_NEXT;
+  return parse(stack, sym, tkr, end_of_input, st);
 }
