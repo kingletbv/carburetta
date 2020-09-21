@@ -1,6 +1,8 @@
-#if 1
+#if 0
 /* Use prd_gram_gen.c implementation */
 #include "prd_gram_gen.c"
+#elif 1
+#include "prd_grammar_alt.c"
 #else /* Use prd_gram.c implementation */
 
 #ifndef STDIO_H_INCLUDED
