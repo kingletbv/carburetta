@@ -1165,7 +1165,7 @@ int main(int argc, char **argv) {
   fprintf(outfp, "#define SYNTHETIC_S %d\n", SYNTHETIC_S);
 
 
-  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, union prd_sym_data_union *dst_sym_data, struct prd_sym_data *syms, union prd_sym_data_union *sym_data, struct symbol_table *st) {\n");
+  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, union prd_sym_data_union *dst_sym_data, union prd_sym_data_union *sym_data, struct symbol_table *st) {\n");
   fprintf(outfp, "  int r;\n"
                  "  struct prd_production *pd;\n"
                  "  struct symbol *sym;\n"
@@ -1278,11 +1278,9 @@ int main(int argc, char **argv) {
     "      return PRD_SUCCESS;\n"
     "    }\n"
     "\n"
-    "    struct prd_sym_data nonterminal_data_reduced_to;\n"
     "    union prd_sym_data_union nonterminal_sym_data_reduced_to;\n"
-    "    prd_sym_data_init(&nonterminal_data_reduced_to);\n"
     "    int r;\n"
-    "    r = reduce(stack, g, tkr, production, &nonterminal_data_reduced_to, &nonterminal_sym_data_reduced_to, stack->syms_ + stack->pos_ - production_length, stack->sym_data_ + stack->pos_ - production_length, st);\n"
+    "    r = reduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->sym_data_ + stack->pos_ - production_length, st);\n"
     "    if (r) {\n"
     "      /* Semantic error */\n"
     "      return r;\n"
@@ -1291,8 +1289,7 @@ int main(int argc, char **argv) {
     "    /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
     "     * push nonterminal_data_reduced_to */\n"
     "    size_t prd_sym_idx;\n"
-    "    for (prd_sym_idx = stack->pos_ - production_length; prd_sym_idx < stack->pos_; ++prd_sym_idx) {\n"
-    "      prd_sym_data_cleanup(stack->syms_ + prd_sym_idx);\n");
+    "    for (prd_sym_idx = stack->pos_ - production_length; prd_sym_idx < stack->pos_; ++prd_sym_idx) {\n");
 
   fprintf(outfp,
     "      switch (stack->states_[prd_sym_idx]) {\n"
@@ -1351,8 +1348,6 @@ int main(int argc, char **argv) {
     "      return PRD_INTERNAL_ERROR;\n"
     "    }\n"
     "    push_state(stack, action /* action for a shift is the ordinal */);\n"
-    "    struct prd_sym_data *sd = stack->syms_ + stack->pos_ - 1;\n"
-    "    *sd = nonterminal_data_reduced_to;\n"
     "    union prd_sym_data_union *sdu = stack->sym_data_ + stack->pos_ - 1;\n"
     "    *sdu = nonterminal_sym_data_reduced_to;\n"
   "\n"
@@ -1373,7 +1368,6 @@ int main(int argc, char **argv) {
     "  /* Shift token onto stack */\n"
     "  if (action > 0 /* shift? */) {\n"
     "    push_state(stack, action /* action for a shift is the ordinal */);\n"
-    "    struct prd_sym_data *sym = stack->syms_ + stack->pos_ - 1;\n"
     "\n"
     "    /* Fill in the sym from the tokenizer */\n");
   int need_sym_data = 0;
@@ -1420,10 +1414,6 @@ int main(int argc, char **argv) {
   }
 
   fprintf(outfp,
-    "    prd_sym_data_init(sym);\n"
-    "    xlts_append(&sym->text_, &tkr->xmatch_);\n"
-    "    sym->match_ = tkr->best_match_action_;\n"
-    "    sym->variant_ = tkr->best_match_variant_;\n"
     "  }\n"
     "  else {\n"
     "    re_error_tkr(tkr, \"Syntax error \\\"%%s\\\" not expected\", tkr->xmatch_.translated_);\n"

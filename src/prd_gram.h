@@ -57,18 +57,10 @@ struct prd_production {
   struct snippet action_sequence_;
 };
 
-struct prd_sym_data {
-  struct prd_production prod_; /* Note: Statically allocated, cannot rely on pointer stability */
-  token_type_t match_; /* match_ & variant_ for shifted terminal tokens */
-  token_type_t variant_;
-  struct xlts text_;
-};
-
 struct prd_stack {
   size_t pos_;
   size_t num_stack_allocated_; /* size in elements of states and syms */
   int *states_;
-  struct prd_sym_data *syms_;
   union prd_sym_data_union *sym_data_;
 };
 

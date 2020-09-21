@@ -83,21 +83,18 @@ void prd_stack_init(struct prd_stack *stack) {
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
   stack->states_ = NULL;
-  stack->syms_ = NULL;
   stack->sym_data_ = NULL;
 }
 
 void prd_stack_cleanup(struct prd_stack *stack) {
   size_t n;
   for (n = 0; n < stack->pos_; ++n) {
-    xlts_cleanup(&stack->syms_[n].text_);
 	/* XXX: How do we dispatch to destructor ? 
 	 * XXX: Destructor suppor from stack->states_[n]! */
   }
 
   if (stack->states_) free(stack->states_);
 
-  if (stack->syms_) free(stack->syms_);
   if (stack->sym_data_) free(stack->sym_data_);
 }
 
@@ -194,18 +191,6 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
   return 0;
 }
 
-
-static void prd_sym_data_init(struct prd_sym_data *psd) {
-  prd_prod_init(&psd->prod_);
-  xlts_init(&psd->text_);
-  psd->match_ = 0;
-  psd->variant_ = 0;
-}
-
-static void prd_sym_data_cleanup(struct prd_sym_data *psd) {
-  prd_prod_cleanup(&psd->prod_);
-  xlts_cleanup(&psd->text_);
-}
 
 /* XXX: Implementation of these may rely on union prd_sym_data_union which will be generated; forward declare, provide implementation below, until we generate these as well. */
 static int push_state(struct prd_stack *stack, int state);
@@ -387,7 +372,7 @@ static int state_syms[] = {
 #define PRD_END_C_TOKENIZER 19
 #define PRD_ACCEPT_WHITESPACE 20
 #define SYNTHETIC_S 21
-static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym, union prd_sym_data_union *dst_sym_data, struct prd_sym_data *syms, union prd_sym_data_union *sym_data, struct symbol_table *st) {
+static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, union prd_sym_data_union *dst_sym_data, union prd_sym_data_union *sym_data, struct symbol_table *st) {
   int r;
   struct prd_production *pd;
   struct symbol *sym;
@@ -793,11 +778,9 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
       return PRD_SUCCESS;
     }
 
-    struct prd_sym_data nonterminal_data_reduced_to;
     union prd_sym_data_union nonterminal_sym_data_reduced_to;
-    prd_sym_data_init(&nonterminal_data_reduced_to);
     int r;
-    r = reduce(stack, g, tkr, production, &nonterminal_data_reduced_to, &nonterminal_sym_data_reduced_to, stack->syms_ + stack->pos_ - production_length, stack->sym_data_ + stack->pos_ - production_length, st);
+    r = reduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->sym_data_ + stack->pos_ - production_length, st);
     if (r) {
       /* Semantic error */
       return r;
@@ -807,7 +790,6 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
      * push nonterminal_data_reduced_to */
     size_t prd_sym_idx;
     for (prd_sym_idx = stack->pos_ - production_length; prd_sym_idx < stack->pos_; ++prd_sym_idx) {
-      prd_sym_data_cleanup(stack->syms_ + prd_sym_idx);
       switch (stack->states_[prd_sym_idx]) {
       case 2: /* semicolon */
       case 3: /* semicolon */
@@ -869,8 +851,6 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
       return PRD_INTERNAL_ERROR;
     }
     push_state(stack, action /* action for a shift is the ordinal */);
-    struct prd_sym_data *sd = stack->syms_ + stack->pos_ - 1;
-    *sd = nonterminal_data_reduced_to;
     union prd_sym_data_union *sdu = stack->sym_data_ + stack->pos_ - 1;
     *sdu = nonterminal_sym_data_reduced_to;
 
@@ -891,7 +871,6 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
   /* Shift token onto stack */
   if (action > 0 /* shift? */) {
     push_state(stack, action /* action for a shift is the ordinal */);
-    struct prd_sym_data *sym = stack->syms_ + stack->pos_ - 1;
 
     /* Fill in the sym from the tokenizer */
     union prd_sym_data_union *sym_data = stack->sym_data_ + stack->pos_ - 1;
@@ -903,10 +882,6 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
        (sym_data->uv0_).match_ = tkr->best_match_action_;               (sym_data->uv0_).variant_ = tkr->best_match_variant_; 			  xlts_append(&(sym_data->uv0_).text_, &tkr->xmatch_);
 
     }
-    prd_sym_data_init(sym);
-    xlts_append(&sym->text_, &tkr->xmatch_);
-    sym->match_ = tkr->best_match_action_;
-    sym->variant_ = tkr->best_match_variant_;
   }
   else {
     re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_);
@@ -931,10 +906,6 @@ static int push_state(struct prd_stack *stack, int state) {
       new_num_allocated = 16;
     }
 
-    if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
-      LOGERROR("Overflow in allocation\n");
-      return EOVERFLOW;
-    }
     if (new_num_allocated > (SIZE_MAX / sizeof(int))) {
       LOGERROR("Overflow in allocation\n");
       return EOVERFLOW;
@@ -943,24 +914,18 @@ static int push_state(struct prd_stack *stack, int state) {
       LOGERROR("Overflow in allocation\n");
 	}
 
-    void *p = realloc(stack->syms_, new_num_allocated * sizeof(struct prd_sym_data));
+    void *p = realloc(stack->states_, new_num_allocated * sizeof(int));
     if (!p) {
       LOGERROR("Out of memory\n");
       return ENOMEM;
     }
-    stack->syms_ = (struct prd_sym_data *)p;
-    void *p2 = realloc(stack->states_, new_num_allocated * sizeof(int));
-    if (!p2) {
+    stack->states_ = p;
+	void *p1 = realloc(stack->sym_data_, new_num_allocated * sizeof(union prd_sym_data_union));
+    if (!p1) {
       LOGERROR("Out of memory\n");
       return ENOMEM;
     }
-    stack->states_ = p2;
-	void *p3 = realloc(stack->sym_data_, new_num_allocated * sizeof(union prd_sym_data_union));
-    if (!p3) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-    }
-	stack->sym_data_ = (union prd_sym_data_union *)p3;
+	stack->sym_data_ = (union prd_sym_data_union *)p1;
     stack->num_stack_allocated_ = new_num_allocated;
   }
   stack->states_[stack->pos_++] = state;
@@ -969,12 +934,12 @@ static int push_state(struct prd_stack *stack, int state) {
 
 int prd_stack_reset(struct prd_stack *stack) {
   int r;
+  /* XXX: DECONSTRUCTION NEEDED */
   stack->pos_ = 0;
   r = push_state(stack, 0);
   if (r) {
     return r;
   }
-  xlts_init(&stack->syms_[0].text_);
   return 0;
 }
 
