@@ -240,209 +240,208 @@ grammar: grammar production {
 	if (r) return r;
 	pd = g->productions_ + g->num_productions_++;
 	prd_prod_init(pd);
-	prd_prod_swap(pd, &syms[1].prod_);
+	prd_prod_swap(pd, &$1);
 }
 
 production: IDENT COLON rule SEMICOLON {
-	sym = symbol_find(st, syms[0].text_.translated_);
+	sym = symbol_find(st, $0.text_.translated_);
 	if (!sym) {
-		re_error(&syms[1].text_, "Error, symbol \"%s\" not declared as %%nt", syms[0].text_.translated_);
+		re_error(&$0.text_, "Error, symbol \"%s\" not declared as %%nt", $0.text_.translated_);
 		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
 
-	prd_prod_swap(&dst_sym->prod_, &syms[2].prod_);
-	pd = &dst_sym->prod_;
-	xlts_append(&pd->nt_.id_, &syms[0].text_);
+	prd_prod_swap(&$$, &$2);
+	pd = &$$;
+	xlts_append(&pd->nt_.id_, &$0.text_);
 	pd->nt_.sym_ = sym;
 }
 production: IDENT COLON rule start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON {
-	sym = symbol_find(st, syms[0].text_.translated_);
+	sym = symbol_find(st, $0.text_.translated_);
 	if (!sym) {
-		re_error(&syms[1].text_, "Error, symbol \"%s\" not declared as %%nt", syms[0].text_.translated_);
+		re_error(&$1.text_, "Error, symbol \"%s\" not declared as %%nt", $0.text_.translated_);
 		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
 
-	prd_prod_swap(&dst_sym->prod_, &syms[2].prod_);
-	pd = &dst_sym->prod_;
-	xlts_append(&pd->nt_.id_, &syms[0].text_);
+	prd_prod_swap(&$$, &$2);
+	pd = &$$;
+	xlts_append(&pd->nt_.id_, &$0.text_);
 	pd->nt_.sym_ = sym;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &syms[4].prod_.action_sequence_);
+	r = snippet_append_snippet(&pd->action_sequence_, & $4.action_sequence_);
 	if (r) return r;
 
 	/* Append the semicolon to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[6].match_, syms[6].variant_, &syms[6].text_);
+	r = snippet_append(&pd->action_sequence_, $6.match_, $6.variant_, &$6.text_);
 	if (r) return r;
 }
 production: IDENT COLON rule start-c-tokenizer accept-whitespace CUBRACE_OPEN action-sequence end-c-tokenizer CUBRACE_CLOSE {
-	sym = symbol_find(st, syms[0].text_.translated_);
+	sym = symbol_find(st, $0.text_.translated_);
 	if (!sym) {
-		re_error(&syms[1].text_, "Error, symbol \"%s\" not declared as %%nt", syms[0].text_.translated_);
+		re_error(&$1.text_, "Error, symbol \"%s\" not declared as %%nt", $0.text_.translated_);
 		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
 
-	prd_prod_swap(&dst_sym->prod_, &syms[2].prod_);
-	pd = &dst_sym->prod_;
-	xlts_append(&pd->nt_.id_, &syms[0].text_);
+	prd_prod_swap(&$$, &$2);
+	pd = &$$;
+	xlts_append(&pd->nt_.id_, &$0.text_);
 	pd->nt_.sym_ = sym;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
 	/* Append the cubrace-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[5].match_, syms[5].variant_, &syms[5].text_);
+	r = snippet_append(&pd->action_sequence_, $5.match_, $5.variant_, &$5.text_);
 	if (r) return r;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &syms[6].prod_.action_sequence_);
+	r = snippet_append_snippet(&pd->action_sequence_, &$6.action_sequence_);
 	if (r) return r;
 
 	/* Append the cubrace-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[8].match_, syms[8].variant_, &syms[8].text_);
+	r = snippet_append(&pd->action_sequence_, $8.match_, $8.variant_, &$8.text_);
 	if (r) return r;
 }
 
 rule: ; /* Default PRD_RULE reduction sym has empty initialized prod_ which works for us. */
 rule: rule IDENT {
 	/* Grab ident from position 1, reduce */
-	sym = symbol_find(st, syms[1].text_.translated_);
+	sym = symbol_find(st, $1.text_.translated_);
 	if (!sym) {
-		re_error(&syms[1].text_, "Error, symbol \"%s\" not declared as %%nt or %%token", syms[1].text_.translated_);
+		re_error(&$1.text_, "Error, symbol \"%s\" not declared as %%nt or %%token", $1.text_.translated_);
 		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
 	if (pd->num_syms_ == pd->num_syms_allocated_) {
-		r = prd_prod_check_sym_reserve(pd, &syms[1].text_);
+		r = prd_prod_check_sym_reserve(pd, &$1.text_);
 		if (r) return r;
 	}
 	struct prd_production_sym *pps = pd->syms_ + pd->num_syms_++;
 	prd_production_sym_init(pps);
-	r = xlts_append(&pps->id_, &syms[1].text_);
+	r = xlts_append(&pps->id_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 	pps->sym_ = sym;
 }
 
 stmt-action: EQUALS accept-whitespace; /* Return vacuous prd_production */
 stmt-action: stmt-action IDENT {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 }
 stmt-action: stmt-action COLON {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 }
 stmt-action: stmt-action EQUALS {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 }
 stmt-action: stmt-action TOKEN {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 }
 stmt-action: stmt-action PAR_OPEN action-sequence PAR_CLOSE {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
 
 	/* Append the par-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return r;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &syms[2].prod_.action_sequence_);
+	r = snippet_append_snippet(&pd->action_sequence_, &$2.action_sequence_);
 	if (r) return r;
 
 	/* Append the par-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[3].match_, syms[3].variant_, &syms[3].text_);
+	r = snippet_append(&pd->action_sequence_, $3.match_, $3.variant_, &$3.text_);
 	if (r) return r;
 }
 stmt-action: stmt-action CUBRACE_OPEN action-sequence CUBRACE_CLOSE {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
 	/* Append the cubrace-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return r;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &syms[2].prod_.action_sequence_);
+	r = snippet_append_snippet(&pd->action_sequence_, &$2.action_sequence_);
 	if (r) return r;
 
 	/* Append the cubrace-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[3].match_, syms[3].variant_, &syms[3].text_);
+	r = snippet_append(&pd->action_sequence_, $3.match_, $3.variant_, &$3.text_);
 	if (r) return r;
 }
 
 action-sequence: ; /* Return vacuous prd_production */
 action-sequence: action-sequence IDENT {
-    $0;
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 }
 action-sequence: action-sequence COLON {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 }
 action-sequence: action-sequence EQUALS {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 }
 action-sequence: action-sequence SEMICOLON {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 }
 action-sequence: action-sequence TOKEN {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
 }
 action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
 	/* Append the par-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return r;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &syms[2].prod_.action_sequence_);
+	r = snippet_append_snippet(&pd->action_sequence_, &$2.action_sequence_);
 	if (r) return r;
 
 	/* Append the par-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[3].match_, syms[3].variant_, &syms[3].text_);
+	r = snippet_append(&pd->action_sequence_, $3.match_, $3.variant_, &$3.text_);
 	if (r) return r;
 }
 action-sequence: action-sequence CUBRACE_OPEN action-sequence CUBRACE_CLOSE {
-	prd_prod_swap(&dst_sym->prod_, &syms[0].prod_);
-	pd = &dst_sym->prod_;
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
 	/* Append the cubrace-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[1].match_, syms[1].variant_, &syms[1].text_);
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return r;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &syms[2].prod_.action_sequence_);
+	r = snippet_append_snippet(&pd->action_sequence_, &$2.action_sequence_);
 	if (r) return r;
 
 	/* Append the cubrace-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, syms[3].match_, syms[3].variant_, &syms[3].text_);
+	r = snippet_append(&pd->action_sequence_, $3.match_, $3.variant_, &$3.text_);
 	if (r) return r;
 }
 
