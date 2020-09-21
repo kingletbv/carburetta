@@ -666,7 +666,8 @@ int main(int argc, char **argv) {
   const char *input_filename = "prd_grammar.cnd";
   FILE *fp = fopen(input_filename, "rb");
   if (!fp) {
-    LOGERROR("Failed to open file \"%s\"\n", input_filename);
+    int err = errno;
+    LOGERROR("Failed to open file \"%s\": %s\n", input_filename, strerror(err));
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -944,7 +945,8 @@ int main(int argc, char **argv) {
     goto cleanup_exit;
   }
 
-  const char *output_filename = "prd_gram_gen.c";
+//  const char *output_filename = "prd_gram_gen.c";
+  const char *output_filename = "prd_grammar_alt.c";
   FILE *outfp;
   outfp = fopen(output_filename, "wb");
   if (!outfp) {
@@ -1219,6 +1221,7 @@ int main(int argc, char **argv) {
             failed = 1;
             break;
           }
+          special_index += (size_t)(c - '0');
         }
         if (special_index >= pd->num_syms_) {
           re_error(&pd->action_sequence_.tokens_[col].text_, "Symbol index exceeds number of symbols in production\n");
