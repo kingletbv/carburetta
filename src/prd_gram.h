@@ -61,6 +61,7 @@ struct prd_stack {
   size_t pos_;
   size_t num_stack_allocated_; /* size in elements of states and syms */
   int *states_;
+  struct prd_sym_data *stack_;
   union prd_sym_data_union *sym_data_;
 };
 

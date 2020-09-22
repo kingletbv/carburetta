@@ -945,8 +945,8 @@ int main(int argc, char **argv) {
     goto cleanup_exit;
   }
 
-  //  const char *output_filename = "prd_gram_gen.c";
-  const char *output_filename = "prd_grammar_alt.c";
+  const char *output_filename = "prd_gram_gen.c";
+  //const char *output_filename = "prd_grammar_alt.c";
   FILE *outfp;
   outfp = fopen(output_filename, "wb");
   if (!outfp) {
@@ -1002,6 +1002,35 @@ int main(int argc, char **argv) {
   }
   fprintf(outfp, "};\n");
 
+  fprintf(outfp, "struct prd_sym_data {\n");
+  fprintf(outfp, "  int state_;\n");
+  fprintf(outfp, "  union {\n");
+
+  for (ts_idx = 0; ts_idx < cc.tstab_.num_typestrs_; ++ts_idx) {
+    struct typestr *ts;
+    ts = cc.tstab_.typestrs_[ts_idx];
+    int found_placeholder = 0;
+
+    fprintf(outfp, "    ");
+    size_t tok_idx;
+    for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
+      struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
+      if (st->variant_ != TOK_SPECIAL_IDENT) {
+        fprintf(outfp, "%s%s", tok_idx ? " " : "", st->text_.translated_);
+      }
+      else {
+        found_placeholder = 1;
+        fprintf(outfp, " uv%d_", ts->ordinal_);
+      }
+    }
+    if (!found_placeholder) {
+      /* Placeholder is implied at the end */
+      fprintf(outfp, " uv%d_", ts->ordinal_);
+    }
+    fprintf(outfp, ";\n");
+  }
+  fprintf(outfp, "  } v_;\n");
+  fprintf(outfp, "};\n");
 
   size_t num_columns = (size_t)(1 + lalr.max_sym - lalr.min_sym);
   fprintf(outfp, "static const int minimum_sym = %d;\n", lalr.min_sym);
@@ -1165,7 +1194,7 @@ int main(int argc, char **argv) {
   fprintf(outfp, "#define SYNTHETIC_S %d\n", SYNTHETIC_S);
 
 
-  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, union prd_sym_data_union *dst_sym_data, union prd_sym_data_union *sym_data, struct symbol_table *st) {\n");
+  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym_data, struct prd_sym_data *sym_data, struct symbol_table *st) {\n");
   fprintf(outfp, "  int r;\n"
     "  struct prd_production *pd;\n"
     "  struct symbol *sym;\n"
@@ -1179,7 +1208,7 @@ int main(int argc, char **argv) {
       for (col = 0; col < constructor->num_tokens_; ++col) {
         if (constructor->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
           /* Insert destination sym at appropriate ordinal value type. */
-          fprintf(outfp, "(dst_sym_data->uv%d_)", pd->nt_.sym_->assigned_type_->ordinal_);
+          fprintf(outfp, "(dst_sym_data->v_.uv%d_)", pd->nt_.sym_->assigned_type_->ordinal_);
         }
         else {
           /* Regular token, just emit as-is */
@@ -1202,7 +1231,7 @@ int main(int argc, char **argv) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
-        fprintf(outfp, "(dst_sym_data->uv%d_)", dst_sym->assigned_type_->ordinal_);
+        fprintf(outfp, "(dst_sym_data->v_.uv%d_)", dst_sym->assigned_type_->ordinal_);
       }
       else if (pd->action_sequence_.tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) {
         /* Expansion of another sym identifier */
@@ -1237,7 +1266,7 @@ int main(int argc, char **argv) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
-        fprintf(outfp, "(sym_data[%zu].uv%d_)", special_index, sym->assigned_type_->ordinal_);
+        fprintf(outfp, "(sym_data[%zu].v_.uv%d_)", special_index, sym->assigned_type_->ordinal_);
       }
       else {
         fprintf(outfp, pd->action_sequence_.tokens_[col].text_.original_);
@@ -1258,6 +1287,7 @@ int main(int argc, char **argv) {
     "    stack->pos_ = 0;\n"
     "    stack->num_stack_allocated_ = 0;\n"
     "    stack->states_ = NULL;\n"
+    "    stack->stack_ = NULL;\n"
     "    stack->sym_data_ = NULL;\n"
     "  }\n"
     "\n"
@@ -1265,7 +1295,7 @@ int main(int argc, char **argv) {
     "    size_t n;\n"
     "    for (n = 0; n < stack->pos_; ++n) {\n");
   fprintf(outfp,
-    "      switch (stack->states_[n]) {\n");
+    "      switch (stack->stack_[n].state_) {\n");
   size_t typestr_idx;
   for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
     struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
@@ -1287,7 +1317,7 @@ int main(int argc, char **argv) {
         for (col = 0; col < action->num_tokens_; ++col) {
           if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
             /* Insert destination sym at appropriate ordinal value type. */
-            fprintf(outfp, "((stack->sym_data_ + n)->uv%d_)", ts->ordinal_);
+            fprintf(outfp, "((stack->stack_ + n)->v_.uv%d_)", ts->ordinal_);
           }
           else {
             /* Regular token, just emit as-is */
@@ -1304,13 +1334,10 @@ int main(int argc, char **argv) {
   fprintf(outfp,
     "      }\n");
   fprintf(outfp,
-    "    /* XXX: DECONSTRUCTION NEEDED */\n"
-    "      /* XXX: How do we dispatch to destructor ?\n"
-    "       * XXX: Destructor suppor from stack->states_[n]! */\n"
     "    }\n"
     "\n"
     "    if (stack->states_) free(stack->states_);\n"
-    "\n"
+    "    if (stack->stack_) free(stack->stack_);\n"
     "    if (stack->sym_data_) free(stack->sym_data_);\n"
     "  }\n"
     "\n"
@@ -1319,7 +1346,7 @@ int main(int argc, char **argv) {
     "    size_t n;\n"
     "    for (n = 0; n < stack->pos_; ++n) {\n");
   fprintf(outfp,
-    "      switch (stack->states_[n]) {\n");
+    "      switch (stack->stack_[n].state_) {\n");
   for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
     struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
     if (ts->destructor_snippet_.num_tokens_) {
@@ -1340,7 +1367,7 @@ int main(int argc, char **argv) {
         for (col = 0; col < action->num_tokens_; ++col) {
           if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
             /* Insert destination sym at appropriate ordinal value type. */
-            fprintf(outfp, "((stack->sym_data_ + n)->uv%d_)", ts->ordinal_);
+            fprintf(outfp, "((stack->stack_ + n)->v_.uv%d_)", ts->ordinal_);
           }
           else {
             /* Regular token, just emit as-is */
@@ -1370,7 +1397,7 @@ int main(int argc, char **argv) {
   /* Emit the parse function */
   fprintf(outfp,
     "static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {\n"
-    "  int current_state = stack->states_[stack->pos_ - 1];\n"
+    "  int current_state = stack->stack_[stack->pos_ - 1].state_;\n"
     "  int action = parse_table[num_columns * current_state + (sym - minimum_sym)];\n"
     "  if (!action) {\n"
     "    /* Syntax error */\n"
@@ -1394,9 +1421,9 @@ int main(int argc, char **argv) {
     "      return PRD_SUCCESS;\n"
     "    }\n"
     "\n"
-    "    union prd_sym_data_union nonterminal_sym_data_reduced_to;\n"
+    "    struct prd_sym_data nonterminal_sym_data_reduced_to;\n"
     "    int r;\n"
-    "    r = reduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->sym_data_ + stack->pos_ - production_length, st);\n"
+    "    r = reduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->stack_ + stack->pos_ - production_length, st);\n"
     "    if (r) {\n"
     "      /* Semantic error */\n"
     "      return r;\n"
@@ -1408,7 +1435,7 @@ int main(int argc, char **argv) {
     "    for (prd_sym_idx = stack->pos_ - production_length; prd_sym_idx < stack->pos_; ++prd_sym_idx) {\n");
 
   fprintf(outfp,
-    "      switch (stack->states_[prd_sym_idx]) {\n"
+    "      switch (stack->stack_[prd_sym_idx].state_) {\n"
   );
   for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
     struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
@@ -1430,7 +1457,7 @@ int main(int argc, char **argv) {
         for (col = 0; col < action->num_tokens_; ++col) {
           if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
             /* Insert destination sym at appropriate ordinal value type. */
-            fprintf(outfp, "((stack->sym_data_ + prd_sym_idx)->uv%d_)", ts->ordinal_);
+            fprintf(outfp, "((stack->stack_ + prd_sym_idx)->v_.uv%d_)", ts->ordinal_);
           }
           else {
             /* Regular token, just emit as-is */
@@ -1451,7 +1478,7 @@ int main(int argc, char **argv) {
     "\n"
     "    stack->pos_ -= production_length;\n"
     "\n"
-    "    current_state = stack->states_[stack->pos_ - 1];\n"
+    "    current_state = stack->stack_[stack->pos_ - 1].state_;\n"
     "    action = parse_table[num_columns * current_state + (nonterminal - minimum_sym)];\n"
     "\n"
     "    if (!action) {\n"
@@ -1463,10 +1490,11 @@ int main(int argc, char **argv) {
     "      return PRD_INTERNAL_ERROR;\n"
     "    }\n"
     "    push_state(stack, action /* action for a shift is the ordinal */);\n"
-    "    union prd_sym_data_union *sdu = stack->sym_data_ + stack->pos_ - 1;\n"
-    "    *sdu = nonterminal_sym_data_reduced_to;\n"
-  "\n"
-    "    current_state = stack->states_[stack->pos_ - 1];\n"
+    "    struct prd_sym_data *sd = stack->stack_ + stack->pos_ - 1;\n"
+    "    *sd = nonterminal_sym_data_reduced_to;\n"
+    "    sd->state_ = action;\n"
+    "\n"
+    "    current_state = stack->stack_[stack->pos_ - 1].state_;\n"
     "    action = parse_table[num_columns * current_state + (sym - minimum_sym)];\n"
     "    if (!action) {\n"
     "      /* Syntax error */\n"
@@ -1493,7 +1521,7 @@ int main(int argc, char **argv) {
     need_sym_data = 1;
   }
   if (need_sym_data) {
-    fprintf(outfp, "    union prd_sym_data_union *sym_data = stack->sym_data_ + stack->pos_ - 1;\n");
+    fprintf(outfp, "    struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;\n");
   }
   if (cc.token_assigned_type_ && cc.token_assigned_type_->constructor_snippet_.num_tokens_) {
     fprintf(outfp, "    {\n      ");
@@ -1501,7 +1529,7 @@ int main(int argc, char **argv) {
     for (col = 0; col < constructor->num_tokens_; ++col) {
       if (constructor->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
         /* Insert destination sym at appropriate ordinal value type. */
-        fprintf(outfp, "(sym_data->uv%d_)", cc.token_assigned_type_->ordinal_);
+        fprintf(outfp, "(sym_data->v_.uv%d_)", cc.token_assigned_type_->ordinal_);
       }
       else {
         /* Regular token, just emit as-is */
@@ -1517,7 +1545,7 @@ int main(int argc, char **argv) {
     for (col = 0; col < action->num_tokens_; ++col) {
       if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
         /* Insert destination sym at appropriate ordinal value type. */
-        fprintf(outfp, "(sym_data->uv%d_)", cc.token_assigned_type_->ordinal_);
+        fprintf(outfp, "(sym_data->v_.uv%d_)", cc.token_assigned_type_->ordinal_);
       }
       else {
         /* Regular token, just emit as-is */

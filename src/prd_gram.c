@@ -1,4 +1,4 @@
-#if 0
+#if 1
 /* Use prd_gram_gen.c implementation */
 #include "prd_gram_gen.c"
 #elif 1

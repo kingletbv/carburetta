@@ -186,6 +186,13 @@ union prd_sym_data_union {
  struct { token_type_t match_ ; token_type_t variant_ ; struct xlts text_ ; } uv0_;
  struct prd_production uv1_;
 };
+struct prd_sym_data {
+  int state_;
+  union {
+    struct { token_type_t match_ ; token_type_t variant_ ; struct xlts text_ ; } uv0_;
+    struct prd_production uv1_;
+  } v_;
+};
 static const int minimum_sym = 3;
 static const size_t num_columns = 19;
 static const size_t num_rows = 40;
