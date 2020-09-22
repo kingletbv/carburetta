@@ -1219,6 +1219,7 @@ int main(int argc, char **argv) {
   fprintf(outfp, "#define SYNTHETIC_S %d\n", SYNTHETIC_S);
 
 
+#if 0
   fprintf(outfp, "static int %sreduce(struct %sstack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct %ssym_data *dst_sym_data, struct %ssym_data *sym_data, struct symbol_table *st) {\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp, "  int r;\n"
     "  struct prd_production *pd;\n"
@@ -1304,24 +1305,24 @@ int main(int argc, char **argv) {
   fprintf(outfp, "  } /* switch */\n"
     "  return PRD_SUCCESS;\n"
     "}\n");
-
+#endif
   /* Emit stack constructor, destructor and reset functions */
 
   fprintf(outfp,
-    "  void %sstack_init(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
+    "void %sstack_init(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp,
-    "    stack->pos_ = 0;\n"
-    "    stack->num_stack_allocated_ = 0;\n"
-    "    stack->stack_ = NULL;\n"
-    "  }\n"
+    "  stack->pos_ = 0;\n"
+    "  stack->num_stack_allocated_ = 0;\n"
+    "  stack->stack_ = NULL;\n"
+    "}\n"
     "\n");
   fprintf(outfp,
-    "  void %sstack_cleanup(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
+    "void %sstack_cleanup(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp,
-    "    size_t n;\n"
-    "    for (n = 0; n < stack->pos_; ++n) {\n");
+    "  size_t n;\n"
+    "  for (n = 0; n < stack->pos_; ++n) {\n");
   fprintf(outfp,
-    "      switch (stack->stack_[n].state_) {\n");
+    "    switch (stack->stack_[n].state_) {\n");
   size_t typestr_idx;
   for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
     struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
@@ -1333,12 +1334,12 @@ int main(int argc, char **argv) {
         struct symbol *sym = symbol_find_by_ordinal(&cc.symtab_, state_syms[state_idx]);
         if (!sym) continue;
         if (sym->assigned_type_ == ts) {
-          fprintf(outfp, "      case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+          fprintf(outfp, "    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
           have_cases = 1;
         }
       }
       if (have_cases) {
-        fprintf(outfp, "      {\n      ");
+        fprintf(outfp, "    {\n      ");
         struct snippet *action = &ts->destructor_snippet_;
         for (col = 0; col < action->num_tokens_; ++col) {
           if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
@@ -1351,64 +1352,64 @@ int main(int argc, char **argv) {
           }
         }
         /* Close this compound block  */
-        fprintf(outfp, "\n      }\n      break;\n");
+        fprintf(outfp, "\n    }\n    break;\n");
       }
     }
   }
 
 
   fprintf(outfp,
-    "      }\n");
+    "    }\n");
   fprintf(outfp,
-    "    }\n"
-    "\n"
-    "    if (stack->stack_) free(stack->stack_);\n"
     "  }\n"
+    "\n"
+    "  if (stack->stack_) free(stack->stack_);\n"
+    "}\n"
     "\n");
 
   fprintf(outfp,
-    "    static int %spush_state(struct %sstack *stack, int state) {\n", cc_prefix(&cc), cc_prefix(&cc));
+    "static int %spush_state(struct %sstack *stack, int state) {\n", cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp,
-    "    if (stack->num_stack_allocated_ == stack->pos_) {\n"
-    "      size_t new_num_allocated = 0;\n"
-    "      if (stack->num_stack_allocated_) {\n"
-    "        new_num_allocated = stack->num_stack_allocated_ * 2;\n"
-    "        if (new_num_allocated <= stack->num_stack_allocated_) {\n"
-    "          LOGERROR(\"Overflow in allocation\\n\");\n"
-    "          return EOVERFLOW;\n"
-    "        }\n"
-    "      }\n"
-    "      else {\n"
-    "        new_num_allocated = 16;\n"
-    "      }\n"
-    "\n"
-    "      if (new_num_allocated > (SIZE_MAX / sizeof(struct %ssym_data))) {\n", cc_prefix(&cc));
-  fprintf(outfp,
+    "  if (stack->num_stack_allocated_ == stack->pos_) {\n"
+    "    size_t new_num_allocated = 0;\n"
+    "    if (stack->num_stack_allocated_) {\n"
+    "      new_num_allocated = stack->num_stack_allocated_ * 2;\n"
+    "      if (new_num_allocated <= stack->num_stack_allocated_) {\n"
     "        LOGERROR(\"Overflow in allocation\\n\");\n"
+    "        return EOVERFLOW;\n"
     "      }\n"
-    "\n"
-    "      void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct %ssym_data));\n", cc_prefix(&cc));
-  fprintf(outfp,
-    "      if (!p) {\n"
-    "        LOGERROR(\"Out of memory\\n\");\n"
-    "        return ENOMEM;\n"
-    "      }\n"
-    "      stack->stack_ = (struct %ssym_data *)p;\n", cc_prefix(&cc));
-  fprintf(outfp,
-    "      stack->num_stack_allocated_ = new_num_allocated;\n"
     "    }\n"
-    "    stack->stack_[stack->pos_++].state_ = state;\n"
-    "    return 0;\n"
-    "  }\n");
+    "    else {\n"
+    "      new_num_allocated = 16;\n"
+    "    }\n"
+    "\n"
+    "    if (new_num_allocated > (SIZE_MAX / sizeof(struct %ssym_data))) {\n", cc_prefix(&cc));
+  fprintf(outfp,
+    "      LOGERROR(\"Overflow in allocation\\n\");\n"
+    "    }\n"
+    "\n"
+    "    void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct %ssym_data));\n", cc_prefix(&cc));
+  fprintf(outfp,
+    "    if (!p) {\n"
+    "      LOGERROR(\"Out of memory\\n\");\n"
+    "      return ENOMEM;\n"
+    "    }\n"
+    "    stack->stack_ = (struct %ssym_data *)p;\n", cc_prefix(&cc));
+  fprintf(outfp,
+    "    stack->num_stack_allocated_ = new_num_allocated;\n"
+    "  }\n"
+    "  stack->stack_[stack->pos_++].state_ = state;\n"
+    "  return 0;\n"
+    "}\n");
 
   fprintf(outfp,
-    "  int %sstack_reset(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
+    "int %sstack_reset(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp,
-    "    int r;\n"
-    "    size_t n;\n"
-    "    for (n = 0; n < stack->pos_; ++n) {\n");
+    "  int r;\n"
+    "  size_t n;\n"
+    "  for (n = 0; n < stack->pos_; ++n) {\n");
   fprintf(outfp,
-    "      switch (stack->stack_[n].state_) {\n");
+    "    switch (stack->stack_[n].state_) {\n");
   for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
     struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
     if (ts->destructor_snippet_.num_tokens_) {
@@ -1419,12 +1420,12 @@ int main(int argc, char **argv) {
         struct symbol *sym = symbol_find_by_ordinal(&cc.symtab_, state_syms[state_idx]);
         if (!sym) continue;
         if (sym->assigned_type_ == ts) {
-          fprintf(outfp, "      case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+          fprintf(outfp, "    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
           have_cases = 1;
         }
       }
       if (have_cases) {
-        fprintf(outfp, "      {\n      ");
+        fprintf(outfp, "    {\n    ");
         struct snippet *action = &ts->destructor_snippet_;
         for (col = 0; col < action->num_tokens_; ++col) {
           if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
@@ -1437,29 +1438,29 @@ int main(int argc, char **argv) {
           }
         }
         /* Close this compound block  */
-        fprintf(outfp, "\n      }\n      break;\n");
+        fprintf(outfp, "\n    }\n    break;\n");
       }
     }
   }
   fprintf(outfp,
-    "      }\n");
-  fprintf(outfp,
     "    }\n");
+  fprintf(outfp,
+    "  }\n");
 
   fprintf(outfp,
-    "    stack->pos_ = 0;\n"
-    "    r = %spush_state(stack, 0);\n", cc_prefix(&cc));
+    "  stack->pos_ = 0;\n"
+    "  r = %spush_state(stack, 0);\n", cc_prefix(&cc));
   fprintf(outfp,
-    "    if (r) {\n"
-    "      return r;\n"
-    "    }\n"
-    "    return 0;\n"
+    "  if (r) {\n"
+    "    return r;\n"
     "  }\n"
+    "  return 0;\n"
+    "}\n"
     "\n");
 
   /* Emit the parse function */
   fprintf(outfp,
-    "static int %sparse_impl(struct %sstack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {\n", cc_prefix(&cc), cc_prefix(&cc));
+    "static int %sparse_impl(struct %sstack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st) {\n", cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp,
     "  int current_state = stack->stack_[stack->pos_ - 1].state_;\n"
     "  int action = %sparse_table[%snum_columns * current_state + (sym - %sminimum_sym)];\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
@@ -1492,9 +1493,97 @@ int main(int argc, char **argv) {
     "    }\n"
     "\n"
     "    struct %ssym_data nonterminal_sym_data_reduced_to;\n", cc_prefix(&cc));
+#if 0
   fprintf(outfp,
     "    int r;\n"
     "    r = %sreduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->stack_ + stack->pos_ - production_length, st);\n", cc_prefix(&cc));
+#else
+  fprintf(outfp, "    { /* scope guard */\n");
+  fprintf(outfp, "      struct %ssym_data *sym_data = stack->stack_ + stack->pos_ - production_length;\n", cc_prefix(&cc));
+  fprintf(outfp, "      int r;\n"
+    "      struct prd_production *pd;\n"
+    "      struct symbol *sym;\n"
+    "      switch (production) {\n");
+  for (row = 0; row < prdg.num_productions_; ++row) {
+    struct prd_production *pd = prdg.productions_ + row;
+    fprintf(outfp, "      case %d: {\n    ", (int)row + 1);
+    /* Emit dst_sym_data constructor first */
+    if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
+      struct snippet *constructor = &pd->nt_.sym_->assigned_type_->constructor_snippet_;
+      for (col = 0; col < constructor->num_tokens_; ++col) {
+        if (constructor->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+          /* Insert destination sym at appropriate ordinal value type. */
+          fprintf(outfp, "(nonterminal_sym_data_reduced_to.v_.uv%d_)", pd->nt_.sym_->assigned_type_->ordinal_);
+        }
+        else {
+          /* Regular token, just emit as-is */
+          fprintf(outfp, constructor->tokens_[col].text_.original_);
+        }
+      }
+      /* Close this compound block and open the one for the action */
+      fprintf(outfp, "\n      }\n      {\n      ");
+    }
+
+    for (col = 0; col < pd->action_sequence_.num_tokens_; ++col) {
+      /* Print the original code, to preserve formatting and line continuations */
+      if (pd->action_sequence_.tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+        /* Expansion of special destination sym identifier */
+        /* Destination sym -- do we have a datatype for it ? */
+        struct symbol *dst_sym = pd->nt_.sym_;
+        assert(dst_sym);
+        if (!dst_sym->assigned_type_) {
+          re_error(&pd->action_sequence_.tokens_[col].text_, "$$ cannot resolve to a data type for non-terminal %s\n", pd->nt_.id_.translated_);
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "(nonterminal_sym_data_reduced_to.v_.uv%d_)", dst_sym->assigned_type_->ordinal_);
+      }
+      else if (pd->action_sequence_.tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) {
+        /* Expansion of another sym identifier */
+        size_t n;
+        int failed = 0;
+        size_t special_index = 0;
+        for (n = 1; n < pd->action_sequence_.tokens_[col].text_.num_translated_; ++n) {
+          char c = pd->action_sequence_.tokens_[col].text_.translated_[n];
+          if (!isdigit(c)) {
+            re_error(&pd->action_sequence_.tokens_[col].text_, "Unrecognized special identifier\n");
+            failed = 1;
+            break;
+          }
+          if (mul_size_t(10, special_index, NULL, &special_index)) {
+            re_error(&pd->action_sequence_.tokens_[col].text_, "Overflow on symbol index\n");
+            failed = 1;
+            break;
+          }
+          special_index += (size_t)(c - '0');
+        }
+        if (special_index >= pd->num_syms_) {
+          re_error(&pd->action_sequence_.tokens_[col].text_, "Symbol index exceeds number of symbols in production\n");
+          failed = 1;
+        }
+        if (failed) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        struct symbol *sym = pd->syms_[special_index].sym_;
+        if (!sym->assigned_type_) {
+          re_error(&pd->action_sequence_.tokens_[col].text_, "%s cannot resolve to a data type for a symbol\n", pd->action_sequence_.tokens_[col].text_.translated_);
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "(sym_data[%zu].v_.uv%d_)", special_index, sym->assigned_type_->ordinal_);
+      }
+      else {
+        fprintf(outfp, pd->action_sequence_.tokens_[col].text_.original_);
+      }
+    }
+    fprintf(outfp, "\n"
+      "      }\n"
+      "      break;\n");
+  }
+  fprintf(outfp, "      } /* switch */\n");
+  fprintf(outfp, "    } /* scope guard */\n");
+#endif
   fprintf(outfp,
     "    if (r) {\n"
     "      /* Semantic error */\n"

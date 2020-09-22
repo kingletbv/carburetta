@@ -334,534 +334,153 @@ static const int prd_state_syms[] = {
 #define PRD_END_C_TOKENIZER 19
 #define PRD_ACCEPT_WHITESPACE 20
 #define SYNTHETIC_S 21
-static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym_data, struct prd_sym_data *sym_data, struct symbol_table *st) {
-  int r;
-  struct prd_production *pd;
-  struct symbol *sym;
-  switch (production) {
-  case 1: {
-    { }
-  }
-  break;
-  case 2: {
+void prd_stack_init(struct prd_stack *stack) {
+  stack->pos_ = 0;
+  stack->num_stack_allocated_ = 0;
+  stack->stack_ = NULL;
+}
+
+void prd_stack_cleanup(struct prd_stack *stack) {
+  size_t n;
+  for (n = 0; n < stack->pos_; ++n) {
+    switch (stack->stack_[n].state_) {
+    case 2: /* semicolon */
+    case 3: /* semicolon */
+    case 5: /* ident */
+    case 6: /* colon */
+    case 7: /* equals */
+    case 8: /* token */
+    case 9: /* par-close */
+    case 11: /* par-open */
+    case 12: /* cubrace-close */
+    case 14: /* cubrace-open */
+    case 17: /* equals */
+    case 18: /* cubrace-close */
+    case 20: /* ident */
+    case 21: /* colon */
+    case 22: /* equals */
+    case 23: /* semicolon */
+    case 24: /* token */
+    case 25: /* par-close */
+    case 27: /* par-open */
+    case 28: /* cubrace-close */
+    case 30: /* cubrace-open */
+    case 32: /* cubrace-open */
+    case 35: /* ident */
+    case 37: /* colon */
+    case 38: /* ident */
     {
-	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
-	r = prd_grammar_check_production_reserve(g);
-	if (r) return r;
-	pd = g->productions_ + g->num_productions_++;
-	prd_prod_init(pd);
-	prd_prod_swap(pd, &(sym_data[1].v_.uv1_));
-}
-  }
-  break;
-  case 3: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
-	if (!sym) {
-		re_error(&(sym_data[0].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[2].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
-	pd->nt_.sym_ = sym;
-}
-  }
-  break;
-  case 4: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
-	if (!sym) {
-		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[2].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
-	pd->nt_.sym_ = sym;
-
-	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, & (sym_data[4].v_.uv1_).action_sequence_);
-	if (r) return r;
-
-	/* Append the semicolon to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[6].v_.uv0_).match_, (sym_data[6].v_.uv0_).variant_, &(sym_data[6].v_.uv0_).text_);
-	if (r) return r;
-}
-  }
-  break;
-  case 5: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
-	if (!sym) {
-		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[2].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
-	pd->nt_.sym_ = sym;
-
-	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	/* Append the cubrace-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[5].v_.uv0_).match_, (sym_data[5].v_.uv0_).variant_, &(sym_data[5].v_.uv0_).text_);
-	if (r) return r;
-
-	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[6].v_.uv1_).action_sequence_);
-	if (r) return r;
-
-	/* Append the cubrace-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[8].v_.uv0_).match_, (sym_data[8].v_.uv0_).variant_, &(sym_data[8].v_.uv0_).text_);
-	if (r) return r;
-}
-  }
-  break;
-  case 6: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  
-  }
-  break;
-  case 7: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	/* Grab ident from position 1, reduce */
-	sym = symbol_find(st, (sym_data[1].v_.uv0_).text_.translated_);
-	if (!sym) {
-		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt or %token", (sym_data[1].v_.uv0_).text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	if (pd->num_syms_ == pd->num_syms_allocated_) {
-		r = prd_prod_check_sym_reserve(pd, &(sym_data[1].v_.uv0_).text_);
-		if (r) return r;
-	}
-	struct prd_production_sym *pps = pd->syms_ + pd->num_syms_++;
-	prd_production_sym_init(pps);
-	r = xlts_append(&pps->id_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-	pps->sym_ = sym;
-}
-  }
-  break;
-  case 8: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  
-  }
-  break;
-  case 9: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-  }
-  break;
-  case 10: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-  }
-  break;
-  case 11: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-  }
-  break;
-  case 12: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-  }
-  break;
-  case 13: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-
-	/* Append the par-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return r;
-
-	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
-	if (r) return r;
-
-	/* Append the par-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
-	if (r) return r;
-}
-  }
-  break;
-  case 14: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	/* Append the cubrace-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return r;
-
-	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
-	if (r) return r;
-
-	/* Append the cubrace-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
-	if (r) return r;
-}
-  }
-  break;
-  case 15: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  
-  }
-  break;
-  case 16: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-  }
-  break;
-  case 17: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-  }
-  break;
-  case 18: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-  }
-  break;
-  case 19: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-  }
-  break;
-  case 20: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-  }
-  break;
-  case 21: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	/* Append the par-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return r;
-
-	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
-	if (r) return r;
-
-	/* Append the par-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
-	if (r) return r;
-}
-  }
-  break;
-  case 22: {
-     prd_prod_init(&(dst_sym_data->v_.uv1_));
-
-  }
-  {
-  {
-	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(dst_sym_data->v_.uv1_);
-	/* Append the cubrace-open to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return r;
-
-	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
-	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
-	if (r) return r;
-
-	/* Append the cubrace-close to the snippets */
-	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
-	if (r) return r;
-}
-  }
-  break;
-  case 23: {
-    tok_switch_to_c_idents(tkr);
-  }
-  break;
-  case 24: {
-    {
-	tok_switch_to_nonterminal_idents(tkr);
-	g->accept_whitespace_ = 0; /* Reset to normal tokens */
-}
-  }
-  break;
-  case 25: {
-    {
-	/* Welcome whitespace from this point. Note that this point is *after* the lookahead at the point
-	 * that the PRD_ACCEPT_WHITESPACE non-terminal appears. Therefore, it is *after* the EQUALS sign and
-	 * *after* the curly opening brace. */
-	g->accept_whitespace_ = 1;
-}
-  }
-  break;
-  } /* switch */
-  return PRD_SUCCESS;
-}
-  void prd_stack_init(struct prd_stack *stack) {
-    stack->pos_ = 0;
-    stack->num_stack_allocated_ = 0;
-    stack->stack_ = NULL;
-  }
-
-  void prd_stack_cleanup(struct prd_stack *stack) {
-    size_t n;
-    for (n = 0; n < stack->pos_; ++n) {
-      switch (stack->stack_[n].state_) {
-      case 2: /* semicolon */
-      case 3: /* semicolon */
-      case 5: /* ident */
-      case 6: /* colon */
-      case 7: /* equals */
-      case 8: /* token */
-      case 9: /* par-close */
-      case 11: /* par-open */
-      case 12: /* cubrace-close */
-      case 14: /* cubrace-open */
-      case 17: /* equals */
-      case 18: /* cubrace-close */
-      case 20: /* ident */
-      case 21: /* colon */
-      case 22: /* equals */
-      case 23: /* semicolon */
-      case 24: /* token */
-      case 25: /* par-close */
-      case 27: /* par-open */
-      case 28: /* cubrace-close */
-      case 30: /* cubrace-open */
-      case 32: /* cubrace-open */
-      case 35: /* ident */
-      case 37: /* colon */
-      case 38: /* ident */
-      {
        xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
 
-      }
-      break;
-      case 1: /* production */
-      case 10: /* action-sequence */
-      case 13: /* action-sequence */
-      case 15: /* stmt-action */
-      case 26: /* action-sequence */
-      case 29: /* action-sequence */
-      case 31: /* action-sequence */
-      case 36: /* rule */
-      {
+    }
+    break;
+    case 1: /* production */
+    case 10: /* action-sequence */
+    case 13: /* action-sequence */
+    case 15: /* stmt-action */
+    case 26: /* action-sequence */
+    case 29: /* action-sequence */
+    case 31: /* action-sequence */
+    case 36: /* rule */
+    {
        prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
 
-      }
-      break;
-      }
     }
-
-    if (stack->stack_) free(stack->stack_);
+    break;
+    }
   }
 
-    static int prd_push_state(struct prd_stack *stack, int state) {
-    if (stack->num_stack_allocated_ == stack->pos_) {
-      size_t new_num_allocated = 0;
-      if (stack->num_stack_allocated_) {
-        new_num_allocated = stack->num_stack_allocated_ * 2;
-        if (new_num_allocated <= stack->num_stack_allocated_) {
-          LOGERROR("Overflow in allocation\n");
-          return EOVERFLOW;
-        }
-      }
-      else {
-        new_num_allocated = 16;
-      }
+  if (stack->stack_) free(stack->stack_);
+}
 
-      if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
+static int prd_push_state(struct prd_stack *stack, int state) {
+  if (stack->num_stack_allocated_ == stack->pos_) {
+    size_t new_num_allocated = 0;
+    if (stack->num_stack_allocated_) {
+      new_num_allocated = stack->num_stack_allocated_ * 2;
+      if (new_num_allocated <= stack->num_stack_allocated_) {
         LOGERROR("Overflow in allocation\n");
+        return EOVERFLOW;
       }
-
-      void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));
-      if (!p) {
-        LOGERROR("Out of memory\n");
-        return ENOMEM;
-      }
-      stack->stack_ = (struct prd_sym_data *)p;
-      stack->num_stack_allocated_ = new_num_allocated;
     }
-    stack->stack_[stack->pos_++].state_ = state;
-    return 0;
+    else {
+      new_num_allocated = 16;
+    }
+
+    if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
+      LOGERROR("Overflow in allocation\n");
+    }
+
+    void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));
+    if (!p) {
+      LOGERROR("Out of memory\n");
+      return ENOMEM;
+    }
+    stack->stack_ = (struct prd_sym_data *)p;
+    stack->num_stack_allocated_ = new_num_allocated;
   }
-  int prd_stack_reset(struct prd_stack *stack) {
-    int r;
-    size_t n;
-    for (n = 0; n < stack->pos_; ++n) {
-      switch (stack->stack_[n].state_) {
-      case 2: /* semicolon */
-      case 3: /* semicolon */
-      case 5: /* ident */
-      case 6: /* colon */
-      case 7: /* equals */
-      case 8: /* token */
-      case 9: /* par-close */
-      case 11: /* par-open */
-      case 12: /* cubrace-close */
-      case 14: /* cubrace-open */
-      case 17: /* equals */
-      case 18: /* cubrace-close */
-      case 20: /* ident */
-      case 21: /* colon */
-      case 22: /* equals */
-      case 23: /* semicolon */
-      case 24: /* token */
-      case 25: /* par-close */
-      case 27: /* par-open */
-      case 28: /* cubrace-close */
-      case 30: /* cubrace-open */
-      case 32: /* cubrace-open */
-      case 35: /* ident */
-      case 37: /* colon */
-      case 38: /* ident */
-      {
-       xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+  stack->stack_[stack->pos_++].state_ = state;
+  return 0;
+}
+int prd_stack_reset(struct prd_stack *stack) {
+  int r;
+  size_t n;
+  for (n = 0; n < stack->pos_; ++n) {
+    switch (stack->stack_[n].state_) {
+    case 2: /* semicolon */
+    case 3: /* semicolon */
+    case 5: /* ident */
+    case 6: /* colon */
+    case 7: /* equals */
+    case 8: /* token */
+    case 9: /* par-close */
+    case 11: /* par-open */
+    case 12: /* cubrace-close */
+    case 14: /* cubrace-open */
+    case 17: /* equals */
+    case 18: /* cubrace-close */
+    case 20: /* ident */
+    case 21: /* colon */
+    case 22: /* equals */
+    case 23: /* semicolon */
+    case 24: /* token */
+    case 25: /* par-close */
+    case 27: /* par-open */
+    case 28: /* cubrace-close */
+    case 30: /* cubrace-open */
+    case 32: /* cubrace-open */
+    case 35: /* ident */
+    case 37: /* colon */
+    case 38: /* ident */
+    {
+     xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
 
-      }
-      break;
-      case 1: /* production */
-      case 10: /* action-sequence */
-      case 13: /* action-sequence */
-      case 15: /* stmt-action */
-      case 26: /* action-sequence */
-      case 29: /* action-sequence */
-      case 31: /* action-sequence */
-      case 36: /* rule */
-      {
-       prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+    }
+    break;
+    case 1: /* production */
+    case 10: /* action-sequence */
+    case 13: /* action-sequence */
+    case 15: /* stmt-action */
+    case 26: /* action-sequence */
+    case 29: /* action-sequence */
+    case 31: /* action-sequence */
+    case 36: /* rule */
+    {
+     prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
 
-      }
-      break;
-      }
     }
-    stack->pos_ = 0;
-    r = prd_push_state(stack, 0);
-    if (r) {
-      return r;
+    break;
     }
-    return 0;
   }
+  stack->pos_ = 0;
+  r = prd_push_state(stack, 0);
+  if (r) {
+    return r;
+  }
+  return 0;
+}
 
-static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
+static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st) {
   int current_state = stack->stack_[stack->pos_ - 1].state_;
   int action = prd_parse_table[prd_num_columns * current_state + (sym - prd_minimum_sym)];
   if (!action) {
@@ -887,8 +506,387 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
     }
 
     struct prd_sym_data nonterminal_sym_data_reduced_to;
-    int r;
-    r = prd_reduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->stack_ + stack->pos_ - production_length, st);
+    { /* scope guard */
+      struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - production_length;
+      int r;
+      struct prd_production *pd;
+      struct symbol *sym;
+      switch (production) {
+      case 1: {
+    { }
+      }
+      break;
+      case 2: {
+    {
+	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
+	r = prd_grammar_check_production_reserve(g);
+	if (r) return r;
+	pd = g->productions_ + g->num_productions_++;
+	prd_prod_init(pd);
+	prd_prod_swap(pd, &(sym_data[1].v_.uv1_));
+}
+      }
+      break;
+      case 3: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
+	if (!sym) {
+		re_error(&(sym_data[0].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
+		g->have_errors_ = 1;
+		return PRD_SUCCESS;
+	}
+
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[2].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
+	pd->nt_.sym_ = sym;
+}
+      }
+      break;
+      case 4: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
+	if (!sym) {
+		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
+		g->have_errors_ = 1;
+		return PRD_SUCCESS;
+	}
+
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[2].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
+	pd->nt_.sym_ = sym;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, & (sym_data[4].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the semicolon to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[6].v_.uv0_).match_, (sym_data[6].v_.uv0_).variant_, &(sym_data[6].v_.uv0_).text_);
+	if (r) return r;
+}
+      }
+      break;
+      case 5: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
+	if (!sym) {
+		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
+		g->have_errors_ = 1;
+		return PRD_SUCCESS;
+	}
+
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[2].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
+	pd->nt_.sym_ = sym;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	/* Append the cubrace-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[5].v_.uv0_).match_, (sym_data[5].v_.uv0_).variant_, &(sym_data[5].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[6].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the cubrace-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[8].v_.uv0_).match_, (sym_data[8].v_.uv0_).variant_, &(sym_data[8].v_.uv0_).text_);
+	if (r) return r;
+}
+      }
+      break;
+      case 6: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      
+      }
+      break;
+      case 7: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	/* Grab ident from position 1, reduce */
+	sym = symbol_find(st, (sym_data[1].v_.uv0_).text_.translated_);
+	if (!sym) {
+		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt or %token", (sym_data[1].v_.uv0_).text_.translated_);
+		g->have_errors_ = 1;
+		return PRD_SUCCESS;
+	}
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	if (pd->num_syms_ == pd->num_syms_allocated_) {
+		r = prd_prod_check_sym_reserve(pd, &(sym_data[1].v_.uv0_).text_);
+		if (r) return r;
+	}
+	struct prd_production_sym *pps = pd->syms_ + pd->num_syms_++;
+	prd_production_sym_init(pps);
+	r = xlts_append(&pps->id_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+	pps->sym_ = sym;
+}
+      }
+      break;
+      case 8: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      
+      }
+      break;
+      case 9: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+      }
+      break;
+      case 10: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+      }
+      break;
+      case 11: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+      }
+      break;
+      case 12: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+      }
+      break;
+      case 13: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+
+	/* Append the par-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the par-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
+      }
+      break;
+      case 14: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	/* Append the cubrace-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the cubrace-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
+      }
+      break;
+      case 15: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      
+      }
+      break;
+      case 16: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+      }
+      break;
+      case 17: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+      }
+      break;
+      case 18: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+      }
+      break;
+      case 19: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+      }
+      break;
+      case 20: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+      }
+      break;
+      case 21: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	/* Append the par-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the par-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
+      }
+      break;
+      case 22: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+      }
+      {
+      {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	/* Append the cubrace-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the cubrace-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
+      }
+      break;
+      case 23: {
+    tok_switch_to_c_idents(tkr);
+      }
+      break;
+      case 24: {
+    {
+	tok_switch_to_nonterminal_idents(tkr);
+	g->accept_whitespace_ = 0; /* Reset to normal tokens */
+}
+      }
+      break;
+      case 25: {
+    {
+	/* Welcome whitespace from this point. Note that this point is *after* the lookahead at the point
+	 * that the PRD_ACCEPT_WHITESPACE non-terminal appears. Therefore, it is *after* the EQUALS sign and
+	 * *after* the curly opening brace. */
+	g->accept_whitespace_ = 1;
+}
+      }
+      break;
+      } /* switch */
+    } /* scope guard */
     if (r) {
       /* Semantic error */
       return r;
@@ -1026,5 +1024,5 @@ int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokeniz
     sym = INPUT_END;
   }
   
-  return prd_parse_impl(stack, sym, g, tkr, end_of_input, st);
+  return prd_parse_impl(stack, sym, g, tkr, st);
 }
