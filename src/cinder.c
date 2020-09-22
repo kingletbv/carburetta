@@ -177,7 +177,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     PCD_TOKEN_ACTION_DIRECTIVE
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
-
+  tkr_tokenizer_reset(tkr_tokens);
   r = tkr_tokenizer_inputx(tkr_tokens, directive_line_match, 1);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
@@ -534,6 +534,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
   struct xlts empty;
   xlts_init(&empty);
   if (is_final) input_line = &empty;
+  tkr_tokenizer_reset(tkr_tokens);
   r = tkr_tokenizer_inputx(tkr_tokens, input_line, is_final);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
@@ -597,11 +598,6 @@ int main(int argc, char **argv) {
 
   LOG("We've started..\n");
 
-  r = prd_init();
-  if (r) {
-    LOGERROR("Failed to initialize prd\n");
-    return EXIT_FAILURE;
-  }
   r = ldl_init();
   if (r) {
     LOGERROR("Failed to initialize ldl\n");
@@ -1620,8 +1616,7 @@ cleanup_exit:
   las_cleanup();
   tok_cleanup();
   ldl_cleanup();
-  prd_cleanup();
-
+  
   LOG("We've finished%s\n", (r == EXIT_SUCCESS) ? "" : " in failure...");
 
   return r;
