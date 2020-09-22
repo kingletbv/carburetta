@@ -185,7 +185,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     PCD_PREFIX_DIRECTIVE
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
-  tkr_tokenizer_reset(tkr_tokens);
+
   r = tkr_tokenizer_inputx(tkr_tokens, directive_line_match, 1);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
@@ -569,6 +569,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   r = 0;
 
 cleanup_exit:
+  tkr_tokenizer_reset(tkr_tokens);
   snippet_cleanup(&dir_snippet);
   if (typed_symbols) free(typed_symbols);
 
@@ -590,7 +591,6 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
   struct xlts empty;
   xlts_init(&empty);
   if (is_final) input_line = &empty;
-  tkr_tokenizer_reset(tkr_tokens);
   r = tkr_tokenizer_inputx(tkr_tokens, input_line, is_final);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {

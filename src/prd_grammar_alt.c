@@ -344,7 +344,14 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
   }
   break;
   case 2: {
-    {	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */	r = prd_grammar_check_production_reserve(g);	if (r) return r;	pd = g->productions_ + g->num_productions_++;	prd_prod_init(pd);	prd_prod_swap(pd, &(sym_data[1].v_.uv1_));}
+    {
+	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
+	r = prd_grammar_check_production_reserve(g);
+	if (r) return r;
+	pd = g->productions_ + g->num_productions_++;
+	prd_prod_init(pd);
+	prd_prod_swap(pd, &(sym_data[1].v_.uv1_));
+}
   }
   break;
   case 3: {
@@ -352,7 +359,19 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);	if (!sym) {		re_error(&(sym_data[0].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);		g->have_errors_ = 1;		return PRD_SUCCESS;	}	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[2].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);	pd->nt_.sym_ = sym;}
+  {
+	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
+	if (!sym) {
+		re_error(&(sym_data[0].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
+		g->have_errors_ = 1;
+		return PRD_SUCCESS;
+	}
+
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[2].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
+	pd->nt_.sym_ = sym;
+}
   }
   break;
   case 4: {
@@ -360,7 +379,27 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);	if (!sym) {		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);		g->have_errors_ = 1;		return PRD_SUCCESS;	}	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[2].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);	pd->nt_.sym_ = sym;	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */	r = snippet_append_snippet(&pd->action_sequence_, & (sym_data[4].v_.uv1_).action_sequence_);	if (r) return r;	/* Append the semicolon to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[6].v_.uv0_).match_, (sym_data[6].v_.uv0_).variant_, &(sym_data[6].v_.uv0_).text_);	if (r) return r;}
+  {
+	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
+	if (!sym) {
+		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
+		g->have_errors_ = 1;
+		return PRD_SUCCESS;
+	}
+
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[2].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
+	pd->nt_.sym_ = sym;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, & (sym_data[4].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the semicolon to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[6].v_.uv0_).match_, (sym_data[6].v_.uv0_).variant_, &(sym_data[6].v_.uv0_).text_);
+	if (r) return r;
+}
   }
   break;
   case 5: {
@@ -368,7 +407,32 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);	if (!sym) {		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);		g->have_errors_ = 1;		return PRD_SUCCESS;	}	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[2].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);	pd->nt_.sym_ = sym;	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */	/* Append the cubrace-open to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[5].v_.uv0_).match_, (sym_data[5].v_.uv0_).variant_, &(sym_data[5].v_.uv0_).text_);	if (r) return r;	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[6].v_.uv1_).action_sequence_);	if (r) return r;	/* Append the cubrace-close to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[8].v_.uv0_).match_, (sym_data[8].v_.uv0_).variant_, &(sym_data[8].v_.uv0_).text_);	if (r) return r;}
+  {
+	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
+	if (!sym) {
+		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
+		g->have_errors_ = 1;
+		return PRD_SUCCESS;
+	}
+
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[2].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
+	pd->nt_.sym_ = sym;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	/* Append the cubrace-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[5].v_.uv0_).match_, (sym_data[5].v_.uv0_).variant_, &(sym_data[5].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[6].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the cubrace-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[8].v_.uv0_).match_, (sym_data[8].v_.uv0_).variant_, &(sym_data[8].v_.uv0_).text_);
+	if (r) return r;
+}
   }
   break;
   case 6: {
@@ -384,7 +448,26 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	/* Grab ident from position 1, reduce */	sym = symbol_find(st, (sym_data[1].v_.uv0_).text_.translated_);	if (!sym) {		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt or %token", (sym_data[1].v_.uv0_).text_.translated_);		g->have_errors_ = 1;		return PRD_SUCCESS;	}	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	if (pd->num_syms_ == pd->num_syms_allocated_) {		r = prd_prod_check_sym_reserve(pd, &(sym_data[1].v_.uv0_).text_);		if (r) return r;	}	struct prd_production_sym *pps = pd->syms_ + pd->num_syms_++;	prd_production_sym_init(pps);	r = xlts_append(&pps->id_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;	pps->sym_ = sym;}
+  {
+	/* Grab ident from position 1, reduce */
+	sym = symbol_find(st, (sym_data[1].v_.uv0_).text_.translated_);
+	if (!sym) {
+		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt or %token", (sym_data[1].v_.uv0_).text_.translated_);
+		g->have_errors_ = 1;
+		return PRD_SUCCESS;
+	}
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	if (pd->num_syms_ == pd->num_syms_allocated_) {
+		r = prd_prod_check_sym_reserve(pd, &(sym_data[1].v_.uv0_).text_);
+		if (r) return r;
+	}
+	struct prd_production_sym *pps = pd->syms_ + pd->num_syms_++;
+	prd_production_sym_init(pps);
+	r = xlts_append(&pps->id_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+	pps->sym_ = sym;
+}
   }
   break;
   case 8: {
@@ -400,7 +483,12 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
   }
   break;
   case 10: {
@@ -408,7 +496,12 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
   }
   break;
   case 11: {
@@ -416,7 +509,12 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
   }
   break;
   case 12: {
@@ -424,7 +522,12 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
   }
   break;
   case 13: {
@@ -432,7 +535,22 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	/* Append the par-open to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return r;	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);	if (r) return r;	/* Append the par-close to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);	if (r) return r;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+
+	/* Append the par-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the par-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
   }
   break;
   case 14: {
@@ -440,7 +558,21 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	/* Append the cubrace-open to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return r;	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);	if (r) return r;	/* Append the cubrace-close to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);	if (r) return r;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	/* Append the cubrace-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the cubrace-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
   }
   break;
   case 15: {
@@ -456,7 +588,12 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
   }
   break;
   case 17: {
@@ -464,7 +601,12 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
   }
   break;
   case 18: {
@@ -472,7 +614,12 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
   }
   break;
   case 19: {
@@ -480,7 +627,12 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
   }
   break;
   case 20: {
@@ -488,7 +640,12 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return PRD_INTERNAL_ERROR;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
   }
   break;
   case 21: {
@@ -496,7 +653,21 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	/* Append the par-open to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return r;	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);	if (r) return r;	/* Append the par-close to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);	if (r) return r;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	/* Append the par-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the par-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
   }
   break;
   case 22: {
@@ -504,7 +675,21 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
 
   }
   {
-  {	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));	pd = &(dst_sym_data->v_.uv1_);	/* Append the cubrace-open to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);	if (r) return r;	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);	if (r) return r;	/* Append the cubrace-close to the snippets */	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);	if (r) return r;}
+  {
+	prd_prod_swap(&(dst_sym_data->v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(dst_sym_data->v_.uv1_);
+	/* Append the cubrace-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the cubrace-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
   }
   break;
   case 23: {
@@ -512,13 +697,19 @@ static int prd_reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr
   }
   break;
   case 24: {
-    {	tok_switch_to_nonterminal_idents(tkr);	g->accept_whitespace_ = 0; /* Reset to normal tokens */}
+    {
+	tok_switch_to_nonterminal_idents(tkr);
+	g->accept_whitespace_ = 0; /* Reset to normal tokens */
+}
   }
   break;
   case 25: {
-    {	/* Welcome whitespace from this point. Note that this point is *after* the lookahead at the point
+    {
+	/* Welcome whitespace from this point. Note that this point is *after* the lookahead at the point
 	 * that the PRD_ACCEPT_WHITESPACE non-terminal appears. Therefore, it is *after* the EQUALS sign and
-	 * *after* the curly opening brace. */	g->accept_whitespace_ = 1;}
+	 * *after* the curly opening brace. */
+	g->accept_whitespace_ = 1;
+}
   }
   break;
   } /* switch */
