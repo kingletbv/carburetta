@@ -73,8 +73,6 @@ struct prd_grammar {
   struct prd_production *productions_;
 };
 
-int prd_init(void);
-void prd_cleanup(void);
 int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
 
 void prd_stack_init(struct prd_stack *stack);

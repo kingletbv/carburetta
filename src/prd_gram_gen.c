@@ -54,31 +54,6 @@
 #include "prd_gram.h"
 #endif
 
-typedef enum prd_symbol_enum {
-#define xx(ident) ident,
-  PRD_SYMBOL_ENUM
-#undef xx
-} prd_symbol_t;
-
-static void prd_prod_init(struct prd_production *ppd);
-static void prd_prod_cleanup(struct prd_production *ppd);
-
-void prd_grammar_init(struct prd_grammar *g) {
-  g->have_errors_ = 0;
-  g->accept_whitespace_ = 0;
-  g->num_productions_ = g->num_productions_allocated_ = 0;
-  g->productions_ = NULL;
-}
-
-void prd_grammar_cleanup(struct prd_grammar *g) {
-  size_t n;
-
-  for (n = 0; n < g->num_productions_; ++n) {
-    prd_prod_cleanup(g->productions_ + n);
-  }
-  if (g->productions_) free(g->productions_);
-}
-
 static void prd_production_sym_init(struct prd_production_sym *pps) {
   xlts_init(&pps->id_);
   pps->sym_ = NULL;
@@ -105,6 +80,22 @@ static void prd_prod_cleanup(struct prd_production *ppd) {
     free(ppd->syms_);
   }
   snippet_cleanup(&ppd->action_sequence_);
+}
+
+void prd_grammar_init(struct prd_grammar *g) {
+  g->have_errors_ = 0;
+  g->accept_whitespace_ = 0;
+  g->num_productions_ = g->num_productions_allocated_ = 0;
+  g->productions_ = NULL;
+}
+
+void prd_grammar_cleanup(struct prd_grammar *g) {
+  size_t n;
+
+  for (n = 0; n < g->num_productions_; ++n) {
+    prd_prod_cleanup(g->productions_ + n);
+  }
+  if (g->productions_) free(g->productions_);
 }
 
 void prd_prod_swap(struct prd_production *a, struct prd_production *b) {
@@ -139,15 +130,6 @@ static int prd_grammar_check_production_reserve(struct prd_grammar *g) {
   return 0;
 }
 
-int prd_init(void) {
-  /* No-op; all tables are static */
-  return 0;
-}
-
-void prd_cleanup(void) {
-  /* No-op; all tables are static */
-}
-
 static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *loc) {
   if (pd->num_syms_ == pd->num_syms_allocated_) {
     size_t new_num = pd->num_syms_allocated_ * 2 + 1;
@@ -171,6 +153,7 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
   }
   return 0;
 }
+
 
 
 
