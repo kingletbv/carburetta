@@ -136,6 +136,8 @@ struct cinder_context {
   struct typestr *most_recent_typestr_;
   struct typestr *token_assigned_type_;
   struct snippet token_action_snippet_;
+  struct xlts prefix_;
+  char *prefix_uppercase_;
 };
 
 void cinder_context_init(struct cinder_context *cc) {
@@ -145,6 +147,8 @@ void cinder_context_init(struct cinder_context *cc) {
   cc->most_recent_typestr_ = NULL;
   cc->token_assigned_type_ = NULL;
   snippet_init(&cc->token_action_snippet_);
+  xlts_init(&cc->prefix_);
+  cc->prefix_uppercase_ = NULL;
 }
 
 void cinder_context_cleanup(struct cinder_context *cc) {
@@ -152,6 +156,8 @@ void cinder_context_cleanup(struct cinder_context *cc) {
   symbol_table_cleanup(&cc->symtab_);
   typestr_table_cleanup(&cc->tstab_);
   snippet_cleanup(&cc->token_action_snippet_);
+  xlts_cleanup(&cc->prefix_);
+  if (cc->prefix_uppercase_) free(cc->prefix_uppercase_);
 }
 
 
@@ -161,6 +167,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   int ate_directive = 0;
   int ate_colon_seperator = 0;
   int found_a_placeholder = 0;
+  int found_prefix = 0;
   struct symbol_table *st = &cc->symtab_;
   struct symbol **typed_symbols = NULL;
   size_t num_typed_symbols = 0;
@@ -174,7 +181,8 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     PCD_NT_TYPE_DIRECTIVE,
     PCD_CONSTRUCTOR_DIRECTIVE,
     PCD_DESTRUCTOR_DIRECTIVE,
-    PCD_TOKEN_ACTION_DIRECTIVE
+    PCD_TOKEN_ACTION_DIRECTIVE,
+    PCD_PREFIX_DIRECTIVE
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
   tkr_tokenizer_reset(tkr_tokens);
@@ -251,6 +259,9 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             }
             else if (!strcmp("token_action", tkr_str(tkr_tokens))) {
               directive = PCD_TOKEN_ACTION_DIRECTIVE;
+            }
+            else if (!strcmp("prefix", tkr_str(tkr_tokens))) {
+              directive = PCD_PREFIX_DIRECTIVE;
             }
             else if (!strcmp("debug_end", tkr_str(tkr_tokens))) {
               re_error(directive_line_match, "%%debug_end encountered, terminating early");
@@ -446,6 +457,41 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
               }
             }
           }
+          else if (directive == PCD_PREFIX_DIRECTIVE) {
+            if (found_prefix) {
+              re_error_tkr(tkr_tokens, "Error: Only a single identifier expected following %%prefix", tkr_str(tkr_tokens));
+              r = TKR_SYNTAX_ERROR;
+              goto cleanup_exit;
+            }
+            if (tkr_tokens->best_match_action_ != TOK_IDENT) {
+              re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected an identifier", tkr_str(tkr_tokens));
+              r = TKR_SYNTAX_ERROR;
+              goto cleanup_exit;
+            }
+            xlts_reset(&cc->prefix_);
+            r = xlts_append(&cc->prefix_, &tkr_tokens->xmatch_);
+            if (r) {
+              r = TKR_INTERNAL_ERROR;
+              goto cleanup_exit;
+            }
+            if (cc->prefix_.num_translated_) {
+              if (cc->prefix_uppercase_) free(cc->prefix_uppercase_);
+              cc->prefix_uppercase_ = (char *)malloc(cc->prefix_.num_translated_ + 1);
+              memcpy(cc->prefix_uppercase_, cc->prefix_.translated_, cc->prefix_.num_translated_);
+              cc->prefix_uppercase_[cc->prefix_.num_translated_] = 0;
+              size_t n;
+              for (n = 0; n < cc->prefix_.num_translated_; ++n) {
+                char c;
+                c = cc->prefix_uppercase_[n];
+                if ((c >= 'a') && (c <= 'z')) {
+                  c = c - 'a' + 'A';
+                }
+                cc->prefix_uppercase_[n] = c;
+              }
+            }
+
+            found_prefix = 1;
+          }
         }
       }
     }
@@ -527,6 +573,16 @@ cleanup_exit:
   if (typed_symbols) free(typed_symbols);
 
   return r;
+}
+
+static const char *cc_prefix(struct cinder_context *cc) {
+  if (cc->prefix_.num_translated_) return cc->prefix_.translated_;
+  return "prd_";
+}
+
+static const char *cc_PREFIX(struct cinder_context *cc) {
+  if (cc->prefix_uppercase_) return cc->prefix_uppercase_;
+  return "PRD_";
 }
 
 static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct prd_stack *prds, struct prd_grammar *g, struct symbol_table *st) {
@@ -941,8 +997,8 @@ int main(int argc, char **argv) {
     goto cleanup_exit;
   }
 
-  const char *output_filename = "prd_gram_gen.c";
-  //const char *output_filename = "prd_grammar_alt.c";
+  //const char *output_filename = "prd_gram_gen.c";
+  const char *output_filename = "prd_grammar_alt.c";
   FILE *outfp;
   outfp = fopen(output_filename, "wb");
   if (!outfp) {
@@ -971,7 +1027,7 @@ int main(int argc, char **argv) {
 
   fprintf(outfp, "/* --------- HERE GOES THE GENERATED FLUFF ------------ */\n");
 
-  fprintf(outfp, "struct prd_sym_data {\n");
+  fprintf(outfp, "struct %ssym_data {\n", cc_prefix(&cc));
   fprintf(outfp, "  int state_;\n");
   fprintf(outfp, "  union {\n");
 
@@ -1003,11 +1059,11 @@ int main(int argc, char **argv) {
   fprintf(outfp, "};\n");
 
   size_t num_columns = (size_t)(1 + lalr.max_sym - lalr.min_sym);
-  fprintf(outfp, "static const int minimum_sym = %d;\n", lalr.min_sym);
-  fprintf(outfp, "static const size_t num_columns = %zu;\n", num_columns);
-  fprintf(outfp, "static const size_t num_rows = %zu;\n", (size_t)lalr.nr_states);
-  fprintf(outfp, "static const size_t num_productions = %zu;\n", lalr.nr_productions);
-  fprintf(outfp, "static const int parse_table[] = {\n");
+  fprintf(outfp, "static const int %sminimum_sym = %d;\n", cc_prefix(&cc), lalr.min_sym);
+  fprintf(outfp, "static const size_t %snum_columns = %zu;\n", cc_prefix(&cc), num_columns);
+  fprintf(outfp, "static const size_t %snum_rows = %zu;\n", cc_prefix(&cc), (size_t)lalr.nr_states);
+  fprintf(outfp, "static const size_t %snum_productions = %zu;\n", cc_prefix(&cc), lalr.nr_productions);
+  fprintf(outfp, "static const int %sparse_table[] = {\n", cc_prefix(&cc));
   size_t row, col;
   char *column_widths = (char *)malloc(num_columns);
   if (!column_widths) {
@@ -1056,19 +1112,19 @@ int main(int argc, char **argv) {
   }
   free(column_widths);
   fprintf(outfp, "};\n");
-  fprintf(outfp, "static const size_t production_lengths[] = {\n");
+  fprintf(outfp, "static const size_t %sproduction_lengths[] = {\n", cc_prefix(&cc));
   for (row = 0; row < lalr.nr_productions; ++row) {
     fprintf(outfp, " %d%s\n", lalr.production_lengths[row], (row == lalr.nr_productions - 1) ? "" : ",");
   }
   fprintf(outfp, "};\n");
-  fprintf(outfp, "static const int production_syms[] = {\n");
+  fprintf(outfp, "static const int %sproduction_syms[] = {\n", cc_prefix(&cc));
   for (row = 0; row < lalr.nr_productions; ++row) {
     fprintf(outfp, " %d%s\n", lalr.productions[row][0], (row == lalr.nr_productions - 1) ? "" : ",");
   }
   fprintf(outfp, "};\n");
 
   /* For each state, what is the top-most symbol on the stack? */
-  fprintf(outfp, "static const int state_syms[] = {\n");
+  fprintf(outfp, "static const int %sstate_syms[] = {\n", cc_prefix(&cc));
 
   state_syms = (int *)malloc(sizeof(int) * (size_t)lalr.nr_states);
   if (!state_syms) {
@@ -1105,7 +1161,6 @@ int main(int argc, char **argv) {
   }
   fprintf(outfp, "};\n");
 
-  const char *symbol_prefix = "PRD_";
   fprintf(outfp, "#define NT_END %d\n", NT_END);
   fprintf(outfp, "#define RULE_END %d\n", RULE_END);
   fprintf(outfp, "#define GRAMMAR_END %d\n", GRAMMAR_END);
@@ -1130,7 +1185,7 @@ int main(int argc, char **argv) {
       }
       *s++ = '\0';
 
-      fprintf(outfp, "#define %s%s %d\n", symbol_prefix, ident, sym->ordinal_);
+      fprintf(outfp, "#define %s%s %d\n", cc_PREFIX(&cc), ident, sym->ordinal_);
       free(ident);
     } while (sym != cc.symtab_.terminals_);
   }
@@ -1157,14 +1212,14 @@ int main(int argc, char **argv) {
       }
       *s++ = '\0';
 
-      fprintf(outfp, "#define %s%s %d\n", symbol_prefix, ident, sym->ordinal_);
+      fprintf(outfp, "#define %s%s %d\n", cc_PREFIX(&cc), ident, sym->ordinal_);
       free(ident);
     } while (sym != cc.symtab_.non_terminals_);
   }
   fprintf(outfp, "#define SYNTHETIC_S %d\n", SYNTHETIC_S);
 
 
-  fprintf(outfp, "static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct prd_sym_data *dst_sym_data, struct prd_sym_data *sym_data, struct symbol_table *st) {\n");
+  fprintf(outfp, "static int %sreduce(struct %sstack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct %ssym_data *dst_sym_data, struct %ssym_data *sym_data, struct symbol_table *st) {\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp, "  int r;\n"
     "  struct prd_production *pd;\n"
     "  struct symbol *sym;\n"
@@ -1253,13 +1308,16 @@ int main(int argc, char **argv) {
   /* Emit stack constructor, destructor and reset functions */
 
   fprintf(outfp,
-    "  void prd_stack_init(struct prd_stack *stack) {\n"
+    "  void %sstack_init(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
+  fprintf(outfp,
     "    stack->pos_ = 0;\n"
     "    stack->num_stack_allocated_ = 0;\n"
     "    stack->stack_ = NULL;\n"
     "  }\n"
-    "\n"
-    "  void prd_stack_cleanup(struct prd_stack *stack) {\n"
+    "\n");
+  fprintf(outfp,
+    "  void %sstack_cleanup(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
+  fprintf(outfp,
     "    size_t n;\n"
     "    for (n = 0; n < stack->pos_; ++n) {\n");
   fprintf(outfp,
@@ -1309,7 +1367,8 @@ int main(int argc, char **argv) {
     "\n");
 
   fprintf(outfp,
-    "    static int prd_push_state(struct prd_stack *stack, int state) {\n"
+    "    static int %spush_state(struct %sstack *stack, int state) {\n", cc_prefix(&cc), cc_prefix(&cc));
+  fprintf(outfp,
     "    if (stack->num_stack_allocated_ == stack->pos_) {\n"
     "      size_t new_num_allocated = 0;\n"
     "      if (stack->num_stack_allocated_) {\n"
@@ -1323,16 +1382,19 @@ int main(int argc, char **argv) {
     "        new_num_allocated = 16;\n"
     "      }\n"
     "\n"
-    "      if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {\n"
+    "      if (new_num_allocated > (SIZE_MAX / sizeof(struct %ssym_data))) {\n", cc_prefix(&cc));
+  fprintf(outfp,
     "        LOGERROR(\"Overflow in allocation\\n\");\n"
     "      }\n"
     "\n"
-    "      void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));\n"
+    "      void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct %ssym_data));\n", cc_prefix(&cc));
+  fprintf(outfp,
     "      if (!p) {\n"
     "        LOGERROR(\"Out of memory\\n\");\n"
     "        return ENOMEM;\n"
     "      }\n"
-    "      stack->stack_ = (struct prd_sym_data *)p;\n"
+    "      stack->stack_ = (struct %ssym_data *)p;\n", cc_prefix(&cc));
+  fprintf(outfp,
     "      stack->num_stack_allocated_ = new_num_allocated;\n"
     "    }\n"
     "    stack->stack_[stack->pos_++].state_ = state;\n"
@@ -1340,7 +1402,8 @@ int main(int argc, char **argv) {
     "  }\n");
 
   fprintf(outfp,
-    "  int prd_stack_reset(struct prd_stack *stack) {\n"
+    "  int %sstack_reset(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
+  fprintf(outfp,
     "    int r;\n"
     "    size_t n;\n"
     "    for (n = 0; n < stack->pos_; ++n) {\n");
@@ -1385,7 +1448,8 @@ int main(int argc, char **argv) {
 
   fprintf(outfp,
     "    stack->pos_ = 0;\n"
-    "    r = prd_push_state(stack, 0);\n"
+    "    r = %spush_state(stack, 0);\n", cc_prefix(&cc));
+  fprintf(outfp,
     "    if (r) {\n"
     "      return r;\n"
     "    }\n"
@@ -1395,9 +1459,11 @@ int main(int argc, char **argv) {
 
   /* Emit the parse function */
   fprintf(outfp,
-    "static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {\n"
+    "static int %sparse_impl(struct %sstack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {\n", cc_prefix(&cc), cc_prefix(&cc));
+  fprintf(outfp,
     "  int current_state = stack->stack_[stack->pos_ - 1].state_;\n"
-    "  int action = parse_table[num_columns * current_state + (sym - minimum_sym)];\n"
+    "  int action = %sparse_table[%snum_columns * current_state + (sym - %sminimum_sym)];\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
+  fprintf(outfp,
     "  if (!action) {\n"
     "    /* Syntax error */\n"
     "    if (sym != INPUT_END) {\n"
@@ -1406,23 +1472,30 @@ int main(int argc, char **argv) {
     "    else {\n"
     "      re_error_tkr(tkr, \"Syntax error end of input not expected\");\n"
     "    }\n"
-    "    /* XXX: Pop until we transition */\n"
-    "    return PRD_SYNTAX_ERROR;\n"
+    "    /* XXX: Pop until we transition */\n");
+  fprintf(outfp,
+    "    return %sSYNTAX_ERROR;\n", cc_PREFIX(&cc));
+  fprintf(outfp,
     "  }\n"
     "  while (action < 0) {\n"
     "    /* While we're reducing.. */\n"
     "    int production = -action - 1;\n"
-    "    size_t production_length = production_lengths[production];\n"
-    "    int nonterminal = production_syms[production];\n"
+    "    size_t production_length = %sproduction_lengths[production];\n", cc_prefix(&cc));
+  fprintf(outfp,
+    "    int nonterminal = %sproduction_syms[production];\n", cc_prefix(&cc));
+  fprintf(outfp,
     "\n"
     "    if (0 == production) {\n"
     "      /* Synth S we're done. */\n"
-    "      return PRD_SUCCESS;\n"
+    "      return %sSUCCESS;\n", cc_PREFIX(&cc));
+  fprintf(outfp,
     "    }\n"
     "\n"
-    "    struct prd_sym_data nonterminal_sym_data_reduced_to;\n"
+    "    struct %ssym_data nonterminal_sym_data_reduced_to;\n", cc_prefix(&cc));
+  fprintf(outfp,
     "    int r;\n"
-    "    r = reduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->stack_ + stack->pos_ - production_length, st);\n"
+    "    r = %sreduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->stack_ + stack->pos_ - production_length, st);\n", cc_prefix(&cc));
+  fprintf(outfp,
     "    if (r) {\n"
     "      /* Semantic error */\n"
     "      return r;\n"
@@ -1430,12 +1503,13 @@ int main(int argc, char **argv) {
     "\n"
     "    /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
     "     * push nonterminal_data_reduced_to */\n"
-    "    size_t prd_sym_idx;\n"
-    "    for (prd_sym_idx = stack->pos_ - production_length; prd_sym_idx < stack->pos_; ++prd_sym_idx) {\n");
+    "    size_t %ssym_idx;\n", cc_prefix(&cc));
+  fprintf(outfp,
+    "    for (%ssym_idx = stack->pos_ - production_length; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
 
   fprintf(outfp,
-    "      switch (stack->stack_[prd_sym_idx].state_) {\n"
-  );
+    "      switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(&cc));
+  
   for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
     struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
     if (ts->destructor_snippet_.num_tokens_) {
@@ -1456,7 +1530,7 @@ int main(int argc, char **argv) {
         for (col = 0; col < action->num_tokens_; ++col) {
           if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
             /* Insert destination sym at appropriate ordinal value type. */
-            fprintf(outfp, "((stack->stack_ + prd_sym_idx)->v_.uv%d_)", ts->ordinal_);
+            fprintf(outfp, "((stack->stack_ + %ssym_idx)->v_.uv%d_)", cc_prefix(&cc), ts->ordinal_);
           }
           else {
             /* Regular token, just emit as-is */
@@ -1478,23 +1552,29 @@ int main(int argc, char **argv) {
     "    stack->pos_ -= production_length;\n"
     "\n"
     "    current_state = stack->stack_[stack->pos_ - 1].state_;\n"
-    "    action = parse_table[num_columns * current_state + (nonterminal - minimum_sym)];\n"
+    "    action = %sparse_table[%snum_columns * current_state + (nonterminal - %sminimum_sym)];\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
+  fprintf(outfp,
     "\n"
     "    if (!action) {\n"
     "      re_error_tkr(tkr, \"Internal error \\\"%%s\\\" cannot shift an already reduced nonterminal\", tkr->xmatch_.translated_);\n"
-    "      return PRD_INTERNAL_ERROR;\n"
+    "      return %sINTERNAL_ERROR;\n", cc_PREFIX(&cc));
+  fprintf(outfp,
     "    }\n"
     "    if (action < 0) {\n"
     "      re_error_tkr(tkr, \"Internal error \\\"%%s\\\" reduced non-terminal not shifting\", tkr->xmatch_.translated_);\n"
-    "      return PRD_INTERNAL_ERROR;\n"
+    "      return %sINTERNAL_ERROR;\n", cc_PREFIX(&cc));
+  fprintf(outfp,
     "    }\n"
-    "    prd_push_state(stack, action /* action for a shift is the ordinal */);\n"
-    "    struct prd_sym_data *sd = stack->stack_ + stack->pos_ - 1;\n"
+    "    %spush_state(stack, action /* action for a shift is the ordinal */);\n", cc_prefix(&cc));
+  fprintf(outfp,
+    "    struct %ssym_data *sd = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(&cc));
+  fprintf(outfp,
     "    *sd = nonterminal_sym_data_reduced_to;\n"
     "    sd->state_ = action;\n"
     "\n"
     "    current_state = stack->stack_[stack->pos_ - 1].state_;\n"
-    "    action = parse_table[num_columns * current_state + (sym - minimum_sym)];\n"
+    "    action = %sparse_table[%snum_columns * current_state + (sym - %sminimum_sym)];\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
+  fprintf(outfp,
     "    if (!action) {\n"
     "      /* Syntax error */\n"
     "      if (sym != INPUT_END) {\n"
@@ -1503,13 +1583,15 @@ int main(int argc, char **argv) {
     "      else {\n"
     "        re_error_tkr(tkr, \"Syntax error end of input not expected\");\n"
     "      }\n"
-    "      return PRD_SYNTAX_ERROR;\n"
+    "      return %sSYNTAX_ERROR;\n", cc_PREFIX(&cc));
+  fprintf(outfp,
     "    }\n"
     "  }\n"
     "\n"
     "  /* Shift token onto stack */\n"
     "  if (action > 0 /* shift? */) {\n"
-    "    prd_push_state(stack, action /* action for a shift is the ordinal */);\n"
+    "    %spush_state(stack, action /* action for a shift is the ordinal */);\n", cc_prefix(&cc));
+  fprintf(outfp,
     "\n"
     "    /* Fill in the sym from the tokenizer */\n");
   int need_sym_data = 0;
@@ -1520,7 +1602,7 @@ int main(int argc, char **argv) {
     need_sym_data = 1;
   }
   if (need_sym_data) {
-    fprintf(outfp, "    struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;\n");
+    fprintf(outfp, "    struct %ssym_data *sym_data = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(&cc));
   }
   if (cc.token_assigned_type_ && cc.token_assigned_type_->constructor_snippet_.num_tokens_) {
     fprintf(outfp, "    {\n      ");
@@ -1559,10 +1641,12 @@ int main(int argc, char **argv) {
     "  }\n"
     "  else {\n"
     "    re_error_tkr(tkr, \"Syntax error \\\"%%s\\\" not expected\", tkr->xmatch_.translated_);\n"
-    "    return PRD_SYNTAX_ERROR;\n"
+    "    return %sSYNTAX_ERROR;\n", cc_PREFIX(&cc));
+  fprintf(outfp,
     "  }\n"
     "\n"
-    "  return PRD_NEXT;\n"
+    "  return %sNEXT;\n", cc_PREFIX(&cc));
+  fprintf(outfp,
     "}\n"
   );
 
