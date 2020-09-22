@@ -431,5 +431,5 @@ int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokeniz
     sym = INPUT_END;
   }
   
-  return prd_parse_impl(stack, sym, g, tkr, end_of_input, st);
+  return prd_parse_impl(stack, sym, g, tkr, st);
 }
