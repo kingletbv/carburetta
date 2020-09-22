@@ -173,19 +173,10 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
 }
 
 
-/* XXX: Implementation of these may rely on union prd_sym_data_union which will be generated; forward declare, provide implementation below, until we generate these as well. */
-static int push_state(struct prd_stack *stack, int state);
-
-
-
 
 
 
 /* --------- HERE GOES THE GENERATED FLUFF ------------ */
-union prd_sym_data_union {
- struct { token_type_t match_ ; token_type_t variant_ ; struct xlts text_ ; } uv0_;
- struct prd_production uv1_;
-};
 struct prd_sym_data {
   int state_;
   union {
@@ -744,9 +735,7 @@ static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tok
   void prd_stack_init(struct prd_stack *stack) {
     stack->pos_ = 0;
     stack->num_stack_allocated_ = 0;
-    stack->states_ = NULL;
     stack->stack_ = NULL;
-    stack->sym_data_ = NULL;
   }
 
   void prd_stack_cleanup(struct prd_stack *stack) {
@@ -799,11 +788,38 @@ static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tok
       }
     }
 
-    if (stack->states_) free(stack->states_);
     if (stack->stack_) free(stack->stack_);
-    if (stack->sym_data_) free(stack->sym_data_);
   }
 
+    static int prd_push_state(struct prd_stack *stack, int state) {
+    if (stack->num_stack_allocated_ == stack->pos_) {
+      size_t new_num_allocated = 0;
+      if (stack->num_stack_allocated_) {
+        new_num_allocated = stack->num_stack_allocated_ * 2;
+        if (new_num_allocated <= stack->num_stack_allocated_) {
+          LOGERROR("Overflow in allocation\n");
+          return EOVERFLOW;
+        }
+      }
+      else {
+        new_num_allocated = 16;
+      }
+
+      if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
+        LOGERROR("Overflow in allocation\n");
+      }
+
+      void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));
+      if (!p) {
+        LOGERROR("Out of memory\n");
+        return ENOMEM;
+      }
+      stack->stack_ = (struct prd_sym_data *)p;
+      stack->num_stack_allocated_ = new_num_allocated;
+    }
+    stack->stack_[stack->pos_++].state_ = state;
+    return 0;
+  }
   int prd_stack_reset(struct prd_stack *stack) {
     int r;
     size_t n;
@@ -855,7 +871,7 @@ static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tok
       }
     }
     stack->pos_ = 0;
-    r = push_state(stack, 0);
+    r = prd_push_state(stack, 0);
     if (r) {
       return r;
     }
@@ -959,7 +975,7 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
       re_error_tkr(tkr, "Internal error \"%s\" reduced non-terminal not shifting", tkr->xmatch_.translated_);
       return PRD_INTERNAL_ERROR;
     }
-    push_state(stack, action /* action for a shift is the ordinal */);
+    prd_push_state(stack, action /* action for a shift is the ordinal */);
     struct prd_sym_data *sd = stack->stack_ + stack->pos_ - 1;
     *sd = nonterminal_sym_data_reduced_to;
     sd->state_ = action;
@@ -980,7 +996,7 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
 
   /* Shift token onto stack */
   if (action > 0 /* shift? */) {
-    push_state(stack, action /* action for a shift is the ordinal */);
+    prd_push_state(stack, action /* action for a shift is the ordinal */);
 
     /* Fill in the sym from the tokenizer */
     struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
@@ -1001,56 +1017,6 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
   return PRD_NEXT;
 }
 /* --------- HERE ENDS THE GENERATED FLUFF ------------ */
-
-static int push_state(struct prd_stack *stack, int state) {
-  if (stack->num_stack_allocated_ == stack->pos_) {
-    size_t new_num_allocated = 0;
-    if (stack->num_stack_allocated_) {
-      new_num_allocated = stack->num_stack_allocated_ * 2;
-      if (new_num_allocated <= stack->num_stack_allocated_) {
-        LOGERROR("Overflow in allocation\n");
-        return EOVERFLOW;
-      }
-    }
-    else {
-      new_num_allocated = 16;
-    }
-
-    if (new_num_allocated > (SIZE_MAX / sizeof(int))) {
-      LOGERROR("Overflow in allocation\n");
-      return EOVERFLOW;
-    }
-	if (new_num_allocated > (SIZE_MAX / sizeof(union prd_sym_data_union))) {
-      LOGERROR("Overflow in allocation\n");
-	}
-	if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
-	  LOGERROR("Overflow in allocation\n");
-	}
-
-    void *p = realloc(stack->states_, new_num_allocated * sizeof(int));
-    if (!p) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-    }
-    stack->states_ = p;
-	void *p1 = realloc(stack->sym_data_, new_num_allocated * sizeof(union prd_sym_data_union));
-    if (!p1) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-    }
-	stack->sym_data_ = (union prd_sym_data_union *)p1;
-	void *p2 = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));
-	if (!p2) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-	}
-	stack->stack_ = (struct prd_sym_data *)p2;
-    stack->num_stack_allocated_ = new_num_allocated;
-  }
-  stack->stack_[stack->pos_].state_ = state;
-  stack->states_[stack->pos_++] = state;
-  return 0;
-}
 
 int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;

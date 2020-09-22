@@ -172,11 +172,6 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
   return 0;
 }
 
-
-/* XXX: Implementation of these may rely on union prd_sym_data_union which will be generated; forward declare, provide implementation below, until we generate these as well. */
-static int push_state(struct prd_stack *stack, int state);
-
-
 %token ident colon equals semicolon token par-open par-close cubrace-open cubrace-close
 %nt grammar rule production action-sequence stmt-action start-c-tokenizer end-c-tokenizer accept-whitespace
 
@@ -426,56 +421,6 @@ accept-whitespace: {
 
 
 %%
-
-static int push_state(struct prd_stack *stack, int state) {
-  if (stack->num_stack_allocated_ == stack->pos_) {
-    size_t new_num_allocated = 0;
-    if (stack->num_stack_allocated_) {
-      new_num_allocated = stack->num_stack_allocated_ * 2;
-      if (new_num_allocated <= stack->num_stack_allocated_) {
-        LOGERROR("Overflow in allocation\n");
-        return EOVERFLOW;
-      }
-    }
-    else {
-      new_num_allocated = 16;
-    }
-
-    if (new_num_allocated > (SIZE_MAX / sizeof(int))) {
-      LOGERROR("Overflow in allocation\n");
-      return EOVERFLOW;
-    }
-	if (new_num_allocated > (SIZE_MAX / sizeof(union prd_sym_data_union))) {
-      LOGERROR("Overflow in allocation\n");
-	}
-	if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
-	  LOGERROR("Overflow in allocation\n");
-	}
-
-    void *p = realloc(stack->states_, new_num_allocated * sizeof(int));
-    if (!p) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-    }
-    stack->states_ = p;
-	void *p1 = realloc(stack->sym_data_, new_num_allocated * sizeof(union prd_sym_data_union));
-    if (!p1) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-    }
-	stack->sym_data_ = (union prd_sym_data_union *)p1;
-	void *p2 = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));
-	if (!p2) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-	}
-	stack->stack_ = (struct prd_sym_data *)p2;
-    stack->num_stack_allocated_ = new_num_allocated;
-  }
-  stack->stack_[stack->pos_].state_ = state;
-  stack->states_[stack->pos_++] = state;
-  return 0;
-}
 
 int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;

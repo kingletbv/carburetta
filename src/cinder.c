@@ -975,37 +975,11 @@ int main(int argc, char **argv) {
 
   fprintf(outfp, "/* --------- HERE GOES THE GENERATED FLUFF ------------ */\n");
 
-  fprintf(outfp, "union prd_sym_data_union {\n");
-  size_t ts_idx;
-  for (ts_idx = 0; ts_idx < cc.tstab_.num_typestrs_; ++ts_idx) {
-    struct typestr *ts;
-    ts = cc.tstab_.typestrs_[ts_idx];
-    int found_placeholder = 0;
-
-    fprintf(outfp, " ");
-    size_t tok_idx;
-    for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
-      struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
-      if (st->variant_ != TOK_SPECIAL_IDENT) {
-        fprintf(outfp, "%s%s", tok_idx ? " " : "", st->text_.translated_);
-      }
-      else {
-        found_placeholder = 1;
-        fprintf(outfp, " uv%d_", ts->ordinal_);
-      }
-    }
-    if (!found_placeholder) {
-      /* Placeholder is implied at the end */
-      fprintf(outfp, " uv%d_", ts->ordinal_);
-    }
-    fprintf(outfp, ";\n");
-  }
-  fprintf(outfp, "};\n");
-
   fprintf(outfp, "struct prd_sym_data {\n");
   fprintf(outfp, "  int state_;\n");
   fprintf(outfp, "  union {\n");
 
+  size_t ts_idx;
   for (ts_idx = 0; ts_idx < cc.tstab_.num_typestrs_; ++ts_idx) {
     struct typestr *ts;
     ts = cc.tstab_.typestrs_[ts_idx];
@@ -1286,9 +1260,7 @@ int main(int argc, char **argv) {
     "  void prd_stack_init(struct prd_stack *stack) {\n"
     "    stack->pos_ = 0;\n"
     "    stack->num_stack_allocated_ = 0;\n"
-    "    stack->states_ = NULL;\n"
     "    stack->stack_ = NULL;\n"
-    "    stack->sym_data_ = NULL;\n"
     "  }\n"
     "\n"
     "  void prd_stack_cleanup(struct prd_stack *stack) {\n"
@@ -1336,11 +1308,42 @@ int main(int argc, char **argv) {
   fprintf(outfp,
     "    }\n"
     "\n"
-    "    if (stack->states_) free(stack->states_);\n"
     "    if (stack->stack_) free(stack->stack_);\n"
-    "    if (stack->sym_data_) free(stack->sym_data_);\n"
     "  }\n"
+    "\n");
+
+  fprintf(outfp,
+    "    static int prd_push_state(struct prd_stack *stack, int state) {\n"
+    "    if (stack->num_stack_allocated_ == stack->pos_) {\n"
+    "      size_t new_num_allocated = 0;\n"
+    "      if (stack->num_stack_allocated_) {\n"
+    "        new_num_allocated = stack->num_stack_allocated_ * 2;\n"
+    "        if (new_num_allocated <= stack->num_stack_allocated_) {\n"
+    "          LOGERROR(\"Overflow in allocation\\n\");\n"
+    "          return EOVERFLOW;\n"
+    "        }\n"
+    "      }\n"
+    "      else {\n"
+    "        new_num_allocated = 16;\n"
+    "      }\n"
     "\n"
+    "      if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {\n"
+    "        LOGERROR(\"Overflow in allocation\\n\");\n"
+    "      }\n"
+    "\n"
+    "      void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));\n"
+    "      if (!p) {\n"
+    "        LOGERROR(\"Out of memory\\n\");\n"
+    "        return ENOMEM;\n"
+    "      }\n"
+    "      stack->stack_ = (struct prd_sym_data *)p;\n"
+    "      stack->num_stack_allocated_ = new_num_allocated;\n"
+    "    }\n"
+    "    stack->stack_[stack->pos_++].state_ = state;\n"
+    "    return 0;\n"
+    "  }\n");
+
+  fprintf(outfp,
     "  int prd_stack_reset(struct prd_stack *stack) {\n"
     "    int r;\n"
     "    size_t n;\n"
@@ -1386,7 +1389,7 @@ int main(int argc, char **argv) {
 
   fprintf(outfp,
     "    stack->pos_ = 0;\n"
-    "    r = push_state(stack, 0);\n"
+    "    r = prd_push_state(stack, 0);\n"
     "    if (r) {\n"
     "      return r;\n"
     "    }\n"
@@ -1489,7 +1492,7 @@ int main(int argc, char **argv) {
     "      re_error_tkr(tkr, \"Internal error \\\"%%s\\\" reduced non-terminal not shifting\", tkr->xmatch_.translated_);\n"
     "      return PRD_INTERNAL_ERROR;\n"
     "    }\n"
-    "    push_state(stack, action /* action for a shift is the ordinal */);\n"
+    "    prd_push_state(stack, action /* action for a shift is the ordinal */);\n"
     "    struct prd_sym_data *sd = stack->stack_ + stack->pos_ - 1;\n"
     "    *sd = nonterminal_sym_data_reduced_to;\n"
     "    sd->state_ = action;\n"
@@ -1510,7 +1513,7 @@ int main(int argc, char **argv) {
     "\n"
     "  /* Shift token onto stack */\n"
     "  if (action > 0 /* shift? */) {\n"
-    "    push_state(stack, action /* action for a shift is the ordinal */);\n"
+    "    prd_push_state(stack, action /* action for a shift is the ordinal */);\n"
     "\n"
     "    /* Fill in the sym from the tokenizer */\n");
   int need_sym_data = 0;
