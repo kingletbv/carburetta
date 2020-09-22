@@ -910,7 +910,7 @@ int main(int argc, char **argv) {
 
 
   LOG("Parsing completed successfully\n");
-  
+
   /* Number all symbols */
   int NT_END = 0, RULE_END = 1, GRAMMAR_END = 2;
   int next_ordinal = 3;
@@ -945,7 +945,7 @@ int main(int argc, char **argv) {
     goto cleanup_exit;
   }
 
-//  const char *output_filename = "prd_gram_gen.c";
+  //  const char *output_filename = "prd_gram_gen.c";
   const char *output_filename = "prd_grammar_alt.c";
   FILE *outfp;
   outfp = fopen(output_filename, "wb");
@@ -1004,11 +1004,11 @@ int main(int argc, char **argv) {
 
 
   size_t num_columns = (size_t)(1 + lalr.max_sym - lalr.min_sym);
-  fprintf(outfp, "static int minimum_sym = %d;\n", lalr.min_sym);
-  fprintf(outfp, "static size_t num_columns = %zu;\n", num_columns);
-  fprintf(outfp, "static size_t num_rows = %zu;\n", (size_t)lalr.nr_states);
-  fprintf(outfp, "static size_t num_productions = %zu;\n", lalr.nr_productions);
-  fprintf(outfp, "static int parse_table[] = {\n");
+  fprintf(outfp, "static const int minimum_sym = %d;\n", lalr.min_sym);
+  fprintf(outfp, "static const size_t num_columns = %zu;\n", num_columns);
+  fprintf(outfp, "static const size_t num_rows = %zu;\n", (size_t)lalr.nr_states);
+  fprintf(outfp, "static const size_t num_productions = %zu;\n", lalr.nr_productions);
+  fprintf(outfp, "static const int parse_table[] = {\n");
   size_t row, col;
   char *column_widths = (char *)malloc(num_columns);
   if (!column_widths) {
@@ -1057,19 +1057,19 @@ int main(int argc, char **argv) {
   }
   free(column_widths);
   fprintf(outfp, "};\n");
-  fprintf(outfp, "static size_t production_lengths[] = {\n");
+  fprintf(outfp, "static const size_t production_lengths[] = {\n");
   for (row = 0; row < lalr.nr_productions; ++row) {
     fprintf(outfp, " %d%s\n", lalr.production_lengths[row], (row == lalr.nr_productions - 1) ? "" : ",");
   }
   fprintf(outfp, "};\n");
-  fprintf(outfp, "static int production_syms[] = {\n");
+  fprintf(outfp, "static const int production_syms[] = {\n");
   for (row = 0; row < lalr.nr_productions; ++row) {
     fprintf(outfp, " %d%s\n", lalr.productions[row][0], (row == lalr.nr_productions - 1) ? "" : ",");
   }
   fprintf(outfp, "};\n");
 
   /* For each state, what is the top-most symbol on the stack? */
-  fprintf(outfp, "static int state_syms[] = {\n");
+  fprintf(outfp, "static const int state_syms[] = {\n");
 
   state_syms = (int *)malloc(sizeof(int) * (size_t)lalr.nr_states);
   if (!state_syms) {
@@ -1167,9 +1167,9 @@ int main(int argc, char **argv) {
 
   fprintf(outfp, "static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, union prd_sym_data_union *dst_sym_data, union prd_sym_data_union *sym_data, struct symbol_table *st) {\n");
   fprintf(outfp, "  int r;\n"
-                 "  struct prd_production *pd;\n"
-                 "  struct symbol *sym;\n"
-                 "  switch (production) {\n");
+    "  struct prd_production *pd;\n"
+    "  struct symbol *sym;\n"
+    "  switch (production) {\n");
   for (row = 0; row < prdg.num_productions_; ++row) {
     struct prd_production *pd = prdg.productions_ + row;
     fprintf(outfp, "  case %d: {\n    ", (int)row + 1);
@@ -1244,12 +1244,128 @@ int main(int argc, char **argv) {
       }
     }
     fprintf(outfp, "\n"
-                    "  }\n"
-                    "  break;\n");
+      "  }\n"
+      "  break;\n");
   }
   fprintf(outfp, "  } /* switch */\n"
-                 "  return PRD_SUCCESS;\n"
-                 "}\n");
+    "  return PRD_SUCCESS;\n"
+    "}\n");
+
+  /* Emit stack constructor, destructor and reset functions */
+
+  fprintf(outfp,
+    "  void prd_stack_init(struct prd_stack *stack) {\n"
+    "    stack->pos_ = 0;\n"
+    "    stack->num_stack_allocated_ = 0;\n"
+    "    stack->states_ = NULL;\n"
+    "    stack->sym_data_ = NULL;\n"
+    "  }\n"
+    "\n"
+    "  void prd_stack_cleanup(struct prd_stack *stack) {\n"
+    "    size_t n;\n"
+    "    for (n = 0; n < stack->pos_; ++n) {\n");
+  fprintf(outfp,
+    "      switch (stack->states_[n]) {\n");
+  size_t typestr_idx;
+  for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
+    struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
+    if (ts->destructor_snippet_.num_tokens_) {
+      int have_cases = 0; /* always true if all types are always used */
+      /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
+      size_t state_idx;
+      for (state_idx = 0; state_idx < lalr.nr_states; ++state_idx) {
+        struct symbol *sym = symbol_find_by_ordinal(&cc.symtab_, state_syms[state_idx]);
+        if (!sym) continue;
+        if (sym->assigned_type_ == ts) {
+          fprintf(outfp, "      case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+          have_cases = 1;
+        }
+      }
+      if (have_cases) {
+        fprintf(outfp, "      {\n      ");
+        struct snippet *action = &ts->destructor_snippet_;
+        for (col = 0; col < action->num_tokens_; ++col) {
+          if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+            /* Insert destination sym at appropriate ordinal value type. */
+            fprintf(outfp, "((stack->sym_data_ + n)->uv%d_)", ts->ordinal_);
+          }
+          else {
+            /* Regular token, just emit as-is */
+            fprintf(outfp, action->tokens_[col].text_.translated_);
+          }
+        }
+        /* Close this compound block  */
+        fprintf(outfp, "\n      }\n      break;\n");
+      }
+    }
+  }
+
+
+  fprintf(outfp,
+    "      }\n");
+  fprintf(outfp,
+    "    /* XXX: DECONSTRUCTION NEEDED */\n"
+    "      /* XXX: How do we dispatch to destructor ?\n"
+    "       * XXX: Destructor suppor from stack->states_[n]! */\n"
+    "    }\n"
+    "\n"
+    "    if (stack->states_) free(stack->states_);\n"
+    "\n"
+    "    if (stack->sym_data_) free(stack->sym_data_);\n"
+    "  }\n"
+    "\n"
+    "  int prd_stack_reset(struct prd_stack *stack) {\n"
+    "    int r;\n"
+    "    size_t n;\n"
+    "    for (n = 0; n < stack->pos_; ++n) {\n");
+  fprintf(outfp,
+    "      switch (stack->states_[n]) {\n");
+  for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
+    struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
+    if (ts->destructor_snippet_.num_tokens_) {
+      int have_cases = 0; /* always true if all types are always used */
+      /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
+      size_t state_idx;
+      for (state_idx = 0; state_idx < lalr.nr_states; ++state_idx) {
+        struct symbol *sym = symbol_find_by_ordinal(&cc.symtab_, state_syms[state_idx]);
+        if (!sym) continue;
+        if (sym->assigned_type_ == ts) {
+          fprintf(outfp, "      case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+          have_cases = 1;
+        }
+      }
+      if (have_cases) {
+        fprintf(outfp, "      {\n      ");
+        struct snippet *action = &ts->destructor_snippet_;
+        for (col = 0; col < action->num_tokens_; ++col) {
+          if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+            /* Insert destination sym at appropriate ordinal value type. */
+            fprintf(outfp, "((stack->sym_data_ + n)->uv%d_)", ts->ordinal_);
+          }
+          else {
+            /* Regular token, just emit as-is */
+            fprintf(outfp, action->tokens_[col].text_.translated_);
+          }
+        }
+        /* Close this compound block  */
+        fprintf(outfp, "\n      }\n      break;\n");
+      }
+    }
+  }
+  fprintf(outfp,
+    "      }\n");
+  fprintf(outfp,
+    "    }\n");
+
+  fprintf(outfp,
+    "    stack->pos_ = 0;\n"
+    "    r = push_state(stack, 0);\n"
+    "    if (r) {\n"
+    "      return r;\n"
+    "    }\n"
+    "    return 0;\n"
+    "  }\n"
+    "\n");
 
   /* Emit the parse function */
   fprintf(outfp,
@@ -1294,7 +1410,6 @@ int main(int argc, char **argv) {
   fprintf(outfp,
     "      switch (stack->states_[prd_sym_idx]) {\n"
   );
-  size_t typestr_idx;
   for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
     struct typestr *ts = cc.tstab_.typestrs_[typestr_idx];
     if (ts->destructor_snippet_.num_tokens_) {

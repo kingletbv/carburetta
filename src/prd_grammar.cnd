@@ -79,25 +79,6 @@ void prd_grammar_cleanup(struct prd_grammar *g) {
   if (g->productions_) free(g->productions_);
 }
 
-void prd_stack_init(struct prd_stack *stack) {
-  stack->pos_ = 0;
-  stack->num_stack_allocated_ = 0;
-  stack->states_ = NULL;
-  stack->sym_data_ = NULL;
-}
-
-void prd_stack_cleanup(struct prd_stack *stack) {
-  size_t n;
-  for (n = 0; n < stack->pos_; ++n) {
-	/* XXX: How do we dispatch to destructor ? 
-	 * XXX: Destructor suppor from stack->states_[n]! */
-  }
-
-  if (stack->states_) free(stack->states_);
-
-  if (stack->sym_data_) free(stack->sym_data_);
-}
-
 static void prd_production_sym_init(struct prd_production_sym *pps) {
   xlts_init(&pps->id_);
   pps->sym_ = NULL;
@@ -485,18 +466,6 @@ static int push_state(struct prd_stack *stack, int state) {
   stack->states_[stack->pos_++] = state;
   return 0;
 }
-
-int prd_stack_reset(struct prd_stack *stack) {
-  int r;
-  /* XXX: DECONSTRUCTION NEEDED */
-  stack->pos_ = 0;
-  r = push_state(stack, 0);
-  if (r) {
-    return r;
-  }
-  return 0;
-}
-
 
 int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;

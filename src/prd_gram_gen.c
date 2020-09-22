@@ -83,7 +83,6 @@ void prd_stack_init(struct prd_stack *stack) {
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
   stack->states_ = NULL;
-  stack->syms_ = NULL;
   stack->sym_data_ = NULL;
 }
 
@@ -96,7 +95,6 @@ void prd_stack_cleanup(struct prd_stack *stack) {
 
   if (stack->states_) free(stack->states_);
 
-  if (stack->syms_) free(stack->syms_);
   if (stack->sym_data_) free(stack->sym_data_);
 }
 
@@ -374,7 +372,7 @@ static int state_syms[] = {
 #define PRD_END_C_TOKENIZER 19
 #define PRD_ACCEPT_WHITESPACE 20
 #define SYNTHETIC_S 21
-static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, union prd_sym_data_union *dst_sym_data, struct prd_sym_data *syms, union prd_sym_data_union *sym_data, struct symbol_table *st) {
+static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, union prd_sym_data_union *dst_sym_data, union prd_sym_data_union *sym_data, struct symbol_table *st) {
   int r;
   struct prd_production *pd;
   struct symbol *sym;
@@ -782,7 +780,7 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
 
     union prd_sym_data_union nonterminal_sym_data_reduced_to;
     int r;
-    r = reduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->syms_ + stack->pos_ - production_length, stack->sym_data_ + stack->pos_ - production_length, st);
+    r = reduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->sym_data_ + stack->pos_ - production_length, st);
     if (r) {
       /* Semantic error */
       return r;
@@ -873,7 +871,6 @@ static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct
   /* Shift token onto stack */
   if (action > 0 /* shift? */) {
     push_state(stack, action /* action for a shift is the ordinal */);
-    struct prd_sym_data *sym = stack->syms_ + stack->pos_ - 1;
 
     /* Fill in the sym from the tokenizer */
     union prd_sym_data_union *sym_data = stack->sym_data_ + stack->pos_ - 1;
@@ -909,10 +906,6 @@ static int push_state(struct prd_stack *stack, int state) {
       new_num_allocated = 16;
     }
 
-    if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
-      LOGERROR("Overflow in allocation\n");
-      return EOVERFLOW;
-    }
     if (new_num_allocated > (SIZE_MAX / sizeof(int))) {
       LOGERROR("Overflow in allocation\n");
       return EOVERFLOW;
@@ -921,24 +914,18 @@ static int push_state(struct prd_stack *stack, int state) {
       LOGERROR("Overflow in allocation\n");
 	}
 
-    void *p = realloc(stack->syms_, new_num_allocated * sizeof(struct prd_sym_data));
+    void *p = realloc(stack->states_, new_num_allocated * sizeof(int));
     if (!p) {
       LOGERROR("Out of memory\n");
       return ENOMEM;
     }
-    stack->syms_ = (struct prd_sym_data *)p;
-    void *p2 = realloc(stack->states_, new_num_allocated * sizeof(int));
-    if (!p2) {
+    stack->states_ = p;
+	void *p1 = realloc(stack->sym_data_, new_num_allocated * sizeof(union prd_sym_data_union));
+    if (!p1) {
       LOGERROR("Out of memory\n");
       return ENOMEM;
     }
-    stack->states_ = p2;
-	void *p3 = realloc(stack->sym_data_, new_num_allocated * sizeof(union prd_sym_data_union));
-    if (!p3) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
-    }
-	stack->sym_data_ = (union prd_sym_data_union *)p3;
+	stack->sym_data_ = (union prd_sym_data_union *)p1;
     stack->num_stack_allocated_ = new_num_allocated;
   }
   stack->states_[stack->pos_++] = state;
@@ -947,12 +934,12 @@ static int push_state(struct prd_stack *stack, int state) {
 
 int prd_stack_reset(struct prd_stack *stack) {
   int r;
+  /* XXX: DECONSTRUCTION NEEDED */
   stack->pos_ = 0;
   r = push_state(stack, 0);
   if (r) {
     return r;
   }
-  xlts_init(&stack->syms_[0].text_);
   return 0;
 }
 

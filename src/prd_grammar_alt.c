@@ -79,25 +79,6 @@ void prd_grammar_cleanup(struct prd_grammar *g) {
   if (g->productions_) free(g->productions_);
 }
 
-void prd_stack_init(struct prd_stack *stack) {
-  stack->pos_ = 0;
-  stack->num_stack_allocated_ = 0;
-  stack->states_ = NULL;
-  stack->sym_data_ = NULL;
-}
-
-void prd_stack_cleanup(struct prd_stack *stack) {
-  size_t n;
-  for (n = 0; n < stack->pos_; ++n) {
-	/* XXX: How do we dispatch to destructor ? 
-	 * XXX: Destructor suppor from stack->states_[n]! */
-  }
-
-  if (stack->states_) free(stack->states_);
-
-  if (stack->sym_data_) free(stack->sym_data_);
-}
-
 static void prd_production_sym_init(struct prd_production_sym *pps) {
   xlts_init(&pps->id_);
   pps->sym_ = NULL;
@@ -205,11 +186,11 @@ union prd_sym_data_union {
  struct { token_type_t match_ ; token_type_t variant_ ; struct xlts text_ ; } uv0_;
  struct prd_production uv1_;
 };
-static int minimum_sym = 3;
-static size_t num_columns = 19;
-static size_t num_rows = 40;
-static size_t num_productions = 26;
-static int parse_table[] = {
+static const int minimum_sym = 3;
+static const size_t num_columns = 19;
+static const size_t num_rows = 40;
+static const size_t num_productions = 26;
+static const int parse_table[] = {
  -2,  0,  0,  0,  0,  0,  0,  0,  0,-2,39, 0, 0, 0, 0, 0, 0, 0, 0,
  -3,  0,  0,  0,  0,  0,  0,  0,  0,-3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  -4,  0,  0,  0,  0,  0,  0,  0,  0,-4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -251,7 +232,7 @@ static int parse_table[] = {
   0, 37,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  38,  0,  0,  0,  0,  0,  0,  0,  0,-1, 0, 0, 1, 0, 0, 0, 0, 0, 0,
 };
-static size_t production_lengths[] = {
+static const size_t production_lengths[] = {
  1,
  0,
  2,
@@ -279,7 +260,7 @@ static size_t production_lengths[] = {
  0,
  0
 };
-static int production_syms[] = {
+static const int production_syms[] = {
  21,
  13,
  13,
@@ -307,7 +288,7 @@ static int production_syms[] = {
  19,
  20
 };
-static int state_syms[] = {
+static const int state_syms[] = {
  -1,
  15,
  6,
@@ -753,6 +734,129 @@ static int reduce(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tok
   } /* switch */
   return PRD_SUCCESS;
 }
+  void prd_stack_init(struct prd_stack *stack) {
+    stack->pos_ = 0;
+    stack->num_stack_allocated_ = 0;
+    stack->states_ = NULL;
+    stack->sym_data_ = NULL;
+  }
+
+  void prd_stack_cleanup(struct prd_stack *stack) {
+    size_t n;
+    for (n = 0; n < stack->pos_; ++n) {
+      switch (stack->states_[n]) {
+      case 2: /* semicolon */
+      case 3: /* semicolon */
+      case 5: /* ident */
+      case 6: /* colon */
+      case 7: /* equals */
+      case 8: /* token */
+      case 9: /* par-close */
+      case 11: /* par-open */
+      case 12: /* cubrace-close */
+      case 14: /* cubrace-open */
+      case 17: /* equals */
+      case 18: /* cubrace-close */
+      case 20: /* ident */
+      case 21: /* colon */
+      case 22: /* equals */
+      case 23: /* semicolon */
+      case 24: /* token */
+      case 25: /* par-close */
+      case 27: /* par-open */
+      case 28: /* cubrace-close */
+      case 30: /* cubrace-open */
+      case 32: /* cubrace-open */
+      case 35: /* ident */
+      case 37: /* colon */
+      case 38: /* ident */
+      {
+       xlts_cleanup(&((stack->sym_data_ + n)->uv0_).text_);
+
+      }
+      break;
+      case 1: /* production */
+      case 10: /* action-sequence */
+      case 13: /* action-sequence */
+      case 15: /* stmt-action */
+      case 26: /* action-sequence */
+      case 29: /* action-sequence */
+      case 31: /* action-sequence */
+      case 36: /* rule */
+      {
+       prd_prod_cleanup(&((stack->sym_data_ + n)->uv1_));
+
+      }
+      break;
+      }
+    /* XXX: DECONSTRUCTION NEEDED */
+      /* XXX: How do we dispatch to destructor ?
+       * XXX: Destructor suppor from stack->states_[n]! */
+    }
+
+    if (stack->states_) free(stack->states_);
+
+    if (stack->sym_data_) free(stack->sym_data_);
+  }
+
+  int prd_stack_reset(struct prd_stack *stack) {
+    int r;
+    size_t n;
+    for (n = 0; n < stack->pos_; ++n) {
+      switch (stack->states_[n]) {
+      case 2: /* semicolon */
+      case 3: /* semicolon */
+      case 5: /* ident */
+      case 6: /* colon */
+      case 7: /* equals */
+      case 8: /* token */
+      case 9: /* par-close */
+      case 11: /* par-open */
+      case 12: /* cubrace-close */
+      case 14: /* cubrace-open */
+      case 17: /* equals */
+      case 18: /* cubrace-close */
+      case 20: /* ident */
+      case 21: /* colon */
+      case 22: /* equals */
+      case 23: /* semicolon */
+      case 24: /* token */
+      case 25: /* par-close */
+      case 27: /* par-open */
+      case 28: /* cubrace-close */
+      case 30: /* cubrace-open */
+      case 32: /* cubrace-open */
+      case 35: /* ident */
+      case 37: /* colon */
+      case 38: /* ident */
+      {
+       xlts_cleanup(&((stack->sym_data_ + n)->uv0_).text_);
+
+      }
+      break;
+      case 1: /* production */
+      case 10: /* action-sequence */
+      case 13: /* action-sequence */
+      case 15: /* stmt-action */
+      case 26: /* action-sequence */
+      case 29: /* action-sequence */
+      case 31: /* action-sequence */
+      case 36: /* rule */
+      {
+       prd_prod_cleanup(&((stack->sym_data_ + n)->uv1_));
+
+      }
+      break;
+      }
+    }
+    stack->pos_ = 0;
+    r = push_state(stack, 0);
+    if (r) {
+      return r;
+    }
+    return 0;
+  }
+
 static int parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int current_state = stack->states_[stack->pos_ - 1];
   int action = parse_table[num_columns * current_state + (sym - minimum_sym)];
@@ -931,18 +1035,6 @@ static int push_state(struct prd_stack *stack, int state) {
   stack->states_[stack->pos_++] = state;
   return 0;
 }
-
-int prd_stack_reset(struct prd_stack *stack) {
-  int r;
-  /* XXX: DECONSTRUCTION NEEDED */
-  stack->pos_ = 0;
-  r = push_state(stack, 0);
-  if (r) {
-    return r;
-  }
-  return 0;
-}
-
 
 int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;
