@@ -140,6 +140,11 @@ struct cinder_context {
   char *prefix_uppercase_;
   struct snippet params_snippet_;
   struct snippet locals_snippet_;
+  struct snippet on_success_snippet_;
+  struct snippet on_syntax_error_snippet_;
+  struct snippet on_alloc_error_snippet_;
+  struct snippet on_internal_error_snippet_;
+  struct snippet on_next_token_snippet_;
 };
 
 void cinder_context_init(struct cinder_context *cc) {
@@ -153,6 +158,11 @@ void cinder_context_init(struct cinder_context *cc) {
   cc->prefix_uppercase_ = NULL;
   snippet_init(&cc->params_snippet_);
   snippet_init(&cc->locals_snippet_);
+  snippet_init(&cc->on_success_snippet_);
+  snippet_init(&cc->on_syntax_error_snippet_);
+  snippet_init(&cc->on_alloc_error_snippet_);
+  snippet_init(&cc->on_internal_error_snippet_);
+  snippet_init(&cc->on_next_token_snippet_);
 }
 
 void cinder_context_cleanup(struct cinder_context *cc) {
@@ -164,6 +174,11 @@ void cinder_context_cleanup(struct cinder_context *cc) {
   if (cc->prefix_uppercase_) free(cc->prefix_uppercase_);
   snippet_cleanup(&cc->params_snippet_);
   snippet_cleanup(&cc->locals_snippet_);
+  snippet_cleanup(&cc->on_success_snippet_);
+  snippet_cleanup(&cc->on_syntax_error_snippet_);
+  snippet_cleanup(&cc->on_alloc_error_snippet_);
+  snippet_cleanup(&cc->on_internal_error_snippet_);
+  snippet_cleanup(&cc->on_next_token_snippet_);
 }
 
 
@@ -190,7 +205,12 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     PCD_TOKEN_ACTION_DIRECTIVE,
     PCD_PREFIX_DIRECTIVE,
     PCD_PARAMS_DIRECTIVE,
-    PCD_LOCALS_DIRECTIVE
+    PCD_LOCALS_DIRECTIVE,
+    PCD_ON_SUCCESS_DIRECTIVE,
+    PCD_ON_SYNTAX_ERROR_DIRECTIVE,
+    PCD_ON_ALLOC_ERROR_DIRECTIVE,
+    PCD_ON_INTERNAL_ERROR_DIRECTIVE,
+    PCD_ON_NEXT_TOKEN_DIRECTIVE
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
@@ -211,11 +231,13 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
       int eat_whitespace = 0;
 
       if (ate_directive) {
-        if ((directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
-            (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
-            (directive == PCD_TOKEN_ACTION_DIRECTIVE) ||
-            (directive == PCD_PARAMS_DIRECTIVE) ||
-            (directive == PCD_LOCALS_DIRECTIVE)) {
+        if ((directive == PCD_PARAMS_DIRECTIVE) ||
+            (directive == PCD_LOCALS_DIRECTIVE) ||
+            (directive == PCD_ON_SUCCESS_DIRECTIVE) ||
+            (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) ||
+            (directive == PCD_ON_ALLOC_ERROR_DIRECTIVE) ||
+            (directive == PCD_ON_INTERNAL_ERROR_DIRECTIVE) ||
+            (directive == PCD_ON_NEXT_TOKEN_DIRECTIVE)) {
           eat_whitespace = 0;
           /* Keep whitespace for all code directives */
         }
@@ -279,6 +301,21 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             else if (!strcmp("locals", tkr_str(tkr_tokens))) {
               directive = PCD_LOCALS_DIRECTIVE;
             }
+            else if (!strcmp("on_success", tkr_str(tkr_tokens))) {
+              directive = PCD_ON_SUCCESS_DIRECTIVE;
+            }
+            else if (!strcmp("on_syntax_error", tkr_str(tkr_tokens))) {
+              directive = PCD_ON_SYNTAX_ERROR_DIRECTIVE;
+            }
+            else if (!strcmp("on_alloc_error", tkr_str(tkr_tokens))) {
+              directive = PCD_ON_ALLOC_ERROR_DIRECTIVE;
+            }
+            else if (!strcmp("on_internal_error", tkr_str(tkr_tokens))) {
+              directive = PCD_ON_INTERNAL_ERROR_DIRECTIVE;
+            }
+            else if (!strcmp("on_next_token", tkr_str(tkr_tokens))) {
+              directive = PCD_ON_NEXT_TOKEN_DIRECTIVE;
+            }
             else if (!strcmp("debug_end", tkr_str(tkr_tokens))) {
               re_error(directive_line_match, "%%debug_end encountered, terminating early");
               r = TKR_INTERNAL_ERROR;
@@ -322,7 +359,6 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
           }
           else if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
             /* Trim simple whitespace off the head end, otherwise simply copy. */
-            /* XXX: Continue with this! */
             if (cc->token_type_.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
               if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
                 if (strcmp("$", tkr_str(tkr_tokens))) {
@@ -508,7 +544,13 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
 
             found_prefix = 1;
           }
-          else if ((directive == PCD_PARAMS_DIRECTIVE) || (directive == PCD_LOCALS_DIRECTIVE)) {
+          else if ((directive == PCD_PARAMS_DIRECTIVE) || 
+                   (directive == PCD_LOCALS_DIRECTIVE) ||
+                   (directive == PCD_ON_SUCCESS_DIRECTIVE) || 
+                   (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) || 
+                   (directive == PCD_ON_ALLOC_ERROR_DIRECTIVE) || 
+                   (directive == PCD_ON_INTERNAL_ERROR_DIRECTIVE) || 
+                   (directive == PCD_ON_NEXT_TOKEN_DIRECTIVE)) {
             if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE_CHAR)) {
               r = snippet_append_tkr(&dir_snippet, tkr_tokens);
               if (r) {
@@ -608,6 +650,36 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     if (r) goto cleanup_exit;
   }
 
+  if (directive == PCD_ON_SUCCESS_DIRECTIVE) {
+    snippet_clear(&cc->on_success_snippet_);
+    r = snippet_append_snippet(&cc->on_success_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) {
+    snippet_clear(&cc->on_syntax_error_snippet_);
+    r = snippet_append_snippet(&cc->on_syntax_error_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_ON_ALLOC_ERROR_DIRECTIVE) {
+    snippet_clear(&cc->on_alloc_error_snippet_);
+    r = snippet_append_snippet(&cc->on_alloc_error_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_ON_INTERNAL_ERROR_DIRECTIVE) {
+    snippet_clear(&cc->on_internal_error_snippet_);
+    r = snippet_append_snippet(&cc->on_internal_error_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_ON_NEXT_TOKEN_DIRECTIVE) {
+    snippet_clear(&cc->on_next_token_snippet_);
+    r = snippet_append_snippet(&cc->on_next_token_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+  
   r = 0;
 
 cleanup_exit:
@@ -947,7 +1019,6 @@ int main(int argc, char **argv) {
             where_are_we = GRAMMAR;
             break;
           case LD_REGULAR:
-            /* XXX: Process this by individual tokens later ? */
             /* Preserve line continuations */
             append_part(&prologue, token_buf.num_original_, token_buf.original_);
             break;
@@ -1439,9 +1510,11 @@ int main(int argc, char **argv) {
     "    size_t new_num_allocated = 0;\n"
     "    if (stack->num_stack_allocated_) {\n"
     "      new_num_allocated = stack->num_stack_allocated_ * 2;\n"
-    "      if (new_num_allocated <= stack->num_stack_allocated_) {\n"
-    "        LOGERROR(\"Overflow in allocation\\n\");\n"
-    "        return EOVERFLOW;\n"
+    "      if (new_num_allocated <= stack->num_stack_allocated_) {\n");
+  fprintf(outfp, 
+    "        /* Overflow in allocation */\n"
+    "        return -1;\n");
+  fprintf(outfp,
     "      }\n"
     "    }\n"
     "    else {\n"
@@ -1450,14 +1523,18 @@ int main(int argc, char **argv) {
     "\n"
     "    if (new_num_allocated > (SIZE_MAX / sizeof(struct %ssym_data))) {\n", cc_prefix(&cc));
   fprintf(outfp,
-    "      LOGERROR(\"Overflow in allocation\\n\");\n"
+    "      /* Overflow in allocation */\n"
+    "      return -1;\n");
+  fprintf(outfp,
     "    }\n"
     "\n"
     "    void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct %ssym_data));\n", cc_prefix(&cc));
   fprintf(outfp,
-    "    if (!p) {\n"
-    "      LOGERROR(\"Out of memory\\n\");\n"
-    "      return ENOMEM;\n"
+    "    if (!p) {\n");
+  fprintf(outfp,
+    "      /* Out of memory */\n"
+    "      return -2;\n");
+  fprintf(outfp,
     "    }\n"
     "    stack->stack_ = (struct %ssym_data *)p;\n", cc_prefix(&cc));
   fprintf(outfp,
@@ -1470,7 +1547,6 @@ int main(int argc, char **argv) {
   fprintf(outfp,
     "int %sstack_reset(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp,
-    "  int r;\n"
     "  size_t n;\n"
     "  for (n = 0; n < stack->pos_; ++n) {\n");
   fprintf(outfp,
@@ -1513,12 +1589,17 @@ int main(int argc, char **argv) {
     "  }\n");
 
   fprintf(outfp,
-    "  stack->pos_ = 0;\n"
-    "  r = %spush_state(stack, 0);\n", cc_prefix(&cc));
+    "  stack->pos_ = 0;\n");
+
+  fprintf(outfp, "  switch (%spush_state(stack, 0)) {\n"
+                 "    case -1: /* overflow */ {\n", cc_prefix(&cc));
+  fprintf(outfp, "      return -1;\n");
+  fprintf(outfp, "    }\n    break;\n"
+                 "    case -2: /* out of memory */ {\n");
+  fprintf(outfp, "      return -2;\n");
+  fprintf(outfp, "    }\n    break;\n  }\n");
+
   fprintf(outfp,
-    "  if (r) {\n"
-    "    return r;\n"
-    "  }\n"
     "  return 0;\n"
     "}\n"
     "\n");
@@ -1541,17 +1622,18 @@ int main(int argc, char **argv) {
     "  int current_state = stack->stack_[stack->pos_ - 1].state_;\n"
     "  int action = %sparse_table[%snum_columns * current_state + (sym - %sminimum_sym)];\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp,
-    "  if (!action) {\n"
-    "    /* Syntax error */\n"
-    "    if (sym != INPUT_END) {\n"
-    "      re_error_tkr(tkr, \"Syntax error \\\"%%s\\\" not expected\", tkr->xmatch_.translated_);\n"
-    "    }\n"
-    "    else {\n"
-    "      re_error_tkr(tkr, \"Syntax error end of input not expected\");\n"
-    "    }\n"
-    "    /* XXX: Pop until we transition */\n");
-  fprintf(outfp,
-    "    return %sSYNTAX_ERROR;\n", cc_PREFIX(&cc));
+    "  if (!action) {\n    ");
+  if (cc.on_syntax_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_syntax_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "/* Syntax error */\n"
+      "    return -1;\n");
+  }
+
   fprintf(outfp,
     "  }\n"
     "  while (action < 0) {\n"
@@ -1562,9 +1644,17 @@ int main(int argc, char **argv) {
     "    int nonterminal = %sproduction_syms[production];\n", cc_prefix(&cc));
   fprintf(outfp,
     "\n"
-    "    if (0 == production) {\n"
-    "      /* Synth S we're done. */\n"
-    "      return %sSUCCESS;\n", cc_PREFIX(&cc));
+    "    if (0 == production) {\n      ");
+  if (cc.on_success_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_success_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_success_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "/* Synth S we're done */\n"
+      "      return 0;\n");
+  }
   fprintf(outfp,
     "    }\n"
     "\n"
@@ -1720,17 +1810,44 @@ int main(int argc, char **argv) {
     "    action = %sparse_table[%snum_columns * current_state + (nonterminal - %sminimum_sym)];\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp,
     "\n"
-    "    if (!action) {\n"
-    "      re_error_tkr(tkr, \"Internal error \\\"%%s\\\" cannot shift an already reduced nonterminal\", tkr->xmatch_.translated_);\n"
-    "      return %sINTERNAL_ERROR;\n", cc_PREFIX(&cc));
+    "    if (action <= 0) {\n      ");
+  if (cc.on_internal_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_internal_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_internal_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "/* Internal error: cannot shift an already reduced non-terminal */\n"
+      "      return -2;\n");
+  }
   fprintf(outfp,
-    "    }\n"
-    "    if (action < 0) {\n"
-    "      re_error_tkr(tkr, \"Internal error \\\"%%s\\\" reduced non-terminal not shifting\", tkr->xmatch_.translated_);\n"
-    "      return %sINTERNAL_ERROR;\n", cc_PREFIX(&cc));
-  fprintf(outfp,
-    "    }\n"
-    "    %spush_state(stack, action /* action for a shift is the ordinal */);\n", cc_prefix(&cc));
+    "    }\n");
+
+  fprintf(outfp, "    switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n"
+                 "      case -1: /* overflow */ {\n        ", cc_prefix(&cc));
+  if (cc.on_internal_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_internal_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_internal_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "return -1;\n");
+  }
+  fprintf(outfp, "      }\n    break;\n"
+                 "      case -2: /* out of memory */ {\n        ");
+  if (cc.on_alloc_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_alloc_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_alloc_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "return -2;\n");
+  }
+  fprintf(outfp, "      }\n      break;\n    }\n");
+
   fprintf(outfp,
     "    struct %ssym_data *sd = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(&cc));
   fprintf(outfp,
@@ -1740,22 +1857,49 @@ int main(int argc, char **argv) {
     "    current_state = stack->stack_[stack->pos_ - 1].state_;\n"
     "    action = %sparse_table[%snum_columns * current_state + (sym - %sminimum_sym)];\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
   fprintf(outfp,
-    "    if (!action) {\n"
-    "      /* Syntax error */\n"
-    "      if (sym != INPUT_END) {\n"
-    "        re_error_tkr(tkr, \"Syntax error \\\"%%s\\\" not expected\", tkr->xmatch_.translated_);\n"
-    "      }\n"
-    "      else {\n"
-    "        re_error_tkr(tkr, \"Syntax error end of input not expected\");\n"
-    "      }\n"
-    "      return %sSYNTAX_ERROR;\n", cc_PREFIX(&cc));
+    "    if (!action) {\n      ");
+  if (cc.on_syntax_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_syntax_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "/* Syntax error */\n"
+      "    return -1;\n");
+  }
   fprintf(outfp,
     "    }\n"
     "  }\n"
     "\n"
     "  /* Shift token onto stack */\n"
-    "  if (action > 0 /* shift? */) {\n"
-    "    %spush_state(stack, action /* action for a shift is the ordinal */);\n", cc_prefix(&cc));
+    "  if (action > 0 /* shift? */) {\n");
+
+  fprintf(outfp, "    switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n"
+                 "      case -1: /* overflow */ {\n        ", cc_prefix(&cc));
+  if (cc.on_internal_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_internal_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_internal_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "return -1;\n");
+  }
+  fprintf(outfp, "      }\n    break;\n"
+                 "      case -2: /* out of memory */ {\n        ");
+  if (cc.on_alloc_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_alloc_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_alloc_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "return -2;\n");
+  }
+  fprintf(outfp, "      }\n      break;\n    }\n");
+
+
   fprintf(outfp,
     "\n"
     "    /* Fill in the sym from the tokenizer */\n");
@@ -1804,16 +1948,34 @@ int main(int argc, char **argv) {
 
   fprintf(outfp,
     "  }\n"
-    "  else {\n"
-    "    re_error_tkr(tkr, \"Syntax error \\\"%%s\\\" not expected\", tkr->xmatch_.translated_);\n"
-    "    return %sSYNTAX_ERROR;\n", cc_PREFIX(&cc));
+    "  else {\n    ");
+  if (cc.on_syntax_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_syntax_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "/* Syntax error */\n"
+      "    return -1;\n");
+  }
   fprintf(outfp,
     "  }\n"
     "\n"
-    "  return %sNEXT;\n", cc_PREFIX(&cc));
+    "  {\n    ");
+  if (cc.on_next_token_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.on_next_token_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.on_next_token_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "/* Need next token */\n"
+      "    return 1;\n");
+  }
   fprintf(outfp,
-    "}\n"
-  );
+    "  }\n"
+    "}\n");
 
 
   fprintf(outfp, "/* --------- HERE ENDS THE GENERATED FLUFF ------------ */\n");

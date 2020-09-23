@@ -161,6 +161,8 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
 
 
 
+
+
 /* --------- HERE GOES THE GENERATED FLUFF ------------ */
 struct prd_sym_data {
   int state_;
@@ -372,7 +374,7 @@ void prd_stack_cleanup(struct prd_stack *stack) {
     case 37: /* colon */
     case 38: /* ident */
     {
-       xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+      xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
     }
     break;
     case 1: /* production */
@@ -384,7 +386,7 @@ void prd_stack_cleanup(struct prd_stack *stack) {
     case 31: /* action-sequence */
     case 36: /* rule */
     {
-       prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+      prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
     }
     break;
     }
@@ -399,8 +401,8 @@ static int prd_push_state(struct prd_stack *stack, int state) {
     if (stack->num_stack_allocated_) {
       new_num_allocated = stack->num_stack_allocated_ * 2;
       if (new_num_allocated <= stack->num_stack_allocated_) {
-        LOGERROR("Overflow in allocation\n");
-        return EOVERFLOW;
+        /* Overflow in allocation */
+        return -1;
       }
     }
     else {
@@ -408,13 +410,14 @@ static int prd_push_state(struct prd_stack *stack, int state) {
     }
 
     if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
-      LOGERROR("Overflow in allocation\n");
+      /* Overflow in allocation */
+      return -1;
     }
 
     void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));
     if (!p) {
-      LOGERROR("Out of memory\n");
-      return ENOMEM;
+      /* Out of memory */
+      return -2;
     }
     stack->stack_ = (struct prd_sym_data *)p;
     stack->num_stack_allocated_ = new_num_allocated;
@@ -423,7 +426,6 @@ static int prd_push_state(struct prd_stack *stack, int state) {
   return 0;
 }
 int prd_stack_reset(struct prd_stack *stack) {
-  int r;
   size_t n;
   for (n = 0; n < stack->pos_; ++n) {
     switch (stack->stack_[n].state_) {
@@ -453,7 +455,7 @@ int prd_stack_reset(struct prd_stack *stack) {
     case 37: /* colon */
     case 38: /* ident */
     {
-     xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+    xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
     }
     break;
     case 1: /* production */
@@ -465,15 +467,21 @@ int prd_stack_reset(struct prd_stack *stack) {
     case 31: /* action-sequence */
     case 36: /* rule */
     {
-     prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+    prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
     }
     break;
     }
   }
   stack->pos_ = 0;
-  r = prd_push_state(stack, 0);
-  if (r) {
-    return r;
+  switch (prd_push_state(stack, 0)) {
+    case -1: /* overflow */ {
+      return -1;
+    }
+    break;
+    case -2: /* out of memory */ {
+      return -2;
+    }
+    break;
   }
   return 0;
 }
@@ -482,15 +490,14 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
   int current_state = stack->stack_[stack->pos_ - 1].state_;
   int action = prd_parse_table[prd_num_columns * current_state + (sym - prd_minimum_sym)];
   if (!action) {
-    /* Syntax error */
-    if (sym != INPUT_END) {
-      re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_);
-    }
-    else {
-      re_error_tkr(tkr, "Syntax error end of input not expected");
-    }
-    /* XXX: Pop until we transition */
-    return PRD_SYNTAX_ERROR;
+    /* Syntax error */ \
+  if (sym != INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
   }
   while (action < 0) {
     /* While we're reducing.. */
@@ -499,7 +506,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
     int nonterminal = prd_production_syms[production];
 
     if (0 == production) {
-      /* Synth S we're done. */
       return PRD_SUCCESS;
     }
 
@@ -526,7 +532,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 3: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -545,7 +551,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 4: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -572,7 +578,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 5: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -604,14 +610,14 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 6: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       
       }
       break;
       case 7: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -637,14 +643,14 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 8: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       
       }
       break;
       case 9: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -656,7 +662,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 10: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -668,7 +674,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 11: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -680,7 +686,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 12: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -692,7 +698,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 13: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -714,7 +720,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 14: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -735,14 +741,14 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 15: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       
       }
       break;
       case 16: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -754,7 +760,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 17: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -766,7 +772,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 18: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -778,7 +784,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 19: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -790,7 +796,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 20: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -802,7 +808,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 21: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -823,7 +829,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       }
       break;
       case 22: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -897,7 +903,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       case 37: /* colon */
       case 38: /* ident */
       {
-       xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
+      xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
       }
       break;
       case 1: /* production */
@@ -909,7 +915,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       case 31: /* action-sequence */
       case 36: /* rule */
       {
-       prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
+      prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
       }
       break;
       }
@@ -920,15 +926,19 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
     current_state = stack->stack_[stack->pos_ - 1].state_;
     action = prd_parse_table[prd_num_columns * current_state + (nonterminal - prd_minimum_sym)];
 
-    if (!action) {
-      re_error_tkr(tkr, "Internal error \"%s\" cannot shift an already reduced nonterminal", tkr->xmatch_.translated_);
-      return PRD_INTERNAL_ERROR;
+    if (action <= 0) {
+      re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
     }
-    if (action < 0) {
-      re_error_tkr(tkr, "Internal error \"%s\" reduced non-terminal not shifting", tkr->xmatch_.translated_);
-      return PRD_INTERNAL_ERROR;
+    switch (prd_push_state(stack, action /* action for a shift is the ordinal */)) {
+      case -1: /* overflow */ {
+        re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+      }
+    break;
+      case -2: /* out of memory */ {
+        re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+      }
+      break;
     }
-    prd_push_state(stack, action /* action for a shift is the ordinal */);
     struct prd_sym_data *sd = stack->stack_ + stack->pos_ - 1;
     *sd = nonterminal_sym_data_reduced_to;
     sd->state_ = action;
@@ -936,36 +946,53 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
     current_state = stack->stack_[stack->pos_ - 1].state_;
     action = prd_parse_table[prd_num_columns * current_state + (sym - prd_minimum_sym)];
     if (!action) {
-      /* Syntax error */
-      if (sym != INPUT_END) {
-        re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_);
-      }
-      else {
-        re_error_tkr(tkr, "Syntax error end of input not expected");
-      }
-      return PRD_SYNTAX_ERROR;
+      /* Syntax error */ \
+  if (sym != INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
     }
   }
 
   /* Shift token onto stack */
   if (action > 0 /* shift? */) {
-    prd_push_state(stack, action /* action for a shift is the ordinal */);
+    switch (prd_push_state(stack, action /* action for a shift is the ordinal */)) {
+      case -1: /* overflow */ {
+        re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+      }
+    break;
+      case -2: /* out of memory */ {
+        re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+      }
+      break;
+    }
 
     /* Fill in the sym from the tokenizer */
     struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
     {
-       (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = 0;              xlts_init(&(sym_data->v_.uv0_).text_);
+      (sym_data->v_.uv0_).match_=(sym_data->v_.uv0_).variant_=0;xlts_init(&(sym_data->v_.uv0_).text_);
     }
     {
-       (sym_data->v_.uv0_).match_ = tkr->best_match_action_;               (sym_data->v_.uv0_).variant_ = tkr->best_match_variant_; 			  xlts_append(&(sym_data->v_.uv0_).text_, &tkr->xmatch_);
+      (sym_data->v_.uv0_).match_=tkr->best_match_action_;(sym_data->v_.uv0_).variant_=tkr->best_match_variant_;xlts_append(&(sym_data->v_.uv0_).text_,&tkr->xmatch_);
     }
   }
   else {
-    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_);
-    return PRD_SYNTAX_ERROR;
+    /* Syntax error */ \
+  if (sym != INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
   }
 
-  return PRD_NEXT;
+  {
+    return PRD_NEXT;
+  }
 }
 /* --------- HERE ENDS THE GENERATED FLUFF ------------ */
 
@@ -994,5 +1021,15 @@ int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokeniz
     sym = INPUT_END;
   }
   
+#if 0
+  switch (prd_parse_impl(stack, sym, g, tkr, st)) {
+  case -2: return PRD_INTERNAL_ERROR;
+  case -1: return PRD_SYNTAX_ERROR;
+  case 0: return PRD_SUCCESS;
+  case 1: return PRD_NEXT;
+  default: return PRD_INTERNAL_ERROR;
+  }
+#else
   return prd_parse_impl(stack, sym, g, tkr, st);
+#endif
 }
