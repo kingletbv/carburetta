@@ -138,6 +138,8 @@ struct cinder_context {
   struct snippet token_action_snippet_;
   struct xlts prefix_;
   char *prefix_uppercase_;
+  struct snippet params_snippet_;
+  struct snippet locals_snippet_;
 };
 
 void cinder_context_init(struct cinder_context *cc) {
@@ -149,6 +151,8 @@ void cinder_context_init(struct cinder_context *cc) {
   snippet_init(&cc->token_action_snippet_);
   xlts_init(&cc->prefix_);
   cc->prefix_uppercase_ = NULL;
+  snippet_init(&cc->params_snippet_);
+  snippet_init(&cc->locals_snippet_);
 }
 
 void cinder_context_cleanup(struct cinder_context *cc) {
@@ -158,6 +162,8 @@ void cinder_context_cleanup(struct cinder_context *cc) {
   snippet_cleanup(&cc->token_action_snippet_);
   xlts_cleanup(&cc->prefix_);
   if (cc->prefix_uppercase_) free(cc->prefix_uppercase_);
+  snippet_cleanup(&cc->params_snippet_);
+  snippet_cleanup(&cc->locals_snippet_);
 }
 
 
@@ -182,7 +188,9 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     PCD_CONSTRUCTOR_DIRECTIVE,
     PCD_DESTRUCTOR_DIRECTIVE,
     PCD_TOKEN_ACTION_DIRECTIVE,
-    PCD_PREFIX_DIRECTIVE
+    PCD_PREFIX_DIRECTIVE,
+    PCD_PARAMS_DIRECTIVE,
+    PCD_LOCALS_DIRECTIVE
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
@@ -205,7 +213,9 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
       if (ate_directive) {
         if ((directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
             (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
-            (directive == PCD_TOKEN_ACTION_DIRECTIVE)) {
+            (directive == PCD_TOKEN_ACTION_DIRECTIVE) ||
+            (directive == PCD_PARAMS_DIRECTIVE) ||
+            (directive == PCD_LOCALS_DIRECTIVE)) {
           eat_whitespace = 0;
           /* Keep whitespace for all code directives */
         }
@@ -262,6 +272,12 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             }
             else if (!strcmp("prefix", tkr_str(tkr_tokens))) {
               directive = PCD_PREFIX_DIRECTIVE;
+            }
+            else if (!strcmp("params", tkr_str(tkr_tokens))) {
+              directive = PCD_PARAMS_DIRECTIVE;
+            }
+            else if (!strcmp("locals", tkr_str(tkr_tokens))) {
+              directive = PCD_LOCALS_DIRECTIVE;
             }
             else if (!strcmp("debug_end", tkr_str(tkr_tokens))) {
               re_error(directive_line_match, "%%debug_end encountered, terminating early");
@@ -492,6 +508,15 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
 
             found_prefix = 1;
           }
+          else if ((directive == PCD_PARAMS_DIRECTIVE) || (directive == PCD_LOCALS_DIRECTIVE)) {
+            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE_CHAR)) {
+              r = snippet_append_tkr(&dir_snippet, tkr_tokens);
+              if (r) {
+                r = TKR_INTERNAL_ERROR;
+                goto cleanup_exit;
+              }
+            }
+          }
         }
       }
     }
@@ -502,13 +527,24 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   assert(r != TKR_FEED_ME); /* should not ask to get fed on final input */
 
   if ((directive == PCD_NT_TYPE_DIRECTIVE) ||
+      (directive == PCD_TOKEN_TYPE_DIRECTIVE)) {
+    /* Trim all whitespace off, pop any "$$" special identifiers at the tail end */
+    while (dir_snippet.num_tokens_ && 
+           ((dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].variant_ == TOK_WHITESPACE) ||
+            (dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
+      snippet_pop_last_token(&dir_snippet);
+    }
+  }
+
+  if ((directive == PCD_LOCALS_DIRECTIVE) ||
+      (directive == PCD_PARAMS_DIRECTIVE) ||
       (directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
       (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
       (directive == PCD_TOKEN_ACTION_DIRECTIVE)) {
-    /* Trim simple whitespace off the tail end */
-    while (dir_snippet.num_tokens_ && 
-           ((dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].match_ == TOK_WHITESPACE) ||
-            (dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
+    /* Trim simple whitespace off the tail end, preserve comments, remove newlines and spaces */
+    while (dir_snippet.num_tokens_ && (
+      (dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].match_ == TOK_WHITESPACE_CHAR) ||
+      (dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].match_ == TOK_NEWLINE))) {
       snippet_pop_last_token(&dir_snippet);
     }
   }
@@ -532,12 +568,6 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   }
 
   if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
-    /* Trim simple whitespace off the tail end */
-    while (cc->token_type_.num_tokens_ && 
-          ((cc->token_type_.tokens_[cc->token_type_.num_tokens_ - 1].match_ == TOK_WHITESPACE) ||
-           (cc->token_type_.tokens_[cc->token_type_.num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
-      snippet_pop_last_token(&cc->token_type_);
-    }
     int is_new;
     struct typestr *token_ts = typestr_find_or_add(&cc->tstab_, &cc->token_type_, &is_new);
     if (!token_ts) {
@@ -563,6 +593,18 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   if (directive == PCD_TOKEN_ACTION_DIRECTIVE) {
     snippet_clear(&cc->token_action_snippet_);
     r = snippet_append_snippet(&cc->token_action_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_PARAMS_DIRECTIVE) {
+    snippet_clear(&cc->params_snippet_);
+    r = snippet_append_snippet(&cc->params_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+  
+  if (directive == PCD_LOCALS_DIRECTIVE) {
+    snippet_clear(&cc->locals_snippet_);
+    r = snippet_append_snippet(&cc->locals_snippet_, &dir_snippet);
     if (r) goto cleanup_exit;
   }
 
@@ -647,6 +689,9 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
   return r;
 }
 
+void print_usage(void) {
+}
+
 int main(int argc, char **argv) {
   int r;
   klt_logger_init();
@@ -654,6 +699,104 @@ int main(int argc, char **argv) {
 
   LOG("We've started..\n");
 
+  char **cpv = argv + 1;
+  int cr = argc - 1;
+  int expecting_inputfile = 1;
+  int expecting_hfile = 0;
+  int expecting_cfile = 0;
+  int generate_cfile = 1;
+  int generate_hfile = 0;
+  char *input_filename = NULL;
+  char *h_output_filename = NULL;
+  char *c_output_filename = NULL;
+  while (cr) {
+    if (!strcmp("--c", *cpv)) {
+      expecting_hfile = 0;
+      expecting_cfile = 1;
+      cr--; cpv++;
+    }
+    else if (!strcmp("--h", *cpv)) {
+      expecting_hfile = 1;
+      expecting_cfile = 0;
+      generate_hfile = 1;
+      cr--; cpv++;
+    }
+    else if (expecting_hfile) {
+      if (h_output_filename) {
+        LOGERROR("Error: only one C header output file permitted\n");
+        print_usage();
+        goto exit_arg_eval;
+      }
+      if (!strcmp("-", *cpv)) {
+        /* H output filename derived from C output filename */
+      }
+      else {
+        h_output_filename = strdup(*cpv);
+        if (!h_output_filename) {
+          LOGERROR("Error: no memory\n");
+          goto exit_arg_eval;
+        }
+      }
+      expecting_hfile = 0;
+      cr--; cpv++;
+    }
+    else if (expecting_cfile) {
+      if (c_output_filename) {
+        LOGERROR("Error: only one C output file permitted\n");
+        print_usage();
+        goto exit_arg_eval;
+      }
+      c_output_filename = strdup(*cpv);
+      if (!c_output_filename) {
+        LOGERROR("Error: no memory\n");
+        goto exit_arg_eval;
+      }
+      expecting_cfile = 0;
+      cr--; cpv++;
+    }
+    else if (expecting_inputfile) {
+      input_filename = strdup(*cpv);
+      if (!input_filename) {
+        LOGERROR("Error: no memory\n");
+        goto exit_arg_eval;
+      }
+      expecting_inputfile = 0;
+      cr--; cpv++;
+    }
+    else {
+      LOGERROR("Error: unrecognized commandline argument \"%s\"\n", *cpv);
+      print_usage();
+      goto exit_arg_eval;
+    }
+  }
+
+  if (!input_filename) {
+    LOGERROR("Error: need an input filename\n");
+    print_usage();
+    goto exit_arg_eval;
+  }
+
+  if (generate_hfile && !h_output_filename) {
+    if (!c_output_filename) {
+      LOGERROR("Error: Need C output filename to derive a C header output filename\n");
+      goto exit_arg_eval;
+    }
+    const char *ext = strrchr(c_output_filename, '.');
+    if (!ext || (strlen(ext) < 2)) {
+      LOGERROR("Error: Need C output filename that ends in a filename extension to derive a C header output filename\n");
+      goto exit_arg_eval;
+    }
+    h_output_filename = strdup(c_output_filename);
+    memcpy(h_output_filename + (ext - c_output_filename), ".h", 3 /* inc terminator */);
+  }
+
+  if (0) {
+  exit_arg_eval:
+    if (input_filename) free(input_filename);
+    if (h_output_filename) free(h_output_filename);
+    if (c_output_filename) free(c_output_filename);
+    return EXIT_FAILURE;
+  }
   r = ldl_init();
   if (r) {
     LOGERROR("Failed to initialize ldl\n");
@@ -715,15 +858,22 @@ int main(int argc, char **argv) {
   }
 
   //const char *input_filename = "test_input.cnd";
-  const char *input_filename = "prd_grammar.cnd";
-  FILE *fp = fopen(input_filename, "rb");
-  if (!fp) {
-    int err = errno;
-    LOGERROR("Failed to open file \"%s\": %s\n", input_filename, strerror(err));
-    r = EXIT_FAILURE;
-    goto cleanup_exit;
+  //const char *input_filename = "prd_grammar.cnd";
+  FILE *fp = NULL;
+  if (input_filename) {
+    fp = fopen(input_filename, "rb");
+    if (!fp) {
+      int err = errno;
+      LOGERROR("Failed to open file \"%s\": %s\n", input_filename, strerror(err));
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    las_set_filename(&line_assembly, input_filename);
   }
-  las_set_filename(&line_assembly, input_filename);
+  else {
+    fp = stdin;
+    las_set_filename(&line_assembly, "(stdin)");
+  }
 
   struct part *prologue = NULL;
   struct part *epilogue = NULL;
@@ -997,15 +1147,18 @@ int main(int argc, char **argv) {
     goto cleanup_exit;
   }
 
-  //const char *output_filename = "prd_gram_gen.c";
-  const char *output_filename = "prd_grammar_alt.c";
-  FILE *outfp;
-  outfp = fopen(output_filename, "wb");
-  if (!outfp) {
-    int err = errno;
-    LOGERROR("Failed to open file \"%s\" for writing: %s\n", output_filename, strerror(err));
-    r = EXIT_FAILURE;
-    goto cleanup_exit;
+  FILE *outfp = NULL;
+  if (c_output_filename) {
+    outfp = fopen(c_output_filename, "wb");
+    if (!outfp) {
+      int err = errno;
+      LOGERROR("Failed to open file \"%s\" for writing: %s\n", c_output_filename, strerror(err));
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+  }
+  else {
+    outfp = stdout;
   }
 
   struct part *pt;
@@ -1017,7 +1170,7 @@ int main(int argc, char **argv) {
       size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
       if (written != pt->num_chars_) {
         int err = errno;
-        LOGERROR("Failed to write to \"%s\": %s\n", output_filename, strerror(err));
+        LOGERROR("Failed to write to \"%s\": %s\n", c_output_filename, strerror(err));
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -1218,94 +1371,6 @@ int main(int argc, char **argv) {
   }
   fprintf(outfp, "#define SYNTHETIC_S %d\n", SYNTHETIC_S);
 
-
-#if 0
-  fprintf(outfp, "static int %sreduce(struct %sstack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int production, struct %ssym_data *dst_sym_data, struct %ssym_data *sym_data, struct symbol_table *st) {\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
-  fprintf(outfp, "  int r;\n"
-    "  struct prd_production *pd;\n"
-    "  struct symbol *sym;\n"
-    "  switch (production) {\n");
-  for (row = 0; row < prdg.num_productions_; ++row) {
-    struct prd_production *pd = prdg.productions_ + row;
-    fprintf(outfp, "  case %d: {\n    ", (int)row + 1);
-    /* Emit dst_sym_data constructor first */
-    if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
-      struct snippet *constructor = &pd->nt_.sym_->assigned_type_->constructor_snippet_;
-      for (col = 0; col < constructor->num_tokens_; ++col) {
-        if (constructor->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
-          /* Insert destination sym at appropriate ordinal value type. */
-          fprintf(outfp, "(dst_sym_data->v_.uv%d_)", pd->nt_.sym_->assigned_type_->ordinal_);
-        }
-        else {
-          /* Regular token, just emit as-is */
-          fprintf(outfp, constructor->tokens_[col].text_.original_);
-        }
-      }
-      /* Close this compound block and open the one for the action */
-      fprintf(outfp, "\n  }\n  {\n  ");
-    }
-
-    for (col = 0; col < pd->action_sequence_.num_tokens_; ++col) {
-      /* Print the original code, to preserve formatting and line continuations */
-      if (pd->action_sequence_.tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
-        /* Expansion of special destination sym identifier */
-        /* Destination sym -- do we have a datatype for it ? */
-        struct symbol *dst_sym = pd->nt_.sym_;
-        assert(dst_sym);
-        if (!dst_sym->assigned_type_) {
-          re_error(&pd->action_sequence_.tokens_[col].text_, "$$ cannot resolve to a data type for non-terminal %s\n", pd->nt_.id_.translated_);
-          r = EXIT_FAILURE;
-          goto cleanup_exit;
-        }
-        fprintf(outfp, "(dst_sym_data->v_.uv%d_)", dst_sym->assigned_type_->ordinal_);
-      }
-      else if (pd->action_sequence_.tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) {
-        /* Expansion of another sym identifier */
-        size_t n;
-        int failed = 0;
-        size_t special_index = 0;
-        for (n = 1; n < pd->action_sequence_.tokens_[col].text_.num_translated_; ++n) {
-          char c = pd->action_sequence_.tokens_[col].text_.translated_[n];
-          if (!isdigit(c)) {
-            re_error(&pd->action_sequence_.tokens_[col].text_, "Unrecognized special identifier\n");
-            failed = 1;
-            break;
-          }
-          if (mul_size_t(10, special_index, NULL, &special_index)) {
-            re_error(&pd->action_sequence_.tokens_[col].text_, "Overflow on symbol index\n");
-            failed = 1;
-            break;
-          }
-          special_index += (size_t)(c - '0');
-        }
-        if (special_index >= pd->num_syms_) {
-          re_error(&pd->action_sequence_.tokens_[col].text_, "Symbol index exceeds number of symbols in production\n");
-          failed = 1;
-        }
-        if (failed) {
-          r = EXIT_FAILURE;
-          goto cleanup_exit;
-        }
-        struct symbol *sym = pd->syms_[special_index].sym_;
-        if (!sym->assigned_type_) {
-          re_error(&pd->action_sequence_.tokens_[col].text_, "%s cannot resolve to a data type for a symbol\n", pd->action_sequence_.tokens_[col].text_.translated_);
-          r = EXIT_FAILURE;
-          goto cleanup_exit;
-        }
-        fprintf(outfp, "(sym_data[%zu].v_.uv%d_)", special_index, sym->assigned_type_->ordinal_);
-      }
-      else {
-        fprintf(outfp, pd->action_sequence_.tokens_[col].text_.original_);
-      }
-    }
-    fprintf(outfp, "\n"
-      "  }\n"
-      "  break;\n");
-  }
-  fprintf(outfp, "  } /* switch */\n"
-    "  return PRD_SUCCESS;\n"
-    "}\n");
-#endif
   /* Emit stack constructor, destructor and reset functions */
 
   fprintf(outfp,
@@ -1459,8 +1524,19 @@ int main(int argc, char **argv) {
     "\n");
 
   /* Emit the parse function */
-  fprintf(outfp,
-    "static int %sparse_impl(struct %sstack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st) {\n", cc_prefix(&cc), cc_prefix(&cc));
+  if (cc.params_snippet_.num_tokens_) {
+    fprintf(outfp,
+      "static int %sparse_impl(struct %sstack *stack, int sym, ", cc_prefix(&cc), cc_prefix(&cc));
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.params_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.params_snippet_.tokens_[token_idx].text_.original_);
+    }
+    fprintf(outfp, ") {\n");
+  }
+  else {
+    fprintf(outfp,
+      "static int %sparse_impl(struct %sstack *stack, int sym) {\n", cc_prefix(&cc), cc_prefix(&cc));
+  }
   fprintf(outfp,
     "  int current_state = stack->stack_[stack->pos_ - 1].state_;\n"
     "  int action = %sparse_table[%snum_columns * current_state + (sym - %sminimum_sym)];\n", cc_prefix(&cc), cc_prefix(&cc), cc_prefix(&cc));
@@ -1492,18 +1568,22 @@ int main(int argc, char **argv) {
   fprintf(outfp,
     "    }\n"
     "\n"
-    "    struct %ssym_data nonterminal_sym_data_reduced_to;\n", cc_prefix(&cc));
-#if 0
-  fprintf(outfp,
-    "    int r;\n"
-    "    r = %sreduce(stack, g, tkr, production, &nonterminal_sym_data_reduced_to, stack->stack_ + stack->pos_ - production_length, st);\n", cc_prefix(&cc));
-#else
+    "    struct %ssym_data nonterminal_sym_data_reduced_to = { 0 };\n", cc_prefix(&cc));
+
   fprintf(outfp, "    { /* scope guard */\n");
   fprintf(outfp, "      struct %ssym_data *sym_data = stack->stack_ + stack->pos_ - production_length;\n", cc_prefix(&cc));
-  fprintf(outfp, "      int r;\n"
-    "      struct prd_production *pd;\n"
-    "      struct symbol *sym;\n"
-    "      switch (production) {\n");
+
+  /* Emit any requested locals */
+  if (cc.locals_snippet_.num_tokens_) {
+    fprintf(outfp, "      ");
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc.locals_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc.locals_snippet_.tokens_[token_idx].text_.original_);
+    }
+    fprintf(outfp, "\n");
+  }
+
+  fprintf(outfp, "      switch (production) {\n");
   for (row = 0; row < prdg.num_productions_; ++row) {
     struct prd_production *pd = prdg.productions_ + row;
     fprintf(outfp, "      case %d: {\n    ", (int)row + 1);
@@ -1517,7 +1597,7 @@ int main(int argc, char **argv) {
         }
         else {
           /* Regular token, just emit as-is */
-          fprintf(outfp, constructor->tokens_[col].text_.original_);
+          fprintf(outfp, "%s", constructor->tokens_[col].text_.original_);
         }
       }
       /* Close this compound block and open the one for the action */
@@ -1574,7 +1654,7 @@ int main(int argc, char **argv) {
         fprintf(outfp, "(sym_data[%zu].v_.uv%d_)", special_index, sym->assigned_type_->ordinal_);
       }
       else {
-        fprintf(outfp, pd->action_sequence_.tokens_[col].text_.original_);
+        fprintf(outfp, "%s", pd->action_sequence_.tokens_[col].text_.original_);
       }
     }
     fprintf(outfp, "\n"
@@ -1583,12 +1663,8 @@ int main(int argc, char **argv) {
   }
   fprintf(outfp, "      } /* switch */\n");
   fprintf(outfp, "    } /* scope guard */\n");
-#endif
+
   fprintf(outfp,
-    "    if (r) {\n"
-    "      /* Semantic error */\n"
-    "      return r;\n"
-    "    }\n"
     "\n"
     "    /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
     "     * push nonterminal_data_reduced_to */\n"
@@ -1751,7 +1827,7 @@ int main(int argc, char **argv) {
       size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
       if (written != pt->num_chars_) {
         int err = errno;
-        LOGERROR("Failed to write to \"%s\": %s\n", output_filename, strerror(err));
+        LOGERROR("Failed to write to \"%s\": %s\n", c_output_filename, strerror(err));
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -1759,7 +1835,9 @@ int main(int argc, char **argv) {
     } while (pt != epilogue);
   }
   
-  fclose(outfp);
+  if (outfp != stdout) {
+    fclose(outfp);
+  }
 
   r = EXIT_SUCCESS;
 cleanup_exit:
@@ -1789,7 +1867,11 @@ cleanup_exit:
   las_cleanup();
   tok_cleanup();
   ldl_cleanup();
-  
+
+  if (input_filename) free(input_filename);
+  if (h_output_filename) free(h_output_filename);
+  if (c_output_filename) free(c_output_filename);
+
   LOG("We've finished%s\n", (r == EXIT_SUCCESS) ? "" : " in failure...");
 
   return r;

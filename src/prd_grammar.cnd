@@ -176,6 +176,12 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
 %constructor prd_prod_init(&$$);
 %destructor prd_prod_cleanup(&$$);
 
+%params struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st
+%locals int r; \
+        struct prd_production *pd; \
+        struct symbol *sym;
+
+
 %%
 
 grammar: { }

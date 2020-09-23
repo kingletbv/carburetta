@@ -159,6 +159,8 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
 
 
 
+
+
 /* --------- HERE GOES THE GENERATED FLUFF ------------ */
 struct prd_sym_data {
   int state_;
@@ -371,7 +373,6 @@ void prd_stack_cleanup(struct prd_stack *stack) {
     case 38: /* ident */
     {
        xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
-
     }
     break;
     case 1: /* production */
@@ -384,7 +385,6 @@ void prd_stack_cleanup(struct prd_stack *stack) {
     case 36: /* rule */
     {
        prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
-
     }
     break;
     }
@@ -454,7 +454,6 @@ int prd_stack_reset(struct prd_stack *stack) {
     case 38: /* ident */
     {
      xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
-
     }
     break;
     case 1: /* production */
@@ -467,7 +466,6 @@ int prd_stack_reset(struct prd_stack *stack) {
     case 36: /* rule */
     {
      prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
-
     }
     break;
     }
@@ -505,12 +503,12 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       return PRD_SUCCESS;
     }
 
-    struct prd_sym_data nonterminal_sym_data_reduced_to;
+    struct prd_sym_data nonterminal_sym_data_reduced_to = { 0 };
     { /* scope guard */
       struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - production_length;
-      int r;
-      struct prd_production *pd;
-      struct symbol *sym;
+      int r; \
+        struct prd_production *pd; \
+        struct symbol *sym;
       switch (production) {
       case 1: {
     { }
@@ -529,13 +527,12 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 3: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
 	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
 	if (!sym) {
-		re_error(&(sym_data[0].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
+		re_error(&(sym_data[0].v_.uv0_).text_, "Error, symbol \"%s\" not declared as %%nt", (sym_data[0].v_.uv0_).text_.translated_);
 		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
@@ -549,13 +546,12 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 4: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
 	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
 	if (!sym) {
-		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
+		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"%s\" not declared as %%nt", (sym_data[0].v_.uv0_).text_.translated_);
 		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
@@ -577,13 +573,12 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 5: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
 	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
 	if (!sym) {
-		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt", (sym_data[0].v_.uv0_).text_.translated_);
+		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"%s\" not declared as %%nt", (sym_data[0].v_.uv0_).text_.translated_);
 		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
@@ -610,7 +605,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 6: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       
@@ -618,14 +612,13 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 7: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
 	/* Grab ident from position 1, reduce */
 	sym = symbol_find(st, (sym_data[1].v_.uv0_).text_.translated_);
 	if (!sym) {
-		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"\" not declared as %nt or %token", (sym_data[1].v_.uv0_).text_.translated_);
+		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"%s\" not declared as %%nt or %%token", (sym_data[1].v_.uv0_).text_.translated_);
 		g->have_errors_ = 1;
 		return PRD_SUCCESS;
 	}
@@ -645,7 +638,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 8: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       
@@ -653,7 +645,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 9: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -666,7 +657,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 10: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -679,7 +669,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 11: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -692,7 +681,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 12: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -705,7 +693,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 13: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -728,7 +715,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 14: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -750,7 +736,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 15: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       
@@ -758,7 +743,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 16: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -771,7 +755,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 17: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -784,7 +767,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 18: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -797,7 +779,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 19: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -810,7 +791,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 20: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -823,7 +803,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 21: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -845,7 +824,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       case 22: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
       }
       {
       {
@@ -887,10 +865,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       break;
       } /* switch */
     } /* scope guard */
-    if (r) {
-      /* Semantic error */
-      return r;
-    }
 
     /* Free symdata for every symbol in the production, including the first slot where we will soon
      * push nonterminal_data_reduced_to */
@@ -924,7 +898,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       case 38: /* ident */
       {
        xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
-
       }
       break;
       case 1: /* production */
@@ -937,7 +910,6 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
       case 36: /* rule */
       {
        prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
-
       }
       break;
       }
@@ -983,11 +955,9 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
     struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
     {
        (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = 0;              xlts_init(&(sym_data->v_.uv0_).text_);
-
     }
     {
        (sym_data->v_.uv0_).match_ = tkr->best_match_action_;               (sym_data->v_.uv0_).variant_ = tkr->best_match_variant_; 			  xlts_append(&(sym_data->v_.uv0_).text_, &tkr->xmatch_);
-
     }
   }
   else {
