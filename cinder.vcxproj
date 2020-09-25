@@ -84,6 +84,9 @@
     <ClInclude Include="tokens.h" />
     <ClInclude Include="typestr.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="prd_grammar.cnd" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{BF90520E-4A1A-4AF7-B778-8041EFA5693D}</ProjectGuid>

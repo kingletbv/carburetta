@@ -134,4 +134,7 @@
       <UniqueIdentifier>{70fff8b7-3284-4771-879b-daf096c58072}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="prd_grammar.cnd" />
+  </ItemGroup>
 </Project>

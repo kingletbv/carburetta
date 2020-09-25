@@ -54,6 +54,8 @@
 #include "prd_gram.h"
 #endif
 
+#include "prd_grammar_alt.h"
+
 static void prd_production_sym_init(struct prd_production_sym *pps) {
   xlts_init(&pps->id_);
   pps->sym_ = NULL;
@@ -189,7 +191,7 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
 
 
 %on_syntax_error /* Syntax error */ \
-  if (sym != INPUT_END) {\
+  if (sym != PRD_INPUT_END) {\
     re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
   } \
   else { \
@@ -449,7 +451,7 @@ int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokeniz
     }
   }
   else {
-    sym = INPUT_END;
+    sym = PRD_INPUT_END;
   }
   
 #if 0
