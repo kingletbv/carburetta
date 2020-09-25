@@ -74,10 +74,6 @@ struct prd_grammar {
 
 int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
 
-void prd_stack_init(struct prd_stack *stack);
-int prd_stack_reset(struct prd_stack *stack);
-void prd_stack_cleanup(struct prd_stack *stack);
-
 void prd_grammar_init(struct prd_grammar *g);
 void prd_grammar_cleanup(struct prd_grammar *g);
 
