@@ -74,8 +74,17 @@ struct prd_grammar {
 
 int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
 
+void prd_production_sym_init(struct prd_production_sym *pps);
+void prd_production_sym_cleanup(struct prd_production_sym *pps);
+void prd_prod_init(struct prd_production *ppd);
+void prd_prod_reset(struct prd_production *ppd);
+void prd_prod_cleanup(struct prd_production *ppd);
 void prd_grammar_init(struct prd_grammar *g);
 void prd_grammar_cleanup(struct prd_grammar *g);
+void prd_prod_swap(struct prd_production *a, struct prd_production *b);
+int prd_grammar_check_production_reserve(struct prd_grammar *g);
+int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *loc);
+
 
 #ifdef __cplusplus
 } /* extern "C" */
