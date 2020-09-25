@@ -71,6 +71,11 @@ void snippet_cleanup(struct snippet *s) {
 }
 
 void snippet_clear(struct snippet *s) {
+  size_t n;
+  for (n = 0; n < s->num_tokens_; ++n) {
+    struct snippet_token *stk = s->tokens_ + n;
+    xlts_cleanup(&stk->text_);
+  }
   s->num_tokens_ = 0;
 }
 
