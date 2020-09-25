@@ -129,6 +129,15 @@ static struct part *append_part(struct part **tailptr, size_t num_chars, char *c
   return p;
 }
 
+struct conflict_resolution {
+  struct conflict_resolution *next_;
+
+  struct prd_production prefer_prod_;
+  int prefer_prod_place_;
+  struct prd_production over_prod_;
+  int over_prod_place_;
+};
+
 struct cinder_context {
   struct snippet token_type_;
   struct symbol_table symtab_;
@@ -147,7 +156,24 @@ struct cinder_context {
   struct snippet on_next_token_snippet_;
   struct symbol *input_end_sym_;
   struct symbol *error_sym_;
+  struct prd_production prefer_prod_;
+  int prefer_prod_place_;
+  struct prd_production over_prod_;
+  int over_prod_place_;
+  struct conflict_resolution *conflict_resolutions_;
 };
+
+void conflict_resolution_init(struct conflict_resolution *cr) {
+  prd_prod_init(&cr->prefer_prod_);
+  cr->prefer_prod_place_ = -1;
+  prd_prod_init(&cr->over_prod_);
+  cr->over_prod_place_ = -1;
+}
+
+void conflict_resolution_cleanup(struct conflict_resolution *cr) {
+  prd_prod_cleanup(&cr->prefer_prod_);
+  prd_prod_cleanup(&cr->over_prod_);
+}
 
 void cinder_context_init(struct cinder_context *cc) {
   snippet_init(&cc->token_type_);
@@ -167,6 +193,11 @@ void cinder_context_init(struct cinder_context *cc) {
   snippet_init(&cc->on_next_token_snippet_);
   cc->input_end_sym_ = NULL;
   cc->error_sym_ = NULL;
+  prd_prod_init(&cc->prefer_prod_);
+  cc->prefer_prod_place_ = -1;
+  prd_prod_init(&cc->over_prod_);
+  cc->over_prod_place_ = -1;
+  cc->conflict_resolutions_ = NULL;
 }
 
 void cinder_context_cleanup(struct cinder_context *cc) {
@@ -183,8 +214,22 @@ void cinder_context_cleanup(struct cinder_context *cc) {
   snippet_cleanup(&cc->on_alloc_error_snippet_);
   snippet_cleanup(&cc->on_internal_error_snippet_);
   snippet_cleanup(&cc->on_next_token_snippet_);
-}
+  prd_prod_cleanup(&cc->prefer_prod_);
+  prd_prod_cleanup(&cc->over_prod_);
+  struct conflict_resolution *cr, *next;
+  cr = cc->conflict_resolutions_;
+  if (cr) {
+    next = cr->next_;
+    do {
+      cr = next;
+      next = cr->next_;
 
+      conflict_resolution_cleanup(cr);
+      free(cr);
+
+    } while (cr != cc->conflict_resolutions_);
+  }
+}
 
 static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlts *directive_line_match, struct cinder_context *cc) {
   int r;
@@ -198,6 +243,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   size_t num_typed_symbols = 0;
   size_t num_typed_symbols_allocated = 0;
   struct snippet dir_snippet;
+  int prefer_over_valid = 0;
   snippet_init(&dir_snippet);
   enum {
     PCD_NT_DIRECTIVE,
@@ -216,7 +262,9 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     PCD_ON_INTERNAL_ERROR_DIRECTIVE,
     PCD_ON_NEXT_TOKEN_DIRECTIVE,
     PCD_END_TOKEN,
-    PCD_ERROR_TOKEN
+    PCD_ERROR_TOKEN,
+    PCD_PREFER,
+    PCD_OVER
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
@@ -328,6 +376,16 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             else if (!strcmp("error_token", tkr_str(tkr_tokens))) {
               directive = PCD_ERROR_TOKEN;
             }
+            else if (!strcmp("prefer", tkr_str(tkr_tokens))) {
+              directive = PCD_PREFER;
+              prd_prod_reset(&cc->prefer_prod_);
+              cc->prefer_prod_place_ = -1;
+            }
+            else if (!strcmp("over", tkr_str(tkr_tokens))) {
+              directive = PCD_OVER;
+              prd_prod_reset(&cc->over_prod_);
+              cc->over_prod_place_ = -1;
+            }
             else if (!strcmp("debug_end", tkr_str(tkr_tokens))) {
               re_error(directive_line_match, "%%debug_end encountered, terminating early");
               r = TKR_INTERNAL_ERROR;
@@ -337,6 +395,15 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
               re_error_tkr(tkr_tokens, "Syntax error invalid directive");
               r = TKR_SYNTAX_ERROR;
               goto cleanup_exit;
+            }
+            if (directive != PCD_OVER) {
+              /* If there is a valid %prefer directive pending, it should immediately be followed
+               * by a %over directive. */
+              if (cc->prefer_prod_.nt_.id_.num_translated_) {
+                re_error(&cc->prefer_prod_.nt_.id_, "Warning: dud %%prefer directive. %%prefix should be immediately followed by %%over directive");
+                prd_prod_reset(&cc->prefer_prod_);
+                cc->prefer_prod_place_ = -1;
+              }
             }
           }
         }
@@ -635,6 +702,72 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
               }
             }
           }
+          else if ((directive == PCD_PREFER) || (directive == PCD_OVER)) {
+          struct prd_production *prod = (directive == PCD_PREFER) ? &cc->prefer_prod_ : &cc->over_prod_;
+          int *pplace = (directive == PCD_PREFER) ? &cc->prefer_prod_place_ : &cc->over_prod_place_;
+            if (!ate_colon_seperator) {
+              /* Grab production non-terminal */
+              if (prod->nt_.id_.num_translated_) {
+                if (tkr_tokens->best_match_action_ == TOK_COLON) {
+                  ate_colon_seperator = 1;
+                }
+                else {
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected a colon ':'.\n", tkr_str(tkr_tokens));
+                  r = TKR_SYNTAX_ERROR;
+                  goto cleanup_exit;
+                }
+              }
+              else {
+                if (tkr_tokens->best_match_action_ == TOK_IDENT) {
+                  xlts_reset(&prod->nt_.id_);
+                  r = xlts_append(&prod->nt_.id_, &tkr_tokens->xmatch_);
+                  if (r) {
+                    r = TKR_INTERNAL_ERROR;
+                    goto cleanup_exit;
+                  }
+                }
+                else {
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected an identifier for the non-terminal.\n", tkr_str(tkr_tokens));
+                  r = TKR_SYNTAX_ERROR;
+                  goto cleanup_exit;
+                }
+              }
+            }
+            else {
+              /* Grab rules and position placement. */
+              if (tkr_tokens->best_match_action_ == TOK_IDENT) {
+                r = prd_prod_check_sym_reserve(prod, &tkr_tokens->xmatch_);
+                if (r) {
+                  r = TKR_INTERNAL_ERROR;
+                  goto cleanup_exit;
+                }
+                struct prd_production_sym *prod_sym = prod->syms_ + prod->num_syms_++;
+                prd_production_sym_init(prod_sym);
+                r = xlts_append(&prod_sym->id_, &tkr_tokens->xmatch_);
+                if (r) {
+                  r = TKR_INTERNAL_ERROR;
+                  goto cleanup_exit;
+                }
+              }
+              else if ((tkr_tokens->best_match_action_ == TOK_ASTERISK) &&
+                       ((*pplace) == -1)) {
+                *pplace = (int)prod->num_syms_;
+                prefer_over_valid = 1;
+              }
+              else {
+                if (tkr_tokens->best_match_action_ == TOK_ASTERISK) {
+                  re_error_tkr(tkr_tokens, "Error: '*' placement marker should appear only once\n");
+                  r = TKR_SYNTAX_ERROR;
+                  goto cleanup_exit;
+                }
+                else {
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected an identifier as part of the production rule\n", tkr_str(tkr_tokens));
+                  r = TKR_SYNTAX_ERROR;
+                  goto cleanup_exit;
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -643,6 +776,43 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   }
 
   assert(r != TKR_FEED_ME); /* should not ask to get fed on final input */
+
+  if ((directive == PCD_PREFER) || (directive == PCD_OVER)) {
+    if (!prefer_over_valid) {
+      re_error_tkr(tkr_tokens, "Error: incomplete %s directive\n", (directive == PCD_PREFER) ? "%prefer" : "%over");
+      r = TKR_SYNTAX_ERROR;
+      goto cleanup_exit;
+    }
+    if ((directive == PCD_OVER) && cc->prefer_prod_.nt_.id_.num_translated_) {
+      /* Have both the %prefer and %over productions ready to go. */
+      struct conflict_resolution *cr = (struct conflict_resolution *)malloc(sizeof(struct conflict_resolution));
+      if (!cr) {
+        conflict_resolution_cleanup(cr);
+        free(cr);
+        re_error_tkr(tkr_tokens, "Error: no memory\n");
+        r = TKR_INTERNAL_ERROR;
+        goto cleanup_exit;
+      }
+      conflict_resolution_init(cr);
+      prd_prod_swap(&cr->prefer_prod_, &cc->prefer_prod_);
+      cr->prefer_prod_place_ = cc->prefer_prod_place_;
+      cr->over_prod_place_ = cc->over_prod_place_;
+      prd_prod_swap(&cr->over_prod_, &cc->over_prod_);
+      if (cc->conflict_resolutions_) {
+        cr->next_ = cc->conflict_resolutions_->next_;
+        cc->conflict_resolutions_->next_ = cr;
+      }
+      else {
+        cr->next_ = cr;
+      }
+      cc->conflict_resolutions_ = cr;
+
+      prd_prod_reset(&cc->prefer_prod_);
+      cc->prefer_prod_place_ = -1;
+      prd_prod_reset(&cc->over_prod_);
+      cc->over_prod_place_ = -1;
+    }
+  }
 
   if ((directive == PCD_NT_TYPE_DIRECTIVE) ||
       (directive == PCD_TOKEN_TYPE_DIRECTIVE)) {
