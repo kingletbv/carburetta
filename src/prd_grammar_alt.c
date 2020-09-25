@@ -166,6 +166,7 @@ static int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *lo
 
 
 /* --------- HERE GOES THE GENERATED FLUFF ------------ */
+#include <stdlib.h> /* realloc(), free(), NULL, size_t */
 struct prd_sym_data {
   int state_;
   union {
@@ -319,6 +320,10 @@ static const int prd_state_syms[] = {
 };
 
 #ifndef CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED
+struct prd_stack {
+  size_t pos_, num_stack_allocated_;
+  struct prd_sym_data *stack_;
+};
 #define PRD_IDENT 3
 #define PRD_COLON 4
 #define PRD_EQUALS 5
@@ -489,7 +494,7 @@ int prd_stack_reset(struct prd_stack *stack) {
   return 0;
 }
 
-static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st) {
+int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st) {
   int current_state = stack->stack_[stack->pos_ - 1].state_;
   int action = prd_parse_table[prd_num_columns * current_state + (sym - prd_minimum_sym)];
   if (!action) {
@@ -999,7 +1004,7 @@ static int prd_parse_impl(struct prd_stack *stack, int sym, struct prd_grammar *
 }
 /* --------- HERE ENDS THE GENERATED FLUFF ------------ */
 
-int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
+int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;
 
   if (!end_of_input) {
@@ -1025,7 +1030,7 @@ int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokeniz
   }
   
 #if 0
-  switch (prd_parse_impl(stack, sym, g, tkr, st)) {
+  switch (prd_parse(stack, sym, g, tkr, st)) {
   case -2: return PRD_INTERNAL_ERROR;
   case -1: return PRD_SYNTAX_ERROR;
   case 0: return PRD_SUCCESS;
@@ -1033,6 +1038,6 @@ int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokeniz
   default: return PRD_INTERNAL_ERROR;
   }
 #else
-  return prd_parse_impl(stack, sym, g, tkr, st);
+  return prd_parse(stack, sym, g, tkr, st);
 #endif
 }

@@ -26,6 +26,11 @@
 #include "snippet.h"
 #endif
 
+#ifndef PRD_GRAMMAR_H_INCLUDED
+#define PRD_GRAMMAR_H_INCLUDED
+#include "prd_grammar_alt.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,12 +62,6 @@ struct prd_production {
   struct snippet action_sequence_;
 };
 
-struct prd_stack {
-  size_t pos_;
-  size_t num_stack_allocated_; /* size in elements of states and syms */
-  struct prd_sym_data *stack_;
-};
-
 struct prd_grammar {
   int have_errors_ : 1; /* if non-zero, errors were issued and compilation failed */
   int accept_whitespace_ : 1; /* if non-zero, whitespace is passed on to the grammar as PRD_TOKEN */
@@ -73,7 +72,7 @@ struct prd_grammar {
   struct prd_production *productions_;
 };
 
-int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
+int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
 
 void prd_stack_init(struct prd_stack *stack);
 int prd_stack_reset(struct prd_stack *stack);

@@ -1,6 +1,7 @@
 #ifndef CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED
 #define CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED
 
+#include <stddef.h> /* size_t */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,6 +18,15 @@ extern "C" {
 #define PRD_ERROR 12
 #define PRD_INPUT_END 13
 
+struct prd_stack {
+  size_t pos_, num_stack_allocated_;
+  struct prd_sym_data *stack_;
+};
+
+void prd_stack_init(struct prd_stack *stack);
+void prd_stack_cleanup(struct prd_stack *stack);
+int prd_stack_reset(struct prd_stack *stack);
+int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st);
 
 #ifdef __cplusplus
 } /* extern "C" */

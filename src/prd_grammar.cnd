@@ -429,7 +429,7 @@ accept-whitespace: {
 
 %%
 
-int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
+int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;
 
   if (!end_of_input) {
@@ -455,7 +455,7 @@ int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokeniz
   }
   
 #if 0
-  switch (prd_parse_impl(stack, sym, g, tkr, st)) {
+  switch (prd_parse(stack, sym, g, tkr, st)) {
   case -2: return PRD_INTERNAL_ERROR;
   case -1: return PRD_SYNTAX_ERROR;
   case 0: return PRD_SUCCESS;
@@ -463,6 +463,6 @@ int prd_parse(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokeniz
   default: return PRD_INTERNAL_ERROR;
   }
 #else
-  return prd_parse_impl(stack, sym, g, tkr, st);
+  return prd_parse(stack, sym, g, tkr, st);
 #endif
 }

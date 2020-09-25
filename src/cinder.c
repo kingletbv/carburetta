@@ -795,7 +795,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
       return r;
     }
     else if (r == TKR_MATCH) {
-      r = prd_parse(prds, g, tkr_tokens, 0, st);
+      r = prd_parse_tkr(prds, g, tkr_tokens, 0, st);
       switch (r) {
       case PRD_SUCCESS:
         /* This should not be possible without is_final==1 */
@@ -816,7 +816,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
   }
 
   if (r == TKR_END_OF_INPUT) {
-    r = prd_parse(prds, g, tkr_tokens, 1, st);
+    r = prd_parse_tkr(prds, g, tkr_tokens, 1, st);
     switch (r) {
     case PRD_SUCCESS:
       return TKR_END_OF_INPUT;
@@ -1632,7 +1632,6 @@ int main(int argc, char **argv) {
     }
 
     /* Emit stack constructor, destructor and reset functions */
-
     fprintf(outfp,
       "void %sstack_init(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
     fprintf(outfp,
@@ -1796,7 +1795,7 @@ int main(int argc, char **argv) {
     /* Emit the parse function */
     if (cc.params_snippet_.num_tokens_) {
       fprintf(outfp,
-        "static int %sparse_impl(struct %sstack *stack, int sym, ", cc_prefix(&cc), cc_prefix(&cc));
+        "int %sparse(struct %sstack *stack, int sym, ", cc_prefix(&cc), cc_prefix(&cc));
       size_t token_idx;
       for (token_idx = 0; token_idx < cc.params_snippet_.num_tokens_; ++token_idx) {
         fprintf(outfp, "%s", cc.params_snippet_.tokens_[token_idx].text_.original_);
@@ -1805,7 +1804,7 @@ int main(int argc, char **argv) {
     }
     else {
       fprintf(outfp,
-        "static int %sparse_impl(struct %sstack *stack, int sym) {\n", cc_prefix(&cc), cc_prefix(&cc));
+        "int %sparse(struct %sstack *stack, int sym) {\n", cc_prefix(&cc), cc_prefix(&cc));
     }
     fprintf(outfp,
       "  int current_state = stack->stack_[stack->pos_ - 1].state_;\n"
@@ -2249,6 +2248,22 @@ int main(int argc, char **argv) {
     fprintf(outfp, "  size_t pos_, num_stack_allocated_;\n");
     fprintf(outfp, "  struct %ssym_data *stack_;\n", cc_prefix(&cc));
     fprintf(outfp, "};\n");
+    fprintf(outfp, "\n");
+    fprintf(outfp, "void %sstack_init(struct %sstack *stack);\n", cc_prefix(&cc), cc_prefix(&cc));
+    fprintf(outfp, "void %sstack_cleanup(struct %sstack *stack);\n", cc_prefix(&cc), cc_prefix(&cc));
+    fprintf(outfp, "int %sstack_reset(struct %sstack *stack);\n", cc_prefix(&cc), cc_prefix(&cc));
+    if (cc.params_snippet_.num_tokens_) {
+      fprintf(outfp, "int %sparse(struct %sstack *stack, int sym, ", cc_prefix(&cc), cc_prefix(&cc));
+      size_t token_idx;
+      for (token_idx = 0; token_idx < cc.params_snippet_.num_tokens_; ++token_idx) {
+        fprintf(outfp, "%s", cc.params_snippet_.tokens_[token_idx].text_.original_);
+      }
+      fprintf(outfp, ");\n");
+    }
+    else {
+      fprintf(outfp,
+        "int %sparse(struct %sstack *stack, int sym);\n", cc_prefix(&cc), cc_prefix(&cc));
+    }
 
     fprintf(outfp, "\n"
                    "#ifdef __cplusplus\n"
