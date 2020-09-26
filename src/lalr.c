@@ -953,15 +953,17 @@ void lr_init(lr_generator_t *gen) {
   memset(gen, 0, sizeof(lr_generator_t));
 }
 
-void lr_add_conflict_resolution(lr_generator_t *gen,
-                                int dominant_production, int dominant_position,
-                                int yielding_production, int yielding_position) {
+int lr_add_conflict_resolution(lr_generator_t *gen,
+                               int dominant_production, int dominant_position,
+                               int yielding_production, int yielding_position) {
   lr_conflict_pair_t *cp = (lr_conflict_pair_t *)malloc(sizeof(lr_conflict_pair_t));
+  if (!cp) return -1;
   cp->production_a = dominant_production; cp->position_a = dominant_position;
   cp->production_b = yielding_production; cp->position_b = yielding_position;
   cp->sym = 0;
   cp->chain = gen->conflict_resolutions;
   gen->conflict_resolutions = cp;
+  return 0;
 }
 
 lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,

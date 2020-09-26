@@ -198,10 +198,11 @@ void lr_init(lr_generator_t *gen);
  * An item consists of both a production index (the ordinal of the production
  * as passed in to lr_gen_parser's productions, counted from 1) and a position
  * in to that production. A position at the length of the production indicates
- * a reduction, rather than a shift. */
-void lr_add_conflict_resolution(lr_generator_t *gen,
-                                int dominant_production, int dominant_position,
-                                int yielding_production, int yielding_position);
+ * a reduction, rather than a shift.
+ * Returns zero upon success, or non-zero upon memory failure */
+int lr_add_conflict_resolution(lr_generator_t *gen,
+                               int dominant_production, int dominant_position,
+                               int yielding_production, int yielding_position);
 
 /* lr_gen_parser
  * 

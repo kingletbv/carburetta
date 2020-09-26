@@ -244,6 +244,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   size_t num_typed_symbols_allocated = 0;
   struct snippet dir_snippet;
   int prefer_over_valid = 0;
+  int prefer_over_has_rule = 0;
   snippet_init(&dir_snippet);
   enum {
     PCD_NT_DIRECTIVE,
@@ -712,7 +713,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
                   ate_colon_seperator = 1;
                 }
                 else {
-                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected a colon ':'.\n", tkr_str(tkr_tokens));
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected a colon ':'", tkr_str(tkr_tokens));
                   r = TKR_SYNTAX_ERROR;
                   goto cleanup_exit;
                 }
@@ -727,7 +728,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
                   }
                 }
                 else {
-                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected an identifier for the non-terminal.\n", tkr_str(tkr_tokens));
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected an identifier for the non-terminal", tkr_str(tkr_tokens));
                   r = TKR_SYNTAX_ERROR;
                   goto cleanup_exit;
                 }
@@ -735,6 +736,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             }
             else {
               /* Grab rules and position placement. */
+              prefer_over_has_rule = 1;
               if (tkr_tokens->best_match_action_ == TOK_IDENT) {
                 r = prd_prod_check_sym_reserve(prod, &tkr_tokens->xmatch_);
                 if (r) {
@@ -756,12 +758,12 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
               }
               else {
                 if (tkr_tokens->best_match_action_ == TOK_ASTERISK) {
-                  re_error_tkr(tkr_tokens, "Error: '*' placement marker should appear only once\n");
+                  re_error_tkr(tkr_tokens, "Error: '*' placement marker should appear only once");
                   r = TKR_SYNTAX_ERROR;
                   goto cleanup_exit;
                 }
                 else {
-                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected an identifier as part of the production rule\n", tkr_str(tkr_tokens));
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected an identifier as part of the production rule", tkr_str(tkr_tokens));
                   r = TKR_SYNTAX_ERROR;
                   goto cleanup_exit;
                 }
@@ -779,7 +781,12 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
 
   if ((directive == PCD_PREFER) || (directive == PCD_OVER)) {
     if (!prefer_over_valid) {
-      re_error_tkr(tkr_tokens, "Error: incomplete %s directive\n", (directive == PCD_PREFER) ? "%prefer" : "%over");
+      if (prefer_over_has_rule) {
+        re_error(directive_line_match, "Error: incomplete %s directive, missing asterisk", (directive == PCD_PREFER) ? "%prefer" : "%over");
+      }
+      else {
+        re_error(directive_line_match, "Error: incomplete %s directive", (directive == PCD_PREFER) ? "%prefer" : "%over");
+      }
       r = TKR_SYNTAX_ERROR;
       goto cleanup_exit;
     }
@@ -1509,6 +1516,91 @@ int main(int argc, char **argv) {
 
   r = gt_transcribe_grammar(&gt, prdg.num_productions_, prdg.productions_, RULE_END, GRAMMAR_END);
   if (r) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+
+  /* Resolve all conflict resolutions */
+  struct conflict_resolution *confres;
+  confres = cc.conflict_resolutions_;
+  if (confres) {
+    do {
+      confres = confres->next_;
+
+      struct prd_production *prods[] = {
+        &confres->prefer_prod_,
+        &confres->over_prod_
+      };
+
+      size_t matches[sizeof(prods) / sizeof(*prods)];
+      
+      size_t n;
+      for (n = 0; n < sizeof(prods) / sizeof(*prods); ++n) {
+        int had_failed_lookup = 0;
+        struct prd_production *prod = prods[n];
+
+        prod->nt_.sym_ = symbol_find(&cc.symtab_, prod->nt_.id_.translated_);
+        if (!prod->nt_.sym_ || (prod->nt_.sym_->st_ != SYM_NONTERMINAL)) {
+          re_error(&prod->nt_.id_, "Error, symbol \"%s\" was not declared as %%nt", prod->nt_.id_.translated_);
+          prdg.have_errors_ = 1;
+          had_failed_lookup = 1;
+        }
+        size_t sym_idx;
+        for (sym_idx = 0; sym_idx < prod->num_syms_; ++sym_idx) {
+          struct prd_production_sym *ps = prod->syms_ + sym_idx;
+          ps->sym_ = symbol_find(&cc.symtab_, ps->id_.translated_);
+          if (!ps->sym_) {
+            re_error(&prod->nt_.id_, "Error, symbol \"%s\" was not declared as %%nt or %%token", ps->id_.translated_);
+            prdg.have_errors_ = 1;
+            had_failed_lookup = 1;
+          }
+        }
+
+        if (had_failed_lookup) {
+          continue;
+        }
+        /* Find a match; if possible */
+        size_t prod_idx;
+        for (prod_idx = 0; prod_idx < prdg.num_productions_; ++prod_idx) {
+          struct prd_production *gp = prdg.productions_ + prod_idx;
+          if (gp->nt_.sym_ != prod->nt_.sym_) {
+            continue;
+          }
+          if (gp->num_syms_ != prod->num_syms_) {
+            continue;
+          }
+          for (sym_idx = 0; sym_idx < prod->num_syms_; ++sym_idx) {
+            if (gp->syms_[sym_idx].sym_ != prod->syms_[sym_idx].sym_) {
+              break;
+            }
+          }
+          if (sym_idx != prod->num_syms_) {
+            continue;
+          }
+          /* Production matches */
+          break;
+        }
+        if (prod_idx != prdg.num_productions_) {
+          /* Production prod_idx matches */
+          matches[n] = prod_idx;
+        }
+        else {
+          re_error(&prod->nt_.id_, "Error, no matching production found");
+          prdg.have_errors_ = 1;
+        }
+      }
+
+      r = lr_add_conflict_resolution(&lalr, (int)matches[0], confres->prefer_prod_place_, (int)matches[1], confres->over_prod_place_);
+      if (r) {
+        LOGERROR("Error, no memory\n");
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+
+    } while (confres != cc.conflict_resolutions_);
+  }
+
+  if (prdg.have_errors_) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
