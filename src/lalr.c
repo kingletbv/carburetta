@@ -71,6 +71,7 @@
 
 static lr_state_t *lr_create_state(lr_generator_t *gen) {
   lr_state_t *s = (lr_state_t *)malloc(sizeof(lr_state_t));
+  if (!s) return NULL;
   s->kernel_items = NULL;
   s->transitions_from_state = NULL;
   s->transitions_to_state = NULL;
@@ -95,6 +96,9 @@ static lr_item_t *lr_find_or_create_item(lr_generator_t *gen, lr_state_t *state,
   }
   next_i = *pi;
   *pi = (lr_item_t *)malloc(sizeof(lr_item_t));
+  if (!pi) {
+    return NULL;
+  }
   (*pi)->production = production;
   (*pi)->position = position;
   (*pi)->state_chain = next_i;
@@ -111,11 +115,17 @@ static lr_transition_t *lr_find_or_create_outbound_transition(lr_generator_t *ge
     }
   }
   t = (lr_transition_t *)malloc(sizeof(lr_transition_t) + (gen->highest_term - gen->lowest_term + 1 + 7) / 8);
+  if (!t) {
+    return NULL;
+  }
   t->sym = sym;
   t->from = from;
+  t->to = lr_create_state(gen);
+  if (!t->to) {
+    return NULL;
+  }
   t->from_chain = from->transitions_from_state;
   from->transitions_from_state = t;
-  t->to = lr_create_state(gen);
   t->to_chain = NULL;
   t->to->transitions_to_state = t;
   t->inbound_rels = NULL;
@@ -134,6 +144,9 @@ static lr_transition_t *lr_find_or_create_transition(lr_generator_t *gen, lr_sta
     }
   }
   t = (lr_transition_t *)malloc(sizeof(lr_transition_t) + (gen->highest_term - gen->lowest_term + 1 + 7) / 8);
+  if (!t) {
+    return NULL;
+  }
   t->sym = sym;
   t->from = from;
   t->from_chain = from->transitions_from_state;
@@ -167,7 +180,7 @@ static lr_state_t *lr_find_identical_state(lr_generator_t *gen, lr_state_t *stat
   return NULL;
 }
 
-static void lr_closure(lr_generator_t *gen, lr_state_t *state) {
+static int lr_closure(lr_generator_t *gen, lr_state_t *state) {
   lr_item_t *i;
   for (i = state->kernel_items; i; i = i->state_chain) {
     int sym = gen->productions[i->production][i->position + 1 /* [0] is production reduction sym */ ];
@@ -181,8 +194,9 @@ static void lr_closure(lr_generator_t *gen, lr_state_t *state) {
 
       /* Non-terminal */
       lr_transition_t *t = lr_find_or_create_outbound_transition(gen, state, sym);
+      if (!t) return -1;
       lr_item_t *new_item = lr_find_or_create_item(gen, t->to, i->production, i->position + 1);
-      new_item; /* touch new_item so it does not go unreferenced. */
+      if (!new_item) return -1;
 
       /* Find non-kernel items for non-terminal transition and add their initial transitions. */
       memset(gen->nonterm_scratchpad, 0, sizeof(int) * (gen->highest_nonterm - gen->lowest_nonterm + 1));
@@ -207,7 +221,7 @@ static void lr_closure(lr_generator_t *gen, lr_state_t *state) {
                 else {
                   /* Add transition */
                   lr_transition_t *first_t = lr_find_or_create_outbound_transition(gen, state, first_sym);
-                  lr_item_t *first_new_item = lr_find_or_create_item(gen, first_t->to, prodix, 1);
+                  lr_item_t *first_new_item = lr_find_or_create_item(gen, first_t->to, (int)prodix, 1);
                   first_new_item; /* touch first_new_item so it does not go unreferenced. */
 
                   if ((first_sym >= gen->lowest_nonterm) && (first_sym <= gen->highest_nonterm)) {
@@ -232,11 +246,12 @@ static void lr_closure(lr_generator_t *gen, lr_state_t *state) {
     else {
       /* Terminal */
       lr_transition_t *t = lr_find_or_create_outbound_transition(gen, state, sym);
+      if (!t) return -1;
       lr_item_t *new_item = lr_find_or_create_item(gen, t->to, i->production, i->position + 1);
-      /* touch new_item so it does not go unreferenced. */
-      new_item;
+      if (!new_item) return -1;
     }
   }
+  return 0;
 }
 
 static void lr_destroy_state(lr_generator_t *gen, lr_state_t *moriturus) {
@@ -278,16 +293,18 @@ static void lr_destroy_state(lr_generator_t *gen, lr_state_t *moriturus) {
   free(moriturus);
 }
 
-static void lr_merge_states(lr_generator_t *gen, lr_state_t *from, lr_state_t *to) {
+static int lr_merge_states(lr_generator_t *gen, lr_state_t *from, lr_state_t *to) {
   /* Merge all inbound transitions to 'from' into 'to'. */
-  lr_transition_t *t;
+  lr_transition_t *t, *t2;
   for (t = from->transitions_to_state; t; t = t->to_chain) {
     /* .. lr_find_or_create_transition checks for dupes. */
-    lr_find_or_create_transition(gen, t->from, t->sym, to);
+    t2 = lr_find_or_create_transition(gen, t->from, t->sym, to);
+    if (!t2) return -1;
   }
+  return 0;
 }
 
-static void lr_compute_lr0_set(lr_generator_t *gen, lr_state_t *initial_state) {
+static int lr_compute_lr0_set(lr_generator_t *gen, lr_state_t *initial_state) {
   int next_index = 1;
   lr_state_t *s;
 
@@ -302,7 +319,9 @@ static void lr_compute_lr0_set(lr_generator_t *gen, lr_state_t *initial_state) {
       /* s won't yet (luckily) have any outbound transitions, 
        * but one or more inbound ones, as well as backlinks 
        * and lookbacks on its items. */
-      lr_merge_states(gen, s, dup);
+      if (lr_merge_states(gen, s, dup)) {
+        return -1;
+      }
       lr_destroy_state(gen, s);
     }
     else {
@@ -311,7 +330,9 @@ static void lr_compute_lr0_set(lr_generator_t *gen, lr_state_t *initial_state) {
       s->gen_chain = gen->states;
       gen->states = s;
       gen->nr_states++;
-      lr_closure(gen, s);
+      if (lr_closure(gen, s)) {
+        return -1;
+      }
     }
   }
 
@@ -324,6 +345,7 @@ static void lr_compute_lr0_set(lr_generator_t *gen, lr_state_t *initial_state) {
       s->row = next_index++;
     }
   }
+  return 0;
 }
 
 static void lr_populate_directly_reads(lr_generator_t *gen, lr_state_t *initial_state) {
@@ -367,7 +389,7 @@ static void lr_populate_directly_reads(lr_generator_t *gen, lr_state_t *initial_
   }
 }
 
-static void lr_populate_reads_relations(lr_generator_t *gen) {
+static int lr_populate_reads_relations(lr_generator_t *gen) {
   /* Find all nullable non-terminal transitions, any preceeding non-terminal
    * transition is said to 'read' that non-terminal transition. */
   lr_state_t *s;
@@ -383,6 +405,7 @@ static void lr_populate_reads_relations(lr_generator_t *gen) {
             if ((inbound_t->sym >= gen->lowest_nonterm) && (inbound_t->sym <= gen->highest_nonterm)) {
               /* inbound_t 'reads' outbound_t. */
               lr_rel_t *reads_rel = (lr_rel_t *)malloc(sizeof(lr_rel_t));
+              if (!reads_rel) return -1;
               reads_rel->from = inbound_t;
               reads_rel->to = outbound_t;
               reads_rel->from_chain = inbound_t->outbound_rels;
@@ -395,11 +418,13 @@ static void lr_populate_reads_relations(lr_generator_t *gen) {
       }
     }
   }
+  return 0;
 }
 
 /* Returns -1 if A looses by caller's directive,
  *          0 if the caller has not specified this (conflict will be logged.)
  *         +1 if A wins by caller's directive.
+ *         -2 if the caller has not specified this, but no memory was available to log
  */
 static int lr_check_conflict(lr_generator_t *gen, lr_conflict_pair_t *cf) {
   lr_conflict_pair_t *cfd;
@@ -444,6 +469,7 @@ static int lr_check_conflict(lr_generator_t *gen, lr_conflict_pair_t *cf) {
     }
   }
   new_conflict = (lr_conflict_pair_t *)malloc(sizeof(lr_conflict_pair_t));
+  if (!new_conflict) return -2;
   new_conflict->position_a = cf->position_a;
   new_conflict->position_b = cf->position_b;
   new_conflict->production_a = cf->production_a;
@@ -454,7 +480,7 @@ static int lr_check_conflict(lr_generator_t *gen, lr_conflict_pair_t *cf) {
   return 0;
 }
 
-static void lr_gen_reduce_from_transition(lr_generator_t *gen, lr_state_t *red_state, lr_transition_t *backtrack, int production) {
+static int lr_gen_reduce_from_transition(lr_generator_t *gen, lr_state_t *red_state, lr_transition_t *backtrack, int production) {
   int *row = gen->parse_table + (1 + gen->max_sym - gen->min_sym) * red_state->row;
   int lookahead_ix;
   /* Populate all lookaheads for the reduction.. */
@@ -480,6 +506,8 @@ static void lr_gen_reduce_from_transition(lr_generator_t *gen, lr_state_t *red_s
           conflict.production_b = - 1 - row[lookahead_sym - gen->min_sym];
           conflict.position_b = gen->production_lengths[conflict.production_b];
           switch (lr_check_conflict(gen, &conflict)) {
+            case -2: /* out of memory */
+              return -1;
             case -1: /* A looses, B wins; keep as is. */
               break;
             case 0: /* Conflict error, and logged. */
@@ -508,6 +536,8 @@ static void lr_gen_reduce_from_transition(lr_generator_t *gen, lr_state_t *red_s
               conflict.position_b = i->position - 1;
               conflict.production_b = i->production;
               switch (lr_check_conflict(gen, &conflict)) {
+                case -2: /* out of memory */
+                  return -1;
                 case -1: /* A looses, B wins; keep as is. */
                   if (!consensus_resolution) consensus_resolution = -1;
                   if (consensus_resolution != -1) no_consensus = 1;
@@ -526,6 +556,7 @@ static void lr_gen_reduce_from_transition(lr_generator_t *gen, lr_state_t *red_s
               for (i = destination->kernel_items; i; i = i->state_chain) {
                 if (lookahead_sym == gen->productions[i->production][i->position + 1 - 1]) {
                   lr_conflict_pair_t *cf = (lr_conflict_pair_t *)malloc(sizeof(lr_conflict_pair_t));
+                  if (!cf) return -1;
                   cf->position_a = conflict.position_a;
                   cf->production_a = conflict.production_a;
                   cf->position_b = i->position - 1;
@@ -550,9 +581,10 @@ static void lr_gen_reduce_from_transition(lr_generator_t *gen, lr_state_t *red_s
       }
     }
   }
+  return 0;
 }
 
-static void lr_backtrack_item(lr_generator_t *gen, lr_transition_t *rel_src, lr_state_t *s, int production, int position) {
+static int  lr_backtrack_item(lr_generator_t *gen, lr_transition_t *rel_src, lr_state_t *s, int production, int position) {
   lr_transition_t *t;
   /* Backtrack over preceeding symbol, but eliminate post-recursion if possible; note: any bug found here is likely also
    * in lr_gen_item_backtrack_parse below. */
@@ -574,7 +606,10 @@ static void lr_backtrack_item(lr_generator_t *gen, lr_transition_t *rel_src, lr_
      * it splits off into multiple branches, other lr_backtrack_item calls will need to handle it). */
     for (; t; t = t->to_chain) {
       if (t->sym == prev_sym) {
-        lr_backtrack_item(gen, rel_src, t->from, production, position /* already -1'ed */);
+        if (lr_backtrack_item(gen, rel_src, t->from, production, position /* already -1'ed */)) {
+          /* No memory */
+          return -1;
+        }
       }
     }
   }
@@ -585,18 +620,21 @@ static void lr_backtrack_item(lr_generator_t *gen, lr_transition_t *rel_src, lr_
     if (t->sym == gen->productions[production][0]) {
       /* t is the outbound transition; rel_src 'includes' t */
       lr_rel_t *includes_rel = (lr_rel_t *)malloc(sizeof(lr_rel_t));
+      if (!includes_rel) return -1;
       includes_rel->from = rel_src;
       includes_rel->to = t;
       includes_rel->from_chain = rel_src->outbound_rels;
       includes_rel->to_chain = t->inbound_rels;
       rel_src->outbound_rels = includes_rel;
       t->inbound_rels = includes_rel;
-      return;
+      return 0;
     }
   }
+
+  return 0;
 }
 
-static void lr_gen_item_backtrack_parse(lr_generator_t *gen, lr_state_t *reduce_state, lr_state_t *s, int production, int position) {
+static int lr_gen_item_backtrack_parse(lr_generator_t *gen, lr_state_t *reduce_state, lr_state_t *s, int production, int position) {
   lr_transition_t *t;
   
   /* The algorithm for backtracking works the same as lr_backtrack_item */
@@ -613,7 +651,9 @@ static void lr_gen_item_backtrack_parse(lr_generator_t *gen, lr_state_t *reduce_
     }
     for (; t; t = t->to_chain) {
       if (t->sym == prev_sym) {
-        lr_gen_item_backtrack_parse(gen, reduce_state, t->from, production, position);
+        if (lr_gen_item_backtrack_parse(gen, reduce_state, t->from, production, position)) {
+          return -1;
+        }
       }
     }
   }
@@ -622,12 +662,16 @@ static void lr_gen_item_backtrack_parse(lr_generator_t *gen, lr_state_t *reduce_
   for (t = s->transitions_from_state; t; t = t->from_chain) {
     if (t->sym == gen->productions[production][0]) {
       /* t contains the read set for the reduction of production in reduce_state. */
-      lr_gen_reduce_from_transition(gen, reduce_state, t, production);
+      if (lr_gen_reduce_from_transition(gen, reduce_state, t, production)) {
+        return -1;
+      }
     }
   }
+
+  return 0;
 }
 
-static void lr_populate_includes_relations(lr_generator_t *gen) {
+static int lr_populate_includes_relations(lr_generator_t *gen) {
   /* Find all non-terminal transitions; and for each non-terminal, locate the corresponding items.
    * For each of those items, if all the symbols /after/ the non-terminal transition are nullable,
    * then locate the item's "root transition" - the non-terminal transition that corresponds to the
@@ -665,13 +709,16 @@ static void lr_populate_includes_relations(lr_generator_t *gen) {
               /* Found an item that can immediately reduce, now backtrack the item to find its
                * root transition(s) and establish that t "includes" that/those root transition(s).
                */
-              lr_backtrack_item(gen, t, s, i->production, i->position - 1);
+              if (lr_backtrack_item(gen, t, s, i->production, i->position - 1)) {
+                return -1;
+              }
             }
           }
         }
       }
     }
   }
+  return 0;
 }
 
 static void lr_clear_relations(lr_generator_t *gen) {
@@ -816,13 +863,29 @@ void lr_cleanup(lr_generator_t *gen) {
   }
 }
 
-static void lr_generate_parse_table(lr_generator_t *gen) {
+static int lr_generate_parse_table(lr_generator_t *gen) {
   int nr_symbols;
   lr_state_t *s;
   size_t pix;
-  nr_symbols = 1 + gen->max_sym - gen->min_sym;
-  gen->parse_table = (int *)malloc(sizeof(int) * nr_symbols * gen->nr_states);
-  memset(gen->parse_table, 0, sizeof(int) * nr_symbols * gen->nr_states);
+
+  if (gen->max_sym < gen->min_sym) return -2;
+  nr_symbols = gen->max_sym - gen->min_sym;
+  if ((nr_symbols < 0) || ((nr_symbols + 1) < 0)) {
+    return -2;
+  }
+  nr_symbols += 1;
+  if ((SIZE_MAX / (size_t)nr_symbols) < gen->nr_states) {
+    return -2;
+  }
+  size_t num_cells = ((size_t)nr_symbols) * ((size_t)gen->nr_states);
+  if ((SIZE_MAX / sizeof(int)) < num_cells) {
+    return -2;
+  }
+  gen->parse_table = (int *)malloc(sizeof(int) * num_cells);
+  if (!gen->parse_table) {
+    return -1;
+  }
+  memset(gen->parse_table, 0, sizeof(int) * num_cells);
   
   /* Pre-compute those non-terminals that have an empty production; this
    * is not the same as gen->nonterm_is_nullable as that also takes indirect
@@ -835,7 +898,7 @@ static void lr_generate_parse_table(lr_generator_t *gen) {
     if (gen->productions[pix][1] == gen->eop_sym) {
       /* Empty production, mark the production's non-terminal; note that we're relying on
        * production 0 to never be null (it is the synthetic S' -> S )*/
-      gen->nonterm_scratchpad[gen->productions[pix][0] - gen->lowest_nonterm] = pix;
+      gen->nonterm_scratchpad[gen->productions[pix][0] - gen->lowest_nonterm] = (int)pix;
     }
   }
 
@@ -857,7 +920,9 @@ static void lr_generate_parse_table(lr_generator_t *gen) {
 
         if (empty_prodix) {
           /* Populate all lookaheads for the reduction.. */
-          lr_gen_reduce_from_transition(gen, s, t, empty_prodix);
+          if (lr_gen_reduce_from_transition(gen, s, t, empty_prodix)) {
+            return -1;
+          }
         }
       }
       /* Populate either goto for a non-terminal or the shift for a terminal - note that these are, in fact, 
@@ -877,6 +942,8 @@ static void lr_generate_parse_table(lr_generator_t *gen) {
             cp.position_a = i->position - 1;
             cp.production_a = i->production;
             switch (lr_check_conflict(gen, &cp)) {
+              case -2: /* no memory */
+                return -1;
               case -1: /* B resolves over A. */
                 if (!consensus_resolution) consensus_resolution = -1;
                 if (consensus_resolution != -1) no_consensus = 1;
@@ -895,6 +962,7 @@ static void lr_generate_parse_table(lr_generator_t *gen) {
           for (i = t->to->kernel_items; i; i = i->state_chain) {
             if ((i->position > 0) && (gen->productions[i->production][i->position + 1 - 1] == t->sym)) {
               lr_conflict_pair_t *cf = (lr_conflict_pair_t *)malloc(sizeof(lr_conflict_pair_t));
+              if (!cf) return -1;
               cf->position_a = i->position - 1;
               cf->production_a = i->production;
               cf->position_b = cp.position_b;
@@ -922,7 +990,9 @@ static void lr_generate_parse_table(lr_generator_t *gen) {
         if (i->production != 0 /* is not the root production S'->S*/) {
           /* Reducable item. Locate all transitions that encode the "goto" (non-terminal) for this item and use their
            * read-sets for the reductions lookahead. */
-          lr_gen_item_backtrack_parse(gen, s, s, i->production, i->position);
+          if (lr_gen_item_backtrack_parse(gen, s, s, i->production, i->position)) {
+            return -1;
+          }
         }
         else {
           /* Root production, encode the accept.
@@ -934,7 +1004,12 @@ static void lr_generate_parse_table(lr_generator_t *gen) {
             cp.production_a = i->production;
             cp.position_b = gen->production_lengths[- 1 - row[gen->eof_sym - gen->min_sym]];
             cp.production_b = - 1 - row[gen->eof_sym - gen->min_sym];
-            if (1 == lr_check_conflict(gen, &cp)) {
+            int r = lr_check_conflict(gen, &cp);
+            if (r == -2) {
+              /* No memory */
+              return -1;
+            }
+            if (r == 1) {
               /* A passes; encode accept (-1) */
               row[gen->eof_sym - gen->min_sym] = -1;
             }
@@ -947,6 +1022,7 @@ static void lr_generate_parse_table(lr_generator_t *gen) {
       }
     }
   }
+  return 0;
 }
 
 void lr_init(lr_generator_t *gen) {
@@ -996,8 +1072,18 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
     gen->nr_productions++;
   }
 
-  gen->productions = (int **)realloc(gen->productions, sizeof(int *) * gen->nr_productions);
-  gen->production_lengths = (int *)realloc(gen->production_lengths, sizeof(int) * gen->nr_productions);
+  void *p;
+  p = realloc(gen->productions, sizeof(int *) * gen->nr_productions);
+  if (!p) {
+    return LR_INTERNAL_ERROR;
+  }
+  gen->productions = (int **)p;
+
+  p = realloc(gen->production_lengths, sizeof(int) * gen->nr_productions);
+  if (!p) {
+    return LR_INTERNAL_ERROR;
+  }
+  gen->production_lengths = (int *)p;
 
   /* Now fill in the productions. */
   pval = productions;
@@ -1026,9 +1112,28 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
   }
   gen->lowest_nonterm = min_nonterm;
   gen->highest_nonterm = max_nonterm + 1;
-  gen->nonterm_is_nullable = (char *)realloc(gen->nonterm_is_nullable, sizeof(char) * (gen->highest_nonterm - gen->lowest_nonterm + 1));
-  gen->nonterm_scratchpad = (int *)realloc(gen->nonterm_scratchpad, sizeof(int) * (gen->highest_nonterm - gen->lowest_nonterm + 1));
-  memset(gen->nonterm_is_nullable, 0, sizeof(char) * (gen->highest_nonterm - gen->lowest_nonterm + 1));
+  if (gen->highest_nonterm < gen->lowest_nonterm) {
+    return LR_INTERNAL_ERROR;
+  }
+  int num_nonterms = gen->highest_nonterm - gen->lowest_nonterm;
+  if ((num_nonterms < 0) || ((num_nonterms + 1) < 0)) {
+    return LR_INTERNAL_ERROR;
+  }
+  num_nonterms += 1;
+  if ((SIZE_MAX / sizeof(int)) < num_nonterms) {
+    return LR_INTERNAL_ERROR;
+  }
+  p = realloc(gen->nonterm_is_nullable, sizeof(char) * (size_t)num_nonterms);
+  if (!p) {
+    return LR_INTERNAL_ERROR;
+  }
+  gen->nonterm_is_nullable = (char *)p;
+  p = realloc(gen->nonterm_scratchpad, sizeof(int) * (size_t)num_nonterms);
+  if (!p) {
+    return LR_INTERNAL_ERROR;
+  }
+  gen->nonterm_scratchpad = (int *)p;
+  memset(gen->nonterm_is_nullable, 0, sizeof(char) * (size_t)num_nonterms);
 
   /* second run determines min and max terminals */
   for (prodix = 0; prodix < gen->nr_productions; ++prodix) {
@@ -1099,18 +1204,28 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
   /* Compute lr0 states; start with the initial state; note that lr_create_state places the state 
    * on gen->new_states, which is how lr_compute_lr0_set() automatically picks it up. */
   initial_state = lr_create_state(gen);
+  if (!initial_state) {
+    return LR_INTERNAL_ERROR;
+  }
 
   /* Initial state consists of S' -> .S */
-  lr_find_or_create_item(gen, initial_state, 0, 0);
+  lr_item_t *lrit = lr_find_or_create_item(gen, initial_state, 0, 0);
+  if (!lrit) {
+    return LR_INTERNAL_ERROR;
+  }
 
   /* Compute the set.. Initial_state is passed for row numbering. */
-  lr_compute_lr0_set(gen, initial_state);
+  if (lr_compute_lr0_set(gen, initial_state)) {
+    return LR_INTERNAL_ERROR;
+  }
 
   /* Populate directly-reads.. Needs the initial state to indicate [S' -> .S, S] directly reads EOF */
   lr_populate_directly_reads(gen, initial_state);
 
   /* Find reads-relation */
-  lr_populate_reads_relations(gen);
+  if (lr_populate_reads_relations(gen)) {
+    return LR_INTERNAL_ERROR;
+  }
 
   /* Propagate the reads-relation */
   if (lr_propagate_relations(gen)) {
@@ -1121,7 +1236,9 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
   lr_clear_relations(gen);
 
   /* Find includes-relation */
-  lr_populate_includes_relations(gen);
+  if (lr_populate_includes_relations(gen)) {
+    return LR_INTERNAL_ERROR;
+  }
 
   /* Propagate the includes-relation */
   if (2 == lr_propagate_relations(gen)) {
@@ -1132,7 +1249,9 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
   lr_clear_relations(gen);
 
   /* Generate the parse table. */
-  lr_generate_parse_table(gen);
+  if (lr_generate_parse_table(gen)) {
+    return LR_INTERNAL_ERROR;
+  }
 
   return gen->conflicts ? LR_CONFLICTS : LR_OK;
 }

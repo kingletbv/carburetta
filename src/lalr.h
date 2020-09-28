@@ -41,7 +41,9 @@ typedef enum lr_error_enum {
   /* The Grammar passed in is ambiguous */
   LR_AMBIGUOUS_GRAMMAR,
   /* Shift-reduce or reduce-reduce conflicts were detected. */
-  LR_CONFLICTS
+  LR_CONFLICTS,
+  /* Memory allocation or overflow failure */
+  LR_INTERNAL_ERROR
 } lr_error_t;
 
 typedef struct lr_item_struct {
