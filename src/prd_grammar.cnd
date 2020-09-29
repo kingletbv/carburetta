@@ -115,6 +115,7 @@ production: IDENT COLON rule SEMICOLON {
 	pd = &$$;
 	xlts_append(&pd->nt_.id_, &$0.text_);
 }
+
 production: IDENT COLON rule start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON {
 	prd_prod_swap(&$$, &$2);
 	pd = &$$;

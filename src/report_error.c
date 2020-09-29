@@ -28,6 +28,11 @@
 #include "report_error.h"
 #endif
 
+static void re_error_nowhere_impl(const char *fmt, va_list args) {
+  vfprintf(stderr, fmt, args);
+  fprintf(stderr, "\n");
+}
+
 static void re_error_impl(const char *filename, int line_nr, int col_nr, const char *fmt, va_list args) {
   if (line_nr) {
     fprintf(stderr, "%s(%d): ", filename ? filename : "", line_nr);
@@ -35,8 +40,7 @@ static void re_error_impl(const char *filename, int line_nr, int col_nr, const c
   else {
     fprintf(stderr, "%s(?): ", filename ? filename : "");
   }
-  vfprintf(stderr, fmt, args);
-  fprintf(stderr, "\n");
+  re_error_nowhere_impl(fmt, args);
 }
 
 static int re_error_x_marks_the_spot(struct xlts *x) {
@@ -99,5 +103,12 @@ void re_error_tkr(struct tkr_tokenizer *tkr, const char *fmt, ...) {
     re_error_impl(tkr->filename_, tkr->start_line_, tkr->start_col_, fmt, args);
   }
 
+  va_end(args);
+}
+
+void re_error_nowhere(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  re_error_nowhere_impl(fmt, args);
   va_end(args);
 }

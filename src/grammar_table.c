@@ -99,8 +99,11 @@ int gt_generate_lalr(struct grammar_table *gt, lr_generator_t *lalr, int end_of_
     LOGERROR("Grammar is ambiguous\n");
     return GT_AMBIGUOUS_GRAMMAR;
   case LR_CONFLICTS:
-    LOGERROR("Shift-reduce or reduce-reduce conflicts were detected\n");
+    /* Caller handles and reports this */
     return GT_CONFLICTS;
+  case LR_INTERNAL_ERROR:
+    LOGERROR("Error, no memory or integer overflow\n");
+    return GT_INTERNAL_ERROR;
   }
   assert(0 && "Unhandled return value\n");
   return GT_INTERNAL_ERROR;

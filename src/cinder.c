@@ -1645,6 +1645,86 @@ int main(int argc, char **argv) {
   }
 
   r = gt_generate_lalr(&gt, &lalr, RULE_END, GRAMMAR_END, INPUT_END, SYNTHETIC_S);
+  if (r == GT_CONFLICTS) {
+    lr_conflict_pair_t *cp;
+    for (cp = lalr.conflicts; cp; cp = cp->chain) {
+      /* NOTE: lalr parser inserts a rule 0, so consider all conflicts 1-based. */
+      struct {
+        int production, position;
+      } conflict[2] = {
+        {cp->production_a - 1, cp->position_a},
+        {cp->production_b - 1, cp->position_b}
+      };
+      size_t n;
+      const char *a;
+      const char *b;
+      if (conflict[0].position == (int)prdg.productions_[conflict[0].production].num_syms_) {
+        /* A = reduce */
+        a = "reduce";
+      }
+      else {
+        a = "shift";
+      }
+      if (conflict[1].position == (int)prdg.productions_[conflict[1].production].num_syms_) {
+        /* B = reduce */
+        b = "reduce";
+      }
+      else {
+        b = "shift";
+      }
+
+      re_error_nowhere("Error, %s/%s conflict found:", a, b);
+      for (n = 0; n < sizeof(conflict) / sizeof(*conflict); ++n) {
+        int prod_idx, pos_idx;
+        prod_idx = conflict[n].production;
+        pos_idx = conflict[n].position;
+        struct prd_production *gp = prdg.productions_ + prod_idx;
+        size_t sym_idx;
+        size_t msg_size = 0;
+        msg_size = gp->nt_.id_.num_translated_ + 2 /* ": " */;
+        for (sym_idx = 0; sym_idx < gp->num_syms_; ++sym_idx) {
+          msg_size += gp->syms_[sym_idx].id_.num_translated_ + 1 /* " " */;
+        }
+        msg_size += 2 /* " *" */;
+
+        if (sym_idx == (size_t)pos_idx) {
+          msg_size += strlen(" (reduce)");
+        }
+        else {
+          msg_size += strlen(" (shift)");
+        }
+
+        msg_size++ /* '\0' */;
+
+        char *msg = malloc(msg_size);
+        if (!msg) {
+          LOGERROR("Error, no memory\n");
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+
+        msg[0] = '\0';
+        strcat(msg, gp->nt_.id_.translated_);
+        strcat(msg, ":");
+
+        for (sym_idx = 0; sym_idx < gp->num_syms_; ++sym_idx) {
+          if (sym_idx == (size_t)pos_idx) strcat(msg, " *");
+          strcat(msg, " ");
+          strcat(msg, gp->syms_[sym_idx].id_.translated_);
+        }
+        if (sym_idx == (size_t)pos_idx) {
+          strcat(msg, " * (reduce)");
+        }
+        else {
+          strcat(msg, " (shift)");
+        }
+
+        re_error(&gp->nt_.id_, msg);
+        free(msg);
+      }
+    }
+    re_error_nowhere("(Use %%prefer %%over directives to force resolution of conflicts)");
+  }
   if (r) {
     r = EXIT_FAILURE;
     goto cleanup_exit;

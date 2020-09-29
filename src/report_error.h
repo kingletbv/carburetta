@@ -19,6 +19,8 @@ void re_error_tkr(struct tkr_tokenizer *tkr, const char *fmt, ...);
 /* Report using explicit file, line, column location reference */
 void re_error_flc(const char *filename, int line, int col, const char *fmt, ...);
 
+/* Report error without any specific location associated */
+void re_error_nowhere(const char *fmt, ...);
 
 #ifdef __cplusplus
 } /* extern "C" */
