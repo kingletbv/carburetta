@@ -421,8 +421,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
     { /* scope guard */
       struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - production_length;
       int r; \
-        struct prd_production *pd; \
-        struct symbol *sym;
+        struct prd_production *pd;
       switch (production) {
       case 1: {
     { }
@@ -444,17 +443,9 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       {
       {
-	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
-	if (!sym) {
-		re_error(&(sym_data[0].v_.uv0_).text_, "Error, symbol \"%s\" not declared as %%nt", (sym_data[0].v_.uv0_).text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-
 	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[2].v_.uv1_));
 	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
 	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
-	pd->nt_.sym_ = sym;
 }
       }
       break;
@@ -463,17 +454,9 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       {
       {
-	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
-	if (!sym) {
-		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"%s\" not declared as %%nt", (sym_data[0].v_.uv0_).text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-
 	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[2].v_.uv1_));
 	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
 	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
-	pd->nt_.sym_ = sym;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
 	r = snippet_append_snippet(&pd->action_sequence_, & (sym_data[4].v_.uv1_).action_sequence_);
@@ -490,17 +473,9 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       {
       {
-	sym = symbol_find(st, (sym_data[0].v_.uv0_).text_.translated_);
-	if (!sym) {
-		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"%s\" not declared as %%nt", (sym_data[0].v_.uv0_).text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-
 	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[2].v_.uv1_));
 	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
 	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
-	pd->nt_.sym_ = sym;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
 	/* Append the cubrace-open to the snippets */
@@ -530,12 +505,6 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       {
       {
 	/* Grab ident from position 1, reduce */
-	sym = symbol_find(st, (sym_data[1].v_.uv0_).text_.translated_);
-	if (!sym) {
-		re_error(&(sym_data[1].v_.uv0_).text_, "Error, symbol \"%s\" not declared as %%nt or %%token", (sym_data[1].v_.uv0_).text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
 	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
 	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
 	if (pd->num_syms_ == pd->num_syms_allocated_) {
@@ -546,7 +515,6 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 	prd_production_sym_init(pps);
 	r = xlts_append(&pps->id_, &(sym_data[1].v_.uv0_).text_);
 	if (r) return PRD_INTERNAL_ERROR;
-	pps->sym_ = sym;
 }
       }
       break;

@@ -80,8 +80,7 @@
 
 %params struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st
 %locals int r; \
-        struct prd_production *pd; \
-        struct symbol *sym;
+        struct prd_production *pd;
 
 %on_success        return PRD_SUCCESS;
 %on_syntax_error   re_error_tkr(tkr, "Syntax error"); return PRD_SYNTAX_ERROR;
@@ -112,30 +111,14 @@ grammar: grammar production {
 }
 
 production: IDENT COLON rule SEMICOLON {
-	sym = symbol_find(st, $0.text_.translated_);
-	if (!sym) {
-		re_error(&$0.text_, "Error, symbol \"%s\" not declared as %%nt", $0.text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-
 	prd_prod_swap(&$$, &$2);
 	pd = &$$;
 	xlts_append(&pd->nt_.id_, &$0.text_);
-	pd->nt_.sym_ = sym;
 }
 production: IDENT COLON rule start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON {
-	sym = symbol_find(st, $0.text_.translated_);
-	if (!sym) {
-		re_error(&$1.text_, "Error, symbol \"%s\" not declared as %%nt", $0.text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-
 	prd_prod_swap(&$$, &$2);
 	pd = &$$;
 	xlts_append(&pd->nt_.id_, &$0.text_);
-	pd->nt_.sym_ = sym;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
 	r = snippet_append_snippet(&pd->action_sequence_, & $4.action_sequence_);
@@ -146,17 +129,9 @@ production: IDENT COLON rule start-c-tokenizer stmt-action end-c-tokenizer SEMIC
 	if (r) return r;
 }
 production: IDENT COLON rule start-c-tokenizer accept-whitespace CUBRACE_OPEN action-sequence end-c-tokenizer CUBRACE_CLOSE {
-	sym = symbol_find(st, $0.text_.translated_);
-	if (!sym) {
-		re_error(&$1.text_, "Error, symbol \"%s\" not declared as %%nt", $0.text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
-
 	prd_prod_swap(&$$, &$2);
 	pd = &$$;
 	xlts_append(&pd->nt_.id_, &$0.text_);
-	pd->nt_.sym_ = sym;
 
 	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
 	/* Append the cubrace-open to the snippets */
@@ -175,12 +150,6 @@ production: IDENT COLON rule start-c-tokenizer accept-whitespace CUBRACE_OPEN ac
 rule: ; /* Default PRD_RULE reduction sym has empty initialized prod_ which works for us. */
 rule: rule IDENT {
 	/* Grab ident from position 1, reduce */
-	sym = symbol_find(st, $1.text_.translated_);
-	if (!sym) {
-		re_error(&$1.text_, "Error, symbol \"%s\" not declared as %%nt or %%token", $1.text_.translated_);
-		g->have_errors_ = 1;
-		return PRD_SUCCESS;
-	}
 	prd_prod_swap(&$$, &$0);
 	pd = &$$;
 	if (pd->num_syms_ == pd->num_syms_allocated_) {
@@ -191,7 +160,6 @@ rule: rule IDENT {
 	prd_production_sym_init(pps);
 	r = xlts_append(&pps->id_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
-	pps->sym_ = sym;
 }
 
 stmt-action: EQUALS accept-whitespace; /* Return vacuous prd_production */

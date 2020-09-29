@@ -1514,11 +1514,50 @@ int main(int argc, char **argv) {
   }
   int SYNTHETIC_S = next_ordinal++;
 
+  /* Resolve all symbol references in the productions */
+  size_t prod_idx;
+  for (prod_idx = 0; prod_idx < prdg.num_productions_; ++prod_idx) {
+    struct prd_production *prod = prdg.productions_ + prod_idx;
+    if (!prod->nt_.id_.num_translated_) {
+      prdg.have_errors_ = 1;
+      continue;
+    }
+    struct symbol *sym = symbol_find(&cc.symtab_, prod->nt_.id_.translated_);
+    if (!sym) {
+      re_error(&prod->nt_.id_, "Error, symbol \"%s\" not declared as %%nt", prod->nt_.id_.translated_);
+      prdg.have_errors_ = 1;
+      continue;
+    }
+    prod->nt_.sym_ = sym;
+    size_t sym_idx;
+    for (sym_idx = 0; sym_idx < prod->num_syms_; ++sym_idx) {
+      struct prd_production_sym *prod_sym = prod->syms_ + sym_idx;
+      if (!prod_sym->id_.num_translated_) {
+        prdg.have_errors_ = 1;
+        continue;
+      }
+      sym = symbol_find(&cc.symtab_, prod_sym->id_.translated_);
+      if (!sym) {
+        re_error(&prod_sym->id_, "Error, symbol \"%s\" was not declared as %%nt or %%token", &prod_sym->id_.translated_);
+        prdg.have_errors_ = 1;
+        continue;
+      }
+      prod_sym->sym_ = sym;
+    }
+  }
+
+  if (prdg.have_errors_) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+
+  /* Take the production "syntax tree" and transcribe it into the form used for consumption by lalr.c */
   r = gt_transcribe_grammar(&gt, prdg.num_productions_, prdg.productions_, RULE_END, GRAMMAR_END);
   if (r) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
+
 
   /* Resolve all conflict resolutions */
   struct conflict_resolution *confres;
