@@ -88,7 +88,6 @@
 %on_internal_error re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
 %on_next_token     return PRD_NEXT;
 
-
 %on_syntax_error /* Syntax error */ \
   if (sym != PRD_INPUT_END) {\
     re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \

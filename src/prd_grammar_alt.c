@@ -224,17 +224,17 @@ struct prd_stack {
   size_t pos_, num_stack_allocated_;
   struct prd_sym_data *stack_;
 };
-#define PRD_IDENT 3
-#define PRD_COLON 4
-#define PRD_EQUALS 5
-#define PRD_SEMICOLON 6
-#define PRD_TOKEN 7
-#define PRD_PAR_OPEN 8
-#define PRD_PAR_CLOSE 9
-#define PRD_CUBRACE_OPEN 10
-#define PRD_CUBRACE_CLOSE 11
-#define PRD_ERROR 12
-#define PRD_INPUT_END 13
+#define TOK_IDENT 3
+#define TOK_COLON 4
+#define TOK_EQUALS 5
+#define TOK_SEMICOLON 6
+#define TOK_TOKEN 7
+#define TOK_PAR_OPEN 8
+#define TOK_PAR_CLOSE 9
+#define TOK_CUBRACE_OPEN 10
+#define TOK_CUBRACE_CLOSE 11
+#define TOK_ERROR 12
+#define TOK_INPUT_END 13
 
 #define PRD_GRAMMAR 14
 #define PRD_RULE 15

@@ -147,6 +147,8 @@ struct cinder_context {
   struct snippet token_action_snippet_;
   struct xlts prefix_;
   char *prefix_uppercase_;
+  struct xlts token_prefix_;
+  char *token_prefix_uppercase_;
   struct snippet params_snippet_;
   struct snippet locals_snippet_;
   struct snippet on_success_snippet_;
@@ -184,6 +186,8 @@ void cinder_context_init(struct cinder_context *cc) {
   snippet_init(&cc->token_action_snippet_);
   xlts_init(&cc->prefix_);
   cc->prefix_uppercase_ = NULL;
+  xlts_init(&cc->token_prefix_);
+  cc->token_prefix_uppercase_ = NULL;
   snippet_init(&cc->params_snippet_);
   snippet_init(&cc->locals_snippet_);
   snippet_init(&cc->on_success_snippet_);
@@ -207,6 +211,10 @@ void cinder_context_cleanup(struct cinder_context *cc) {
   snippet_cleanup(&cc->token_action_snippet_);
   xlts_cleanup(&cc->prefix_);
   if (cc->prefix_uppercase_) free(cc->prefix_uppercase_);
+  xlts_cleanup(&cc->token_prefix_);
+  if (cc->token_prefix_uppercase_) {
+    free(cc->token_prefix_uppercase_);
+  }
   snippet_cleanup(&cc->params_snippet_);
   snippet_cleanup(&cc->locals_snippet_);
   snippet_cleanup(&cc->on_success_snippet_);
@@ -255,6 +263,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     PCD_DESTRUCTOR_DIRECTIVE,
     PCD_TOKEN_ACTION_DIRECTIVE,
     PCD_PREFIX_DIRECTIVE,
+    PCD_TOKEN_PREFIX_DIRECTIVE,
     PCD_PARAMS_DIRECTIVE,
     PCD_LOCALS_DIRECTIVE,
     PCD_ON_SUCCESS_DIRECTIVE,
@@ -349,6 +358,9 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             }
             else if (!strcmp("prefix", tkr_str(tkr_tokens))) {
               directive = PCD_PREFIX_DIRECTIVE;
+            }
+            else if (!strcmp("token_prefix", tkr_str(tkr_tokens))) {
+              directive = PCD_TOKEN_PREFIX_DIRECTIVE;
             }
             else if (!strcmp("params", tkr_str(tkr_tokens))) {
               directive = PCD_PARAMS_DIRECTIVE;
@@ -688,6 +700,41 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
 
             found_prefix = 1;
           }
+          else if (directive == PCD_TOKEN_PREFIX_DIRECTIVE) {
+            if (found_prefix) {
+              re_error_tkr(tkr_tokens, "Error: Only a single identifier expected following %%token_prefix", tkr_str(tkr_tokens));
+              r = TKR_SYNTAX_ERROR;
+              goto cleanup_exit;
+            }
+            if (tkr_tokens->best_match_action_ != TOK_IDENT) {
+              re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, expected an identifier", tkr_str(tkr_tokens));
+              r = TKR_SYNTAX_ERROR;
+              goto cleanup_exit;
+            }
+            xlts_reset(&cc->token_prefix_);
+            r = xlts_append(&cc->token_prefix_, &tkr_tokens->xmatch_);
+            if (r) {
+              r = TKR_INTERNAL_ERROR;
+              goto cleanup_exit;
+            }
+            if (cc->token_prefix_.num_translated_) {
+              if (cc->token_prefix_uppercase_) free(cc->token_prefix_uppercase_);
+              cc->token_prefix_uppercase_ = (char *)malloc(cc->token_prefix_.num_translated_ + 1);
+              memcpy(cc->token_prefix_uppercase_, cc->token_prefix_.translated_, cc->token_prefix_.num_translated_);
+              cc->token_prefix_uppercase_[cc->token_prefix_.num_translated_] = 0;
+              size_t n;
+              for (n = 0; n < cc->token_prefix_.num_translated_; ++n) {
+                char c;
+                c = cc->token_prefix_uppercase_[n];
+                if ((c >= 'a') && (c <= 'z')) {
+                  c = c - 'a' + 'A';
+                }
+                cc->token_prefix_uppercase_[n] = c;
+              }
+            }
+
+            found_prefix = 1;
+          }
           else if ((directive == PCD_PARAMS_DIRECTIVE) || 
                    (directive == PCD_LOCALS_DIRECTIVE) ||
                    (directive == PCD_ON_SUCCESS_DIRECTIVE) || 
@@ -778,6 +825,22 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   }
 
   assert(r != TKR_FEED_ME); /* should not ask to get fed on final input */
+
+  if (directive == PCD_PREFIX_DIRECTIVE) {
+    if (!found_prefix) {
+      re_error(directive_line_match, "Error: incomplete %%prefix directive, token expected");
+      r = TKR_SYNTAX_ERROR;
+      goto cleanup_exit;
+    }
+  }
+
+  if (directive == PCD_TOKEN_PREFIX_DIRECTIVE) {
+    if (!found_prefix) {
+      re_error(directive_line_match, "Error: incomplete %%token_prefix directive, token expected");
+      r = TKR_SYNTAX_ERROR;
+      goto cleanup_exit;
+    }
+  }
 
   if ((directive == PCD_PREFER) || (directive == PCD_OVER)) {
     if (!prefer_over_valid) {
@@ -951,6 +1014,11 @@ static const char *cc_prefix(struct cinder_context *cc) {
 static const char *cc_PREFIX(struct cinder_context *cc) {
   if (cc->prefix_uppercase_) return cc->prefix_uppercase_;
   return "PRD_";
+}
+
+static const char *cc_TOKEN_PREFIX(struct cinder_context *cc) {
+  if (cc->token_prefix_uppercase_) return cc->token_prefix_uppercase_;
+  return cc_PREFIX(cc);
 }
 
 static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct prd_stack *prds, struct prd_grammar *g, struct symbol_table *st) {
@@ -1977,7 +2045,7 @@ int main(int argc, char **argv) {
         }
         *s++ = '\0';
 
-        fprintf(outfp, "#define %s%s %d\n", cc_PREFIX(&cc), ident, sym->ordinal_);
+        fprintf(outfp, "#define %s%s %d\n", cc_TOKEN_PREFIX(&cc), ident, sym->ordinal_);
         free(ident);
       } while (sym != cc.symtab_.terminals_);
     }
@@ -2619,7 +2687,7 @@ int main(int argc, char **argv) {
         }
         *s++ = '\0';
 
-        fprintf(outfp, "#define %s%s %d\n", cc_PREFIX(&cc), ident, sym->ordinal_);
+        fprintf(outfp, "#define %s%s %d\n", cc_TOKEN_PREFIX(&cc), ident, sym->ordinal_);
         free(ident);
       } while (sym != cc.symtab_.terminals_);
     }
