@@ -1839,7 +1839,7 @@ int main(int argc, char **argv) {
        * (and the declarations already made.) */
       const char *cinder = "CINDER_";
       size_t cinder_len = strlen(cinder);
-      size_t prefix_len = strlen(cc.prefix_uppercase_);
+      size_t prefix_len = strlen(cc_PREFIX(&cc));
       size_t header_filename_len = strlen(h_output_filename);
       const char *included = "_INCLUDED";
       size_t included_len = strlen(included);
@@ -1847,7 +1847,7 @@ int main(int argc, char **argv) {
       include_guard = (char *)malloc(include_guard_size);
       include_guard[0] = '\0';
       strcat(include_guard, cinder);
-      strcat(include_guard, cc.prefix_uppercase_);
+      strcat(include_guard, cc_PREFIX(&cc));
       size_t n;
       char *p = include_guard + cinder_len + prefix_len;
       for (n = 0; n < header_filename_len; ++n) {
@@ -1882,33 +1882,34 @@ int main(int argc, char **argv) {
 
     fprintf(outfp, "struct %ssym_data {\n", cc_prefix(&cc));
     fprintf(outfp, "  int state_;\n");
-    fprintf(outfp, "  union {\n");
+    if (cc.tstab_.num_typestrs_) {
+      fprintf(outfp, "  union {\n");
+      size_t ts_idx;
+      for (ts_idx = 0; ts_idx < cc.tstab_.num_typestrs_; ++ts_idx) {
+        struct typestr *ts;
+        ts = cc.tstab_.typestrs_[ts_idx];
+        int found_placeholder = 0;
 
-    size_t ts_idx;
-    for (ts_idx = 0; ts_idx < cc.tstab_.num_typestrs_; ++ts_idx) {
-      struct typestr *ts;
-      ts = cc.tstab_.typestrs_[ts_idx];
-      int found_placeholder = 0;
-
-      fprintf(outfp, "    ");
-      size_t tok_idx;
-      for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
-        struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
-        if (st->variant_ != TOK_SPECIAL_IDENT) {
-          fprintf(outfp, "%s%s", tok_idx ? " " : "", st->text_.translated_);
+        fprintf(outfp, "    ");
+        size_t tok_idx;
+        for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
+          struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
+          if (st->variant_ != TOK_SPECIAL_IDENT) {
+            fprintf(outfp, "%s%s", tok_idx ? " " : "", st->text_.translated_);
+          }
+          else {
+            found_placeholder = 1;
+            fprintf(outfp, " uv%d_", ts->ordinal_);
+          }
         }
-        else {
-          found_placeholder = 1;
+        if (!found_placeholder) {
+          /* Placeholder is implied at the end */
           fprintf(outfp, " uv%d_", ts->ordinal_);
         }
+        fprintf(outfp, ";\n");
       }
-      if (!found_placeholder) {
-        /* Placeholder is implied at the end */
-        fprintf(outfp, " uv%d_", ts->ordinal_);
-      }
-      fprintf(outfp, ";\n");
+      fprintf(outfp, "  } v_;\n");
     }
-    fprintf(outfp, "  } v_;\n");
     fprintf(outfp, "};\n");
 
     size_t num_columns = (size_t)(1 + lalr.max_sym - lalr.min_sym);

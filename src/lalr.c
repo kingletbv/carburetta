@@ -1068,9 +1068,7 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
   }
 
   /* Count the root production as an extra.. */
-  if (gen->nr_productions) {
-    gen->nr_productions++;
-  }
+  gen->nr_productions++;
 
   void *p;
   p = realloc(gen->productions, sizeof(int *) * gen->nr_productions);
@@ -1088,18 +1086,26 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
   /* Now fill in the productions. */
   pval = productions;
   p1st = gen->productions;
-  if (gen->nr_productions) {
-    /* Fill in the root production.. */
-    *p1st++ = gen->root_production;
+
+  /* Fill in the root production.. */
+  *p1st++ = gen->root_production;
+  if (gen->nr_productions != 1) {
     gen->root_production[0] = gen->synths_sym;
     gen->root_production[1] = *pval;
     gen->root_production[2] = gen->eop_sym;
     gen->production_lengths[0] = 1;
   }
-  min_nonterm = (int)((~(unsigned int)0) >> 1); /* maxint */
-  max_nonterm = ~min_nonterm; /* minint */
-  min_term = min_nonterm;
-  max_term = max_nonterm;
+  else /* (gen->nr_productions == 1) */ {
+    /* Root production is isolated and alone, empty grammar accepts only EOF */
+    gen->root_production[0] = gen->synths_sym;
+    gen->root_production[1] = gen->eop_sym;
+    gen->production_lengths[0] = 0;
+  }
+
+  min_nonterm = gen->synths_sym;
+  max_nonterm = gen->synths_sym;
+  min_term = gen->eof_sym;
+  max_term = gen->eof_sym;
   plen = gen->production_lengths + 1 /* skip root */;
   /* first run populates productions and production lengths */
   while (*pval != gen->eog_sym) {
@@ -1111,7 +1117,7 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
     plen++;
   }
   gen->lowest_nonterm = min_nonterm;
-  gen->highest_nonterm = max_nonterm + 1;
+  gen->highest_nonterm = max_nonterm;
   if (gen->highest_nonterm < gen->lowest_nonterm) {
     return LR_INTERNAL_ERROR;
   }
@@ -1146,8 +1152,6 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
       }
     }
   }
-  if (min_term > gen->eof_sym) min_term = gen->eof_sym;
-  if (max_term < gen->eof_sym) max_term = gen->eof_sym;
   gen->highest_term = max_term;
   gen->lowest_term = min_term;
 
