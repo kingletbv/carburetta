@@ -1008,12 +1008,12 @@ cleanup_exit:
 
 static const char *cc_prefix(struct cinder_context *cc) {
   if (cc->prefix_.num_translated_) return cc->prefix_.translated_;
-  return "prd_";
+  return "cinder_";
 }
 
 static const char *cc_PREFIX(struct cinder_context *cc) {
   if (cc->prefix_uppercase_) return cc->prefix_uppercase_;
-  return "PRD_";
+  return "CINDER_";
 }
 
 static const char *cc_TOKEN_PREFIX(struct cinder_context *cc) {
@@ -1606,7 +1606,7 @@ int main(int argc, char **argv) {
       }
       sym = symbol_find(&cc.symtab_, prod_sym->id_.translated_);
       if (!sym) {
-        re_error(&prod_sym->id_, "Error, symbol \"%s\" was not declared as %%nt or %%token", &prod_sym->id_.translated_);
+        re_error(&prod_sym->id_, "Error, symbol \"%s\" was not declared as %%nt or %%token", prod_sym->id_.translated_);
         prdg.have_errors_ = 1;
         continue;
       }
@@ -2660,7 +2660,8 @@ int main(int argc, char **argv) {
                    "#define %s\n"
                    "\n", include_guard, include_guard);
 
-    fprintf(outfp, "#include <stddef.h> /* size_t */\n");
+    fprintf(outfp, "#include <stddef.h> /* size_t */\n"
+                   "\n");
 
     fprintf(outfp, "#ifdef __cplusplus\n"
                    "extern \"C\" {\n"
