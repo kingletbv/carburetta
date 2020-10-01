@@ -60,7 +60,6 @@
     <ClCompile Include="line_defs.c" />
     <ClCompile Include="symbol.c" />
     <ClCompile Include="grammar_table.c" />
-    <ClCompile Include="prd_gram_gen.c" />
     <ClCompile Include="snippet.c" />
     <ClCompile Include="typestr.c" />
   </ItemGroup>
