@@ -2,6 +2,7 @@
 #define CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED
 
 #include <stddef.h> /* size_t */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
