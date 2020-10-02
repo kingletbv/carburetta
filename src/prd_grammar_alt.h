@@ -20,6 +20,9 @@ extern "C" {
 #define PRD_INPUT_END 13
 
 struct prd_stack {
+  int error_recovery_:1;
+  int reported_error_:1;
+  int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
   struct prd_sym_data *stack_;
 };

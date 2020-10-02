@@ -220,6 +220,9 @@ static const int prd_state_syms[] = {
 
 #ifndef CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED
 struct prd_stack {
+  int error_recovery_:1;
+  int reported_error_:1;
+  int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
   struct prd_sym_data *stack_;
 };
@@ -246,6 +249,9 @@ struct prd_stack {
 #endif /* CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED */
 
 void prd_stack_init(struct prd_stack *stack) {
+  stack->error_recovery_ = 0;
+  stack->reported_error_ = 0;
+  stack->mute_error_turns_ = 0;
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
   stack->stack_ = NULL;
@@ -281,7 +287,7 @@ void prd_stack_cleanup(struct prd_stack *stack) {
     case 37: /* colon */
     case 38: /* ident */
     {
-      xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+       xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
     }
     break;
     case 1: /* production */
@@ -293,7 +299,7 @@ void prd_stack_cleanup(struct prd_stack *stack) {
     case 31: /* action-sequence */
     case 36: /* rule */
     {
-      prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+       prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
     }
     break;
     }
@@ -362,7 +368,7 @@ int prd_stack_reset(struct prd_stack *stack) {
     case 37: /* colon */
     case 38: /* ident */
     {
-    xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+     xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
     }
     break;
     case 1: /* production */
@@ -374,7 +380,7 @@ int prd_stack_reset(struct prd_stack *stack) {
     case 31: /* action-sequence */
     case 36: /* rule */
     {
-    prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+     prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
     }
     break;
     }
@@ -382,7 +388,7 @@ int prd_stack_reset(struct prd_stack *stack) {
   stack->pos_ = 0;
   switch (prd_push_state(stack, 0)) {
     case -1: /* overflow */ {
-      return -1;
+      return -2;
     }
     break;
     case -2: /* out of memory */ {
@@ -438,7 +444,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 3: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -449,7 +455,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 4: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -468,7 +474,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 5: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -492,14 +498,14 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 6: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       
       }
       break;
       case 7: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -518,14 +524,14 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 8: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       
       }
       break;
       case 9: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -537,7 +543,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 10: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -549,7 +555,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 11: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -561,7 +567,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 12: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -573,7 +579,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 13: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -595,7 +601,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 14: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -616,14 +622,14 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 15: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       
       }
       break;
       case 16: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -635,7 +641,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 17: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -647,7 +653,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 18: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -659,7 +665,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 19: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -671,7 +677,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 20: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -683,7 +689,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 21: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -704,7 +710,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       break;
       case 22: {
-    prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
       }
       {
       {
@@ -778,7 +784,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       case 37: /* colon */
       case 38: /* ident */
       {
-      xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
+       xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
       }
       break;
       case 1: /* production */
@@ -790,7 +796,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       case 31: /* action-sequence */
       case 36: /* rule */
       {
-      prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
+       prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
       }
       break;
       }
@@ -848,10 +854,12 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
     /* Fill in the sym from the tokenizer */
     struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
     {
-      (sym_data->v_.uv0_).match_=(sym_data->v_.uv0_).variant_=0;xlts_init(&(sym_data->v_.uv0_).text_);
+       (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = 0;              xlts_init(&(sym_data->v_.uv0_).text_);
     }
     {
-      (sym_data->v_.uv0_).match_=tkr->best_match_action_;(sym_data->v_.uv0_).variant_=tkr->best_match_variant_;xlts_append(&(sym_data->v_.uv0_).text_,&tkr->xmatch_);
+       (sym_data->v_.uv0_).match_ = tkr->best_match_action_; \
+              (sym_data->v_.uv0_).variant_ = tkr->best_match_variant_; \
+			  xlts_append(&(sym_data->v_.uv0_).text_, &tkr->xmatch_);
     }
   }
   else {
@@ -868,6 +876,463 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
   {
     return PRD_NEXT;
   }
+}
+int prd_parse2(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st) {
+  for (;;) {
+    if (!stack->error_recovery_) {
+      int action = prd_parse_table[prd_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - prd_minimum_sym)];
+      if (action > 0) {
+        switch (prd_push_state(stack, action /* action for a shift is the ordinal */)) {
+          case -1: /* overflow */ {
+            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+          }
+          break;
+          case -2: /* out of memory */ {
+            re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+          }
+          break;
+        } /* switch */
+
+        /* Fill in the sym from the tokenizer */
+        struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
+        {
+           (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = 0;              xlts_init(&(sym_data->v_.uv0_).text_);
+        }
+        {
+           (sym_data->v_.uv0_).match_ = tkr->best_match_action_; \
+              (sym_data->v_.uv0_).variant_ = tkr->best_match_variant_; \
+			  xlts_append(&(sym_data->v_.uv0_).text_, &tkr->xmatch_);
+        }
+        return 1; /* next token */
+      } /* action > 0 */
+      else if (action < 0) {
+        int production = -action - 1;
+        size_t production_length = prd_production_lengths[production];
+        int nonterminal = prd_production_syms[production];
+        if (0 == production) {
+          return PRD_SUCCESS;
+        }
+
+        struct prd_sym_data nonterminal_sym_data_reduced_to = { 0 };
+        { /* scope guard */
+          struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - production_length;
+          int r; \
+        struct prd_production *pd;
+          switch (production) {
+            case 1: {
+    { }
+            }
+            break;
+            case 2: {
+    {
+	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
+	r = prd_grammar_check_production_reserve(g);
+	if (r) return r;
+	pd = g->productions_ + g->num_productions_++;
+	prd_prod_init(pd);
+	prd_prod_swap(pd, &(sym_data[1].v_.uv1_));
+}
+            }
+            break;
+            case 3: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[2].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
+}
+            }
+            break;
+            case 4: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[2].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, & (sym_data[4].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the semicolon to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[6].v_.uv0_).match_, (sym_data[6].v_.uv0_).variant_, &(sym_data[6].v_.uv0_).text_);
+	if (r) return r;
+}
+            }
+            break;
+            case 5: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[2].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	xlts_append(&pd->nt_.id_, &(sym_data[0].v_.uv0_).text_);
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	/* Append the cubrace-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[5].v_.uv0_).match_, (sym_data[5].v_.uv0_).variant_, &(sym_data[5].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[6].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the cubrace-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[8].v_.uv0_).match_, (sym_data[8].v_.uv0_).variant_, &(sym_data[8].v_.uv0_).text_);
+	if (r) return r;
+}
+            }
+            break;
+            case 6: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              
+            }
+            break;
+            case 7: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	/* Grab ident from position 1, reduce */
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	if (pd->num_syms_ == pd->num_syms_allocated_) {
+		r = prd_prod_check_sym_reserve(pd, &(sym_data[1].v_.uv0_).text_);
+		if (r) return r;
+	}
+	struct prd_production_sym *pps = pd->syms_ + pd->num_syms_++;
+	prd_production_sym_init(pps);
+	r = xlts_append(&pps->id_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 8: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              
+            }
+            break;
+            case 9: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 10: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 11: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 12: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 13: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+
+	/* Append the par-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the par-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
+            }
+            break;
+            case 14: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	/* Append the cubrace-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the cubrace-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
+            }
+            break;
+            case 15: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              
+            }
+            break;
+            case 16: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 17: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 18: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 19: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 20: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 21: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	/* Append the par-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the par-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
+            }
+            break;
+            case 22: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	/* Append the cubrace-open to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return r;
+
+	/* Move snippets in; could do this more efficiently by manually swapping pointers; but this works.. */
+	r = snippet_append_snippet(&pd->action_sequence_, &(sym_data[2].v_.uv1_).action_sequence_);
+	if (r) return r;
+
+	/* Append the cubrace-close to the snippets */
+	r = snippet_append(&pd->action_sequence_, (sym_data[3].v_.uv0_).match_, (sym_data[3].v_.uv0_).variant_, &(sym_data[3].v_.uv0_).text_);
+	if (r) return r;
+}
+            }
+            break;
+            case 23: {
+    tok_switch_to_c_idents(tkr);
+            }
+            break;
+            case 24: {
+    {
+	tok_switch_to_nonterminal_idents(tkr);
+	g->accept_whitespace_ = 0; /* Reset to normal tokens */
+}
+            }
+            break;
+            case 25: {
+    {
+	/* Welcome whitespace from this point. Note that this point is *after* the lookahead at the point
+	 * that the PRD_ACCEPT_WHITESPACE non-terminal appears. Therefore, it is *after* the EQUALS sign and
+	 * *after* the curly opening brace. */
+	g->accept_whitespace_ = 1;
+}
+            }
+            break;
+          } /* switch */
+        } /* scope guard */
+
+        /* Free symdata for every symbol in the production, including the first slot where we will soon
+         * push nonterminal_data_reduced_to */
+        size_t prd_sym_idx;
+        for (prd_sym_idx = stack->pos_ - production_length; prd_sym_idx < stack->pos_; ++prd_sym_idx) {
+          switch (stack->stack_[prd_sym_idx].state_) {
+            case 2: /* semicolon */
+            case 3: /* semicolon */
+            case 5: /* ident */
+            case 6: /* colon */
+            case 7: /* equals */
+            case 8: /* token */
+            case 9: /* par-close */
+            case 11: /* par-open */
+            case 12: /* cubrace-close */
+            case 14: /* cubrace-open */
+            case 17: /* equals */
+            case 18: /* cubrace-close */
+            case 20: /* ident */
+            case 21: /* colon */
+            case 22: /* equals */
+            case 23: /* semicolon */
+            case 24: /* token */
+            case 25: /* par-close */
+            case 27: /* par-open */
+            case 28: /* cubrace-close */
+            case 30: /* cubrace-open */
+            case 32: /* cubrace-open */
+            case 35: /* ident */
+            case 37: /* colon */
+            case 38: /* ident */
+            {
+               xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
+            }
+            break;
+            case 1: /* production */
+            case 10: /* action-sequence */
+            case 13: /* action-sequence */
+            case 15: /* stmt-action */
+            case 26: /* action-sequence */
+            case 29: /* action-sequence */
+            case 31: /* action-sequence */
+            case 36: /* rule */
+            {
+               prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
+            }
+            break;
+          } /* switch */
+        } /* for */
+        stack->pos_ -= production_length;
+        action = prd_parse_table[prd_num_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - prd_minimum_sym)];
+        if (action <= 0) {
+          re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+        }
+        switch (prd_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
+          case -1: /* overflow */ {
+            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+          }
+          break;
+          case -2: /* out of memory */ {
+            re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+          }
+          break;
+        } /* switch */
+        struct prd_sym_data *sd = stack->stack_ + stack->pos_ - 1;
+        *sd = nonterminal_sym_data_reduced_to;
+        sd->state_ = action;
+      } /* action < 0 */
+      else /* action == 0 */ {
+        stack->error_recovery_ = 1;
+        stack->reported_error_ = !stack->mute_error_turns_;
+      }
+    } /* !stack->error_recovery_ */
+    if (stack->error_recovery_) {
+      if (!stack->reported_error_) {
+        stack->reported_error_ = 1;
+        stack->mute_error_turns_ = 3;
+        
+        stack->error_recovery_ = 0; /* old behavior for now.. */
+/* Syntax error */ \
+  if (sym != PRD_INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
+      }
+    } /* stack->error_recovery_ */
+  } /* for (;;) */
 }
 /* --------- HERE ENDS THE GENERATED FLUFF ------------ */
 
@@ -905,6 +1370,6 @@ int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tok
   default: return PRD_INTERNAL_ERROR;
   }
 #else
-  return prd_parse(stack, sym, g, tkr, st);
+  return prd_parse2(stack, sym, g, tkr, st);
 #endif
 }

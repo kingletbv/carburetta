@@ -331,6 +331,6 @@ int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tok
   default: return PRD_INTERNAL_ERROR;
   }
 #else
-  return prd_parse(stack, sym, g, tkr, st);
+  return prd_parse2(stack, sym, g, tkr, st);
 #endif
 }
