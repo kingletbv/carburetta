@@ -1594,9 +1594,10 @@ int main(int argc, char **argv) {
     if (!sym) {
       re_error(&prod->nt_.id_, "Error, symbol \"%s\" not declared as %%nt", prod->nt_.id_.translated_);
       prdg.have_errors_ = 1;
-      continue;
     }
-    prod->nt_.sym_ = sym;
+    else {
+      prod->nt_.sym_ = sym;
+    }
     size_t sym_idx;
     for (sym_idx = 0; sym_idx < prod->num_syms_; ++sym_idx) {
       struct prd_production_sym *prod_sym = prod->syms_ + sym_idx;
@@ -1697,7 +1698,8 @@ int main(int argc, char **argv) {
         }
       }
 
-      r = lr_add_conflict_resolution(&lalr, (int)matches[0], confres->prefer_prod_place_, (int)matches[1], confres->over_prod_place_);
+      /* Productions are 1 based for LALR (as production 0 is the synthetic S reduction) */
+      r = lr_add_conflict_resolution(&lalr, 1 + (int)matches[0], confres->prefer_prod_place_, 1 + (int)matches[1], confres->over_prod_place_);
       if (r) {
         LOGERROR("Error, no memory\n");
         r = EXIT_FAILURE;
