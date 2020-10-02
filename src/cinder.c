@@ -295,7 +295,10 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
       int eat_whitespace = 0;
 
       if (ate_directive) {
-        if ((directive == PCD_PARAMS_DIRECTIVE) ||
+        if ((directive == PCD_TOKEN_ACTION_DIRECTIVE) ||
+            (directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
+            (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
+            (directive == PCD_PARAMS_DIRECTIVE) ||
             (directive == PCD_LOCALS_DIRECTIVE) ||
             (directive == PCD_ON_SUCCESS_DIRECTIVE) ||
             (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) ||
@@ -2233,7 +2236,7 @@ int main(int argc, char **argv) {
 
     fprintf(outfp, "  switch (%spush_state(stack, 0)) {\n"
       "    case -1: /* overflow */ {\n", cc_prefix(&cc));
-    fprintf(outfp, "      return -1;\n");
+    fprintf(outfp, "      return -2;\n");
     fprintf(outfp, "    }\n    break;\n"
       "    case -2: /* out of memory */ {\n");
     fprintf(outfp, "      return -2;\n");
@@ -2473,7 +2476,7 @@ int main(int argc, char **argv) {
       }
     }
     else {
-      fprintf(outfp, "return -1;\n");
+      fprintf(outfp, "return -2;\n");
     }
     fprintf(outfp, "      }\n    break;\n"
       "      case -2: /* out of memory */ {\n        ");
@@ -2524,7 +2527,7 @@ int main(int argc, char **argv) {
       }
     }
     else {
-      fprintf(outfp, "return -1;\n");
+      fprintf(outfp, "return -2;\n");
     }
     fprintf(outfp, "      }\n    break;\n"
       "      case -2: /* out of memory */ {\n        ");
@@ -2579,7 +2582,7 @@ int main(int argc, char **argv) {
         }
         else {
           /* Regular token, just emit as-is */
-          fprintf(outfp, action->tokens_[col].text_.translated_);
+          fprintf(outfp, action->tokens_[col].text_.original_);
         }
       }
       /* Close this compound block and open the one for the action */
