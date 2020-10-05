@@ -34,7 +34,12 @@
     <ClCompile Include="lalr.c" />
     <ClCompile Include="line_assembly.c" />
     <ClCompile Include="line_defs.c" />
-    <ClCompile Include="log_function.c" />
+    <ClCompile Include="log_function.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="mlx\chain.c" />
     <ClCompile Include="mlx\dfa.c" />
     <ClCompile Include="mlx\nfa.c" />
@@ -42,6 +47,7 @@
     <ClCompile Include="mlx\tokenizer.c" />
     <ClCompile Include="mlx\xlalr.c" />
     <ClCompile Include="mlx\xlts.c" />
+    <ClCompile Include="mul.c" />
     <ClCompile Include="prd_gram.c" />
     <ClCompile Include="report_error.c" />
     <ClCompile Include="snippet.c" />
@@ -71,6 +77,7 @@
     <ClInclude Include="mlx\tokenizer.h" />
     <ClInclude Include="mlx\xlalr.h" />
     <ClInclude Include="mlx\xlts.h" />
+    <ClInclude Include="mul.h" />
     <ClInclude Include="prd_gram.h" />
     <ClInclude Include="report_error.h" />
     <ClInclude Include="snippet.h" />

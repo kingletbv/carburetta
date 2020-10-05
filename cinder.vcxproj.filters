@@ -62,6 +62,7 @@
     <ClCompile Include="grammar_table.c" />
     <ClCompile Include="snippet.c" />
     <ClCompile Include="typestr.c" />
+    <ClCompile Include="mul.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
@@ -121,6 +122,7 @@
     <ClInclude Include="grammar_table.h" />
     <ClInclude Include="snippet.h" />
     <ClInclude Include="typestr.h" />
+    <ClInclude Include="mul.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">
