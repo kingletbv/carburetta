@@ -2,34 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="cinder.c" />
-    <ClCompile Include="log_function.c" />
-    <ClCompile Include="helpers\aes.c">
-      <Filter>helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="helpers\cpp_helpers.cpp">
-      <Filter>helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="helpers\gf8.c">
-      <Filter>helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="helpers\helpers.c">
-      <Filter>helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="helpers\klt_logger.c">
-      <Filter>helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="helpers\md5.c">
-      <Filter>helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="helpers\sha1.c">
-      <Filter>helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="helpers\sha256.c">
-      <Filter>helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="helpers\unicode_data.c">
-      <Filter>helpers</Filter>
-    </ClCompile>
     <ClCompile Include="tokens.c" />
     <ClCompile Include="prd_gram.c" />
     <ClCompile Include="lalr.c" />
@@ -51,31 +23,6 @@
     <ClCompile Include="xlts.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="log_function.h" />
-    <ClInclude Include="helpers\aes.h">
-      <Filter>helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="helpers\gf8.h">
-      <Filter>helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="helpers\helpers.h">
-      <Filter>helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="helpers\klt_logger.h">
-      <Filter>helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="helpers\md5.h">
-      <Filter>helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="helpers\sha1.h">
-      <Filter>helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="helpers\sha256.h">
-      <Filter>helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="helpers\unicode_data.h">
-      <Filter>helpers</Filter>
-    </ClInclude>
     <ClInclude Include="tokens.h" />
     <ClInclude Include="prd_gram.h" />
     <ClInclude Include="lalr.h" />
@@ -97,9 +44,6 @@
     <ClInclude Include="xlts.h" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="helpers">
-      <UniqueIdentifier>{650522bf-3e73-4986-8644-cb80ccda6a5d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="3rdparty">
       <UniqueIdentifier>{2438e150-3df8-4465-be55-d8442c7bffe6}</UniqueIdentifier>
     </Filter>

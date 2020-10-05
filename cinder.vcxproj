@@ -24,24 +24,9 @@
     <ClCompile Include="decomment.c" />
     <ClCompile Include="dfa.c" />
     <ClCompile Include="grammar_table.c" />
-    <ClCompile Include="helpers\aes.c" />
-    <ClCompile Include="helpers\cpp_helpers.cpp" />
-    <ClCompile Include="helpers\gf8.c" />
-    <ClCompile Include="helpers\helpers.c" />
-    <ClCompile Include="helpers\klt_logger.c" />
-    <ClCompile Include="helpers\md5.c" />
-    <ClCompile Include="helpers\sha1.c" />
-    <ClCompile Include="helpers\sha256.c" />
-    <ClCompile Include="helpers\unicode_data.c" />
     <ClCompile Include="lalr.c" />
     <ClCompile Include="line_assembly.c" />
     <ClCompile Include="line_defs.c" />
-    <ClCompile Include="log_function.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="mul.c" />
     <ClCompile Include="nfa.c" />
     <ClCompile Include="prd_gram.c" />
@@ -60,18 +45,9 @@
     <ClInclude Include="decomment.h" />
     <ClInclude Include="dfa.h" />
     <ClInclude Include="grammar_table.h" />
-    <ClInclude Include="helpers\aes.h" />
-    <ClInclude Include="helpers\gf8.h" />
-    <ClInclude Include="helpers\helpers.h" />
-    <ClInclude Include="helpers\klt_logger.h" />
-    <ClInclude Include="helpers\md5.h" />
-    <ClInclude Include="helpers\sha1.h" />
-    <ClInclude Include="helpers\sha256.h" />
-    <ClInclude Include="helpers\unicode_data.h" />
     <ClInclude Include="lalr.h" />
     <ClInclude Include="line_assembly.h" />
     <ClInclude Include="line_defs.h" />
-    <ClInclude Include="log_function.h" />
     <ClInclude Include="mul.h" />
     <ClInclude Include="nfa.h" />
     <ClInclude Include="prd_gram.h" />

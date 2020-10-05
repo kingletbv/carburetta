@@ -23,11 +23,6 @@
 #include <assert.h>
 #endif
 
-#ifndef LOG_FUNCTION_H_INCLUDED
-#define LOG_FUNCTION_H_INCLUDED
-#include "log_function.h"
-#endif
-
 #ifndef REPORT_ERROR_H_INCLUDED
 #define REPORT_ERROR_H_INCLUDED
 #include "report_error.h"
