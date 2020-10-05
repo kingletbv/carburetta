@@ -18,10 +18,9 @@
 #include <assert.h>
 #endif
 
-#ifndef KLT_LOGGER_H_INCLUDED
-#define KLT_LOGGER_H_INCLUDED
-#define KLT_LOG_MODULE "xlts"
-#include "klt_logger.h"
+#ifndef REPORT_ERROR_H_INCLUDED
+#define REPORT_ERROR_H_INCLUDED
+#include "report_error.h"
 #endif
 
 #ifndef XLTS_H_INCLUDED
@@ -62,12 +61,12 @@ void xlts_reset(struct xlts *x) {
 static int xlts_append_strings(size_t *num, size_t *num_allocated, char **p, size_t num_bytes, const char *bytes) {
   size_t size_needed = *num + num_bytes;
   if (size_needed < num_bytes) {
-    LOGERROR("Error: overflow on reallocation\n");
+    re_error_nowhere("Error, overflow on reallocation");
     return XLTS_INTERNAL_ERROR;
   }
   /* Add in null terminator */
   if (size_needed == SIZE_MAX) {
-    LOGERROR("Error: overflow on reallocation\n");
+    re_error_nowhere("Error, overflow on reallocation");
     return XLTS_INTERNAL_ERROR;
   }
   size_needed++;
@@ -79,7 +78,7 @@ static int xlts_append_strings(size_t *num, size_t *num_allocated, char **p, siz
   if (size_needed > *num_allocated) {
     size_t size_to_allocate = *num_allocated * 2 + 1;
     if (size_to_allocate <= *num_allocated) {
-      LOGERROR("Error: overflow on reallocation\n");
+      re_error_nowhere("Error, overflow on reallocation");
       return XLTS_INTERNAL_ERROR;
     }
     if (size_to_allocate < size_needed) {
@@ -87,7 +86,7 @@ static int xlts_append_strings(size_t *num, size_t *num_allocated, char **p, siz
     }
     void *buf = realloc(*p, size_to_allocate);
     if (!buf) {
-      LOGERROR("Error: no memory\n");
+      re_error_nowhere("Error, no memory");
       return XLTS_INTERNAL_ERROR;
     }
     *p = (char *)buf;
@@ -130,11 +129,11 @@ static int xlts_append_chunk(struct xlts *x, xlts_chunk_type_t ct, const char *f
   if (x->num_chunks_ == x->num_chunks_allocated_) {
     size_t num_to_alloc = x->num_chunks_allocated_ * 2 + 1;
     if (num_to_alloc <= x->num_chunks_allocated_) {
-      LOGERROR("Error: overflow on reallocation\n");
+      re_error_nowhere("Error, overflow on reallocation");
       return XLTS_INTERNAL_ERROR;
     }
     if (num_to_alloc > (SIZE_MAX / sizeof(struct xlts_chunk))) {
-      LOGERROR("Error: overflow on reallocation\n");
+      re_error_nowhere("Error, overflow on reallocation");
       return XLTS_INTERNAL_ERROR;
     }
     if (num_to_alloc < 16) {
@@ -144,7 +143,7 @@ static int xlts_append_chunk(struct xlts *x, xlts_chunk_type_t ct, const char *f
     size_t size_to_allocate = num_to_alloc * sizeof(struct xlts_chunk);
     void *p = realloc(x->chunks_, size_to_allocate);
     if (!p) {
-      LOGERROR("Error: no memory\n");
+      re_error_nowhere("Error, no memory");
       return XLTS_INTERNAL_ERROR;
     }
     x->chunks_ = (struct xlts_chunk *)p;
