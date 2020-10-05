@@ -3,21 +3,6 @@
   <ItemGroup>
     <ClCompile Include="cinder.c" />
     <ClCompile Include="log_function.c" />
-    <ClCompile Include="mlx\chain.c">
-      <Filter>mlx</Filter>
-    </ClCompile>
-    <ClCompile Include="mlx\dfa.c">
-      <Filter>mlx</Filter>
-    </ClCompile>
-    <ClCompile Include="mlx\nfa.c">
-      <Filter>mlx</Filter>
-    </ClCompile>
-    <ClCompile Include="mlx\scanner.c">
-      <Filter>mlx</Filter>
-    </ClCompile>
-    <ClCompile Include="mlx\xlalr.c">
-      <Filter>mlx</Filter>
-    </ClCompile>
     <ClCompile Include="helpers\aes.c">
       <Filter>helpers</Filter>
     </ClCompile>
@@ -45,17 +30,11 @@
     <ClCompile Include="helpers\unicode_data.c">
       <Filter>helpers</Filter>
     </ClCompile>
-    <ClCompile Include="mlx\tokenizer.c">
-      <Filter>mlx</Filter>
-    </ClCompile>
     <ClCompile Include="tokens.c" />
     <ClCompile Include="prd_gram.c" />
     <ClCompile Include="lalr.c" />
     <ClCompile Include="line_assembly.c" />
     <ClCompile Include="decomment.c" />
-    <ClCompile Include="mlx\xlts.c">
-      <Filter>mlx</Filter>
-    </ClCompile>
     <ClCompile Include="report_error.c" />
     <ClCompile Include="line_defs.c" />
     <ClCompile Include="symbol.c" />
@@ -63,24 +42,16 @@
     <ClCompile Include="snippet.c" />
     <ClCompile Include="typestr.c" />
     <ClCompile Include="mul.c" />
+    <ClCompile Include="chain.c" />
+    <ClCompile Include="dfa.c" />
+    <ClCompile Include="nfa.c" />
+    <ClCompile Include="scanner.c" />
+    <ClCompile Include="tokenizer.c" />
+    <ClCompile Include="xlalr.c" />
+    <ClCompile Include="xlts.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_function.h" />
-    <ClInclude Include="mlx\chain.h">
-      <Filter>mlx</Filter>
-    </ClInclude>
-    <ClInclude Include="mlx\dfa.h">
-      <Filter>mlx</Filter>
-    </ClInclude>
-    <ClInclude Include="mlx\nfa.h">
-      <Filter>mlx</Filter>
-    </ClInclude>
-    <ClInclude Include="mlx\scanner.h">
-      <Filter>mlx</Filter>
-    </ClInclude>
-    <ClInclude Include="mlx\xlalr.h">
-      <Filter>mlx</Filter>
-    </ClInclude>
     <ClInclude Include="helpers\aes.h">
       <Filter>helpers</Filter>
     </ClInclude>
@@ -105,17 +76,11 @@
     <ClInclude Include="helpers\unicode_data.h">
       <Filter>helpers</Filter>
     </ClInclude>
-    <ClInclude Include="mlx\tokenizer.h">
-      <Filter>mlx</Filter>
-    </ClInclude>
     <ClInclude Include="tokens.h" />
     <ClInclude Include="prd_gram.h" />
     <ClInclude Include="lalr.h" />
     <ClInclude Include="line_assembly.h" />
     <ClInclude Include="decomment.h" />
-    <ClInclude Include="mlx\xlts.h">
-      <Filter>mlx</Filter>
-    </ClInclude>
     <ClInclude Include="report_error.h" />
     <ClInclude Include="line_defs.h" />
     <ClInclude Include="symbol.h" />
@@ -123,6 +88,13 @@
     <ClInclude Include="snippet.h" />
     <ClInclude Include="typestr.h" />
     <ClInclude Include="mul.h" />
+    <ClInclude Include="chain.h" />
+    <ClInclude Include="dfa.h" />
+    <ClInclude Include="nfa.h" />
+    <ClInclude Include="scanner.h" />
+    <ClInclude Include="tokenizer.h" />
+    <ClInclude Include="xlalr.h" />
+    <ClInclude Include="xlts.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="helpers">
@@ -130,9 +102,6 @@
     </Filter>
     <Filter Include="3rdparty">
       <UniqueIdentifier>{2438e150-3df8-4465-be55-d8442c7bffe6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="mlx">
-      <UniqueIdentifier>{70fff8b7-3284-4771-879b-daf096c58072}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

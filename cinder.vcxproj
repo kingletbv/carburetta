@@ -19,8 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="chain.c" />
     <ClCompile Include="cinder.c" />
     <ClCompile Include="decomment.c" />
+    <ClCompile Include="dfa.c" />
     <ClCompile Include="grammar_table.c" />
     <ClCompile Include="helpers\aes.c" />
     <ClCompile Include="helpers\cpp_helpers.cpp" />
@@ -40,23 +42,23 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="mlx\chain.c" />
-    <ClCompile Include="mlx\dfa.c" />
-    <ClCompile Include="mlx\nfa.c" />
-    <ClCompile Include="mlx\scanner.c" />
-    <ClCompile Include="mlx\tokenizer.c" />
-    <ClCompile Include="mlx\xlalr.c" />
-    <ClCompile Include="mlx\xlts.c" />
     <ClCompile Include="mul.c" />
+    <ClCompile Include="nfa.c" />
     <ClCompile Include="prd_gram.c" />
     <ClCompile Include="report_error.c" />
+    <ClCompile Include="scanner.c" />
     <ClCompile Include="snippet.c" />
     <ClCompile Include="symbol.c" />
+    <ClCompile Include="tokenizer.c" />
     <ClCompile Include="tokens.c" />
     <ClCompile Include="typestr.c" />
+    <ClCompile Include="xlalr.c" />
+    <ClCompile Include="xlts.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="chain.h" />
     <ClInclude Include="decomment.h" />
+    <ClInclude Include="dfa.h" />
     <ClInclude Include="grammar_table.h" />
     <ClInclude Include="helpers\aes.h" />
     <ClInclude Include="helpers\gf8.h" />
@@ -70,20 +72,18 @@
     <ClInclude Include="line_assembly.h" />
     <ClInclude Include="line_defs.h" />
     <ClInclude Include="log_function.h" />
-    <ClInclude Include="mlx\chain.h" />
-    <ClInclude Include="mlx\dfa.h" />
-    <ClInclude Include="mlx\nfa.h" />
-    <ClInclude Include="mlx\scanner.h" />
-    <ClInclude Include="mlx\tokenizer.h" />
-    <ClInclude Include="mlx\xlalr.h" />
-    <ClInclude Include="mlx\xlts.h" />
     <ClInclude Include="mul.h" />
+    <ClInclude Include="nfa.h" />
     <ClInclude Include="prd_gram.h" />
     <ClInclude Include="report_error.h" />
+    <ClInclude Include="scanner.h" />
     <ClInclude Include="snippet.h" />
     <ClInclude Include="symbol.h" />
+    <ClInclude Include="tokenizer.h" />
     <ClInclude Include="tokens.h" />
     <ClInclude Include="typestr.h" />
+    <ClInclude Include="xlalr.h" />
+    <ClInclude Include="xlts.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="prd_grammar.cnd" />
@@ -161,7 +161,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>helpers/;mlx/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>helpers/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -177,7 +177,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>helpers/;mlx/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>helpers/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -195,7 +195,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>helpers/;mlx/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>helpers/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -215,7 +215,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>helpers/;mlx/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>helpers/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
