@@ -64,7 +64,7 @@ ENUM_DCT_TOKENS
 };
 
 
-int dct_init() {
+int dct_init(void) {
   int r;
   sc_scanner_init(&g_dct_scanner_);
 
@@ -73,7 +73,7 @@ int dct_init() {
   return r;
 }
 
-void dct_cleanup() {
+void dct_cleanup(void) {
   sc_scanner_cleanup(&g_dct_scanner_);
 }
 

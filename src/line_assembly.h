@@ -64,8 +64,8 @@ struct las_line_assembly {
   struct xlts_clamp mlc_buf_early_termination_undo_;
 };
 
-int las_init();
-void las_cleanup();
+int las_init(void);
+void las_cleanup(void);
 
 void las_init_line_assembly(struct las_line_assembly *las);
 void las_cleanup_line_assembly(struct las_line_assembly *las);

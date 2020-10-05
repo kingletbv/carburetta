@@ -30,8 +30,8 @@ typedef enum ld_line_type {
 #undef xz
 } ld_line_type_t;
 
-int ldl_init();
-void ldl_cleanup();
+int ldl_init(void);
+void ldl_cleanup(void);
 
 const char *ld_line_type_to_str(ld_line_type_t ldlt);
 

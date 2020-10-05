@@ -88,7 +88,7 @@ ENUM_MLC_TOKENS
 };
 
 
-int las_init() {
+int las_init(void) {
   int r;
   sc_scanner_init(&g_las_lc_scanner_);
   sc_scanner_init(&g_las_mlc_scanner_);
@@ -100,7 +100,7 @@ int las_init() {
   return r;
 }
 
-void las_cleanup() {
+void las_cleanup(void) {
   sc_scanner_cleanup(&g_las_lc_scanner_);
   sc_scanner_cleanup(&g_las_mlc_scanner_);
 }

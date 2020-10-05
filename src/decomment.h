@@ -11,8 +11,8 @@ extern "C" {
 #endif
 
 /* Removes C-Style and C++ Style comments from an xlts string, useful when the tokenizer that next parses the string does not support comments. */
-int dct_init();
-void dct_cleanup();
+int dct_init(void);
+void dct_cleanup(void);
 
 int dct_decomment(struct xlts *val);
 
