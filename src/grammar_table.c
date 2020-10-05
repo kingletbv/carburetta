@@ -13,11 +13,6 @@
 #include <assert.h>
 #endif
 
-#ifndef KLT_LOGGER_H_INCLUDED
-#define KLT_LOGGER_H_INCLUDED
-#define KLT_LOG_MODULE "gt"
-#include "klt_logger.h"
-#endif
 
 #ifndef REPORT_ERROR_H_INCLUDED
 #define REPORT_ERROR_H_INCLUDED
@@ -42,17 +37,17 @@ int gt_emit(struct grammar_table *gt, int ordinal) {
   if (gt->num_ordinals_ == gt->num_ordinals_allocated_) {
     size_t new_num_allocated = gt->num_ordinals_allocated_ * 2 + 1;
     if (new_num_allocated <= gt->num_ordinals_allocated_) {
-      LOGERROR("Error, overflow during allocation\n");
+      re_error_nowhere("Error, overflow during allocation\n");
       return GT_OVERFLOW;
     }
     if (new_num_allocated > (SIZE_MAX / sizeof(int))) {
-      LOGERROR("Error, overflow during allocation\n");
+      re_error_nowhere("Error, overflow during allocation\n");
       return GT_OVERFLOW;
     }
     size_t size_to_allocate = new_num_allocated * sizeof(int);
     void *p = realloc(gt->ordinals_, size_to_allocate);
     if (!p) {
-      LOGERROR("Error, no memory\n");
+      re_error_nowhere("Error, no memory\n");
       return GT_NOMEM;
     }
     gt->ordinals_ = (int *)p;
@@ -93,16 +88,16 @@ int gt_generate_lalr(struct grammar_table *gt, struct lr_generator *lalr, int en
   case LR_OK:
     return 0;
   case LR_NOT_LR_GRAMMAR:
-    LOGERROR("Not an LR grammar\n");
+    re_error_nowhere("Error, not an LR grammar\n");
     return GT_NOT_LR_GRAMMAR;
   case LR_AMBIGUOUS_GRAMMAR:
-    LOGERROR("Grammar is ambiguous\n");
+    re_error_nowhere("Error, grammar is ambiguous\n");
     return GT_AMBIGUOUS_GRAMMAR;
   case LR_CONFLICTS:
     /* Caller handles and reports this */
     return GT_CONFLICTS;
   case LR_INTERNAL_ERROR:
-    LOGERROR("Error, no memory or integer overflow\n");
+    re_error_nowhere("Error, no memory or integer overflow\n");
     return GT_INTERNAL_ERROR;
   }
   assert(0 && "Unhandled return value\n");

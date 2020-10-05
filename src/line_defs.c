@@ -18,12 +18,6 @@
 #include "scanner.h"
 #endif
 
-#ifndef KLT_LOGGER_H_INCLUDED
-#define KLT_LOGGER_H_INCLUDED
-#define KLT_LOG_MODULE "line_defs"
-#include "klt_logger.h"
-#endif
-
 #ifndef TOKENIZER_H_INCLUDED
 #define TOKENIZER_H_INCLUDED
 #include "tokenizer.h"

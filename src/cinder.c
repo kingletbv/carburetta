@@ -23,17 +23,6 @@
 #include <assert.h>
 #endif
 
-#ifndef HELPERS_H_INCLUDED
-#define HELPERS_H_INCLUDED
-#include "helpers.h"
-#endif
-
-#ifndef KLT_LOGGER_H_INCLUDED
-#define KLT_LOGGER_H_INCLUDED
-#define KLT_LOG_MODULE "cinder"
-#include "klt_logger.h"
-#endif
-
 #ifndef LOG_FUNCTION_H_INCLUDED
 #define LOG_FUNCTION_H_INCLUDED
 #include "log_function.h"
@@ -97,6 +86,11 @@
 #ifndef TYPESTR_H_INCLUDED
 #define TYPESTR_H_INCLUDED
 #include "typestr.h"
+#endif
+
+#ifndef MUL_H_INCLUDED
+#define MUL_H_INCLUDED
+#include "mul.h"
 #endif
 
 struct part {
@@ -1206,7 +1200,7 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
             failed = 1;
             break;
           }
-          if (mul_size_t(10, special_index, NULL, &special_index)) {
+          if (multiply_size_t(10, special_index, NULL, &special_index)) {
             re_error(&pd->action_sequence_.tokens_[col].text_, "Overflow on symbol index\n");
             failed = 1;
             break;
@@ -1686,7 +1680,7 @@ static int emit_parse_function2(FILE *outfp, struct cinder_context *cc, struct p
             failed = 1;
             break;
           }
-          if (mul_size_t(10, special_index, NULL, &special_index)) {
+          if (multiply_size_t(10, special_index, NULL, &special_index)) {
             re_error(&pd->action_sequence_.tokens_[col].text_, "Overflow on symbol index\n");
             failed = 1;
             break;
@@ -1961,10 +1955,6 @@ void print_usage(void) {
 
 int main(int argc, char **argv) {
   int r;
-  klt_logger_init();
-  klt_log_set_function("/", log_function, NULL);
-
-  LOG("We've started..\n");
 
   char **cpv = argv + 1;
   int cr = argc - 1;
@@ -1990,7 +1980,7 @@ int main(int argc, char **argv) {
     }
     else if (expecting_hfile) {
       if (h_output_filename) {
-        LOGERROR("Error: only one C header output file permitted\n");
+        re_error_nowhere("Error: only one C header output file permitted\n");
         print_usage();
         goto exit_arg_eval;
       }
@@ -2000,7 +1990,7 @@ int main(int argc, char **argv) {
       else {
         h_output_filename = strdup(*cpv);
         if (!h_output_filename) {
-          LOGERROR("Error: no memory\n");
+          re_error_nowhere("Error: no memory\n");
           goto exit_arg_eval;
         }
       }
@@ -2009,13 +1999,13 @@ int main(int argc, char **argv) {
     }
     else if (expecting_cfile) {
       if (c_output_filename) {
-        LOGERROR("Error: only one C output file permitted\n");
+        re_error_nowhere("Error: only one C output file permitted\n");
         print_usage();
         goto exit_arg_eval;
       }
       c_output_filename = strdup(*cpv);
       if (!c_output_filename) {
-        LOGERROR("Error: no memory\n");
+        re_error_nowhere("Error: no memory\n");
         goto exit_arg_eval;
       }
       expecting_cfile = 0;
@@ -2024,33 +2014,33 @@ int main(int argc, char **argv) {
     else if (expecting_inputfile) {
       input_filename = strdup(*cpv);
       if (!input_filename) {
-        LOGERROR("Error: no memory\n");
+        re_error_nowhere("Error: no memory\n");
         goto exit_arg_eval;
       }
       expecting_inputfile = 0;
       cr--; cpv++;
     }
     else {
-      LOGERROR("Error: unrecognized commandline argument \"%s\"\n", *cpv);
+      re_error_nowhere("Error: unrecognized commandline argument \"%s\"\n", *cpv);
       print_usage();
       goto exit_arg_eval;
     }
   }
 
   if (!input_filename) {
-    LOGERROR("Error: need an input filename\n");
+    re_error_nowhere("Error: need an input filename\n");
     print_usage();
     goto exit_arg_eval;
   }
 
   if (generate_hfile && !h_output_filename) {
     if (!c_output_filename) {
-      LOGERROR("Error: Need C output filename to derive a C header output filename\n");
+      re_error_nowhere("Error: Need C output filename to derive a C header output filename\n");
       goto exit_arg_eval;
     }
     const char *ext = strrchr(c_output_filename, '.');
     if (!ext || (strlen(ext) < 2)) {
-      LOGERROR("Error: Need C output filename that ends in a filename extension to derive a C header output filename\n");
+      re_error_nowhere("Error: Need C output filename that ends in a filename extension to derive a C header output filename\n");
       goto exit_arg_eval;
     }
     h_output_filename = strdup(c_output_filename);
@@ -2066,22 +2056,22 @@ int main(int argc, char **argv) {
   }
   r = ldl_init();
   if (r) {
-    LOGERROR("Failed to initialize ldl\n");
+    re_error_nowhere("Failed to initialize ldl\n");
     return EXIT_FAILURE;
   }
   r = tok_init();
   if (r) {
-    LOGERROR("Failed to initialize tok\n");
+    re_error_nowhere("Failed to initialize tok\n");
     return EXIT_FAILURE;
   }
   r = las_init();
   if (r) {
-    LOGERROR("Failed to initialize las\n");
+    re_error_nowhere("Failed to initialize las\n");
     return EXIT_FAILURE;
   }
   r = dct_init();
   if (r) {
-    LOGERROR("Failed to initialize dct\n");
+    re_error_nowhere("Failed to initialize dct\n");
     return EXIT_FAILURE;
   }
 
@@ -2121,7 +2111,7 @@ int main(int argc, char **argv) {
 
   r = prd_stack_reset(&prds);
   if (r) {
-    LOGERROR("Internal error, failed to reset parsing stack\n");
+    re_error_nowhere("Internal error, failed to reset parsing stack\n");
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -2133,7 +2123,7 @@ int main(int argc, char **argv) {
     fp = fopen(input_filename, "rb");
     if (!fp) {
       int err = errno;
-      LOGERROR("Failed to open file \"%s\": %s\n", input_filename, strerror(err));
+      re_error_nowhere("Failed to open file \"%s\": %s\n", input_filename, strerror(err));
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2186,7 +2176,7 @@ int main(int argc, char **argv) {
       }
 
       if ((r == TKR_END_OF_INPUT) || (r == TKR_FEED_ME)) {
-        LOGERROR("%s(%d): Internal error: all lines are expected to match.\n", line_assembly.lc_tkr_.filename_, line_assembly.lc_tkr_.input_line_);
+        re_error_nowhere("%s(%d): Internal error: all lines are expected to match.\n", line_assembly.lc_tkr_.filename_, line_assembly.lc_tkr_.input_line_);
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2378,23 +2368,20 @@ int main(int argc, char **argv) {
     } while (sym != cc.symtab_.non_terminals_);
   }
 
-
-  LOG("Parsing completed successfully\n");
-
   /* Ensure we have error and end-of-input tokens */
   if (!cc.error_sym_) {
     struct xlts error_id;
     xlts_init(&error_id);
     r = xlts_append_xlat(&error_id, strlen("error"), "error");
     if (r) {
-      LOGERROR("Error: no memory\n");
+      re_error_nowhere("Error: no memory\n");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
     int is_new = 0;
     struct symbol *sym = symbol_find_or_add(&cc.symtab_, SYM_TERMINAL, &error_id, &is_new);
     if (!sym) {
-      LOGERROR("Error: no memory\n");
+      re_error_nowhere("Error: no memory\n");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2411,14 +2398,14 @@ int main(int argc, char **argv) {
     xlts_init(&error_id);
     r = xlts_append_xlat(&error_id, strlen("input-end"), "input-end");
     if (r) {
-      LOGERROR("Error: no memory\n");
+      re_error_nowhere("Error: no memory\n");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
     int is_new = 0;
     struct symbol *sym = symbol_find_or_add(&cc.symtab_, SYM_TERMINAL, &error_id, &is_new);
     if (!sym) {
-      LOGERROR("Error: no memory\n");
+      re_error_nowhere("Error: no memory\n");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2575,7 +2562,7 @@ int main(int argc, char **argv) {
       /* Productions are 1 based for LALR (as production 0 is the synthetic S reduction) */
       r = lr_add_conflict_resolution(&lalr, 1 + (int)matches[0], confres->prefer_prod_place_, 1 + (int)matches[1], confres->over_prod_place_);
       if (r) {
-        LOGERROR("Error, no memory\n");
+        re_error_nowhere("Error, no memory\n");
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2642,7 +2629,7 @@ int main(int argc, char **argv) {
 
         char *msg = malloc(msg_size);
         if (!msg) {
-          LOGERROR("Error, no memory\n");
+          re_error_nowhere("Error, no memory\n");
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2681,7 +2668,7 @@ int main(int argc, char **argv) {
       outfp = fopen(c_output_filename, "wb");
       if (!outfp) {
         int err = errno;
-        LOGERROR("Failed to open file \"%s\" for writing: %s\n", c_output_filename, strerror(err));
+        re_error_nowhere("Failed to open file \"%s\" for writing: %s\n", c_output_filename, strerror(err));
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2699,7 +2686,7 @@ int main(int argc, char **argv) {
         size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
         if (written != pt->num_chars_) {
           int err = errno;
-          LOGERROR("Failed to write to \"%s\": %s\n", c_output_filename, strerror(err));
+          re_error_nowhere("Failed to write to \"%s\": %s\n", c_output_filename, strerror(err));
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2797,7 +2784,7 @@ int main(int argc, char **argv) {
     size_t row, col;
     char *column_widths = (char *)malloc(num_columns);
     if (!column_widths) {
-      LOGERROR("Error, no memory\n");
+      re_error_nowhere("Error, no memory\n");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2858,7 +2845,7 @@ int main(int argc, char **argv) {
 
     state_syms = (int *)malloc(sizeof(int) * (size_t)lalr.nr_states_);
     if (!state_syms) {
-      LOGERROR("Error, no memory\n");
+      re_error_nowhere("Error, no memory\n");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2877,7 +2864,7 @@ int main(int argc, char **argv) {
               state_syms[state_shifting_to] = sym_shifting;
             }
             else {
-              LOGERROR("Inconsistent state entry: each state should be entered by 1 unique symbol\n");
+              re_error_nowhere("Inconsistent state entry: each state should be entered by 1 unique symbol\n");
               free(state_syms);
               r = EXIT_FAILURE;
               goto cleanup_exit;
@@ -3140,7 +3127,7 @@ int main(int argc, char **argv) {
         size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
         if (written != pt->num_chars_) {
           int err = errno;
-          LOGERROR("Failed to write to \"%s\": %s\n", c_output_filename, strerror(err));
+          re_error_nowhere("Failed to write to \"%s\": %s\n", c_output_filename, strerror(err));
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -3158,13 +3145,13 @@ int main(int argc, char **argv) {
       outfp = fopen(h_output_filename, "wb");
       if (!outfp) {
         int err = errno;
-        LOGERROR("Failed to open file \"%s\" for writing: %s\n", h_output_filename, strerror(err));
+        re_error_nowhere("Error, failed to open file \"%s\" for writing: %s\n", h_output_filename, strerror(err));
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
     }
     else {
-      LOGERROR("Error: generating header file requires output filename\n");
+      re_error_nowhere("Error, generating header file requires output filename\n");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -3280,8 +3267,6 @@ cleanup_exit:
   if (input_filename) free(input_filename);
   if (h_output_filename) free(h_output_filename);
   if (c_output_filename) free(c_output_filename);
-
-  LOG("We've finished%s\n", (r == EXIT_SUCCESS) ? "" : " in failure...");
 
   return r;
 }

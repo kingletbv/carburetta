@@ -18,10 +18,9 @@
 #include "snippet.h"
 #endif
 
-#ifndef KLT_LOGGER_H_INCLUDED
-#define KLT_LOGGER_H_INCLUDED
-#define KLT_LOG_MODULE "typestr"
-#include "klt_logger.h"
+#ifndef REPORT_ERROR_H_INCLUDED
+#define REPORT_ERROR_H_INCLUDED
+#include "report_error.h"
 #endif
 
 #ifndef TYPESTR_H_INCLUDED
@@ -72,9 +71,7 @@ struct typestr *typestr_find_or_add(struct typestr_table *tt, const struct snipp
   int r;
   uint64_t hash_value = snippet_hash(typestr_snippet);
   int idx = (int)(hash_value % TYPESTR_TABLE_SIZE);
-  if (!typestr_snippet->num_tokens_) {
-    printf("Empty typestr attempted\n");
-  }
+
   struct typestr *ts, *last;
   ts = last = tt->hash_table_[idx];
   if (ts) {
@@ -95,17 +92,17 @@ struct typestr *typestr_find_or_add(struct typestr_table *tt, const struct snipp
   if (tt->num_typestrs_ == tt->num_typestrs_allocated_) {
     size_t new_num = tt->num_typestrs_allocated_ * 2 + 1;
     if (new_num <= tt->num_typestrs_allocated_) {
-      LOGERROR("Error: overflow\n");
+      re_error_nowhere("Error, overflow");
       return NULL;
     }
     if (new_num > (SIZE_MAX / sizeof(struct typestr *))) {
-      LOGERROR("Error: overflow\n");
+      re_error_nowhere("Error, overflow");
       return NULL;
     }
     size_t alloc_size = new_num * sizeof(struct typestr *);
     void *p = realloc(tt->typestrs_, alloc_size);
     if (!p) {
-      LOGERROR("Error: no memory\n");
+      re_error_nowhere("Error, no memory");
       return NULL;
     }
     tt->typestrs_ = (struct typestr **)p;
@@ -114,6 +111,7 @@ struct typestr *typestr_find_or_add(struct typestr_table *tt, const struct snipp
 
   ts = (struct typestr *)malloc(sizeof(struct typestr));
   if (!ts) {
+    re_error_nowhere("Error, no memory");
     return NULL;
   }
   typestr_init(ts);

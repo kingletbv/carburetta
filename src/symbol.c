@@ -28,12 +28,6 @@
 #include "helpers.h"
 #endif
 
-#ifndef KLT_LOGGER_H_INCLUDED
-#define KLT_LOGGER_H_INCLUDED
-#define KLT_LOG_MODULE "symbol"
-#include "klt_logger.h"
-#endif
-
 #ifndef SYMBOL_H_INCLUDED
 #define SYMBOL_H_INCLUDED
 #include "symbol.h"

@@ -13,12 +13,6 @@
 #include "scanner.h"
 #endif
 
-#ifndef KLT_LOGGER_H_INCLUDED
-#define KLT_LOGGER_H_INCLUDED
-#define KLT_LOG_MODULE "tokens"
-#include "klt_logger.h"
-#endif
-
 #ifndef TOKENS_H_INCLUDED
 #define TOKENS_H_INCLUDED
 #include "tokens.h"

@@ -38,12 +38,6 @@
 #include "tokens.h"
 #endif
 
-#ifndef KLT_LOGGER_H_INCLUDED
-#define KLT_LOGGER_H_INCLUDED
-#define KLT_LOG_MODULE "snippet"
-#include "klt_logger.h"
-#endif
-
 #ifndef REPORT_ERROR_H_INCLUDED
 #define REPORT_ERROR_H_INCLUDED
 #include "report_error.h"

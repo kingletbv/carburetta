@@ -5,13 +5,6 @@
 #include "prd_grammar_alt.c"
 #endif
 
-
-#ifndef KLT_LOGGER_H_INCLUDED
-#define KLT_LOGGER_H_INCLUDED
-#define KLT_LOG_MODULE "prd"
-#include "klt_logger.h"
-#endif
-
 #ifndef REPORT_ERROR_H_INCLUDED
 #define REPORT_ERROR_H_INCLUDED
 #include "report_error.h"
@@ -95,17 +88,17 @@ int prd_grammar_check_production_reserve(struct prd_grammar *g) {
     size_t new_num = g->num_productions_allocated_ * 2 + 1;
     if (new_num < 7) new_num = 7;
     if (new_num <= g->num_productions_allocated_) {
-      LOGERROR("Internal error, overflow on allocation");
+      re_error_nowhere("Internal error, overflow on allocation");
       return PRD_INTERNAL_ERROR;
     }
     if (new_num > (SIZE_MAX / sizeof(struct prd_production))) {
-      LOGERROR("Internal error, overflow on allocation");
+      re_error_nowhere("Internal error, overflow on allocation");
       return PRD_INTERNAL_ERROR;
     }
     size_t size_to_alloc = new_num * sizeof(struct prd_production);
     void *p = realloc(g->productions_, size_to_alloc);
     if (!p) {
-      LOGERROR("Internal error, no memory");
+      re_error_nowhere("Internal error, no memory");
       return PRD_INTERNAL_ERROR;
     }
     g->productions_ = (struct prd_production *)p;
