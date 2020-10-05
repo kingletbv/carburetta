@@ -50,8 +50,8 @@
  *    "A reads B" -- in this case the implication is that, whatever is in the read_set for B, should also be in
  *    the read_set for A.
  *    This is a relation with a knock-on effect; eg. it might be "ABCDq" - anything visible from D is also
- *    visible from A if BCD are nullable; consequently we model it in our code using lr_rel_t -- a relationship
- *    between two transitions.
+ *    visible from A if BCD are nullable; consequently we model it in our code using struct lr_rel -- a 
+ *    relationship between two transitions.
  * 3. Now that we've established the "reads" relation, "Tarjan's" algorithm is used to traverse the graph and
  *    propagate all the read_sets - eg. ensuring A sees q in the earlier example.
  * 4. We next model a different relation, the "includes" relation -- say we have two productions A -> Bq, 
@@ -69,107 +69,107 @@
  * There are a lot of details that I'm leaving out, but this should be enought to get you started.
  */
 
-static lr_state_t *lr_create_state(lr_generator_t *gen) {
-  lr_state_t *s = (lr_state_t *)malloc(sizeof(lr_state_t));
+static struct lr_state *lr_create_state(struct lr_generator *gen) {
+  struct lr_state *s = (struct lr_state *)malloc(sizeof(struct lr_state));
   if (!s) return NULL;
-  s->kernel_items = NULL;
-  s->transitions_from_state = NULL;
-  s->transitions_to_state = NULL;
-  s->gen_chain = gen->new_states;
-  gen->new_states = s;
+  s->kernel_items_ = NULL;
+  s->transitions_from_state_ = NULL;
+  s->transitions_to_state_ = NULL;
+  s->gen_chain_ = gen->new_states_;
+  gen->new_states_ = s;
   return s;
 }
 
-static lr_item_t *lr_find_or_create_item(lr_generator_t *gen, lr_state_t *state, int production, int position) {
-  lr_item_t **pi, *next_i;
+static struct lr_item *lr_find_or_create_item(struct lr_generator *gen, struct lr_state *state, int production, int position) {
+  struct lr_item **pi, *next_i;
   gen; /* unused var */
-  for (pi = &state->kernel_items; *pi; pi = &((*pi)->state_chain)) {
-    if (((*pi)->position == position) && ((*pi)->production == production)) {
+  for (pi = &state->kernel_items_; *pi; pi = &((*pi)->state_chain_)) {
+    if (((*pi)->position_ == position) && ((*pi)->production_ == production)) {
       /* have it, return. */
       return *pi;
     }
-    else if ((((*pi)->production == production) && ((*pi)->position > position)) ||
-             ((*pi)->production > production)) {
+    else if ((((*pi)->production_ == production) && ((*pi)->position_ > position)) ||
+             ((*pi)->production_ > production)) {
       /* ascending order indicates we don't have it, insert here. */
       break;
     }
   }
   next_i = *pi;
-  *pi = (lr_item_t *)malloc(sizeof(lr_item_t));
+  *pi = (struct lr_item *)malloc(sizeof(struct lr_item));
   if (!pi) {
     return NULL;
   }
-  (*pi)->production = production;
-  (*pi)->position = position;
-  (*pi)->state_chain = next_i;
+  (*pi)->production_ = production;
+  (*pi)->position_ = position;
+  (*pi)->state_chain_ = next_i;
   return *pi;
 }
 
 /* NOTE: Always creates a new state on the other end of it. */
-static lr_transition_t *lr_find_or_create_outbound_transition(lr_generator_t *gen, lr_state_t *from, int sym) {
-  lr_transition_t *t;
+static struct lr_transition *lr_find_or_create_outbound_transition(struct lr_generator *gen, struct lr_state *from, int sym) {
+  struct lr_transition *t;
   /* first look, if not found, then create new outbound transition *AND* state */
-  for (t = from->transitions_from_state; t; t = t->from_chain) {
-    if (t->sym == sym) {
+  for (t = from->transitions_from_state_; t; t = t->from_chain_) {
+    if (t->sym_ == sym) {
       return t;
     }
   }
-  t = (lr_transition_t *)malloc(sizeof(lr_transition_t) + (gen->highest_term - gen->lowest_term + 1 + 7) / 8);
+  t = (struct lr_transition *)malloc(sizeof(struct lr_transition) + (gen->highest_term_ - gen->lowest_term_ + 1 + 7) / 8);
   if (!t) {
     return NULL;
   }
-  t->sym = sym;
-  t->from = from;
-  t->to = lr_create_state(gen);
-  if (!t->to) {
+  t->sym_ = sym;
+  t->from_ = from;
+  t->to_ = lr_create_state(gen);
+  if (!t->to_) {
     return NULL;
   }
-  t->from_chain = from->transitions_from_state;
-  from->transitions_from_state = t;
-  t->to_chain = NULL;
-  t->to->transitions_to_state = t;
-  t->inbound_rels = NULL;
-  t->outbound_rels = NULL;
-  t->stack_chain = NULL;
-  t->index = t->lowlink = 0;
+  t->from_chain_ = from->transitions_from_state_;
+  from->transitions_from_state_ = t;
+  t->to_chain_ = NULL;
+  t->to_->transitions_to_state_ = t;
+  t->inbound_rels_ = NULL;
+  t->outbound_rels_ = NULL;
+  t->stack_chain_ = NULL;
+  t->index_ = t->lowlink_ = 0;
   return t;
 }
 
-static lr_transition_t *lr_find_or_create_transition(lr_generator_t *gen, lr_state_t *from, int sym, lr_state_t *to) {
-  lr_transition_t *t;
+static struct lr_transition *lr_find_or_create_transition(struct lr_generator *gen, struct lr_state *from, int sym, struct lr_state *to) {
+  struct lr_transition *t;
   /* First look for the transition, if not found, create a new one. */
-  for (t = from->transitions_from_state; t; t = t->from_chain) {
-    if ((t->sym == sym) && (t->to == to)) {
+  for (t = from->transitions_from_state_; t; t = t->from_chain_) {
+    if ((t->sym_ == sym) && (t->to_ == to)) {
       return t;
     }
   }
-  t = (lr_transition_t *)malloc(sizeof(lr_transition_t) + (gen->highest_term - gen->lowest_term + 1 + 7) / 8);
+  t = (struct lr_transition *)malloc(sizeof(struct lr_transition) + (gen->highest_term_ - gen->lowest_term_ + 1 + 7) / 8);
   if (!t) {
     return NULL;
   }
-  t->sym = sym;
-  t->from = from;
-  t->from_chain = from->transitions_from_state;
-  from->transitions_from_state = t;
-  t->to = to;
-  t->to_chain = to->transitions_to_state;
-  to->transitions_to_state = t;
-  t->inbound_rels = NULL;
-  t->outbound_rels = NULL;
-  t->stack_chain = NULL;
-  t->index = t->lowlink = 0;
+  t->sym_ = sym;
+  t->from_ = from;
+  t->from_chain_ = from->transitions_from_state_;
+  from->transitions_from_state_ = t;
+  t->to_ = to;
+  t->to_chain_ = to->transitions_to_state_;
+  to->transitions_to_state_ = t;
+  t->inbound_rels_ = NULL;
+  t->outbound_rels_ = NULL;
+  t->stack_chain_ = NULL;
+  t->index_ = t->lowlink_ = 0;
   return t;
 }
 
-static lr_state_t *lr_find_identical_state(lr_generator_t *gen, lr_state_t *state) {
-  lr_state_t *s;
-  for (s = gen->states; s; s = s->gen_chain) {
-    lr_item_t *ia, *ib;
-    ia = s->kernel_items;
-    ib = state->kernel_items;
-    while (ia && ib && (ia->production == ib->production) && (ia->position == ib->position)) {
-      ia = ia->state_chain;
-      ib = ib->state_chain;
+static struct lr_state *lr_find_identical_state(struct lr_generator *gen, struct lr_state *state) {
+  struct lr_state *s;
+  for (s = gen->states_; s; s = s->gen_chain_) {
+    struct lr_item *ia, *ib;
+    ia = s->kernel_items_;
+    ib = state->kernel_items_;
+    while (ia && ib && (ia->production_ == ib->production_) && (ia->position_ == ib->position_)) {
+      ia = ia->state_chain_;
+      ib = ib->state_chain_;
     }
     if ((!ia) && (!ib)) {
       /* They match */
@@ -180,55 +180,55 @@ static lr_state_t *lr_find_identical_state(lr_generator_t *gen, lr_state_t *stat
   return NULL;
 }
 
-static int lr_closure(lr_generator_t *gen, lr_state_t *state) {
-  lr_item_t *i;
-  for (i = state->kernel_items; i; i = i->state_chain) {
-    int sym = gen->productions[i->production][i->position + 1 /* [0] is production reduction sym */ ];
-    if (sym == gen->eop_sym) {
+static int lr_closure(struct lr_generator *gen, struct lr_state *state) {
+  struct lr_item *i;
+  for (i = state->kernel_items_; i; i = i->state_chain_) {
+    int sym = gen->productions_[i->production_][i->position_ + 1 /* [0] is production reduction sym */ ];
+    if (sym == gen->eop_sym_) {
       /* Reduction */
     }
-    else if ((sym >= gen->lowest_nonterm) && (sym <= gen->highest_nonterm)) {
+    else if ((sym >= gen->lowest_nonterm_) && (sym <= gen->highest_nonterm_)) {
       size_t prodix;
       int nt_sym;
       int have_unprocessed_nonterminals;
 
       /* Non-terminal */
-      lr_transition_t *t = lr_find_or_create_outbound_transition(gen, state, sym);
+      struct lr_transition *t = lr_find_or_create_outbound_transition(gen, state, sym);
       if (!t) return -1;
-      lr_item_t *new_item = lr_find_or_create_item(gen, t->to, i->production, i->position + 1);
+      struct lr_item *new_item = lr_find_or_create_item(gen, t->to_, i->production_, i->position_ + 1);
       if (!new_item) return -1;
 
       /* Find non-kernel items for non-terminal transition and add their initial transitions. */
-      memset(gen->nonterm_scratchpad, 0, sizeof(int) * (gen->highest_nonterm - gen->lowest_nonterm + 1));
+      memset(gen->nonterm_scratchpad_, 0, sizeof(int) * (gen->highest_nonterm_ - gen->lowest_nonterm_ + 1));
       /* Flag non-terminal for processing.. */
-      gen->nonterm_scratchpad[sym - gen->lowest_nonterm] = 1;
+      gen->nonterm_scratchpad_[sym - gen->lowest_nonterm_] = 1;
       have_unprocessed_nonterminals = 1;
       while (have_unprocessed_nonterminals) {
         have_unprocessed_nonterminals = 0;
-        for (nt_sym = gen->lowest_nonterm; nt_sym <= gen->highest_nonterm; nt_sym++) {
+        for (nt_sym = gen->lowest_nonterm_; nt_sym <= gen->highest_nonterm_; nt_sym++) {
           /* Check if non-terminal is to be processed.. */
-          if (gen->nonterm_scratchpad[nt_sym - gen->lowest_nonterm] == 1) {
+          if (gen->nonterm_scratchpad_[nt_sym - gen->lowest_nonterm_] == 1) {
             /* Mark non-terminal as processed. */
-            gen->nonterm_scratchpad[nt_sym - gen->lowest_nonterm] = 2;
+            gen->nonterm_scratchpad_[nt_sym - gen->lowest_nonterm_] = 2;
 
             /* Process all first transitions for the non-terminal */
-            for (prodix = 0; prodix < gen->nr_productions; prodix++) {
-              if (gen->productions[prodix][0] == nt_sym) {
-                int first_sym = gen->productions[prodix][1];
-                if (first_sym == gen->eop_sym) {
+            for (prodix = 0; prodix < gen->nr_productions_; prodix++) {
+              if (gen->productions_[prodix][0] == nt_sym) {
+                int first_sym = gen->productions_[prodix][1];
+                if (first_sym == gen->eop_sym_) {
                   /* null production */
                 }
                 else {
                   /* Add transition */
-                  lr_transition_t *first_t = lr_find_or_create_outbound_transition(gen, state, first_sym);
-                  lr_item_t *first_new_item = lr_find_or_create_item(gen, first_t->to, (int)prodix, 1);
+                  struct lr_transition *first_t = lr_find_or_create_outbound_transition(gen, state, first_sym);
+                  struct lr_item *first_new_item = lr_find_or_create_item(gen, first_t->to_, (int)prodix, 1);
                   first_new_item; /* touch first_new_item so it does not go unreferenced. */
 
-                  if ((first_sym >= gen->lowest_nonterm) && (first_sym <= gen->highest_nonterm)) {
+                  if ((first_sym >= gen->lowest_nonterm_) && (first_sym <= gen->highest_nonterm_)) {
                     /* First symbol is a non-terminal, meaning we'll need to process the first symbols
                      * for its productions as well, unless we've already done so. */
-                    if (gen->nonterm_scratchpad[first_sym - gen->lowest_nonterm] == 0) {
-                      gen->nonterm_scratchpad[first_sym - gen->lowest_nonterm] = 1;
+                    if (gen->nonterm_scratchpad_[first_sym - gen->lowest_nonterm_] == 0) {
+                      gen->nonterm_scratchpad_[first_sym - gen->lowest_nonterm_] = 1;
                       have_unprocessed_nonterminals = 1;
                     }
                     else {
@@ -245,73 +245,73 @@ static int lr_closure(lr_generator_t *gen, lr_state_t *state) {
     }
     else {
       /* Terminal */
-      lr_transition_t *t = lr_find_or_create_outbound_transition(gen, state, sym);
+      struct lr_transition *t = lr_find_or_create_outbound_transition(gen, state, sym);
       if (!t) return -1;
-      lr_item_t *new_item = lr_find_or_create_item(gen, t->to, i->production, i->position + 1);
+      struct lr_item *new_item = lr_find_or_create_item(gen, t->to_, i->production_, i->position_ + 1);
       if (!new_item) return -1;
     }
   }
   return 0;
 }
 
-static void lr_destroy_state(lr_generator_t *gen, lr_state_t *moriturus) {
+static void lr_destroy_state(struct lr_generator *gen, struct lr_state *moriturus) {
   /* Drop all inbound and outbound transitions.. */
-  lr_transition_t *t, *nt;
-  lr_item_t *i, *ni;
+  struct lr_transition *t, *nt;
+  struct lr_item *i, *ni;
   /* touch gen so it does not go unreferenced. */
   gen;
-  for (t = moriturus->transitions_to_state; t; t = nt) {
-    lr_state_t *ds = t->from;
-    lr_transition_t **pt;
-    for (pt = &(ds->transitions_from_state); *pt; pt = &((*pt)->from_chain)) {
+  for (t = moriturus->transitions_to_state_; t; t = nt) {
+    struct lr_state *ds = t->from_;
+    struct lr_transition **pt;
+    for (pt = &(ds->transitions_from_state_); *pt; pt = &((*pt)->from_chain_)) {
       if (*pt == t) {
-        *pt = t->from_chain;
+        *pt = t->from_chain_;
         break;
       }
     }
-    nt = t->to_chain;
+    nt = t->to_chain_;
     free(t);
   }
-  for (t = moriturus->transitions_from_state; t; t = nt) {
-    lr_state_t *ds = t->to;
-    lr_transition_t **pt;
-    for (pt = &(ds->transitions_to_state); *pt; pt = &((*pt)->to_chain)) {
+  for (t = moriturus->transitions_from_state_; t; t = nt) {
+    struct lr_state *ds = t->to_;
+    struct lr_transition **pt;
+    for (pt = &(ds->transitions_to_state_); *pt; pt = &((*pt)->to_chain_)) {
       if (*pt == t) {
-        *pt = t->to_chain;
+        *pt = t->to_chain_;
         break;
       }
     }
-    nt = t->from_chain;
+    nt = t->from_chain_;
     free(t);
   }
 
   /* Drop all items */
-  for (i = moriturus->kernel_items; i; i = ni) {
-    ni = i->state_chain;
+  for (i = moriturus->kernel_items_; i; i = ni) {
+    ni = i->state_chain_;
     free(i);
   }
   free(moriturus);
 }
 
-static int lr_merge_states(lr_generator_t *gen, lr_state_t *from, lr_state_t *to) {
+static int lr_merge_states(struct lr_generator *gen, struct lr_state *from, struct lr_state *to) {
   /* Merge all inbound transitions to 'from' into 'to'. */
-  lr_transition_t *t, *t2;
-  for (t = from->transitions_to_state; t; t = t->to_chain) {
+  struct lr_transition *t, *t2;
+  for (t = from->transitions_to_state_; t; t = t->to_chain_) {
     /* .. lr_find_or_create_transition checks for dupes. */
-    t2 = lr_find_or_create_transition(gen, t->from, t->sym, to);
+    t2 = lr_find_or_create_transition(gen, t->from_, t->sym_, to);
     if (!t2) return -1;
   }
   return 0;
 }
 
-static int lr_compute_lr0_set(lr_generator_t *gen, lr_state_t *initial_state) {
+static int lr_compute_lr0_set(struct lr_generator *gen, struct lr_state *initial_state) {
   int next_index = 1;
-  lr_state_t *s;
+  struct lr_state *s;
 
-  while (gen->new_states) {
-    lr_state_t *dup;
-    s = gen->new_states;
-    gen->new_states = s->gen_chain;
+  while (gen->new_states_) {
+    struct lr_state *dup;
+    s = gen->new_states_;
+    gen->new_states_ = s->gen_chain_;
     dup = lr_find_identical_state(gen, s);
 
     if (dup) {
@@ -327,9 +327,9 @@ static int lr_compute_lr0_set(lr_generator_t *gen, lr_state_t *initial_state) {
     else {
       /* No duplicate, push onto mature states list and 
        * compute closure. */
-      s->gen_chain = gen->states;
-      gen->states = s;
-      gen->nr_states++;
+      s->gen_chain_ = gen->states_;
+      gen->states_ = s;
+      gen->nr_states_++;
       if (lr_closure(gen, s)) {
         return -1;
       }
@@ -337,81 +337,81 @@ static int lr_compute_lr0_set(lr_generator_t *gen, lr_state_t *initial_state) {
   }
 
   /* Assign rows; makes debugging easier to do it now than to wait until parse table generation.*/
-  for (s = gen->states; s; s = s->gen_chain) {
+  for (s = gen->states_; s; s = s->gen_chain_) {
     if (s == initial_state) {
-      s->row = 0;
+      s->row_ = 0;
     }
     else {
-      s->row = next_index++;
+      s->row_ = next_index++;
     }
   }
   return 0;
 }
 
-static void lr_populate_directly_reads(lr_generator_t *gen, lr_state_t *initial_state) {
-  lr_state_t *s;
-  lr_transition_t *ts;
-  for (s = gen->states; s; s = s->gen_chain) {
-    lr_transition_t *t1st, *totr;
+static void lr_populate_directly_reads(struct lr_generator *gen, struct lr_state *initial_state) {
+  struct lr_state *s;
+  struct lr_transition *ts;
+  for (s = gen->states_; s; s = s->gen_chain_) {
+    struct lr_transition *t1st, *totr;
     /* First populate a single transition, then copy its directly-read
      * terminals into any other transitions. */
-    t1st = s->transitions_to_state;
+    t1st = s->transitions_to_state_;
     if (t1st) {
-      if ((t1st->sym >= gen->lowest_nonterm) && (t1st->sym <= gen->highest_nonterm)) {
-        lr_transition_t *tout;
-        memset(t1st->read_set, 0, (size_t)(gen->highest_term - gen->lowest_term + 1 + 7) / 8);
+      if ((t1st->sym_ >= gen->lowest_nonterm_) && (t1st->sym_ <= gen->highest_nonterm_)) {
+        struct lr_transition *tout;
+        memset(t1st->read_set_, 0, (size_t)(gen->highest_term_ - gen->lowest_term_ + 1 + 7) / 8);
         
-        for (tout = s->transitions_from_state; tout; tout = tout->from_chain) {
-          if ((tout->sym < gen->lowest_nonterm) || (tout->sym > gen->highest_nonterm)) {
-            int term_offset = tout->sym - gen->lowest_term;
-            t1st->read_set[term_offset / 8] |= (1 << (term_offset & 7));
+        for (tout = s->transitions_from_state_; tout; tout = tout->from_chain_) {
+          if ((tout->sym_ < gen->lowest_nonterm_) || (tout->sym_ > gen->highest_nonterm_)) {
+            int term_offset = tout->sym_ - gen->lowest_term_;
+            t1st->read_set_[term_offset / 8] |= (1 << (term_offset & 7));
           }
         }
 
         /* now locate any subsequent non-terminal transitions to state s and copy 
          * the findings for the first non-terminal transition into them. */
-        for (totr = t1st->to_chain; totr; totr = totr->to_chain) {
-          if ((totr->sym >= gen->lowest_nonterm) && (totr->sym <= gen->highest_nonterm)) {
-            memcpy(totr->read_set, t1st->read_set, (size_t)(gen->highest_term - gen->lowest_term + 1 + 7) / 8);
+        for (totr = t1st->to_chain_; totr; totr = totr->to_chain_) {
+          if ((totr->sym_ >= gen->lowest_nonterm_) && (totr->sym_ <= gen->highest_nonterm_)) {
+            memcpy(totr->read_set_, t1st->read_set_, (size_t)(gen->highest_term_ - gen->lowest_term_ + 1 + 7) / 8);
           }
         }
       }
     }
   }
   /* [S' -> .S, S] also directly reads EOF */
-  for (ts = initial_state->transitions_from_state; ts; ts = ts->from_chain) {
+  for (ts = initial_state->transitions_from_state_; ts; ts = ts->from_chain_) {
     /* if sym matches S (first sym in root production) then we have found [S' -> .S, S] */
-    if (ts->sym == gen->root_production[1]) {
-      int EOF_offset = gen->eof_sym - gen->lowest_term;
-      ts->read_set[EOF_offset / 8] |= (1 << (EOF_offset & 7));
+    if (ts->sym_ == gen->root_production_[1]) {
+      int EOF_offset = gen->eof_sym_ - gen->lowest_term_;
+      ts->read_set_[EOF_offset / 8] |= (1 << (EOF_offset & 7));
       break;
     }
   }
 }
 
-static int lr_populate_reads_relations(lr_generator_t *gen) {
+static int lr_populate_reads_relations(struct lr_generator *gen) {
   /* Find all nullable non-terminal transitions, any preceeding non-terminal
    * transition is said to 'read' that non-terminal transition. */
-  lr_state_t *s;
-  for (s = gen->states; s; s = s->gen_chain) {
-    lr_transition_t *outbound_t;
-    for (outbound_t = s->transitions_from_state; outbound_t; outbound_t = outbound_t->from_chain) {
-      if ((outbound_t->sym >= gen->lowest_nonterm) && (outbound_t->sym <= gen->highest_nonterm)) {
-        if (gen->nonterm_is_nullable[outbound_t->sym - gen->lowest_nonterm]) {
+  struct lr_state *s;
+  for (s = gen->states_; s; s = s->gen_chain_) {
+    struct lr_transition *outbound_t;
+    for (outbound_t = s->transitions_from_state_; outbound_t; outbound_t = outbound_t->from_chain_) {
+      if ((outbound_t->sym_ >= gen->lowest_nonterm_) && (outbound_t->sym_ <= gen->highest_nonterm_)) {
+        if (gen->nonterm_is_nullable_[outbound_t->sym_ - gen->lowest_nonterm_]) {
           /* Found a nullable non-terminal that is outbound from s.
            * establish x reads outbound_t, where x is any inbound non-terminal */
-          lr_transition_t *inbound_t;
-          for (inbound_t = s->transitions_to_state; inbound_t; inbound_t = inbound_t->to_chain) {
-            if ((inbound_t->sym >= gen->lowest_nonterm) && (inbound_t->sym <= gen->highest_nonterm)) {
+          struct lr_transition *inbound_t;
+          for (inbound_t = s->transitions_to_state_; inbound_t; inbound_t = inbound_t->to_chain_) {
+            if ((inbound_t->sym_ >= gen->lowest_nonterm_) && (inbound_t->sym_ <= gen->highest_nonterm_)) {
               /* inbound_t 'reads' outbound_t. */
-              lr_rel_t *reads_rel = (lr_rel_t *)malloc(sizeof(lr_rel_t));
+              struct lr_rel *reads_rel = (struct lr_rel *)malloc(sizeof(struct lr_rel));
               if (!reads_rel) return -1;
-              reads_rel->from = inbound_t;
-              reads_rel->to = outbound_t;
-              reads_rel->from_chain = inbound_t->outbound_rels;
-              reads_rel->to_chain = outbound_t->inbound_rels;
-              inbound_t->outbound_rels = reads_rel;
-              outbound_t->inbound_rels = reads_rel;
+              reads_rel->from_ = inbound_t;
+              reads_rel->to_ = outbound_t;
+              reads_rel->from_chain_ = inbound_t->outbound_rels_;
+              reads_rel->to_chain_ = outbound_t->inbound_rels_;
+              inbound_t->outbound_rels_ = reads_rel;
+              outbound_t->inbound_rels_ = reads_rel;
             }
           }
         }
@@ -426,85 +426,85 @@ static int lr_populate_reads_relations(lr_generator_t *gen) {
  *         +1 if A wins by caller's directive.
  *         -2 if the caller has not specified this, but no memory was available to log
  */
-static int lr_check_conflict(lr_generator_t *gen, lr_conflict_pair_t *cf) {
-  lr_conflict_pair_t *cfd;
-  lr_conflict_pair_t *new_conflict;
+static int lr_check_conflict(struct lr_generator *gen, struct lr_conflict_pair *cf) {
+  struct lr_conflict_pair *cfd;
+  struct lr_conflict_pair *new_conflict;
   /* It's not a conflict if both are the same reduction */
-  if ((cf->production_a == cf->production_b) &&
-      (cf->position_a == cf->position_b)) {
+  if ((cf->production_a_ == cf->production_b_) &&
+      (cf->position_a_ == cf->position_b_)) {
     /* Resolve it by keeping things as-is */
     return -1;
   }
-  for (cfd = gen->conflict_resolutions; cfd; cfd = cfd->chain) {
-    if ((cfd->production_a == cf->production_a) &&
-        (cfd->production_b == cf->production_b) &&
-        (cfd->position_a == cf->position_a) &&
-        (cfd->position_b == cf->position_b)) {
+  for (cfd = gen->conflict_resolutions_; cfd; cfd = cfd->chain_) {
+    if ((cfd->production_a_ == cf->production_a_) &&
+        (cfd->production_b_ == cf->production_b_) &&
+        (cfd->position_a_ == cf->position_a_) &&
+        (cfd->position_b_ == cf->position_b_)) {
       /* A wins, B looses. */
       return 1;
     }
-    else if ((cfd->production_b == cf->production_a) &&
-             (cfd->production_a == cf->production_b) &&
-             (cfd->position_b == cf->position_a) &&
-             (cfd->position_a == cf->position_b)) {
+    else if ((cfd->production_b_ == cf->production_a_) &&
+             (cfd->production_a_ == cf->production_b_) &&
+             (cfd->position_b_ == cf->position_a_) &&
+             (cfd->position_a_ == cf->position_b_)) {
       /* B wins, A looses. */
       return -1;
     }
   }
   /* Caller has not specified.. log conflict; but only if we haven't already */
-  for (cfd = gen->conflicts; cfd; cfd = cfd->chain) {
-    if ((cfd->production_a == cf->production_a) &&
-        (cfd->production_b == cf->production_b) &&
-        (cfd->position_a == cf->position_a) &&
-        (cfd->position_b == cf->position_b)) {
+  for (cfd = gen->conflicts_; cfd; cfd = cfd->chain_) {
+    if ((cfd->production_a_ == cf->production_a_) &&
+        (cfd->production_b_ == cf->production_b_) &&
+        (cfd->position_a_ == cf->position_a_) &&
+        (cfd->position_b_ == cf->position_b_)) {
       /* Conflict already logged. */
       return 0;
     }
-    else if ((cfd->production_b == cf->production_a) &&
-             (cfd->production_a == cf->production_b) &&
-             (cfd->position_b == cf->position_a) &&
-             (cfd->position_a == cf->position_b)) {
+    else if ((cfd->production_b_ == cf->production_a_) &&
+             (cfd->production_a_ == cf->production_b_) &&
+             (cfd->position_b_ == cf->position_a_) &&
+             (cfd->position_a_ == cf->position_b_)) {
       /* Conflict already logged (the other way around) */
       return 0;
     }
   }
-  new_conflict = (lr_conflict_pair_t *)malloc(sizeof(lr_conflict_pair_t));
+  new_conflict = (struct lr_conflict_pair *)malloc(sizeof(struct lr_conflict_pair));
   if (!new_conflict) return -2;
-  new_conflict->position_a = cf->position_a;
-  new_conflict->position_b = cf->position_b;
-  new_conflict->production_a = cf->production_a;
-  new_conflict->production_b = cf->production_b;
-  new_conflict->sym = cf->sym;
-  new_conflict->chain = gen->conflicts;
-  gen->conflicts = new_conflict;
+  new_conflict->position_a_ = cf->position_a_;
+  new_conflict->position_b_ = cf->position_b_;
+  new_conflict->production_a_ = cf->production_a_;
+  new_conflict->production_b_ = cf->production_b_;
+  new_conflict->sym_ = cf->sym_;
+  new_conflict->chain_ = gen->conflicts_;
+  gen->conflicts_ = new_conflict;
   return 0;
 }
 
-static int lr_gen_reduce_from_transition(lr_generator_t *gen, lr_state_t *red_state, lr_transition_t *backtrack, int production) {
-  int *row = gen->parse_table + (1 + gen->max_sym - gen->min_sym) * red_state->row;
+static int lr_gen_reduce_from_transition(struct lr_generator *gen, struct lr_state *red_state, struct lr_transition *backtrack, int production) {
+  int *row = gen->parse_table_ + (1 + gen->max_sym_ - gen->min_sym_) * red_state->row_;
   int lookahead_ix;
   /* Populate all lookaheads for the reduction.. */
   for (lookahead_ix = 0;
-       lookahead_ix < (1 + gen->highest_term - gen->lowest_term);
+       lookahead_ix < (1 + gen->highest_term_ - gen->lowest_term_);
        lookahead_ix++) {
-    int lookahead_sym = lookahead_ix + gen->lowest_term;
+    int lookahead_sym = lookahead_ix + gen->lowest_term_;
     int lookahead_offset = lookahead_ix / 8;
     int lookahead_bit = lookahead_ix & 7;
-    if (backtrack->read_set[lookahead_offset] & (1 << lookahead_bit)) {
+    if (backtrack->read_set_[lookahead_offset] & (1 << lookahead_bit)) {
       /* Reductions are the negative index of the production, minus 1. Consequently, accept
        * is -1 (as it is a reduction of production 0.) */
-      if (row[lookahead_sym - gen->min_sym]) {
+      if (row[lookahead_sym - gen->min_sym_]) {
         /* Error, conflict */
-        lr_conflict_pair_t conflict;
+        struct lr_conflict_pair conflict;
 
-        conflict.position_a = gen->production_lengths[production];
-        conflict.production_a = production;
-        conflict.sym = lookahead_sym;
+        conflict.position_a_ = gen->production_lengths_[production];
+        conflict.production_a_ = production;
+        conflict.sym_ = lookahead_sym;
 
-        if (row[lookahead_sym - gen->min_sym] < 0) {
+        if (row[lookahead_sym - gen->min_sym_] < 0) {
           /* Our reduce conflicts with an existing reduce. */
-          conflict.production_b = - 1 - row[lookahead_sym - gen->min_sym];
-          conflict.position_b = gen->production_lengths[conflict.production_b];
+          conflict.production_b_ = - 1 - row[lookahead_sym - gen->min_sym_];
+          conflict.position_b_ = gen->production_lengths_[conflict.production_b_];
           switch (lr_check_conflict(gen, &conflict)) {
             case -2: /* out of memory */
               return -1;
@@ -513,28 +513,28 @@ static int lr_gen_reduce_from_transition(lr_generator_t *gen, lr_state_t *red_st
             case 0: /* Conflict error, and logged. */
               break;
             case 1: /* A wins, B looses; A replaces B. */
-              row[lookahead_sym - gen->min_sym] = - 1 - production;
+              row[lookahead_sym - gen->min_sym_] = - 1 - production;
               break;
           }
         }
         else {
           /* Our reduce conflicts with an existing shift.. Find that shift's productions. */
-          lr_state_t *destination;
-          lr_item_t *i;
+          struct lr_state *destination;
+          struct lr_item *i;
           int consensus_resolution = 0;
           int no_consensus = 0;
-          for (destination = gen->states; destination; destination = destination->gen_chain) {
-            if (destination->row == row[lookahead_sym - gen->min_sym]) {
+          for (destination = gen->states_; destination; destination = destination->gen_chain_) {
+            if (destination->row_ == row[lookahead_sym - gen->min_sym_]) {
               break;
             }
           }
           /* destination is the target state; locate all items whose preceeding symbol is the
            * symbol we just shifted. */
-          for (i = destination->kernel_items; i; i = i->state_chain) {
-            if (lookahead_sym == gen->productions[i->production][i->position + 1 - 1]) {
+          for (i = destination->kernel_items_; i; i = i->state_chain_) {
+            if (lookahead_sym == gen->productions_[i->production_][i->position_ + 1 - 1]) {
               /* have a matching conflict, find resolution. */
-              conflict.position_b = i->position - 1;
-              conflict.production_b = i->production;
+              conflict.position_b_ = i->position_ - 1;
+              conflict.production_b_ = i->production_;
               switch (lr_check_conflict(gen, &conflict)) {
                 case -2: /* out of memory */
                   return -1;
@@ -553,60 +553,60 @@ static int lr_gen_reduce_from_transition(lr_generator_t *gen, lr_state_t *red_st
             if (no_consensus) {
               /* Loop again and report all items; caller has specified two conflicting
                * conflict resolutions. */
-              for (i = destination->kernel_items; i; i = i->state_chain) {
-                if (lookahead_sym == gen->productions[i->production][i->position + 1 - 1]) {
-                  lr_conflict_pair_t *cf = (lr_conflict_pair_t *)malloc(sizeof(lr_conflict_pair_t));
+              for (i = destination->kernel_items_; i; i = i->state_chain_) {
+                if (lookahead_sym == gen->productions_[i->production_][i->position_ + 1 - 1]) {
+                  struct lr_conflict_pair *cf = (struct lr_conflict_pair *)malloc(sizeof(struct lr_conflict_pair));
                   if (!cf) return -1;
-                  cf->position_a = conflict.position_a;
-                  cf->production_a = conflict.production_a;
-                  cf->position_b = i->position - 1;
-                  cf->production_b = i->production;
-                  cf->sym = conflict.sym;
-                  cf->chain = gen->conflicts;
-                  gen->conflicts = cf;
+                  cf->position_a_ = conflict.position_a_;
+                  cf->production_a_ = conflict.production_a_;
+                  cf->position_b_ = i->position_ - 1;
+                  cf->production_b_ = i->production_;
+                  cf->sym_ = conflict.sym_;
+                  cf->chain_ = gen->conflicts_;
+                  gen->conflicts_ = cf;
                 }
               }
             }
             else {
               /* Found a concensus, caller specified we should reduce */
               if (consensus_resolution == 1) {
-                row[lookahead_sym - gen->min_sym] = - 1 - production;
+                row[lookahead_sym - gen->min_sym_] = - 1 - production;
               }
             }
           }
         }
       }
       else {
-        row[lookahead_sym - gen->min_sym] = - 1 - production;
+        row[lookahead_sym - gen->min_sym_] = - 1 - production;
       }
     }
   }
   return 0;
 }
 
-static int  lr_backtrack_item(lr_generator_t *gen, lr_transition_t *rel_src, lr_state_t *s, int production, int position) {
-  lr_transition_t *t;
+static int  lr_backtrack_item(struct lr_generator *gen, struct lr_transition *rel_src, struct lr_state *s, int production, int position) {
+  struct lr_transition *t;
   /* Backtrack over preceeding symbol, but eliminate post-recursion if possible; note: any bug found here is likely also
    * in lr_gen_item_backtrack_parse below. */
   while (position > 0) {
-    int prev_sym = gen->productions[production][position + 1 /* offset for pos */ - 1 /* prev sym */];
+    int prev_sym = gen->productions_[production][position + 1 /* offset for pos */ - 1 /* prev sym */];
 
     /* Locate all inbound transitions for preceeding symbol; we'll use the first one for our
      * own state (removing post-recursion) and any others for recursion. */
-    for (t = s->transitions_to_state; t; t = t->to_chain) {
-      if (t->sym == prev_sym) {
-        s = t->from;
+    for (t = s->transitions_to_state_; t; t = t->to_chain_) {
+      if (t->sym_ == prev_sym) {
+        s = t->from_;
         position--;
-        t = t->to_chain;
+        t = t->to_chain_;
         break;
       }
     }
 
     /* Now continue for recursion (we can handle a single backtrack in this for loop, but if
      * it splits off into multiple branches, other lr_backtrack_item calls will need to handle it). */
-    for (; t; t = t->to_chain) {
-      if (t->sym == prev_sym) {
-        if (lr_backtrack_item(gen, rel_src, t->from, production, position /* already -1'ed */)) {
+    for (; t; t = t->to_chain_) {
+      if (t->sym_ == prev_sym) {
+        if (lr_backtrack_item(gen, rel_src, t->from_, production, position /* already -1'ed */)) {
           /* No memory */
           return -1;
         }
@@ -616,17 +616,17 @@ static int  lr_backtrack_item(lr_generator_t *gen, lr_transition_t *rel_src, lr_
 
   /* Reached root of item, locate outbound transition that matches item's non-terminal reduction.
    * there will be only one as (moving forward) it is a deterministing finite automaton. */
-  for (t = s->transitions_from_state; t; t = t->from_chain) {
-    if (t->sym == gen->productions[production][0]) {
+  for (t = s->transitions_from_state_; t; t = t->from_chain_) {
+    if (t->sym_ == gen->productions_[production][0]) {
       /* t is the outbound transition; rel_src 'includes' t */
-      lr_rel_t *includes_rel = (lr_rel_t *)malloc(sizeof(lr_rel_t));
+      struct lr_rel *includes_rel = (struct lr_rel *)malloc(sizeof(struct lr_rel));
       if (!includes_rel) return -1;
-      includes_rel->from = rel_src;
-      includes_rel->to = t;
-      includes_rel->from_chain = rel_src->outbound_rels;
-      includes_rel->to_chain = t->inbound_rels;
-      rel_src->outbound_rels = includes_rel;
-      t->inbound_rels = includes_rel;
+      includes_rel->from_ = rel_src;
+      includes_rel->to_ = t;
+      includes_rel->from_chain_ = rel_src->outbound_rels_;
+      includes_rel->to_chain_ = t->inbound_rels_;
+      rel_src->outbound_rels_ = includes_rel;
+      t->inbound_rels_ = includes_rel;
       return 0;
     }
   }
@@ -634,24 +634,24 @@ static int  lr_backtrack_item(lr_generator_t *gen, lr_transition_t *rel_src, lr_
   return 0;
 }
 
-static int lr_gen_item_backtrack_parse(lr_generator_t *gen, lr_state_t *reduce_state, lr_state_t *s, int production, int position) {
-  lr_transition_t *t;
+static int lr_gen_item_backtrack_parse(struct lr_generator *gen, struct lr_state *reduce_state, struct lr_state *s, int production, int position) {
+  struct lr_transition *t;
   
   /* The algorithm for backtracking works the same as lr_backtrack_item */
   while (position > 0) {
-    int prev_sym = gen->productions[production][position + 1 - 1];
+    int prev_sym = gen->productions_[production][position + 1 - 1];
 
-    for (t = s->transitions_to_state; t; t = t->to_chain) {
-      if (t->sym == prev_sym) {
-        s = t->from;
+    for (t = s->transitions_to_state_; t; t = t->to_chain_) {
+      if (t->sym_ == prev_sym) {
+        s = t->from_;
         position--;
-        t = t->to_chain;
+        t = t->to_chain_;
         break;
       }
     }
-    for (; t; t = t->to_chain) {
-      if (t->sym == prev_sym) {
-        if (lr_gen_item_backtrack_parse(gen, reduce_state, t->from, production, position)) {
+    for (; t; t = t->to_chain_) {
+      if (t->sym_ == prev_sym) {
+        if (lr_gen_item_backtrack_parse(gen, reduce_state, t->from_, production, position)) {
           return -1;
         }
       }
@@ -659,8 +659,8 @@ static int lr_gen_item_backtrack_parse(lr_generator_t *gen, lr_state_t *reduce_s
   }
 
   /* Reached root of item, locate the outbound transition corresponding to the item's non-terminal reduction. */
-  for (t = s->transitions_from_state; t; t = t->from_chain) {
-    if (t->sym == gen->productions[production][0]) {
+  for (t = s->transitions_from_state_; t; t = t->from_chain_) {
+    if (t->sym_ == gen->productions_[production][0]) {
       /* t contains the read set for the reduction of production in reduce_state. */
       if (lr_gen_reduce_from_transition(gen, reduce_state, t, production)) {
         return -1;
@@ -671,30 +671,30 @@ static int lr_gen_item_backtrack_parse(lr_generator_t *gen, lr_state_t *reduce_s
   return 0;
 }
 
-static int lr_populate_includes_relations(lr_generator_t *gen) {
+static int lr_populate_includes_relations(struct lr_generator *gen) {
   /* Find all non-terminal transitions; and for each non-terminal, locate the corresponding items.
    * For each of those items, if all the symbols /after/ the non-terminal transition are nullable,
    * then locate the item's "root transition" - the non-terminal transition that corresponds to the
    * "goto" of the item's reduction. */
-  lr_state_t *s;
-  for (s = gen->states; s; s = s->gen_chain) {
-    lr_transition_t *t;
-    for (t = s->transitions_from_state; t; t = t->from_chain) {
-      if ((t->sym >= gen->lowest_nonterm) && (t->sym <= gen->highest_nonterm)) {
+  struct lr_state *s;
+  for (s = gen->states_; s; s = s->gen_chain_) {
+    struct lr_transition *t;
+    for (t = s->transitions_from_state_; t; t = t->from_chain_) {
+      if ((t->sym_ >= gen->lowest_nonterm_) && (t->sym_ <= gen->highest_nonterm_)) {
         /* Locate all corresponding items for this non-terminal transition, the
          * search for them starts from the destination 'to' state of the transition
          * as that is guaranteed to contain a corresponding kernel item; whereas
          * the current state s might have it as an unlisted non-kernel item. */
-        lr_item_t *i;
-        for (i = t->to->kernel_items; i; i = i->state_chain) {
-          if (t->sym == gen->productions[i->production][i->position + 1 - 1 /* preceeding sym */]) {
+        struct lr_item *i;
+        for (i = t->to_->kernel_items_; i; i = i->state_chain_) {
+          if (t->sym_ == gen->productions_[i->production_][i->position_ + 1 - 1 /* preceeding sym */]) {
             /* Verify that all subsequent symbols in the item are nullable. */
             int n;
             int item_immediately_reducable = 1;
-            for (n = i->position + 1; gen->productions[i->production][n] != gen->eop_sym; ++n) {
-              int tailsym = gen->productions[i->production][n];
-              if ((tailsym >= gen->lowest_nonterm) && (tailsym <= gen->highest_nonterm)) {
-                if (gen->nonterm_is_nullable[tailsym - gen->lowest_nonterm]) {
+            for (n = i->position_ + 1; gen->productions_[i->production_][n] != gen->eop_sym_; ++n) {
+              int tailsym = gen->productions_[i->production_][n];
+              if ((tailsym >= gen->lowest_nonterm_) && (tailsym <= gen->highest_nonterm_)) {
+                if (gen->nonterm_is_nullable_[tailsym - gen->lowest_nonterm_]) {
                   /* nullable non-terminal, this is still good. */
                   continue;
                 }
@@ -709,7 +709,7 @@ static int lr_populate_includes_relations(lr_generator_t *gen) {
               /* Found an item that can immediately reduce, now backtrack the item to find its
                * root transition(s) and establish that t "includes" that/those root transition(s).
                */
-              if (lr_backtrack_item(gen, t, s, i->production, i->position - 1)) {
+              if (lr_backtrack_item(gen, t, s, i->production_, i->position_ - 1)) {
                 return -1;
               }
             }
@@ -721,54 +721,54 @@ static int lr_populate_includes_relations(lr_generator_t *gen) {
   return 0;
 }
 
-static void lr_clear_relations(lr_generator_t *gen) {
+static void lr_clear_relations(struct lr_generator *gen) {
   /* We clear the relations from the 'from' side, and null it at the 'to' side. */
-  lr_state_t *s;
-  for (s = gen->states; s; s = s->gen_chain) {
-    lr_transition_t *t;
-    for (t = s->transitions_from_state; t; t = t->from_chain) {
-      lr_rel_t *r, *next_r;
-      for (r = t->outbound_rels; r; r = next_r) {
-        next_r = r->from_chain;
+  struct lr_state *s;
+  for (s = gen->states_; s; s = s->gen_chain_) {
+    struct lr_transition *t;
+    for (t = s->transitions_from_state_; t; t = t->from_chain_) {
+      struct lr_rel *r, *next_r;
+      for (r = t->outbound_rels_; r; r = next_r) {
+        next_r = r->from_chain_;
         free(r);
       }
-      t->inbound_rels = NULL;
-      t->outbound_rels = NULL;
-      t->stack_chain = NULL;
-      t->index = t->lowlink = 0;
+      t->inbound_rels_ = NULL;
+      t->outbound_rels_ = NULL;
+      t->stack_chain_ = NULL;
+      t->index_ = t->lowlink_ = 0;
     }
   }
-  gen->index = 1;
-  gen->stack = NULL;
+  gen->index_ = 1;
+  gen->stack_ = NULL;
 }
 
 /* Returns:
  * 0 - no SCC's
  * 1 - SCC's found, but only with empty read_set's
  * 2 - SCC's found, one or more with non-empty read_sets */
-static int lr_propagate_rel_tarjan(lr_generator_t *gen, lr_transition_t *t) {
+static int lr_propagate_rel_tarjan(struct lr_generator *gen, struct lr_transition *t) {
   int b;
   int rv = 0;
-  lr_rel_t *r;
-  t->index = gen->index;
-  t->lowlink = gen->index;
-  gen->index++;
-  if (gen->stack) {
+  struct lr_rel *r;
+  t->index_ = gen->index_;
+  t->lowlink_ = gen->index_;
+  gen->index_++;
+  if (gen->stack_) {
     /* Grow at head of existing stack; gen->stack is a tail pointer to a cyclic list */
-    t->stack_chain = gen->stack->stack_chain;
-    gen->stack->stack_chain = t;
+    t->stack_chain_ = gen->stack_->stack_chain_;
+    gen->stack_->stack_chain_ = t;
   }
   else {
-    t->stack_chain = t;
-    gen->stack = t;
+    t->stack_chain_ = t;
+    gen->stack_ = t;
   }
-  for (r = t->outbound_rels; r; r = r->from_chain) {
-    if (!r->to->index) {
+  for (r = t->outbound_rels_; r; r = r->from_chain_) {
+    if (!r->to_->index_) {
       /* index is undefined. */
-      rv = lr_propagate_rel_tarjan(gen, r->to);
-      if (t->lowlink > r->to->lowlink) t->lowlink = r->to->lowlink;
+      rv = lr_propagate_rel_tarjan(gen, r->to_);
+      if (t->lowlink_ > r->to_->lowlink_) t->lowlink_ = r->to_->lowlink_;
     }
-    else if (r->to->stack_chain) {
+    else if (r->to_->stack_chain_) {
       /* you might be wondering why t->lowlink = min(t->lowlink, r->to->index),
        * rather than min(t->lowlink, r->to->lowlink) -- my belief is that, if it
        * is in the stack, the index, if lower, is sufficient to prevent considering
@@ -779,34 +779,34 @@ static int lr_propagate_rel_tarjan(lr_generator_t *gen, lr_transition_t *t) {
        * that satisfies v.lowlink := min {v'.index: v' is reachable from v}"-- which would
        * strictly speaking not be true if r->to->lowlink is lower than r->to->index because
        * it can reach yet an earlier node which would, then, be reachable from t.) */
-      if (t->lowlink > r->to->index) t->lowlink = r->to->index; 
+      if (t->lowlink_ > r->to_->index_) t->lowlink_ = r->to_->index_; 
     }
     /* OR the read_set into t */
-    for (b = 0; b < (gen->highest_term - gen->lowest_term + 1 + 7) / 8; ++b) {
-      t->read_set[b] |= r->to->read_set[b];
+    for (b = 0; b < (gen->highest_term_ - gen->lowest_term_ + 1 + 7) / 8; ++b) {
+      t->read_set_[b] |= r->to_->read_set_[b];
     }
   }
-  if (t->lowlink == t->index) {
-    lr_transition_t *popt;
+  if (t->lowlink_ == t->index_) {
+    struct lr_transition *popt;
     int found_nonempty = 0, found_SCC = 0;
     /* OR all masks into t first, then later we'll copy t's mask into all others. */
-    for (popt = gen->stack->stack_chain; popt != t; popt = popt->stack_chain) {
+    for (popt = gen->stack_->stack_chain_; popt != t; popt = popt->stack_chain_) {
       /* SCC is "non-empty" if the read sets are not identical. */
-      for (b = 0; b < (gen->highest_term - gen->lowest_term + 1 + 7) / 8; ++b) {
-        found_nonempty = found_nonempty || (t->read_set[b] != popt->read_set[b]);
-        t->read_set[b] |= popt->read_set[b];
+      for (b = 0; b < (gen->highest_term_ - gen->lowest_term_ + 1 + 7) / 8; ++b) {
+        found_nonempty = found_nonempty || (t->read_set_[b] != popt->read_set_[b]);
+        t->read_set_[b] |= popt->read_set_[b];
       }
       found_SCC = 1;
     }
     do {
       /* Pop the head off the cyclic list (which starts with a tail pointer.) and
        * copy t's mask into all others.. */
-      popt = gen->stack->stack_chain;
-      gen->stack->stack_chain = popt->stack_chain;
-      if (gen->stack == popt) gen->stack = NULL;
+      popt = gen->stack_->stack_chain_;
+      gen->stack_->stack_chain_ = popt->stack_chain_;
+      if (gen->stack_ == popt) gen->stack_ = NULL;
       
       if (popt != t) {
-        memcpy(popt->read_set, t->read_set, (gen->highest_term - gen->lowest_term + 1 + 7) / 8);
+        memcpy(popt->read_set_, t->read_set_, (gen->highest_term_ - gen->lowest_term_ + 1 + 7) / 8);
       }
     } while (popt != t);
     if (found_SCC) {
@@ -818,13 +818,13 @@ static int lr_propagate_rel_tarjan(lr_generator_t *gen, lr_transition_t *t) {
 }
 
 /* Return-value is same as for lr_propagate_rel_tarjan. */
-static int lr_propagate_relations(lr_generator_t *gen) {
-  lr_state_t *s;
+static int lr_propagate_relations(struct lr_generator *gen) {
+  struct lr_state *s;
   int r = 0;
-  for (s = gen->states; s; s = s->gen_chain) {
-    lr_transition_t *t;
-    for (t = s->transitions_from_state; t; t = t->from_chain) {
-      if (!t->index) {
+  for (s = gen->states_; s; s = s->gen_chain_) {
+    struct lr_transition *t;
+    for (t = s->transitions_from_state_; t; t = t->from_chain_) {
+      if (!t->index_) {
         int rv = lr_propagate_rel_tarjan(gen, t);
         if (rv > r) r = rv;
       }
@@ -833,90 +833,90 @@ static int lr_propagate_relations(lr_generator_t *gen) {
   return r;
 }
 
-void lr_cleanup(lr_generator_t *gen) {
-  free(gen->productions);
-  free(gen->production_lengths);
+void lr_cleanup(struct lr_generator *gen) {
+  free(gen->productions_);
+  free(gen->production_lengths_);
 
-  while (gen->new_states) {
-    lr_state_t *s = gen->new_states;
-    gen->new_states = s->gen_chain;
+  while (gen->new_states_) {
+    struct lr_state *s = gen->new_states_;
+    gen->new_states_ = s->gen_chain_;
     lr_destroy_state(gen, s);
   }
-  while (gen->states) {
-    lr_state_t *s = gen->states;
-    gen->states = s->gen_chain;
-    gen->nr_states--; /* sanity check */
+  while (gen->states_) {
+    struct lr_state *s = gen->states_;
+    gen->states_ = s->gen_chain_;
+    gen->nr_states_--; /* sanity check */
     lr_destroy_state(gen, s);
   }
-  free(gen->nonterm_is_nullable);
-  free(gen->nonterm_scratchpad);
-  free(gen->parse_table);
-  while (gen->conflicts) {
-    lr_conflict_pair_t *cp = gen->conflicts;
-    gen->conflicts = cp->chain;
+  free(gen->nonterm_is_nullable_);
+  free(gen->nonterm_scratchpad_);
+  free(gen->parse_table_);
+  while (gen->conflicts_) {
+    struct lr_conflict_pair *cp = gen->conflicts_;
+    gen->conflicts_ = cp->chain_;
     free(cp);
   }
-  while (gen->conflict_resolutions) {
-    lr_conflict_pair_t *cp = gen->conflict_resolutions;
-    gen->conflict_resolutions = cp->chain;
+  while (gen->conflict_resolutions_) {
+    struct lr_conflict_pair *cp = gen->conflict_resolutions_;
+    gen->conflict_resolutions_ = cp->chain_;
     free(cp);
   }
 }
 
-static int lr_generate_parse_table(lr_generator_t *gen) {
+static int lr_generate_parse_table(struct lr_generator *gen) {
   int nr_symbols;
-  lr_state_t *s;
+  struct lr_state *s;
   size_t pix;
 
-  if (gen->max_sym < gen->min_sym) return -2;
-  nr_symbols = gen->max_sym - gen->min_sym;
+  if (gen->max_sym_ < gen->min_sym_) return -2;
+  nr_symbols = gen->max_sym_ - gen->min_sym_;
   if ((nr_symbols < 0) || ((nr_symbols + 1) < 0)) {
     return -2;
   }
   nr_symbols += 1;
-  if ((SIZE_MAX / (size_t)nr_symbols) < gen->nr_states) {
+  if ((SIZE_MAX / (size_t)nr_symbols) < gen->nr_states_) {
     return -2;
   }
-  size_t num_cells = ((size_t)nr_symbols) * ((size_t)gen->nr_states);
+  size_t num_cells = ((size_t)nr_symbols) * ((size_t)gen->nr_states_);
   if ((SIZE_MAX / sizeof(int)) < num_cells) {
     return -2;
   }
-  gen->parse_table = (int *)malloc(sizeof(int) * num_cells);
-  if (!gen->parse_table) {
+  gen->parse_table_ = (int *)malloc(sizeof(int) * num_cells);
+  if (!gen->parse_table_) {
     return -1;
   }
-  memset(gen->parse_table, 0, sizeof(int) * num_cells);
+  memset(gen->parse_table_, 0, sizeof(int) * num_cells);
   
   /* Pre-compute those non-terminals that have an empty production; this
    * is not the same as gen->nonterm_is_nullable as that also takes indirect
    * nullability into account; which we're not interested in here.
    * Used later on to find non-kernel item reductions of those empty reductions,
    * as they do not appear in s->kernel_items. */
-  memset(gen->nonterm_scratchpad, 0, sizeof(int) * (gen->highest_nonterm - gen->lowest_nonterm + 1));
+  memset(gen->nonterm_scratchpad_, 0, sizeof(int) * (gen->highest_nonterm_ - gen->lowest_nonterm_ + 1));
 
-  for (pix = 0; pix < gen->nr_productions; ++pix) {
-    if (gen->productions[pix][1] == gen->eop_sym) {
+  for (pix = 0; pix < gen->nr_productions_; ++pix) {
+    if (gen->productions_[pix][1] == gen->eop_sym_) {
       /* Empty production, mark the production's non-terminal; note that we're relying on
        * production 0 to never be null (it is the synthetic S' -> S )*/
-      gen->nonterm_scratchpad[gen->productions[pix][0] - gen->lowest_nonterm] = (int)pix;
+      gen->nonterm_scratchpad_[gen->productions_[pix][0] - gen->lowest_nonterm_] = (int)pix;
     }
   }
 
   /* Assign actions.. */
-  for (s = gen->states; s; s = s->gen_chain) {
-    lr_transition_t *t;
-    lr_item_t *i;
-    int *row = gen->parse_table + nr_symbols * s->row;
+  for (s = gen->states_; s; s = s->gen_chain_) {
+    struct lr_transition *t;
+    struct lr_item *i;
+    int *row = gen->parse_table_ + nr_symbols * s->row_;
     /* Run through the state's transitions, populate shifts, populate null reductions. */
-    for (t = s->transitions_from_state; t; t = t->from_chain) {
+    for (t = s->transitions_from_state_; t; t = t->from_chain_) {
       /* for each non-terminal
        * transition Q, determine if it is directly reducable (has a null production.)
        * If so, then implicitly it's item [Q -> .] exists and we should record a 
        * reduction for all lookaheads in the Q transition. */
-      if ((t->sym >= gen->lowest_nonterm) && (t->sym <= gen->highest_nonterm)) {
+      if ((t->sym_ >= gen->lowest_nonterm_) && (t->sym_ <= gen->highest_nonterm_)) {
         /* Non-terminal, we'll populate it's "go to" later on, for now check if it is
          * directly reducable. */
-        int empty_prodix = gen->nonterm_scratchpad[t->sym - gen->lowest_nonterm];
+        int empty_prodix = gen->nonterm_scratchpad_[t->sym_ - gen->lowest_nonterm_];
 
         if (empty_prodix) {
           /* Populate all lookaheads for the reduction.. */
@@ -927,20 +927,20 @@ static int lr_generate_parse_table(lr_generator_t *gen) {
       }
       /* Populate either goto for a non-terminal or the shift for a terminal - note that these are, in fact, 
        * the same thing */
-      if (row[t->sym - gen->min_sym]) {
+      if (row[t->sym_ - gen->min_sym_]) {
         /* Shift-reduce conflict.. note that it can never be a "shift shift" conflict because the transition's
          * symbols are unique for each given state. Locate all the conflicting items.. */
-        lr_item_t *i;
-        lr_conflict_pair_t cp;
+        struct lr_item *i;
+        struct lr_conflict_pair cp;
         int consensus_resolution = 0;
         int no_consensus = 0;
-        cp.position_b = gen->production_lengths[- 1 - row[t->sym - gen->min_sym]];
-        cp.production_b = - 1 - row[t->sym - gen->min_sym];
-        cp.sym = t->sym;
-        for (i = t->to->kernel_items; i; i = i->state_chain) {
-          if ((i->position > 0) && (gen->productions[i->production][i->position + 1 - 1] == t->sym)) {
-            cp.position_a = i->position - 1;
-            cp.production_a = i->production;
+        cp.position_b_ = gen->production_lengths_[- 1 - row[t->sym_ - gen->min_sym_]];
+        cp.production_b_ = - 1 - row[t->sym_ - gen->min_sym_];
+        cp.sym_ = t->sym_;
+        for (i = t->to_->kernel_items_; i; i = i->state_chain_) {
+          if ((i->position_ > 0) && (gen->productions_[i->production_][i->position_ + 1 - 1] == t->sym_)) {
+            cp.position_a_ = i->position_ - 1;
+            cp.production_a_ = i->production_;
             switch (lr_check_conflict(gen, &cp)) {
               case -2: /* no memory */
                 return -1;
@@ -959,51 +959,51 @@ static int lr_generate_parse_table(lr_generator_t *gen) {
         }
         if (no_consensus) {
           /* Report all items as conflicting.. */
-          for (i = t->to->kernel_items; i; i = i->state_chain) {
-            if ((i->position > 0) && (gen->productions[i->production][i->position + 1 - 1] == t->sym)) {
-              lr_conflict_pair_t *cf = (lr_conflict_pair_t *)malloc(sizeof(lr_conflict_pair_t));
+          for (i = t->to_->kernel_items_; i; i = i->state_chain_) {
+            if ((i->position_ > 0) && (gen->productions_[i->production_][i->position_ + 1 - 1] == t->sym_)) {
+              struct lr_conflict_pair *cf = (struct lr_conflict_pair *)malloc(sizeof(struct lr_conflict_pair));
               if (!cf) return -1;
-              cf->position_a = i->position - 1;
-              cf->production_a = i->production;
-              cf->position_b = cp.position_b;
-              cf->production_b = cp.production_b;
-              cf->sym = t->sym;
-              cf->chain = gen->conflicts;
-              gen->conflicts = cf->chain;
+              cf->position_a_ = i->position_ - 1;
+              cf->production_a_ = i->production_;
+              cf->position_b_ = cp.position_b_;
+              cf->production_b_ = cp.production_b_;
+              cf->sym_ = t->sym_;
+              cf->chain_ = gen->conflicts_;
+              gen->conflicts_ = cf->chain_;
             }
           }
         } else if (consensus_resolution == 1) {
           /* Shift wins.. */
-          row[t->sym - gen->min_sym] = t->to->row;
+          row[t->sym_ - gen->min_sym_] = t->to_->row_;
         }
       }
       else {
         /* Populate the shift/goto, encoded as the index row. */
-        row[t->sym - gen->min_sym] = t->to->row;
+        row[t->sym_ - gen->min_sym_] = t->to_->row_;
       }
     }
 
     /* Run through the state's items looking for items that are ready to reduce, and for each, locate and store their
      * lookaheads. */
-    for (i = s->kernel_items; i; i = i->state_chain) {
-      if (gen->productions[i->production][i->position + 1] == gen->eop_sym) {
-        if (i->production != 0 /* is not the root production S'->S*/) {
+    for (i = s->kernel_items_; i; i = i->state_chain_) {
+      if (gen->productions_[i->production_][i->position_ + 1] == gen->eop_sym_) {
+        if (i->production_ != 0 /* is not the root production S'->S*/) {
           /* Reducable item. Locate all transitions that encode the "goto" (non-terminal) for this item and use their
            * read-sets for the reductions lookahead. */
-          if (lr_gen_item_backtrack_parse(gen, s, s, i->production, i->position)) {
+          if (lr_gen_item_backtrack_parse(gen, s, s, i->production_, i->position_)) {
             return -1;
           }
         }
         else {
           /* Root production, encode the accept.
            * [S' -> S., EOF] should be accept. */
-          if (row[gen->eof_sym - gen->min_sym]) {
+          if (row[gen->eof_sym_ - gen->min_sym_]) {
             /* Accept-reduce conflict ?? */
-            lr_conflict_pair_t cp;
-            cp.position_a = i->position;
-            cp.production_a = i->production;
-            cp.position_b = gen->production_lengths[- 1 - row[gen->eof_sym - gen->min_sym]];
-            cp.production_b = - 1 - row[gen->eof_sym - gen->min_sym];
+            struct lr_conflict_pair cp;
+            cp.position_a_ = i->position_;
+            cp.production_a_ = i->production_;
+            cp.position_b_ = gen->production_lengths_[- 1 - row[gen->eof_sym_ - gen->min_sym_]];
+            cp.production_b_ = - 1 - row[gen->eof_sym_ - gen->min_sym_];
             int r = lr_check_conflict(gen, &cp);
             if (r == -2) {
               /* No memory */
@@ -1011,12 +1011,12 @@ static int lr_generate_parse_table(lr_generator_t *gen) {
             }
             if (r == 1) {
               /* A passes; encode accept (-1) */
-              row[gen->eof_sym - gen->min_sym] = -1;
+              row[gen->eof_sym_ - gen->min_sym_] = -1;
             }
           }
           else {
             /* -1 encodes Accept. */
-            row[gen->eof_sym - gen->min_sym] = -1;
+            row[gen->eof_sym_ - gen->min_sym_] = -1;
           }
         }
       }
@@ -1025,24 +1025,24 @@ static int lr_generate_parse_table(lr_generator_t *gen) {
   return 0;
 }
 
-void lr_init(lr_generator_t *gen) {
-  memset(gen, 0, sizeof(lr_generator_t));
+void lr_init(struct lr_generator *gen) {
+  memset(gen, 0, sizeof(struct lr_generator));
 }
 
-int lr_add_conflict_resolution(lr_generator_t *gen,
+int lr_add_conflict_resolution(struct lr_generator *gen,
                                int dominant_production, int dominant_position,
                                int yielding_production, int yielding_position) {
-  lr_conflict_pair_t *cp = (lr_conflict_pair_t *)malloc(sizeof(lr_conflict_pair_t));
+  struct lr_conflict_pair *cp = (struct lr_conflict_pair *)malloc(sizeof(struct lr_conflict_pair));
   if (!cp) return -1;
-  cp->production_a = dominant_production; cp->position_a = dominant_position;
-  cp->production_b = yielding_production; cp->position_b = yielding_position;
-  cp->sym = 0;
-  cp->chain = gen->conflict_resolutions;
-  gen->conflict_resolutions = cp;
+  cp->production_a_ = dominant_production; cp->position_a_ = dominant_position;
+  cp->production_b_ = yielding_production; cp->position_b_ = yielding_position;
+  cp->sym_ = 0;
+  cp->chain_ = gen->conflict_resolutions_;
+  gen->conflict_resolutions_ = cp;
   return 0;
 }
 
-lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
+lr_error_t lr_gen_parser(struct lr_generator *gen, int *productions,
                          int end_of_production_sym, int end_of_grammar_sym,
                          int end_of_file_sym, int synthetic_s_sym) {
   int *pval = productions;
@@ -1052,76 +1052,76 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
   int min_term, max_term;
   size_t prodix;
   int found_nullable;
-  lr_state_t *initial_state;
+  struct lr_state *initial_state;
 
-  gen->eof_sym = end_of_file_sym;
-  gen->eog_sym = end_of_grammar_sym;
-  gen->eop_sym = end_of_production_sym;
-  gen->synths_sym = synthetic_s_sym;
+  gen->eof_sym_ = end_of_file_sym;
+  gen->eog_sym_ = end_of_grammar_sym;
+  gen->eop_sym_ = end_of_production_sym;
+  gen->synths_sym_ = synthetic_s_sym;
 
   /* Count overall number of productions (== number of gen->eop_sym's) */
-  gen->nr_productions = 0;
-  while (*pval != gen->eog_sym) {
-    if (*pval++ == gen->eop_sym) {
-      gen->nr_productions++;
+  gen->nr_productions_ = 0;
+  while (*pval != gen->eog_sym_) {
+    if (*pval++ == gen->eop_sym_) {
+      gen->nr_productions_++;
     }
   }
 
   /* Count the root production as an extra.. */
-  gen->nr_productions++;
+  gen->nr_productions_++;
 
   void *p;
-  p = realloc(gen->productions, sizeof(int *) * gen->nr_productions);
+  p = realloc(gen->productions_, sizeof(int *) * gen->nr_productions_);
   if (!p) {
     return LR_INTERNAL_ERROR;
   }
-  gen->productions = (int **)p;
+  gen->productions_ = (int **)p;
 
-  p = realloc(gen->production_lengths, sizeof(int) * gen->nr_productions);
+  p = realloc(gen->production_lengths_, sizeof(int) * gen->nr_productions_);
   if (!p) {
     return LR_INTERNAL_ERROR;
   }
-  gen->production_lengths = (int *)p;
+  gen->production_lengths_ = (int *)p;
 
   /* Now fill in the productions. */
   pval = productions;
-  p1st = gen->productions;
+  p1st = gen->productions_;
 
   /* Fill in the root production.. */
-  *p1st++ = gen->root_production;
-  if (gen->nr_productions != 1) {
-    gen->root_production[0] = gen->synths_sym;
-    gen->root_production[1] = *pval;
-    gen->root_production[2] = gen->eop_sym;
-    gen->production_lengths[0] = 1;
+  *p1st++ = gen->root_production_;
+  if (gen->nr_productions_ != 1) {
+    gen->root_production_[0] = gen->synths_sym_;
+    gen->root_production_[1] = *pval;
+    gen->root_production_[2] = gen->eop_sym_;
+    gen->production_lengths_[0] = 1;
   }
   else /* (gen->nr_productions == 1) */ {
     /* Root production is isolated and alone, empty grammar accepts only EOF */
-    gen->root_production[0] = gen->synths_sym;
-    gen->root_production[1] = gen->eop_sym;
-    gen->production_lengths[0] = 0;
+    gen->root_production_[0] = gen->synths_sym_;
+    gen->root_production_[1] = gen->eop_sym_;
+    gen->production_lengths_[0] = 0;
   }
 
-  min_nonterm = gen->synths_sym;
-  max_nonterm = gen->synths_sym;
-  min_term = gen->eof_sym;
-  max_term = gen->eof_sym;
-  plen = gen->production_lengths + 1 /* skip root */;
+  min_nonterm = gen->synths_sym_;
+  max_nonterm = gen->synths_sym_;
+  min_term = gen->eof_sym_;
+  max_term = gen->eof_sym_;
+  plen = gen->production_lengths_ + 1 /* skip root */;
   /* first run populates productions and production lengths */
-  while (*pval != gen->eog_sym) {
+  while (*pval != gen->eog_sym_) {
     if (*pval < min_nonterm) min_nonterm = *pval;
     if (*pval > max_nonterm) max_nonterm = *pval;
     *p1st++ = pval++;
     *plen = 0;
-    while (*pval++ != gen->eop_sym) (*plen)++;
+    while (*pval++ != gen->eop_sym_) (*plen)++;
     plen++;
   }
-  gen->lowest_nonterm = min_nonterm;
-  gen->highest_nonterm = max_nonterm;
-  if (gen->highest_nonterm < gen->lowest_nonterm) {
+  gen->lowest_nonterm_ = min_nonterm;
+  gen->highest_nonterm_ = max_nonterm;
+  if (gen->highest_nonterm_ < gen->lowest_nonterm_) {
     return LR_INTERNAL_ERROR;
   }
-  int num_nonterms = gen->highest_nonterm - gen->lowest_nonterm;
+  int num_nonterms = gen->highest_nonterm_ - gen->lowest_nonterm_;
   if ((num_nonterms < 0) || ((num_nonterms + 1) < 0)) {
     return LR_INTERNAL_ERROR;
   }
@@ -1129,61 +1129,61 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
   if ((SIZE_MAX / sizeof(int)) < num_nonterms) {
     return LR_INTERNAL_ERROR;
   }
-  p = realloc(gen->nonterm_is_nullable, sizeof(char) * (size_t)num_nonterms);
+  p = realloc(gen->nonterm_is_nullable_, sizeof(char) * (size_t)num_nonterms);
   if (!p) {
     return LR_INTERNAL_ERROR;
   }
-  gen->nonterm_is_nullable = (char *)p;
-  p = realloc(gen->nonterm_scratchpad, sizeof(int) * (size_t)num_nonterms);
+  gen->nonterm_is_nullable_ = (char *)p;
+  p = realloc(gen->nonterm_scratchpad_, sizeof(int) * (size_t)num_nonterms);
   if (!p) {
     return LR_INTERNAL_ERROR;
   }
-  gen->nonterm_scratchpad = (int *)p;
-  memset(gen->nonterm_is_nullable, 0, sizeof(char) * (size_t)num_nonterms);
+  gen->nonterm_scratchpad_ = (int *)p;
+  memset(gen->nonterm_is_nullable_, 0, sizeof(char) * (size_t)num_nonterms);
 
   /* second run determines min and max terminals */
-  for (prodix = 0; prodix < gen->nr_productions; ++prodix) {
+  for (prodix = 0; prodix < gen->nr_productions_; ++prodix) {
     int idx;
-    for (idx = 1; gen->productions[prodix][idx] != gen->eop_sym; ++idx) {
-      int sym = gen->productions[prodix][idx];
-      if ((sym < gen->lowest_nonterm) || (sym > gen->highest_nonterm)) {
+    for (idx = 1; gen->productions_[prodix][idx] != gen->eop_sym_; ++idx) {
+      int sym = gen->productions_[prodix][idx];
+      if ((sym < gen->lowest_nonterm_) || (sym > gen->highest_nonterm_)) {
         if (sym < min_term) min_term = sym;
         if (sym > max_term) max_term = sym;
       }
     }
   }
-  gen->highest_term = max_term;
-  gen->lowest_term = min_term;
+  gen->highest_term_ = max_term;
+  gen->lowest_term_ = min_term;
 
   /* Determine overal min and max symbol */
-  if (gen->lowest_nonterm < gen->lowest_term) {
-    gen->min_sym = gen->lowest_nonterm;
+  if (gen->lowest_nonterm_ < gen->lowest_term_) {
+    gen->min_sym_ = gen->lowest_nonterm_;
   }
   else {
-    gen->min_sym = gen->lowest_term;
+    gen->min_sym_ = gen->lowest_term_;
   }
-  if (gen->highest_nonterm > gen->highest_term) {
-    gen->max_sym = gen->highest_nonterm;
+  if (gen->highest_nonterm_ > gen->highest_term_) {
+    gen->max_sym_ = gen->highest_nonterm_;
   }
   else {
-    gen->max_sym = gen->highest_term;
+    gen->max_sym_ = gen->highest_term_;
   }
 
   /* Determine which non-terminals are nullable */
   do {
     /* keep looking for nullable non-terminals as long as we find em. */
     found_nullable = 0;
-    for (prodix = 0; prodix < gen->nr_productions; ++prodix) {
-      int *p = gen->productions[prodix];
+    for (prodix = 0; prodix < gen->nr_productions_; ++prodix) {
+      int *p = gen->productions_[prodix];
       /* non-terminal is nullable if it has a production completely void
        * of terminals and non-nullable non-terminals. */
       int n, found_non_nullable = 0;
-      if (!gen->nonterm_is_nullable[p[0] - gen->lowest_nonterm]) {
+      if (!gen->nonterm_is_nullable_[p[0] - gen->lowest_nonterm_]) {
         /* Might still be nullable. */
-        for (n = 1; (p[n] != gen->eop_sym) && !found_non_nullable; ++n) {
-          if ((p[n] >= gen->lowest_nonterm) && (p[n] <= gen->highest_nonterm)) {
+        for (n = 1; (p[n] != gen->eop_sym_) && !found_non_nullable; ++n) {
+          if ((p[n] >= gen->lowest_nonterm_) && (p[n] <= gen->highest_nonterm_)) {
             /* p[n] is a nonterminal */
-            if (gen->nonterm_is_nullable[p[n] - gen->lowest_nonterm]) {
+            if (gen->nonterm_is_nullable_[p[n] - gen->lowest_nonterm_]) {
               /* nullable; continue */
             }
             else {
@@ -1198,7 +1198,7 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
         }
         if (!found_non_nullable) {
           /* Mark as nullable */
-          gen->nonterm_is_nullable[p[0] - gen->lowest_nonterm] = 1;
+          gen->nonterm_is_nullable_[p[0] - gen->lowest_nonterm_] = 1;
           found_nullable = 1;
         }
       }
@@ -1213,7 +1213,7 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
   }
 
   /* Initial state consists of S' -> .S */
-  lr_item_t *lrit = lr_find_or_create_item(gen, initial_state, 0, 0);
+  struct lr_item *lrit = lr_find_or_create_item(gen, initial_state, 0, 0);
   if (!lrit) {
     return LR_INTERNAL_ERROR;
   }
@@ -1257,6 +1257,6 @@ lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
     return LR_INTERNAL_ERROR;
   }
 
-  return gen->conflicts ? LR_CONFLICTS : LR_OK;
+  return gen->conflicts_ ? LR_CONFLICTS : LR_OK;
 }
 

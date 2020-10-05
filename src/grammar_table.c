@@ -86,7 +86,7 @@ int gt_transcribe_grammar(struct grammar_table *gt, size_t num_productions, stru
   return r;
 }
 
-int gt_generate_lalr(struct grammar_table *gt, lr_generator_t *lalr, int end_of_production_sym, int end_of_grammar_sym, int end_of_file_sym, int synthetic_s_sym) {
+int gt_generate_lalr(struct grammar_table *gt, struct lr_generator *lalr, int end_of_production_sym, int end_of_grammar_sym, int end_of_file_sym, int synthetic_s_sym) {
   lr_error_t lr_err;
   lr_err = lr_gen_parser(lalr, gt->ordinals_, end_of_production_sym, end_of_grammar_sym, end_of_file_sym, synthetic_s_sym);
   switch (lr_err) {

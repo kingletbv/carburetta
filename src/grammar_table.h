@@ -44,7 +44,7 @@ void gt_grammar_table_cleanup(struct grammar_table *gt);
 int gt_emit(struct grammar_table *gt, int ordinal);
 
 int gt_transcribe_grammar(struct grammar_table *gt, size_t num_productions, struct prd_production *productions, int end_of_production_sym, int end_of_grammar_sym);
-int gt_generate_lalr(struct grammar_table *gt, lr_generator_t *lalr, int end_of_production_sym, int end_of_grammar_sym, int end_of_file_sym, int synthetic_s_sym);
+int gt_generate_lalr(struct grammar_table *gt, struct lr_generator *lalr, int end_of_production_sym, int end_of_grammar_sym, int end_of_file_sym, int synthetic_s_sym);
 
 #ifdef __cplusplus
 } /* extern "C" */

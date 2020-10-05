@@ -1085,7 +1085,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
   return r;
 }
 
-static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, lr_generator_t *lalr, int *state_syms) {
+static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   int r;
 
   /* Emit the parse function */
@@ -1257,7 +1257,7 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
       int have_cases = 0; /* always true if all types are always used */
       /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
       size_t state_idx;
-      for (state_idx = 0; state_idx < lalr->nr_states; ++state_idx) {
+      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
         struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
         if (!sym) continue;
         if (sym->assigned_type_ == ts) {
@@ -1469,7 +1469,7 @@ cleanup_exit:
 }
 
 
-static int emit_parse_function2(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, lr_generator_t *lalr, int *state_syms) {
+static int emit_parse_function2(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   int r;
 
   /* Emit the parse function */
@@ -1734,7 +1734,7 @@ static int emit_parse_function2(FILE *outfp, struct cinder_context *cc, struct p
       int have_cases = 0; /* always true if all types are always used */
       /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
       size_t state_idx;
-      for (state_idx = 0; state_idx < lalr->nr_states; ++state_idx) {
+      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
         struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
         if (!sym) continue;
         if (sym->assigned_type_ == ts) {
@@ -1845,7 +1845,7 @@ static int emit_parse_function2(FILE *outfp, struct cinder_context *cc, struct p
       int have_cases = 0; /* always true if all types are always used */
       /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
       size_t state_idx;
-      for (state_idx = 0; state_idx < lalr->nr_states; ++state_idx) {
+      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
         struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
         if (!sym) continue;
         if (sym->assigned_type_ == ts) {
@@ -2106,7 +2106,7 @@ int main(int argc, char **argv) {
   struct grammar_table gt;
   gt_grammar_table_init(&gt);
 
-  lr_generator_t lalr;
+  struct lr_generator lalr;
   lr_init(&lalr);
 
   struct xlts token_buf;
@@ -2590,14 +2590,14 @@ int main(int argc, char **argv) {
 
   r = gt_generate_lalr(&gt, &lalr, RULE_END, GRAMMAR_END, INPUT_END, SYNTHETIC_S);
   if (r == GT_CONFLICTS) {
-    lr_conflict_pair_t *cp;
-    for (cp = lalr.conflicts; cp; cp = cp->chain) {
+    struct lr_conflict_pair *cp;
+    for (cp = lalr.conflicts_; cp; cp = cp->chain_) {
       /* NOTE: lalr parser inserts a rule 0, so consider all conflicts 1-based. */
       struct {
         int production, position;
       } conflict[2] = {
-        {cp->production_a - 1, cp->position_a},
-        {cp->production_b - 1, cp->position_b}
+        {cp->production_a_ - 1, cp->position_a_},
+        {cp->production_b_ - 1, cp->position_b_}
       };
       size_t n;
       const char *a;
@@ -2788,11 +2788,11 @@ int main(int argc, char **argv) {
     }
     fprintf(outfp, "};\n");
 
-    size_t num_columns = (size_t)(1 + lalr.max_sym - lalr.min_sym);
-    fprintf(outfp, "static const int %sminimum_sym = %d;\n", cc_prefix(&cc), lalr.min_sym);
+    size_t num_columns = (size_t)(1 + lalr.max_sym_ - lalr.min_sym_);
+    fprintf(outfp, "static const int %sminimum_sym = %d;\n", cc_prefix(&cc), lalr.min_sym_);
     fprintf(outfp, "static const size_t %snum_columns = %zu;\n", cc_prefix(&cc), num_columns);
-    fprintf(outfp, "static const size_t %snum_rows = %zu;\n", cc_prefix(&cc), (size_t)lalr.nr_states);
-    fprintf(outfp, "static const size_t %snum_productions = %zu;\n", cc_prefix(&cc), lalr.nr_productions);
+    fprintf(outfp, "static const size_t %snum_rows = %zu;\n", cc_prefix(&cc), (size_t)lalr.nr_states_);
+    fprintf(outfp, "static const size_t %snum_productions = %zu;\n", cc_prefix(&cc), lalr.nr_productions_);
     fprintf(outfp, "static const int %sparse_table[] = {\n", cc_prefix(&cc));
     size_t row, col;
     char *column_widths = (char *)malloc(num_columns);
@@ -2804,8 +2804,8 @@ int main(int argc, char **argv) {
 
     for (col = 0; col < num_columns; ++col) {
       column_widths[col] = 1;
-      for (row = 0; row < lalr.nr_states; ++row) {
-        int action = lalr.parse_table[row * num_columns + col];
+      for (row = 0; row < lalr.nr_states_; ++row) {
+        int action = lalr.parse_table_[row * num_columns + col];
         int width_needed = 1;
         if (action <= -1000) {
           width_needed = 5;
@@ -2833,9 +2833,9 @@ int main(int argc, char **argv) {
         }
       }
     }
-    for (row = 0; row < lalr.nr_states; ++row) {
+    for (row = 0; row < lalr.nr_states_; ++row) {
       for (col = 0; col < num_columns; ++col) {
-        int action = lalr.parse_table[row * num_columns + col];
+        int action = lalr.parse_table_[row * num_columns + col];
 
         fprintf(outfp, "%*d,%s", column_widths[col], action, col == (num_columns - 1) ? "\n" : "");
       }
@@ -2843,34 +2843,34 @@ int main(int argc, char **argv) {
     free(column_widths);
     fprintf(outfp, "};\n");
     fprintf(outfp, "static const size_t %sproduction_lengths[] = {\n", cc_prefix(&cc));
-    for (row = 0; row < lalr.nr_productions; ++row) {
-      fprintf(outfp, " %d%s\n", lalr.production_lengths[row], (row == lalr.nr_productions - 1) ? "" : ",");
+    for (row = 0; row < lalr.nr_productions_; ++row) {
+      fprintf(outfp, " %d%s\n", lalr.production_lengths_[row], (row == lalr.nr_productions_ - 1) ? "" : ",");
     }
     fprintf(outfp, "};\n");
     fprintf(outfp, "static const int %sproduction_syms[] = {\n", cc_prefix(&cc));
-    for (row = 0; row < lalr.nr_productions; ++row) {
-      fprintf(outfp, " %d%s\n", lalr.productions[row][0], (row == lalr.nr_productions - 1) ? "" : ",");
+    for (row = 0; row < lalr.nr_productions_; ++row) {
+      fprintf(outfp, " %d%s\n", lalr.productions_[row][0], (row == lalr.nr_productions_ - 1) ? "" : ",");
     }
     fprintf(outfp, "};\n");
 
     /* For each state, what is the top-most symbol on the stack? */
     fprintf(outfp, "static const int %sstate_syms[] = {\n", cc_prefix(&cc));
 
-    state_syms = (int *)malloc(sizeof(int) * (size_t)lalr.nr_states);
+    state_syms = (int *)malloc(sizeof(int) * (size_t)lalr.nr_states_);
     if (!state_syms) {
       LOGERROR("Error, no memory\n");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
-    for (row = 0; row < lalr.nr_states; ++row) {
+    for (row = 0; row < lalr.nr_states_; ++row) {
       state_syms[row] = -1;
     }
-    for (row = 0; row < lalr.nr_states; ++row) {
+    for (row = 0; row < lalr.nr_states_; ++row) {
       for (col = 0; col < num_columns; ++col) {
-        int action = lalr.parse_table[row * num_columns + col];
+        int action = lalr.parse_table_[row * num_columns + col];
         if (action > 0) {
           /* We're shifting to a destination state. */
-          int sym_shifting = ((int)col) + lalr.min_sym;
+          int sym_shifting = ((int)col) + lalr.min_sym_;
           int state_shifting_to = action;
           if (state_syms[state_shifting_to] != sym_shifting) {
             if (state_syms[state_shifting_to] == -1) {
@@ -2886,8 +2886,8 @@ int main(int argc, char **argv) {
         }
       }
     }
-    for (row = 0; row < lalr.nr_states; ++row) {
-      fprintf(outfp, " %d%s\n", state_syms[row], (row == lalr.nr_states - 1) ? "" : ",");
+    for (row = 0; row < lalr.nr_states_; ++row) {
+      fprintf(outfp, " %d%s\n", state_syms[row], (row == lalr.nr_states_ - 1) ? "" : ",");
     }
     fprintf(outfp, "};\n");
 
@@ -2986,7 +2986,7 @@ int main(int argc, char **argv) {
         int have_cases = 0; /* always true if all types are always used */
         /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
         size_t state_idx;
-        for (state_idx = 0; state_idx < lalr.nr_states; ++state_idx) {
+        for (state_idx = 0; state_idx < lalr.nr_states_; ++state_idx) {
           struct symbol *sym = symbol_find_by_ordinal(&cc.symtab_, state_syms[state_idx]);
           if (!sym) continue;
           if (sym->assigned_type_ == ts) {
@@ -3077,7 +3077,7 @@ int main(int argc, char **argv) {
         int have_cases = 0; /* always true if all types are always used */
         /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
         size_t state_idx;
-        for (state_idx = 0; state_idx < lalr.nr_states; ++state_idx) {
+        for (state_idx = 0; state_idx < lalr.nr_states_; ++state_idx) {
           struct symbol *sym = symbol_find_by_ordinal(&cc.symtab_, state_syms[state_idx]);
           if (!sym) continue;
           if (sym->assigned_type_ == ts) {

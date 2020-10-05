@@ -29,10 +29,6 @@ extern "C" {
  * of the grammar. It is possible for multiple productions to reduce to the same Start non-terminal.
  */
 
-struct lr_item_struct;
-struct lr_state_struct;
-struct lr_transition_struct;
-
 typedef enum lr_error_enum {
   /* Everything went well, parser is available. */
   LR_OK,
@@ -46,154 +42,154 @@ typedef enum lr_error_enum {
   LR_INTERNAL_ERROR
 } lr_error_t;
 
-typedef struct lr_item_struct {
-  int production, position;
+struct lr_item {
+  int production_, position_;
 
-  struct lr_item_struct *state_chain;
-} lr_item_t;
+  struct lr_item *state_chain_;
+};
 
-typedef struct lr_state_struct {
-  int row;
-  lr_item_t *kernel_items;
+struct lr_state {
+  int row_;
+  struct lr_item *kernel_items_;
 
-  struct lr_transition_struct *transitions_from_state;
-  struct lr_transition_struct *transitions_to_state;
+  struct lr_transition *transitions_from_state_;
+  struct lr_transition *transitions_to_state_;
 
-  struct lr_state_struct *gen_chain;
-} lr_state_t;
+  struct lr_state *gen_chain_;
+};
 
-typedef struct lr_rel_struct {
-  struct lr_transition_struct *from;
-  struct lr_transition_struct *to;
+struct lr_rel {
+  struct lr_transition *from_;
+  struct lr_transition *to_;
 
-  struct lr_rel_struct *from_chain;
-  struct lr_rel_struct *to_chain;
-} lr_rel_t;
+  struct lr_rel *from_chain_;
+  struct lr_rel *to_chain_;
+};
 
-typedef struct lr_transition_struct {
-  int sym;
+struct lr_transition {
+  int sym_;
 
-  struct lr_transition_struct *from_chain;
-  struct lr_transition_struct *to_chain;
+  struct lr_transition *from_chain_;
+  struct lr_transition *to_chain_;
 
-  lr_state_t *from;
-  lr_state_t *to;
+  struct lr_state *from_;
+  struct lr_state *to_;
 
-  lr_rel_t *outbound_rels;
-  lr_rel_t *inbound_rels;
+  struct lr_rel *outbound_rels_;
+  struct lr_rel *inbound_rels_;
 
   /* index and lowlink for Tarjan's Strongly Connected Components algorithm */
-  int index, lowlink;
+  int index_, lowlink_;
 
   /* Stack position for Tarjan's algorithm, as the stack is set up
    * as a cyclic list, we can also check whether the transition is
    * on the stack by checking if the stack chain is not NULL */
-  struct lr_transition_struct *stack_chain;
+  struct lr_transition *stack_chain_;
 
   /* read_set is of length 1 + gen->highest_term - gen->lowest_term,
    * for all non-terminals. */
-  unsigned char read_set[1];
-} lr_transition_t;
+  unsigned char read_set_[1];
+};
 
-typedef struct lr_conflict_pair_struct {
-  struct lr_conflict_pair_struct *chain;
+struct lr_conflict_pair {
+  struct lr_conflict_pair *chain_;
   /* production and position A, if this is a conflict resolution,
    * this will be chosen over B. To specify a reduction, place
    * position at the end (length) of the production. */
-  int production_a;
-  int position_a;
+  int production_a_;
+  int position_a_;
 
   /* production and position B, if this is a conflict resolution,
    * it will be replaced by A. To specify a reduction, place
    * position at the end (length) of the production. */
-  int production_b;
-  int position_b;
+  int production_b_;
+  int position_b_;
 
   /* For informational purposes, the symbol on which the conflict 
    * occurred. Ignored for conflict resolutions. */
-  int sym;
-} lr_conflict_pair_t;
+  int sym_;
+};
 
-typedef struct lr_generator_struct {
+struct lr_generator {
   /* All productions; including S' -> S */
-  size_t nr_productions;
-  int **productions;
+  size_t nr_productions_;
+  int **productions_;
 
   /* Length of each production, eg. S' -> S would have length 1. */
-  int *production_lengths;
+  int *production_lengths_;
   
   /* root production S' -> S, where
    * S is the non-terminal the first
    * real production reduces to. */
-  int root_production[3];
+  int root_production_[3];
 
   /* Various caller-defined constants..*/
-  int synths_sym; /* S' synthetic root production non-terminal symbol */
-  int eop_sym;    /* marks the end of a production */
-  int eog_sym;    /* marks the end of a grammar */
-  int eof_sym;    /* end-of-file synthetic terminal symbol */
+  int synths_sym_; /* S' synthetic root production non-terminal symbol */
+  int eop_sym_;    /* marks the end of a production */
+  int eog_sym_;    /* marks the end of a grammar */
+  int eof_sym_;    /* end-of-file synthetic terminal symbol */
 
   /* All states whose item sets are complete, linked through
-   * lr_state_t::gen_chain. */
-  lr_state_t *states;
-  int nr_states;
+   * lr_state::gen_chain. */
+  struct lr_state *states_;
+  int nr_states_;
   
   /* All states as they are being constructed, inside lr_closure()
    * these states may have partial item sets and have not yet been
    * matched for duplicates. Any new state created through 
    * lr_create_state() is linked into this chain (and only into
-   * lr_generator_t::states after lr_closure()).*/
-  lr_state_t *new_states;
+   * lr_generator::states after lr_closure()).*/
+  struct lr_state *new_states_;
 
   /* range of nonterminal ordinals; highest_nonterm is the last
    * non-terminal symbol and always equals S' (i.e. it is 
    * synthetically generated.) */
-  int lowest_nonterm;
-  int highest_nonterm;
+  int lowest_nonterm_;
+  int highest_nonterm_;
 
   /* range of terminals; highest_term is the last terminal symbol,
    * lowest_term the first. */
-  int lowest_term;
-  int highest_term;
+  int lowest_term_;
+  int highest_term_;
 
   /* range of symbols. */
-  int min_sym;
-  int max_sym;
+  int min_sym_;
+  int max_sym_;
 
   /* byte-array from lowest_nonterm to highest_nonterm,
    * indicating whether the nonterm is nullable. */
-  char *nonterm_is_nullable;
+  char *nonterm_is_nullable_;
 
   /* int-array, again from lowest_nonterm to highest_nonterm,
    * used for closure computation book-keeping. */
-  int *nonterm_scratchpad;
+  int *nonterm_scratchpad_;
 
   /* Stack of transitions for Tarjan's SCC algorithm */
-  lr_transition_t *stack;
+  struct lr_transition *stack_;
 
   /* Current index for Tarjan's SCC algorithm */
-  int index;
+  int index_;
 
   /* Parse table under construction; as many rows as there are 
    * states, first row is guaranteed to be the initial state, as 
    * many columns as there are symbols (eg. max(highest_term, 
    * highest_nonterm) - min(lowest_term, lowest_nonterm) .)*/
-  int *parse_table;
+  int *parse_table_;
 
   /* All conflicts found during parser table generation. */
-  lr_conflict_pair_t *conflicts;
+  struct lr_conflict_pair *conflicts_;
 
   /* All caller specified resolutions of conflicts, with 'a'
    * taking precedence over 'b'. */
-  lr_conflict_pair_t *conflict_resolutions;
-} lr_generator_t;
+  struct lr_conflict_pair *conflict_resolutions_;
+};
 
 /* Initializes a generator for use. After this, you are expected to call
  * lr_add_conflict_resolution zero or more times and call lr_gen_parser
  * to generate the actual parser. Following lr_gen_parser, you are expected
  * to lr_cleanup(), it is not permissable to re-use the same generator without
  * cleanup. */
-void lr_init(lr_generator_t *gen);
+void lr_init(struct lr_generator *gen);
 
 /* Adds a conflict resolution, should the dominant item and the yielding item
  * face a shift/reduce or reduce/reduce conflict, the dominant item has priority.
@@ -202,7 +198,7 @@ void lr_init(lr_generator_t *gen);
  * in to that production. A position at the length of the production indicates
  * a reduction, rather than a shift.
  * Returns zero upon success, or non-zero upon memory failure */
-int lr_add_conflict_resolution(lr_generator_t *gen,
+int lr_add_conflict_resolution(struct lr_generator *gen,
                                int dominant_production, int dominant_position,
                                int yielding_production, int yielding_position);
 
@@ -306,11 +302,11 @@ int lr_add_conflict_resolution(lr_generator_t *gen,
  * terminal symbol.
  *
  */
-lr_error_t lr_gen_parser(lr_generator_t *gen, int *productions,
+lr_error_t lr_gen_parser(struct lr_generator *gen, int *productions,
                          int end_of_production_sym, int end_of_grammar_sym,
                          int end_of_file_sym, int synthetic_s_sym);
 
-void lr_cleanup(lr_generator_t *gen);
+void lr_cleanup(struct lr_generator *gen);
 
 #ifdef __cplusplus
 } /* extern "C" */
