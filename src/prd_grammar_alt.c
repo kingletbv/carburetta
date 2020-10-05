@@ -221,7 +221,7 @@ static const int prd_state_syms[] = {
 #ifndef CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED
 struct prd_stack {
   int error_recovery_:1;
-  int reported_error_:1;
+  int report_error_:1;
   int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
   struct prd_sym_data *stack_;
@@ -250,7 +250,7 @@ struct prd_stack {
 
 void prd_stack_init(struct prd_stack *stack) {
   stack->error_recovery_ = 0;
-  stack->reported_error_ = 0;
+  stack->report_error_ = 0;
   stack->mute_error_turns_ = 0;
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
@@ -810,7 +810,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
     if (action <= 0) {
       re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
     }
-    switch (prd_push_state(stack, action /* action for a shift is the ordinal */)) {
+    switch (prd_push_state(stack, action /* action for a shift is the ordinal of its state */)) {
       case -1: /* overflow */ {
         re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
       }
@@ -878,6 +878,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
   }
 }
 int prd_parse2(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st) {
+  if (stack->mute_error_turns_) stack->mute_error_turns_--;
   for (;;) {
     if (!stack->error_recovery_) {
       int action = prd_parse_table[prd_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - prd_minimum_sym)];
@@ -903,7 +904,21 @@ int prd_parse2(struct prd_stack *stack, int sym, struct prd_grammar *g, struct t
               (sym_data->v_.uv0_).variant_ = tkr->best_match_variant_; \
 			  xlts_append(&(sym_data->v_.uv0_).text_, &tkr->xmatch_);
         }
-        return 1; /* next token */
+        if (stack->report_error_) {
+          /* We're shifting this sym following an error recovery on the same sym, report syntax error */
+          stack->report_error_ = 0;
+          /* Syntax error */ \
+  if (sym != PRD_INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
+        }
+        else {
+          return PRD_NEXT;
+        }
       } /* action > 0 */
       else if (action < 0) {
         int production = -action - 1;
@@ -1313,16 +1328,93 @@ int prd_parse2(struct prd_stack *stack, int sym, struct prd_grammar *g, struct t
       } /* action < 0 */
       else /* action == 0 */ {
         stack->error_recovery_ = 1;
-        stack->reported_error_ = !stack->mute_error_turns_;
+        stack->report_error_ = !stack->mute_error_turns_;
+        stack->mute_error_turns_ = 3;
       }
     } /* !stack->error_recovery_ */
     if (stack->error_recovery_) {
-      if (!stack->reported_error_) {
-        stack->reported_error_ = 1;
-        stack->mute_error_turns_ = 3;
-        
-        stack->error_recovery_ = 0; /* old behavior for now.. */
-/* Syntax error */ \
+      size_t n;
+      n = stack->pos_;
+      if (n) {
+        do {
+          --n;
+          /* Can we shift an error token? */
+          int err_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (12 /* error token */ - prd_minimum_sym)];
+          if (err_action > 0) {
+            /* Does the resulting state accept the current symbol? */
+            int err_sym_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (sym - prd_minimum_sym)];
+            if (err_sym_action) {
+              /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */
+              /* Free symdata for every symbol up to the state where we will shift the error token */
+              size_t prd_sym_idx;
+              for (prd_sym_idx = n + 1; prd_sym_idx < stack->pos_; ++prd_sym_idx) {
+                switch (stack->stack_[prd_sym_idx].state_) {
+                  case 2: /* semicolon */
+                  case 3: /* semicolon */
+                  case 5: /* ident */
+                  case 6: /* colon */
+                  case 7: /* equals */
+                  case 8: /* token */
+                  case 9: /* par-close */
+                  case 11: /* par-open */
+                  case 12: /* cubrace-close */
+                  case 14: /* cubrace-open */
+                  case 17: /* equals */
+                  case 18: /* cubrace-close */
+                  case 20: /* ident */
+                  case 21: /* colon */
+                  case 22: /* equals */
+                  case 23: /* semicolon */
+                  case 24: /* token */
+                  case 25: /* par-close */
+                  case 27: /* par-open */
+                  case 28: /* cubrace-close */
+                  case 30: /* cubrace-open */
+                  case 32: /* cubrace-open */
+                  case 35: /* ident */
+                  case 37: /* colon */
+                  case 38: /* ident */
+                  {
+                     xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
+                  }
+                  break;
+                  case 1: /* production */
+                  case 10: /* action-sequence */
+                  case 13: /* action-sequence */
+                  case 15: /* stmt-action */
+                  case 26: /* action-sequence */
+                  case 29: /* action-sequence */
+                  case 31: /* action-sequence */
+                  case 36: /* rule */
+                  {
+                     prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
+                  }
+                  break;
+                } /* switch */
+              } /* for */
+              stack->pos_ = n + 1;
+              /* Push the state of the error transition */
+              switch (prd_push_state(stack, err_action /* action for a shift is the state */)) {
+                case -1: /* overflow */ {
+                  re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                }
+                break;
+                case -2: /* out of memory */ {
+                  re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                }
+                break;
+              } /* switch */
+              stack->error_recovery_ = 0;
+              /* Break out of do { .. } while loop, we've recovered */
+              break;
+            } /* if (err_sym_action) (if the current sym can continue after an error transition) */
+          } /* if (err_action) (if the state at position 'n' can accept an error transition) */
+          --n;
+        } while (n);
+      }
+      if (stack->report_error_) {
+        stack->report_error_ = 0;
+        /* Syntax error */ \
   if (sym != PRD_INPUT_END) {\
     re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
   } \
@@ -1330,6 +1422,9 @@ int prd_parse2(struct prd_stack *stack, int sym, struct prd_grammar *g, struct t
     re_error_tkr(tkr, "Syntax error: end of input not expected");   \
   } \
   return PRD_SYNTAX_ERROR;
+      }
+      else {
+        return PRD_NEXT;
       }
     } /* stack->error_recovery_ */
   } /* for (;;) */
