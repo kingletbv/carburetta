@@ -55,3 +55,4 @@ dkms.conf
 .vs/
 Debug/
 x64/
+cinder.vcxproj.user
