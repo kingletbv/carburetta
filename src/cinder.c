@@ -1577,6 +1577,26 @@ cleanup_exit:
 }
 
 void print_usage(void) {
+  fprintf(stderr, "Cinder parser generator (C) 2020 Kinglet B.V.\n"
+                  "https://firecrest.com/cinder\n"
+                  "\n"
+                  "cinder <inputfile.cnd> [ --c [ <c_filename> [--h [h_filename] ] ] ]\n"
+                  "\n"
+                  "<inputfile.cnd>\n"
+                  "         the input file containing the grammar (mandatory)\n"
+                  "\n"
+                  "--c\n"
+                  "         generate a C file (implied if ommitted)\n"
+                  "\n"
+                  "--c [<c_filename>]\n"
+                  "         generate a C file and output it to c_filename. If no filename is\n"
+                  "         specified, then output will be to stdout\n"
+                  "\n"
+                  "--h [<h_filename>]\n"
+                  "         generate a C header file and output it to h_filename. If no filename\n"
+                  "         is present, a c_filename must be present as it will then be used to\n"
+                  "         derive a filename for the header file.\n"
+  );
 }
 
 int main(int argc, char **argv) {
