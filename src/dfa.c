@@ -71,55 +71,55 @@ static void *arealloc(void *mem, size_t count, size_t size) {
   return realloc(mem, size_to_alloc);
 }
 
-void dfa_init(dfa_t *dfa) {
+void dfa_init(struct dfa *dfa) {
   dfa->first_dfa = NULL;
   dfa->next_dfa_num = 0;
   dfa->num_nfa_nodes = 0;
 }
 
-void dfa_cleanup(dfa_t *dfa) {
+void dfa_cleanup(struct dfa *dfa) {
   while (dfa->first_dfa) {
-    dfa_node_t *dfa_node = dfa->first_dfa;
+    struct dfa_node *dfa_node = dfa->first_dfa;
     dfa->first_dfa = dfa_node->next_dfa;
     free(dfa_node);
   }
 }
 
-static void dfa_reset(dfa_t *dfa) {
+static void dfa_reset(struct dfa *dfa) {
   dfa_cleanup(dfa);
   dfa_init(dfa);
 }
 
-static dfa_node_t *dfa_make_node(dfa_t *dfa) {
-  dfa_node_t *dfa_node = (dfa_node_t *)arealloc(NULL, 1, sizeof(dfa_node_t) + sizeof(uint64_t) * (((dfa->num_nfa_nodes + 63) / 64) - 1));
-  memset(dfa_node->moves, 0, sizeof(dfa_node_t *) * 256);
+static struct dfa_node *dfa_make_node(struct dfa *dfa) {
+  struct dfa_node *dfa_node = (struct dfa_node *)arealloc(NULL, 1, sizeof(struct dfa_node) + sizeof(uint64_t) * (((dfa->num_nfa_nodes + 63) / 64) - 1));
+  memset(dfa_node->moves, 0, sizeof(struct dfa_node *) * 256);
   memset(dfa_node->nfa_map, 0, sizeof(uint64_t) * ((dfa->num_nfa_nodes + 63) / 64));
   dfa_node->next_dfa = NULL;
   dfa_node->num = 0;
   return dfa_node;
 }
 
-static void dfa_record_node(dfa_t *dfa, dfa_node_t *node) {
+static void dfa_record_node(struct dfa *dfa, struct dfa_node *node) {
   node->next_dfa = dfa->first_dfa;
   dfa->first_dfa = node;
   node->num = dfa->next_dfa_num++;
 }
 
-static void dfa_free_unrecorded_node(dfa_t *dfa, dfa_node_t *node) {
+static void dfa_free_unrecorded_node(struct dfa *dfa, struct dfa_node *node) {
   free(node);
 }
 
-int dfa_node_has_nfa(dfa_node_t *dfa_node, size_t nfa_node_index) {
+int dfa_node_has_nfa(struct dfa_node *dfa_node, size_t nfa_node_index) {
   return !!(dfa_node->nfa_map[nfa_node_index / 64] & ((uint64_t)1) << (nfa_node_index & 63));
 }
 
-static int dfa_add_nfa(dfa_node_t *dfa_node, size_t nfa_node_index) {
+static int dfa_add_nfa(struct dfa_node *dfa_node, size_t nfa_node_index) {
   int already_had_nfa = dfa_node_has_nfa(dfa_node, nfa_node_index);
   dfa_node->nfa_map[nfa_node_index / 64] |= ((uint64_t)1) << (nfa_node_index & 63);
   return already_had_nfa;
 }
 
-static void dfa_closure(dfa_t *dfa, nfa_t *nfa, dfa_node_t *dfa_node) {
+static void dfa_closure(struct dfa *dfa, nfa_t *nfa, struct dfa_node *dfa_node) {
   size_t nfa_node_index;
   int progress_was_made;
   do {
@@ -139,8 +139,8 @@ static void dfa_closure(dfa_t *dfa, nfa_t *nfa, dfa_node_t *dfa_node) {
 }
 
 /* dfa_node should not yet be "recorded" or it'll find itself */
-static dfa_node_t *dfa_find_identical(dfa_t *dfa, dfa_node_t *dfa_node) {
-  dfa_node_t *alt;
+static struct dfa_node *dfa_find_identical(struct dfa *dfa, struct dfa_node *dfa_node) {
+  struct dfa_node *alt;
   for (alt = dfa->first_dfa; alt; alt = alt->next_dfa) {
     if (!memcmp(alt->nfa_map, dfa_node->nfa_map, sizeof(uint64_t) * ((dfa->num_nfa_nodes + 63) / 64))) {
       return alt;
@@ -150,9 +150,9 @@ static dfa_node_t *dfa_find_identical(dfa_t *dfa, dfa_node_t *dfa_node) {
 }
 
 /* Note: returns NULL if the transition is not permitted by the NFA. */
-dfa_node_t *dfa_transition(dfa_t *dfa, nfa_t *nfa, char c, dfa_node_t *from) {
+struct dfa_node *dfa_transition(struct dfa *dfa, nfa_t *nfa, char c, struct dfa_node *from) {
   size_t nfa_node_index;
-  dfa_node_t *dfa_node = from->moves[(uint8_t)c];
+  struct dfa_node *dfa_node = from->moves[(uint8_t)c];
 
   if (dfa_node) {
     /* Already have it */
@@ -178,7 +178,7 @@ dfa_node_t *dfa_transition(dfa_t *dfa, nfa_t *nfa, char c, dfa_node_t *from) {
   }
 
   if (dfa_node) {
-    dfa_node_t *alt;
+    struct dfa_node *alt;
     dfa_closure(dfa, nfa, dfa_node);
 
     /* Check if dfa_node is a duplicate, if so, replace it with the original */
@@ -200,10 +200,10 @@ dfa_node_t *dfa_transition(dfa_t *dfa, nfa_t *nfa, char c, dfa_node_t *from) {
 }
 
 
-dfa_node_t *dfa_make(dfa_t *dfa, nfa_t *nfa, size_t nfa_start) {
-  dfa_node_t *dfa_node = dfa_make_node(dfa);
-  dfa_node_t *alt;
-  dfa_node_t *dfa_start;
+struct dfa_node *dfa_make(struct dfa *dfa, nfa_t *nfa, size_t nfa_start) {
+  struct dfa_node *dfa_node = dfa_make_node(dfa);
+  struct dfa_node *alt;
+  struct dfa_node *dfa_start;
   dfa_add_nfa(dfa_node, nfa_start);
   dfa_closure(dfa, nfa, dfa_node);
   alt = dfa_find_identical(dfa, dfa_node);
@@ -212,13 +212,13 @@ dfa_node_t *dfa_make(dfa_t *dfa, nfa_t *nfa, size_t nfa_start) {
     return alt;
   }
 
-  dfa_node_t *sentinel = dfa->first_dfa;
+  struct dfa_node *sentinel = dfa->first_dfa;
   /* This pushes dfa_node to the head of dfa->first_dfa, sentinel
    * is now the first value from before we added anything */
   dfa_record_node(dfa, dfa_node);
   dfa_start = dfa_node;
   do {
-    dfa_node_t *next_sentinel = dfa->first_dfa;
+    struct dfa_node *next_sentinel = dfa->first_dfa;
 
     for (dfa_node = dfa->first_dfa; dfa_node != sentinel; dfa_node = dfa_node->next_dfa) {
       int c;
@@ -252,13 +252,13 @@ static void print_char(int c) {
   }
 }
 
-void dfa_dump_node(dfa_t *odfa, dfa_node_t *d) {
+void dfa_dump_node(struct dfa *odfa, struct dfa_node *d) {
   int c;
   printf("#%2d: ", (int)d->num);
   for (c = 0; c < 256; ++c) {
     if (d->moves[c]) {
       /* Check if this is the first instance of this move.. */
-      dfa_node_t *dst = d->moves[c];
+      struct dfa_node *dst = d->moves[c];
       int q;
       int is_first = 1;
       for (q = 0; q < c; ++q) {

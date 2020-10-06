@@ -104,13 +104,13 @@ int sc_scanner_compile(sc_scanner_t *sc, uintptr_t default_action, size_t num_ru
     return result;
   }
 
-  dfa_t dfa;
+  struct dfa dfa;
   dfa_init(&dfa);
   dfa.num_nfa_nodes = cumulative_nfa.num_nfa_nodes;
-  dfa_node_t *start = dfa_make(&dfa, &cumulative_nfa, cumulative_nfa.start_nfa);
+  struct dfa_node *start = dfa_make(&dfa, &cumulative_nfa, cumulative_nfa.start_nfa);
   
   size_t num_dfas = 0;
-  dfa_node_t *dfa_node;
+  struct dfa_node *dfa_node;
   for (dfa_node = dfa.first_dfa; dfa_node; dfa_node = dfa_node->next_dfa) {
     num_dfas++;
   }
