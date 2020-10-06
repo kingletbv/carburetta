@@ -337,7 +337,7 @@ static void xlr_lr0_push_item_outbound(xlr_gen_t *gen, xlr_state_t *state, int p
             if (gen->productions[prod].reduction_syms[redix] == sym) {
               /* This production (potentially) reduces to the sym, therefore add
                * its first sym as a transition from state. */
-              xlr_lr0_push_item_outbound(gen, state, prod, 0);
+              xlr_lr0_push_item_outbound(gen, state, (int)prod, 0);
             }
           }
         }
@@ -793,7 +793,7 @@ static void xlr_populate_state_reductions(xlr_gen_t *gen, uint32_t *temp_read_se
         int redsym = gen->productions[prodix].reduction_syms[redix];
         if (redsym == nt) {
           /* Production indexed by prodix potentially reduces to redsym */
-          xlr_populate_state_reductions(gen, temp_read_set, state, prodix, 0);
+          xlr_populate_state_reductions(gen, temp_read_set, state, (int)prodix, 0);
         }
       }
     }
@@ -807,7 +807,7 @@ static void xlr_build_action_table(xlr_gen_t *gen) {
   size_t read_set_byte_size = xlr_read_set_byte_size(gen);
   uint32_t *temp_reduction_lookahead;
   while (0 != (state = CHAIN_NEXT(gen->states, xlr_state_t, chain, state))) {
-    state->ordinal = nr_states++;
+    state->ordinal = (int)nr_states++;
   }
   gen->nr_states = nr_states;
 
@@ -982,7 +982,7 @@ static void xlr_find_conflict_pair(xlr_gen_t *gen, xlr_action_t *actionlist, siz
     itema->production = shift_action->state->items[shift_selected].production;
     itema->position = shift_action->state->items[shift_selected].position - 1;
     itemb->production = reduce_action->production;
-    itemb->position = gen->productions[itemb->production].production_length;
+    itemb->position = (int)gen->productions[itemb->production].production_length;
   }
   else {
     size_t first_reduce = 0;
@@ -1014,9 +1014,9 @@ static void xlr_find_conflict_pair(xlr_gen_t *gen, xlr_action_t *actionlist, siz
     first_reduce_action = xlr_find_nth_reduce_action(actionlist, first_reduce);
     second_reduce_action = xlr_find_nth_reduce_action(actionlist, second_reduce);
     itema->production = first_reduce_action->production;
-    itema->position = gen->productions[itema->production].production_length;
+    itema->position = (int)gen->productions[itema->production].production_length;
     itemb->production = second_reduce_action->production;
-    itemb->position = gen->productions[itemb->production].production_length;
+    itemb->position = (int)gen->productions[itemb->production].production_length;
   }
 }
 
