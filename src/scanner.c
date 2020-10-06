@@ -80,14 +80,14 @@ void sc_scanner_cleanup(sc_scanner_t *sc) {
 int sc_scanner_compile(sc_scanner_t *sc, uintptr_t default_action, size_t num_rules, const sc_scan_rule_t *rules) {
   int result;
   size_t n;
-  nfa_t cumulative_nfa;
+  struct nfa cumulative_nfa;
   size_t *final_rule_nfa_states = arealloc(NULL, num_rules, sizeof(size_t));
   if (!final_rule_nfa_states) {
     return -1;
   }
   nfa_init(&cumulative_nfa);
   for (n = 0; n < num_rules; ++n) {
-    nfa_t rule_nfa;
+    struct nfa rule_nfa;
     nfa_init(&rule_nfa);
     result = nfa_parse_regexp(&rule_nfa, rules[n].regexp);
     if (!result) {

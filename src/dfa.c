@@ -119,15 +119,15 @@ static int dfa_add_nfa(struct dfa_node *dfa_node, size_t nfa_node_index) {
   return already_had_nfa;
 }
 
-static void dfa_closure(struct dfa *dfa, nfa_t *nfa, struct dfa_node *dfa_node) {
+static void dfa_closure(struct dfa *dfa, struct nfa *nfa, struct dfa_node *dfa_node) {
   size_t nfa_node_index;
   int progress_was_made;
   do {
     progress_was_made = 0;
     for (nfa_node_index = 0; nfa_node_index < dfa->num_nfa_nodes; ++nfa_node_index) {
       if (dfa_node_has_nfa(dfa_node, nfa_node_index)) {
-        nfa_node_t *nfa_node = nfa->nfa_nodes + nfa_node_index;
-        nfa_trans_t *trans;
+        struct nfa_node *nfa_node = nfa->nfa_nodes + nfa_node_index;
+        struct nfa_trans *trans;
         for (trans = nfa_node->empty_move; trans; trans = trans->next_trans) {
           if (!dfa_add_nfa(dfa_node, trans->node)) {
             progress_was_made = 1;
@@ -150,7 +150,7 @@ static struct dfa_node *dfa_find_identical(struct dfa *dfa, struct dfa_node *dfa
 }
 
 /* Note: returns NULL if the transition is not permitted by the NFA. */
-struct dfa_node *dfa_transition(struct dfa *dfa, nfa_t *nfa, char c, struct dfa_node *from) {
+struct dfa_node *dfa_transition(struct dfa *dfa, struct nfa *nfa, char c, struct dfa_node *from) {
   size_t nfa_node_index;
   struct dfa_node *dfa_node = from->moves[(uint8_t)c];
 
@@ -161,8 +161,8 @@ struct dfa_node *dfa_transition(struct dfa *dfa, nfa_t *nfa, char c, struct dfa_
 
   for (nfa_node_index = 0; nfa_node_index < dfa->num_nfa_nodes; ++nfa_node_index) {
     if (dfa_node_has_nfa(from, nfa_node_index)) {
-      nfa_node_t *nfa_node = nfa->nfa_nodes + nfa_node_index;
-      nfa_trans_t *trans;
+      struct nfa_node *nfa_node = nfa->nfa_nodes + nfa_node_index;
+      struct nfa_trans *trans;
       trans = nfa_node->moves[(uint8_t)c];
       if (trans) {
         if (!dfa_node) {
@@ -200,7 +200,7 @@ struct dfa_node *dfa_transition(struct dfa *dfa, nfa_t *nfa, char c, struct dfa_
 }
 
 
-struct dfa_node *dfa_make(struct dfa *dfa, nfa_t *nfa, size_t nfa_start) {
+struct dfa_node *dfa_make(struct dfa *dfa, struct nfa *nfa, size_t nfa_start) {
   struct dfa_node *dfa_node = dfa_make_node(dfa);
   struct dfa_node *alt;
   struct dfa_node *dfa_start;

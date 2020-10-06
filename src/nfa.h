@@ -25,24 +25,20 @@
 extern "C" {
 #endif /* __cplusplus */
 
-typedef struct nfa nfa_t;
-typedef struct nfa_node nfa_node_t;
-typedef struct nfa_trans nfa_trans_t;
-
 struct nfa_trans {
   size_t node;
-  nfa_trans_t *next_trans;
+  struct nfa_trans *next_trans;
 };
 
 struct nfa_node {
-  nfa_trans_t *empty_move;
-  nfa_trans_t *moves[256];
+  struct nfa_trans *empty_move;
+  struct nfa_trans *moves[256];
 };
 
 struct nfa {
   /* All NFA nodes */
   size_t num_nfa_nodes, num_nfa_nodes_allocated;
-  nfa_node_t *nfa_nodes;
+  struct nfa_node *nfa_nodes;
 
   /* If free_nfa is not ~0, it points to an NFA node
    * that is free and will be returned first in
@@ -56,9 +52,9 @@ struct nfa {
   size_t start_nfa, stop_nfa;
 };
 
-void nfa_init(nfa_t *nfa);
-void nfa_cleanup(nfa_t *nfa);
-int nfa_parse_regexp(nfa_t *nfa, const char *regexp);
+void nfa_init(struct nfa *nfa);
+void nfa_cleanup(struct nfa *nfa);
+int nfa_parse_regexp(struct nfa *nfa, const char *regexp);
 
 /* Copies the NFA in src in dst and merges the two NFAs such that
  * the start of dst also includes the start of src. The end of dst
@@ -67,7 +63,7 @@ int nfa_parse_regexp(nfa_t *nfa, const char *regexp);
  * If dst is an empty NFA, this operation duplicates src into dst
  * and instead overwrites dst->start_nfa and dst->stop_nfa with the
  * now only NFA in dst. */
-int nfa_merge_nfas(nfa_t *dst, nfa_t *src, size_t *new_src_end_node);
+int nfa_merge_nfas(struct nfa *dst, struct nfa *src, size_t *new_src_end_node);
 
 #ifdef __cplusplus
 } /* extern "C" */

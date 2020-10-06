@@ -67,7 +67,7 @@ void dfa_cleanup(struct dfa *dfa);
 int dfa_node_has_nfa(struct dfa_node *dfa_node, size_t nfa_node_index);
 
 /* Returns the DFA node corresponding to the NFA start node */
-struct dfa_node *dfa_make(struct dfa *dfa, nfa_t *nfa, size_t nfa_start);
+struct dfa_node *dfa_make(struct dfa *dfa, struct nfa *nfa, size_t nfa_start);
 
 void dfa_dump_node(struct dfa *odfa, struct dfa_node *d);
 

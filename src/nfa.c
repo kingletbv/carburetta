@@ -111,7 +111,7 @@ struct nfa_input_stream {
 
 struct nfa_parse_context {
   nfa_input_stream_t is;
-  nfa_t nfa;
+  struct nfa nfa;
 };
 
 struct sym_data_node_struct {
@@ -137,10 +137,10 @@ struct sym_stack {
 };
 
 
-static void make_empty_trans(nfa_t *nfa, size_t from, size_t to);
-static void make_trans(nfa_t *nfa, size_t from, char c, size_t to);
-static void free_node(nfa_t *nfa, size_t node_index);
-static size_t make_node(nfa_t *nfa);
+static void make_empty_trans(struct nfa *nfa, size_t from, size_t to);
+static void make_trans(struct nfa *nfa, size_t from, char c, size_t to);
+static void free_node(struct nfa *nfa, size_t node_index);
+static size_t make_node(struct nfa *nfa);
 static void *arealloc(void *mem, size_t count, size_t size);
 static int is_in_set(char c, const char *str);
 
@@ -340,7 +340,7 @@ static void *arealloc(void *mem, size_t count, size_t size) {
   return realloc(mem, size_to_alloc);
 }
 
-static size_t make_node(nfa_t *nfa) {
+static size_t make_node(struct nfa *nfa) {
   size_t node;
   if (nfa->free_nfa != ~(size_t)0) {
     node = nfa->free_nfa;
@@ -352,17 +352,17 @@ static size_t make_node(nfa_t *nfa) {
       if (!nfa->num_nfa_nodes_allocated) {
         nfa->num_nfa_nodes_allocated = 16;
       }
-      nfa->nfa_nodes = (nfa_node_t *)arealloc(nfa->nfa_nodes, nfa->num_nfa_nodes_allocated, sizeof(nfa_node_t));
+      nfa->nfa_nodes = (struct nfa_node *)arealloc(nfa->nfa_nodes, nfa->num_nfa_nodes_allocated, sizeof(struct nfa_node));
     }
     node = nfa->num_nfa_nodes++;
   }
-  memset(nfa->nfa_nodes + node, 0, sizeof(nfa_node_t));
+  memset(nfa->nfa_nodes + node, 0, sizeof(struct nfa_node));
   return node;
 }
 
-static void free_node(nfa_t *nfa, size_t node_index) {
+static void free_node(struct nfa *nfa, size_t node_index) {
   size_t n;
-  nfa_node_t *node = nfa->nfa_nodes + node_index;
+  struct nfa_node *node = nfa->nfa_nodes + node_index;
   if (nfa->free_nfa == ~(size_t)0) {
     /* Buffer up node as first to be reserved, this helps
      * reduce allocations when chaining up sequences of
@@ -370,10 +370,10 @@ static void free_node(nfa_t *nfa, size_t node_index) {
     nfa->free_nfa = node_index;
   }
   for (n = 0; n < 257; ++n) {
-    nfa_trans_t *trans = (n != 256) ? node->moves[n] : node->empty_move;
+    struct nfa_trans *trans = (n != 256) ? node->moves[n] : node->empty_move;
     if (trans) {
       do {
-        nfa_trans_t *trans_to_free = trans;
+        struct nfa_trans *trans_to_free = trans;
         trans = trans->next_trans;
 
         free(trans_to_free);
@@ -382,15 +382,15 @@ static void free_node(nfa_t *nfa, size_t node_index) {
   }
 }
 
-static void make_trans(nfa_t *nfa, size_t from, char c, size_t to) {
-  nfa_trans_t *trans = (nfa_trans_t *)malloc(sizeof(nfa_trans_t));
+static void make_trans(struct nfa *nfa, size_t from, char c, size_t to) {
+  struct nfa_trans *trans = (struct nfa_trans *)malloc(sizeof(struct nfa_trans));
   trans->next_trans = nfa->nfa_nodes[from].moves[(uint8_t)c];
   nfa->nfa_nodes[from].moves[(uint8_t)c] = trans;
   trans->node = to;
 }
 
-static void make_empty_trans(nfa_t *nfa, size_t from, size_t to) {
-  nfa_trans_t *trans = (nfa_trans_t *)malloc(sizeof(nfa_trans_t));
+static void make_empty_trans(struct nfa *nfa, size_t from, size_t to) {
+  struct nfa_trans *trans = (struct nfa_trans *)malloc(sizeof(struct nfa_trans));
   trans->next_trans = nfa->nfa_nodes[from].empty_move;
   nfa->nfa_nodes[from].empty_move = trans;
   trans->node = to;
@@ -579,7 +579,7 @@ static void popn_state(sym_stack_t *stack, size_t num_pops) {
   stack->pos -= num_pops;
 }
 
-void nfa_init(nfa_t *nfa) {
+void nfa_init(struct nfa *nfa) {
   nfa->nfa_nodes = NULL;
   nfa->num_nfa_nodes = nfa->num_nfa_nodes_allocated = 0;
   nfa->free_nfa = ~0;
@@ -587,23 +587,23 @@ void nfa_init(nfa_t *nfa) {
   nfa->stop_nfa = 0;
 }
 
-void nfa_cleanup(nfa_t *nfa) {
+void nfa_cleanup(struct nfa *nfa) {
   if (nfa->nfa_nodes) {
     free(nfa->nfa_nodes);
   }
 }
 
-static nfa_trans_t *nfa_clone_transition_chain(size_t dst_offset, nfa_trans_t *src) {
+static struct nfa_trans *nfa_clone_transition_chain(size_t dst_offset, struct nfa_trans *src) {
   if (!src) {
     return NULL;
   }
-  nfa_trans_t *trans = (nfa_trans_t *)malloc(sizeof(nfa_trans_t));
+  struct nfa_trans *trans = (struct nfa_trans *)malloc(sizeof(struct nfa_trans));
   trans->node = src->node + dst_offset;
   trans->next_trans = nfa_clone_transition_chain(dst_offset, src->next_trans);
   return trans;
 }
 
-int nfa_merge_nfas(nfa_t *dst, nfa_t *src, size_t *new_src_end_node) {
+int nfa_merge_nfas(struct nfa *dst, struct nfa *src, size_t *new_src_end_node) {
   size_t new_num_dst_nfa_nodes = dst->num_nfa_nodes + src->num_nfa_nodes;
   if (new_num_dst_nfa_nodes < dst->num_nfa_nodes) {
     /* overflow */
@@ -624,20 +624,20 @@ int nfa_merge_nfas(nfa_t *dst, nfa_t *src, size_t *new_src_end_node) {
     else {
       new_dst_num_nodes_allocated = new_num_dst_nfa_nodes;
     }
-    void *p = arealloc(dst->nfa_nodes, new_dst_num_nodes_allocated, sizeof(nfa_node_t));
+    void *p = arealloc(dst->nfa_nodes, new_dst_num_nodes_allocated, sizeof(struct nfa_node));
     if (!p) {
       /* no mem */
       return -1;
     }
-    dst->nfa_nodes = (nfa_node_t *)p;
+    dst->nfa_nodes = (struct nfa_node *)p;
     dst->num_nfa_nodes_allocated = new_dst_num_nodes_allocated;
   }
   /* dst is now guaranteed to have enough space to fit all source NFAs;
    * copy the two together, this also involves duplicating the transitions.. */
   size_t n;
   for (n = 0; n < src->num_nfa_nodes; ++n) {
-    nfa_node_t *dst_node = &dst->nfa_nodes[dst->num_nfa_nodes + n];
-    nfa_node_t *src_node = &src->nfa_nodes[n];
+    struct nfa_node *dst_node = &dst->nfa_nodes[dst->num_nfa_nodes + n];
+    struct nfa_node *src_node = &src->nfa_nodes[n];
     dst_node->empty_move = nfa_clone_transition_chain(dst->num_nfa_nodes, src_node->empty_move);
     int c;
     for (c = 0; c < 256; ++c) {
@@ -841,7 +841,7 @@ static int production_syms[] = {
 };
 #endif
 
-int nfa_parse_regexp(nfa_t *nfa, const char *regexp) {
+int nfa_parse_regexp(struct nfa *nfa, const char *regexp) {
   int res;
 #if !USE_PRECOMPILED_PARSETABLE
   int minimum_sym;
