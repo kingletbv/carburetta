@@ -66,18 +66,18 @@ static void *arealloc(void *mem, size_t count, size_t size) {
   return realloc(mem, size_to_alloc);
 }
 
-void sc_scanner_init(sc_scanner_t *sc) {
+void sc_scanner_init(struct sc_scanner *sc) {
   sc->num_states = 0;
   sc->transition_table = NULL;
   sc->actions = NULL;
 }
 
-void sc_scanner_cleanup(sc_scanner_t *sc) {
+void sc_scanner_cleanup(struct sc_scanner *sc) {
   if (sc->transition_table) free(sc->transition_table);
   if (sc->actions) free(sc->actions);
 }
 
-int sc_scanner_compile(sc_scanner_t *sc, uintptr_t default_action, size_t num_rules, const sc_scan_rule_t *rules) {
+int sc_scanner_compile(struct sc_scanner *sc, uintptr_t default_action, size_t num_rules, const struct sc_scan_rule *rules) {
   int result;
   size_t n;
   struct nfa cumulative_nfa;
@@ -125,7 +125,7 @@ int sc_scanner_compile(sc_scanner_t *sc, uintptr_t default_action, size_t num_ru
     sc->transition_table = NULL;
   }
   sc->num_states = num_dfas;
-  sc->actions = (sc_action_t *)arealloc(NULL, num_dfas, sizeof(sc_action_t));
+  sc->actions = (struct sc_action *)arealloc(NULL, num_dfas, sizeof(struct sc_action));
   if (!sc->actions) {
     return -1;
   }
@@ -178,7 +178,7 @@ static void sc_print_char(int c) {
   }
 }
 
-static void sc_dump_row(sc_scanner_t *sc, size_t state) {
+static void sc_dump_row(struct sc_scanner *sc, size_t state) {
   int c;
   size_t *row = sc->transition_table + 256 * state;
   printf("#%3d: ", (int)state);
@@ -246,14 +246,14 @@ static void sc_dump_row(sc_scanner_t *sc, size_t state) {
   }
 }
 
-void sc_scanner_dump(sc_scanner_t *sc) {
+void sc_scanner_dump(struct sc_scanner *sc) {
   size_t n;
   for (n = 1; n < sc->num_states; ++n) {
     sc_dump_row(sc, n);
   }
 }
 
-void sc_scanner_write_to_c_file(sc_scanner_t *sc, FILE *fp) {
+void sc_scanner_write_to_c_file(struct sc_scanner *sc, FILE *fp) {
   size_t n;
   fprintf(fp, "static size_t scanner_transition_table[] = {\n");
   for (n = 0; n < sc->num_states; ++n) {
@@ -264,11 +264,11 @@ void sc_scanner_write_to_c_file(sc_scanner_t *sc, FILE *fp) {
     fprintf(fp, "%s\n", (n != (sc->num_states - 1)) ? "," : "");
   }
   fprintf(fp, "};\n");
-  fprintf(fp, "static sc_action_t scanner_state_actions[] = {\n");
+  fprintf(fp, "static struct sc_action scanner_state_actions[] = {\n");
   for (n = 0; n < sc->num_states; ++n) {
     fprintf(fp, "  {%"PRIuPTR",%"PRIuPTR"}%s", sc->actions[n].action, sc->actions[n].variant, n == (sc->num_states - 1) ? "\n" : ",\n");
   }
   fprintf(fp, "};\n");
-  fprintf(fp, "static sc_scanner_t scanner = { %u, %u, scanner_transition_table, scanner_state_actions, %u };\n",
+  fprintf(fp, "static struct sc_scanner scanner = { %u, %u, scanner_transition_table, scanner_state_actions, %u };\n",
           (unsigned int)sc->num_states, (unsigned int)sc->start_state, (unsigned int)sc->default_action);
 }

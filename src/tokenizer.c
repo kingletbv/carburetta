@@ -102,7 +102,7 @@ int tkr_tokenizer_inputx(struct tkr_tokenizer *tkr, struct xlts *input, int is_f
   uint8_t c;
   size_t state = tkr->state_;
   const size_t *transition_table = tkr->scanner_->transition_table;;
-  const sc_action_t *actions = tkr->scanner_->actions;
+  const struct sc_action *actions = tkr->scanner_->actions;
   size_t default_action = tkr->scanner_->default_action;
   size_t start_state = tkr->scanner_->start_state;
   size_t start_action = actions[start_state].action;
@@ -299,7 +299,7 @@ int tkr_tokenizer_inputs(struct tkr_tokenizer *tkr, const char *input, size_t in
   uint8_t c;
   size_t state = tkr->state_;
   const size_t *transition_table = tkr->scanner_->transition_table;;
-  const sc_action_t *actions = tkr->scanner_->actions;
+  const struct sc_action *actions = tkr->scanner_->actions;
   size_t default_action = tkr->scanner_->default_action;
   size_t start_state = tkr->scanner_->start_state;
   size_t start_action = actions[start_state].action;

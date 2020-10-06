@@ -64,13 +64,6 @@
 #include "xlalr.h"
 #endif
 
-typedef struct nfa_parse_context nfa_parse_context_t;
-typedef struct nfa_input_stream nfa_input_stream_t;
-typedef union sym_data_union sym_data_t;
-typedef struct sym_data_node_struct sym_data_node_t;
-typedef struct sym_char_set_struct sym_char_set_t;
-typedef struct sym_stack sym_stack_t;
-
 #define DEF_SYMS     \
   xx(NT_END)         \
   xx(RULE_END)       \
@@ -110,7 +103,7 @@ struct nfa_input_stream {
 };
 
 struct nfa_parse_context {
-  nfa_input_stream_t is;
+  struct nfa_input_stream is;
   struct nfa nfa;
 };
 
@@ -124,16 +117,16 @@ struct sym_char_set_struct {
 };
 
 union sym_data_union {
-  sym_data_node_t nfa;
+  struct sym_data_node_struct nfa;
   int             sym;
-  sym_char_set_t  set;
+  struct sym_char_set_struct  set;
 };
 
 struct sym_stack {
   size_t pos;
   size_t num_stack_allocated; /* size in elements of states and syms */
   int *states;
-  sym_data_t *syms;
+  union sym_data_union *syms;
 };
 
 
@@ -179,7 +172,7 @@ static int grammar[] = {
   GRAMMAR_END
 };
 
-static int reduce(nfa_parse_context_t *ctx, int production, sym_data_t *syms) {
+static int reduce(struct nfa_parse_context *ctx, int production, union sym_data_union *syms) {
   size_t i, f;
   int n, begin_range, end_range;
   switch (production) {
@@ -302,7 +295,7 @@ static int reduce(nfa_parse_context_t *ctx, int production, sym_data_t *syms) {
       return 1;
     case 18: /* REG_RANGE_ELM, NT_END, SYM_CHAR, RULE_END, */
       n = syms[0].sym;
-      memset(&syms[0].set, 0, sizeof(sym_char_set_t));
+      memset(&syms[0].set, 0, sizeof(struct sym_char_set_struct));
       syms[0].set.bitmap[n >> 6] = ((uint64_t)1) << (n & 0x3F);
       return 1;
     case 19: /* REG_RANGE_ELM, NT_END, SYM_CHAR, SYM_DASH, SYM_CHAR, RULE_END, */
@@ -313,7 +306,7 @@ static int reduce(nfa_parse_context_t *ctx, int production, sym_data_t *syms) {
         end_range = begin_range;
         begin_range = n;
       }
-      memset(&syms[0].set, 0, sizeof(sym_char_set_t));
+      memset(&syms[0].set, 0, sizeof(struct sym_char_set_struct));
       for (n = begin_range; n <= end_range; ++n) {
         syms[0].set.bitmap[n >> 6] |= ((uint64_t)1) << (n & 0x3F);
       }
@@ -396,15 +389,15 @@ static void make_empty_trans(struct nfa *nfa, size_t from, size_t to) {
   trans->node = to;
 }
 
-static char peek(nfa_parse_context_t *ctx) {
+static char peek(struct nfa_parse_context *ctx) {
   return *ctx->is.input_pointer;
 }
 
-static void pop(nfa_parse_context_t *ctx) {
+static void pop(struct nfa_parse_context *ctx) {
   ctx->is.input_pointer++;
 }
 
-static int scan_token(nfa_parse_context_t *ctx, char *c) {
+static int scan_token(struct nfa_parse_context *ctx, char *c) {
   char inc = peek(ctx);
   int token = 0;
   switch (inc) {
@@ -545,7 +538,7 @@ static int scan_token(nfa_parse_context_t *ctx, char *c) {
   return 0;
 }
 
-static void push_state(sym_stack_t *stack, int state) {
+static void push_state(struct sym_stack *stack, int state) {
   if (stack->num_stack_allocated == stack->pos) {
     size_t new_num_stack_allocated;
     if (!stack->num_stack_allocated) {
@@ -556,9 +549,9 @@ static void push_state(sym_stack_t *stack, int state) {
     }
     void *p;
 
-    p = arealloc(stack->syms, new_num_stack_allocated, sizeof(sym_data_t));
+    p = arealloc(stack->syms, new_num_stack_allocated, sizeof(union sym_data_union));
     if (!p) return;
-    stack->syms = (sym_data_t *)p;
+    stack->syms = (union sym_data_union *)p;
 
     p = arealloc(stack->states, new_num_stack_allocated, sizeof(int));
     if (!p) return;
@@ -569,12 +562,12 @@ static void push_state(sym_stack_t *stack, int state) {
   stack->states[stack->pos++] = state;
 }
 
-static int top_state(sym_stack_t *stack) {
+static int top_state(struct sym_stack *stack) {
   assert(stack->pos && "Invalid stack position, should never be empty");
   return stack->states[stack->pos - 1];
 }
 
-static void popn_state(sym_stack_t *stack, size_t num_pops) {
+static void popn_state(struct sym_stack *stack, size_t num_pops) {
   assert((stack->pos > num_pops) && "Cannot pop down to zero or below");
   stack->pos -= num_pops;
 }
@@ -854,19 +847,19 @@ int nfa_parse_regexp(struct nfa *nfa, const char *regexp) {
   res = nfa_get_parsetable(&parse_table, &production_lengths, &production_syms, &minimum_sym, &num_columns, &num_rows, &num_productions);
 #endif
 
-  nfa_parse_context_t ctx;
+  struct nfa_parse_context ctx;
   ctx.is.input_pointer = regexp;
   ctx.nfa.nfa_nodes = NULL;
   ctx.nfa.num_nfa_nodes = ctx.nfa.num_nfa_nodes_allocated = 0;
   ctx.nfa.free_nfa = ~0;
  
-  sym_stack_t stack;
+  struct sym_stack stack;
   stack.pos = 0;
   stack.num_stack_allocated = 0;
   stack.states = NULL;
   stack.syms = NULL;
   push_state(&stack, 0);
-  memset(&stack.syms[stack.pos - 1], 0, sizeof(sym_data_t));
+  memset(&stack.syms[stack.pos - 1], 0, sizeof(union sym_data_union));
 
   int failed = 0;
   int not_done = 1;
