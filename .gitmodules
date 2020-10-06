@@ -1,6 +1,0 @@
-[submodule "mlx"]
-	path = mlx
-	url = https://github.com/kingletbv/mlx.git
-[submodule "helpers"]
-	path = helpers
-	url = https://github.com/kingletbv/helpers.git
