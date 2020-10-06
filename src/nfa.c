@@ -672,7 +672,7 @@ int nfa_merge_nfas(struct nfa *dst, struct nfa *src, size_t *new_src_end_node) {
 #if !USE_PRECOMPILED_PARSETABLE
 static int nfa_get_parsetable(int **parse_table, size_t **production_lengths, int **production_syms,
                               int *minimum_sym, size_t *num_columns, size_t *num_rows, size_t *num_productions) {
-  xlr_gen_t xlalr_gen;
+  struct xlr_gen xlalr_gen;
   xlr_init(&xlalr_gen);
   xlr_error_t err;
   err = xlr_generate(&xlalr_gen, grammar, RULE_END, GRAMMAR_END, INPUT_END, NT_END, SYNTH_S);

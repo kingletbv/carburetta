@@ -46,14 +46,6 @@ extern "C" {
 
 typedef enum xlr_error_enum xlr_error_t;
 typedef enum xlr_action_type_enum xlr_action_type_t;
-typedef struct xlr_gen_struct xlr_gen_t;
-typedef struct xlr_item_struct xlr_item_t;
-typedef struct xlr_prod_struct xlr_prod_t;
-typedef struct xlr_state_struct xlr_state_t;
-typedef struct xlr_trans_struct xlr_trans_t;
-typedef struct xlr_action_struct xlr_action_t;
-typedef struct xlr_conflict_resolution_struct xlr_conflict_resolution_t;
-typedef struct xlr_conflict_struct xlr_conflict_t;
 
 enum xlr_error_enum {
   /* Everything went well, parser is available. */
@@ -71,17 +63,17 @@ enum xlr_error_enum {
 };
 
 enum xlr_action_type_enum {
-  /* Action is a shift, xlr_action_t::state points to the
+  /* Action is a shift, xlr_action::state points to the
    * next state. */
   XLR_SHIFT,
 
-  /* Action is a reduce, xlr_action_t::production is an index
-   * for the xlr_gen_t::productions table, pointing to the
+  /* Action is a reduce, xlr_action::production is an index
+   * for the xlr_gen::productions table, pointing to the
    * production being reduced. */
   XLR_REDUCE
 };
 
-struct xlr_gen_struct {
+struct xlr_gen {
   /* Special symbol constants.. */
   int synths_sym; /* S' synthetic root production non-terminal symbol */
   int eop_sym;    /* marks the end of a production */
@@ -92,7 +84,7 @@ struct xlr_gen_struct {
   /* All productions, each production points to the first symbol
    * in its production string. */
   size_t nr_productions;
-  xlr_prod_t *productions;
+  struct xlr_prod *productions;
 
   /* Min & max ordinals for non-terminals (including synth-s) and terminals (including eof) */
   int min_nt, max_nt;
@@ -104,14 +96,14 @@ struct xlr_gen_struct {
   int synth_s_prod[4]; /* = {synths_sym, eopn_sym, first-real-production-nonterminal, eop_sym} */
 
   /* Chain of all states that have not had their outbound transitions determined during LR0 formation 
-   * chained through xlr_state_t::workchain */
-  xlr_state_t *worklist;
+   * chained through xlr_state::workchain */
+  struct xlr_state *worklist;
 
-  /* Chain of all fully formed LR0 states; chained through xlr_state_t::chain. */
-  xlr_state_t *states;
+  /* Chain of all fully formed LR0 states; chained through xlr_state::chain. */
+  struct xlr_state *states;
 
   /* Array of all fully formed LR0 states; for random access. */
-  xlr_state_t **state_array;
+  struct xlr_state **state_array;
 
   /* Total number of distinct states */
   size_t nr_states;
@@ -125,11 +117,11 @@ struct xlr_gen_struct {
    * if we already considered the non-kernel items for any particular non-terminal. */
   int *non_kernel_considered;
 
-  /* Next index for assigning to xlr_trans_t::index */
+  /* Next index for assigning to xlr_trans::index */
   int next_index;
 
   /* Stack for Tarjan SCC; as a tailchain. */
-  xlr_trans_t *tarjan_stack;
+  struct xlr_trans *tarjan_stack;
 
   /* Set to non-zero after calling xlr_tarjan_rel if SCCs of more than
    * one trans were encountered. This is valid for the includes relation,
@@ -140,30 +132,30 @@ struct xlr_gen_struct {
    * retained in it. A single state-symbol combination may therefore have
    * multiple actions associated with it. A single state-symbol combination
    * is however guaranteed to have only one shift action associated with it.
-   * The action table's width is (1 + xlr_gen_t::max_s - xlr_gen_t::min_s),
-   * its height equals the number of states in xlr_gen_t::states, the
+   * The action table's width is (1 + xlr_gen::max_s - xlr_gen::min_s),
+   * its height equals the number of states in xlr_gen::states, the
    * first row corresponds to state 0 which is also the initial state.
-   * Each cell in the action table is a pointer to an xlr_action_t chain;
+   * Each cell in the action table is a pointer to an xlr_action chain;
    * if the pointer is NULL, then any attempt to parse a symbol corresponding
    * to the cell while in the corresponding row (=state) of the cell is an
    * error. The action table is therefore laid out as a single-dimensional
    * array of pointers, thus an action_table[row][column] indexing is wrong.
    * If the action(s) in a cell include a shift, then it is guaranteed to
    * be the first action in the cell. */
-  xlr_action_t **action_table;
+  struct xlr_action **action_table;
 
   /* All conflict resolutions specified by caller */
   size_t nr_conflict_resolutions;
   size_t nr_conflict_resolutions_allocated;
-  xlr_conflict_resolution_t *conflict_resolutions;
+  struct xlr_conflict_resolution *conflict_resolutions;
 
   /* All temporary conflicts */
   size_t nr_temp_conflicts;
   size_t nr_temp_conflicts_allocated;
-  xlr_conflict_t *temp_conflicts;
+  struct xlr_conflict *temp_conflicts;
 };
 
-struct xlr_prod_struct {
+struct xlr_prod {
   /* Length of production, in number of symbols */
   size_t production_length;
 
@@ -180,7 +172,7 @@ struct xlr_prod_struct {
   int *reduction_syms;
 };
 
-struct xlr_item_struct {
+struct xlr_item {
   /* 0-based production number, note that production 0 is the synthetic
    * production "S' : S" which is added by xlr_generate. */
   int production;
@@ -189,15 +181,15 @@ struct xlr_item_struct {
   int position;
 };
 
-struct xlr_trans_struct {
-  /* States between which the transition exists, this xlr_trans_t appears
+struct xlr_trans {
+  /* States between which the transition exists, this xlr_trans appears
    * in from->outbound of the from state, and in to->inbound on the to
    * state. The symbol of the transition is most easily accessed in 
    * to->sym */
-  xlr_state_t *from, *to;
+  struct xlr_state *from, *to;
 
   /* Chain of transitions on to->inbound. */
-  xlr_trans_t *chain_inbound;
+  struct xlr_trans *chain_inbound;
 
   /* Set of items in the destination state while we're forming the 
    * outbound transitions and to is still NULL. Once the set of items
@@ -206,16 +198,16 @@ struct xlr_trans_struct {
    * state does not yet exist. */
   size_t nr_items_allocated;
   size_t nr_items;
-  xlr_item_t *items;
+  struct xlr_item *items;
 
   /* Read set for this transition, one bit for each terminal. Note that
    * only non-terminal transitions have read-sets allocated; terminals
    * have a NULL here.
    * To select bit:
-   * ti = t - xlr_gen_t::min_t
+   * ti = t - xlr_gen::min_t
    * x = 1 << (ti & 31)
    * bit = read_set[ti >> 5] & x
-   * Size of array = (32 + xlr_gen_t::max_t - xlr_gen_t::min_t) / 32.
+   * Size of array = (32 + xlr_gen::max_t - xlr_gen::min_t) / 32.
    * (Note that the "32 +" is not a typo, but could be read as
    *  "31 + 1 +" where the 1 incidates that min and max form an
    *  inclusive range (max is an actual symbol), and 31 is used
@@ -227,7 +219,7 @@ struct xlr_trans_struct {
    * and includes- relations. */
   size_t nr_rels;
   size_t nr_rels_allocated;
-  xlr_trans_t **rels;
+  struct xlr_trans **rels;
 
   /* Index values for Tarjan's Strongly Connected Components algorithm,
    * allows us to do depth-first graph traversal for accumulating 
@@ -240,25 +232,25 @@ struct xlr_trans_struct {
    * is on the stack, and NULL if it is not on the stack. Note that
    * CHAIN_INIT will make it non-NULL and should therefore not be used
    * as the default initialization for this field. */
-  xlr_trans_t *stack_chain;
+  struct xlr_trans *stack_chain;
 };
 
-struct xlr_state_struct {
-  /* Chain of states on xlr_gen_t::worklist */
-  xlr_state_t *workchain;
+struct xlr_state {
+  /* Chain of states on xlr_gen::worklist */
+  struct xlr_state *workchain;
 
   /* Chain of all known, fully formed, states */
-  xlr_state_t *chain;
+  struct xlr_state *chain;
 
   /* Items that together make up the state. */
   size_t nr_items;
-  xlr_item_t *items;
+  struct xlr_item *items;
 
   /* Outbound transitions; array entry is NULL if no outbound transition
    * exists on the indexed symbol. The size of this array is defined 
-   * as (1 + xlr_gen_t::max_s - xlr_gen_t::min_s) -- i.e. it can
+   * as (1 + xlr_gen::max_s - xlr_gen::min_s) -- i.e. it can
    * hold all syms; both goto table and terminals. */
-  xlr_trans_t **outbound;
+  struct xlr_trans **outbound;
 
   /* Symbol on entry of the state; all states have this except for
    * the initial state. */
@@ -267,57 +259,57 @@ struct xlr_state_struct {
   /* Ordinal of the state, corresponding to its row in the parse table */
   int ordinal;
 
-  /* Inbound transitions, cyclic link through xlr_trans_t::chain_inbound */
-  xlr_trans_t *inbound;
+  /* Inbound transitions, cyclic link through xlr_trans::chain_inbound */
+  struct xlr_trans *inbound;
 };
 
-struct xlr_action_struct {
+struct xlr_action {
   /* Chain of other actions occupying the same cell; when found, this implies
    * a conflict for parsing that must be resolved. */
-  xlr_action_t *chain;
+  struct xlr_action *chain;
 
-  /* Type of action for this xlr_action_t. */
+  /* Type of action for this xlr_action. */
   xlr_action_type_t action;
 
   /* Successor state, if action type is XLR_SHIFT */
-  xlr_state_t *state;
+  struct xlr_state *state;
 
   /* Production being reduced, if action type is XLR_REDUCE */
   int production;
 };
 
-struct xlr_conflict_resolution_struct {
+struct xlr_conflict_resolution {
   /* If non-zero, the resolution suggested has been found to conflict
    * with one or more other resolutions; thus still not resolving the
    * original conflict. */
   int conflicting;
 
   /* Item to be preferred .. */
-  xlr_item_t prefer;
+  struct xlr_item prefer;
 
   /* Item over which prefer is to be preferred */
-  xlr_item_t over;
+  struct xlr_item over;
 };
 
-struct xlr_conflict_struct {
+struct xlr_conflict {
   /* First and second conflict items */
-  xlr_item_t item_a, item_b;
+  struct xlr_item item_a, item_b;
 };
 
-void xlr_init(xlr_gen_t *gen);
-void xlr_cleanup(xlr_gen_t *gen);
+void xlr_init(struct xlr_gen *gen);
+void xlr_cleanup(struct xlr_gen *gen);
 
-void xlr_add_conflict_resolution(xlr_gen_t *gen,
+void xlr_add_conflict_resolution(struct xlr_gen *gen,
                                  int dominant_production, int dominant_position,
                                  int yielding_production, int yielding_position);
 
-xlr_error_t xlr_generate(xlr_gen_t *gen, int *grammar,
+xlr_error_t xlr_generate(struct xlr_gen *gen, int *grammar,
                          int eop_sym, int eog_sym, int eof_sym, int eopn_sym, int synths_sym);
 
-xlr_action_t *xlr_resolve_conflicts(xlr_gen_t *gen, xlr_action_t *action_list);
+struct xlr_action *xlr_resolve_conflicts(struct xlr_gen *gen, struct xlr_action *action_list);
 
 /* helper for tracing items to their production's goto transition */
-void xlr_find_production_reduced_states(xlr_gen_t *gen, size_t *nr_states, size_t *nr_states_allocated, xlr_state_t ***states, xlr_state_t *current_state, xlr_item_t tracer);
+void xlr_find_production_reduced_states(struct xlr_gen *gen, size_t *nr_states, size_t *nr_states_allocated, struct xlr_state ***states, struct xlr_state *current_state, struct xlr_item tracer);
 
 #ifdef __cplusplus
 } /* extern "C" */

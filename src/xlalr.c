@@ -43,18 +43,18 @@
 #include "xlalr.h"
 #endif
 
-void xlr_init(xlr_gen_t *gen) {
-  memset(gen, 0, sizeof(xlr_gen_t));
+void xlr_init(struct xlr_gen *gen) {
+  memset(gen, 0, sizeof(struct xlr_gen));
 }
 
-void xlr_cleanup(xlr_gen_t *gen) {
+void xlr_cleanup(struct xlr_gen *gen) {
   size_t n;
   while (gen->states) {
-    xlr_state_t *popped = CHAIN_POP(&gen->states, xlr_state_t, chain);
+    struct xlr_state *popped = CHAIN_POP(&gen->states, struct xlr_state, chain);
     if (popped->items) free(popped->items);
 
     for (n = 0; n < (size_t)(1 + gen->max_s - gen->min_s); ++n) {
-      xlr_trans_t *trans = popped->outbound[n];
+      struct xlr_trans *trans = popped->outbound[n];
       if (trans) {
         if (trans->read_set) {
           free(trans->read_set);
@@ -86,7 +86,7 @@ void xlr_cleanup(xlr_gen_t *gen) {
   size_t num_columns = 1 + gen->max_s - gen->min_s;
   for (row = 0; row < gen->nr_states; ++row) {
     for (col = 0; col < num_columns; ++col) {
-      xlr_action_t *action = gen->action_table[num_columns * row + col];
+      struct xlr_action *action = gen->action_table[num_columns * row + col];
       if (action) {
         free(action);
       }
@@ -101,8 +101,8 @@ void xlr_cleanup(xlr_gen_t *gen) {
 }
 
 static int __cdecl xlr_compare_items(const void *iteml, const void *itemr) {
-  const xlr_item_t *left_item = (xlr_item_t *)iteml;
-  const xlr_item_t *right_item = (xlr_item_t *)itemr;
+  const struct xlr_item *left_item = (struct xlr_item *)iteml;
+  const struct xlr_item *right_item = (struct xlr_item *)itemr;
   if (left_item->production < right_item->production) {
     return -1;
   }
@@ -122,11 +122,11 @@ static int __cdecl xlr_compare_items(const void *iteml, const void *itemr) {
   }
 }
 
-static size_t xlr_read_set_byte_size(xlr_gen_t *gen) {
+static size_t xlr_read_set_byte_size(struct xlr_gen *gen) {
   return sizeof(uint32_t) * ((32 + gen->max_t - gen->min_t) / 32);
 }
 
-static void xlr_set_read_set_term(xlr_gen_t *gen, uint32_t *read_set, int term) {
+static void xlr_set_read_set_term(struct xlr_gen *gen, uint32_t *read_set, int term) {
   int termidx = term - gen->min_t;
   assert(termidx >= 0);
   assert(termidx < (1 + gen->max_t - gen->min_t));
@@ -134,7 +134,7 @@ static void xlr_set_read_set_term(xlr_gen_t *gen, uint32_t *read_set, int term) 
   *read_set |= 1 << (termidx & 31);
 }
 
-static int xlr_get_read_set_term(xlr_gen_t *gen, uint32_t *read_set, int term) {
+static int xlr_get_read_set_term(struct xlr_gen *gen, uint32_t *read_set, int term) {
   int termidx = term - gen->min_t;
   assert(termidx >= 0);
   assert(termidx < (1 + gen->max_t - gen->min_t));
@@ -142,23 +142,23 @@ static int xlr_get_read_set_term(xlr_gen_t *gen, uint32_t *read_set, int term) {
   return !!((*read_set) & (1 << (termidx & 31)));
 }
 
-static void xlr_sort_items(size_t nr_items, xlr_item_t *items) {
-  qsort(items, nr_items, sizeof(xlr_item_t), xlr_compare_items);
+static void xlr_sort_items(size_t nr_items, struct xlr_item *items) {
+  qsort(items, nr_items, sizeof(struct xlr_item), xlr_compare_items);
 }
 
-static int xlr_is_nt(xlr_gen_t *gen, int sym) {
+static int xlr_is_nt(struct xlr_gen *gen, int sym) {
   return (sym >= gen->min_nt) && (sym <= gen->max_nt);
 }
 
-static int xlr_is_t(xlr_gen_t *gen, int sym) {
+static int xlr_is_t(struct xlr_gen *gen, int sym) {
   return (sym >= gen->min_t) && (sym <= gen->max_t);
 }
 
-static int xlr_is_nullable(xlr_gen_t *gen, int sym) {
+static int xlr_is_nullable(struct xlr_gen *gen, int sym) {
   return xlr_is_nt(gen, sym) && gen->is_nt_nullable[sym - gen->min_nt];
 }
 
-static xlr_error_t xlr_init_gen_grammar(xlr_gen_t *gen, int *grammar,
+static xlr_error_t xlr_init_gen_grammar(struct xlr_gen *gen, int *grammar,
                                         int eop_sym, int eog_sym, int eof_sym, int eopn_sym, int synths_sym) {
   size_t nr_productions;
   size_t n, prod;
@@ -177,7 +177,7 @@ static xlr_error_t xlr_init_gen_grammar(xlr_gen_t *gen, int *grammar,
 
   /* Allocate all production-count dependant structures. */
   if (gen->productions) free(gen->productions); /* free any previous allocations */
-  gen->productions = (xlr_prod_t *)malloc(sizeof(xlr_prod_t) * gen->nr_productions);
+  gen->productions = (struct xlr_prod *)malloc(sizeof(struct xlr_prod) * gen->nr_productions);
   
   /* Initialize the start of each production; the first production is the synthetic S': S special case */
   gen->synth_s_prod[0] = gen->synths_sym;
@@ -303,20 +303,20 @@ static xlr_error_t xlr_init_gen_grammar(xlr_gen_t *gen, int *grammar,
   return XLR_OK;
 }
 
-static void xlr_lr0_push_item_outbound(xlr_gen_t *gen, xlr_state_t *state, int production, int position) {
+static void xlr_lr0_push_item_outbound(struct xlr_gen *gen, struct xlr_state *state, int production, int position) {
   if (gen->productions[production].production_length == (size_t)position) {
     /* Nothing to do for this item, cannot push to subsequent item as the end of the production
      * has been reached and a reduce is normally in order here. */
   }
   else {
     int sym = gen->productions[production].production[position];
-    xlr_trans_t *trans;
+    struct xlr_trans *trans;
     size_t idx;
     trans = state->outbound[sym - gen->min_s];
     if (!trans) {
       /* Create new outbound transition as the state does not yet have one for this sym */
-      trans = (xlr_trans_t *)malloc(sizeof(xlr_trans_t));
-      memset(trans, 0, sizeof(xlr_trans_t));
+      trans = (struct xlr_trans *)malloc(sizeof(struct xlr_trans));
+      memset(trans, 0, sizeof(struct xlr_trans));
       trans->chain_inbound = NULL;
       trans->from = state;
       trans->nr_items_allocated = 4;
@@ -331,12 +331,12 @@ static void xlr_lr0_push_item_outbound(xlr_gen_t *gen, xlr_state_t *state, int p
         /* Only non-terminals maintain read sets */
         trans->read_set = NULL;
       }
-      trans->items = (xlr_item_t *)malloc(sizeof(xlr_item_t) * trans->nr_items_allocated);
+      trans->items = (struct xlr_item *)malloc(sizeof(struct xlr_item) * trans->nr_items_allocated);
       state->outbound[sym - gen->min_s] = trans;
     }
     if (trans->nr_items_allocated == trans->nr_items) {
       trans->nr_items_allocated += 8;
-      trans->items = (xlr_item_t *)realloc(trans->items, sizeof(xlr_item_t) * trans->nr_items_allocated);
+      trans->items = (struct xlr_item *)realloc(trans->items, sizeof(struct xlr_item) * trans->nr_items_allocated);
     }
     /* We're looking to add the item *after* the current position; and it might already exist (in which
      * case we should not add it.) */
@@ -376,7 +376,7 @@ static void xlr_lr0_push_item_outbound(xlr_gen_t *gen, xlr_state_t *state, int p
   }
 }
 
-static void xlr_find_lr0_outbound(xlr_gen_t *gen, xlr_state_t *state) {
+static void xlr_find_lr0_outbound(struct xlr_gen *gen, struct xlr_state *state) {
   size_t itemidx;
   int symidx;
   /* Iterate through all items, and examine their next symbol. Take one step 
@@ -385,14 +385,14 @@ static void xlr_find_lr0_outbound(xlr_gen_t *gen, xlr_state_t *state) {
    * stepped is a non-terminal, then recursively examine all productions for
    * the non-terminal and step on the first symbol in their productions. */
   for (itemidx = 0; itemidx < state->nr_items; itemidx++) {
-    xlr_item_t *item = state->items + itemidx;
+    struct xlr_item *item = state->items + itemidx;
     xlr_lr0_push_item_outbound(gen, state, item->production, item->position);
   }
 
   for (symidx = 0; symidx < (1 + gen->max_s - gen->min_s); symidx++) {
     int sym = gen->min_s + symidx;
-    xlr_trans_t *trans = state->outbound[symidx];
-    xlr_state_t *candidate;
+    struct xlr_trans *trans = state->outbound[symidx];
+    struct xlr_state *candidate;
     if (!trans) {
       continue;
     }
@@ -400,11 +400,11 @@ static void xlr_find_lr0_outbound(xlr_gen_t *gen, xlr_state_t *state) {
      * operation. */
     xlr_sort_items(trans->nr_items, trans->items);
     candidate = NULL;
-    for (candidate = CHAIN_NEXT(gen->states, xlr_state_t, chain, candidate);
+    for (candidate = CHAIN_NEXT(gen->states, struct xlr_state, chain, candidate);
          candidate;
-         candidate = CHAIN_NEXT(gen->states, xlr_state_t, chain, candidate)) {
+         candidate = CHAIN_NEXT(gen->states, struct xlr_state, chain, candidate)) {
       if ((candidate->nr_items == trans->nr_items) &&
-          (!memcmp(candidate->items, trans->items, sizeof(xlr_item_t) * trans->nr_items))) {
+          (!memcmp(candidate->items, trans->items, sizeof(struct xlr_item) * trans->nr_items))) {
         /* Matching state found */
 
         /* Candidate's sym must always match the transition's sym at this point, otherwise there
@@ -417,17 +417,17 @@ static void xlr_find_lr0_outbound(xlr_gen_t *gen, xlr_state_t *state) {
 
         trans->to = candidate;
 
-        CHAIN_INIT(trans, xlr_trans_t, chain_inbound);
-        trans->to->inbound = CHAIN_APPEND(trans->to->inbound, trans, xlr_trans_t, chain_inbound);
+        CHAIN_INIT(trans, struct xlr_trans, chain_inbound);
+        trans->to->inbound = CHAIN_APPEND(trans->to->inbound, trans, struct xlr_trans, chain_inbound);
         break;
       }
     }
     if (!candidate) {
       /* No candidate-state was found, create a new state and put it on the worklist */
-      xlr_state_t *new_state = (xlr_state_t *)malloc(sizeof(xlr_state_t));
-      memset(new_state, 0, sizeof(xlr_state_t));
-      new_state->outbound = (xlr_trans_t **)malloc(sizeof(xlr_trans_t *) * (1 + gen->max_s - gen->min_s));
-      memset(new_state->outbound, 0, sizeof(xlr_trans_t *) * (1 + gen->max_s - gen->min_s));
+      struct xlr_state *new_state = (struct xlr_state *)malloc(sizeof(struct xlr_state));
+      memset(new_state, 0, sizeof(struct xlr_state));
+      new_state->outbound = (struct xlr_trans **)malloc(sizeof(struct xlr_trans *) * (1 + gen->max_s - gen->min_s));
+      memset(new_state->outbound, 0, sizeof(struct xlr_trans *) * (1 + gen->max_s - gen->min_s));
 
       /* State directly inherits item pointers */
       new_state->items = trans->items;
@@ -437,29 +437,29 @@ static void xlr_find_lr0_outbound(xlr_gen_t *gen, xlr_state_t *state) {
       trans->to = new_state;
       new_state->sym = sym;
 
-      CHAIN_INIT(trans, xlr_trans_t, chain_inbound);
-      trans->to->inbound = CHAIN_APPEND(trans->to->inbound, trans, xlr_trans_t, chain_inbound);
+      CHAIN_INIT(trans, struct xlr_trans, chain_inbound);
+      trans->to->inbound = CHAIN_APPEND(trans->to->inbound, trans, struct xlr_trans, chain_inbound);
 
       /* Insert on both state list and worklist */
-      CHAIN_INIT(new_state, xlr_state_t, chain);
-      CHAIN_INIT(new_state, xlr_state_t, workchain);
-      gen->states = CHAIN_APPEND(gen->states, new_state, xlr_state_t, chain);
-      gen->worklist = CHAIN_APPEND(gen->worklist, new_state, xlr_state_t, workchain);
+      CHAIN_INIT(new_state, struct xlr_state, chain);
+      CHAIN_INIT(new_state, struct xlr_state, workchain);
+      gen->states = CHAIN_APPEND(gen->states, new_state, struct xlr_state, chain);
+      gen->worklist = CHAIN_APPEND(gen->worklist, new_state, struct xlr_state, workchain);
     }
   }
 }
 
-static void xlr_populate_read_set(xlr_gen_t *gen) {
-  xlr_state_t *state = NULL;
-  xlr_trans_t *trans = NULL;
+static void xlr_populate_read_set(struct xlr_gen *gen) {
+  struct xlr_state *state = NULL;
+  struct xlr_trans *trans = NULL;
   int initial_sym;
-  while (0 != (state = CHAIN_NEXT(gen->states, xlr_state_t, chain, state))) {
+  while (0 != (state = CHAIN_NEXT(gen->states, struct xlr_state, chain, state))) {
     if (xlr_is_nt(gen, state->sym)) {
       /* Most recent sym in state's viable prefix is a non-terminal, therefore
        * all transitions to this state should be populated with the read set. */
-      xlr_trans_t *ot;
+      struct xlr_trans *ot;
       int termidx;
-      trans = CHAIN_FIRST(state->inbound, xlr_trans_t, chain_inbound);
+      trans = CHAIN_FIRST(state->inbound, struct xlr_trans, chain_inbound);
       if (!trans) {
         /* No inbound transitions, continue to next; this is a little strange but might
          * happen if we mistake the sym on the initial state for being a non-terminal 
@@ -477,7 +477,7 @@ static void xlr_populate_read_set(xlr_gen_t *gen) {
       /* trans's read_set is now populated with the appropriate first read set,
        * copy out to other transitions. */
       ot = trans;
-      while (0 != (ot = CHAIN_NEXT(state->inbound, xlr_trans_t, chain_inbound, ot))) {
+      while (0 != (ot = CHAIN_NEXT(state->inbound, struct xlr_trans, chain_inbound, ot))) {
         memcpy(ot->read_set, trans->read_set, xlr_read_set_byte_size(gen));
       }
     }
@@ -486,26 +486,26 @@ static void xlr_populate_read_set(xlr_gen_t *gen) {
    * corresponding to the item S': .S) has an outbound transition on S which 
    * reads the end of file/stream symbol. */
   initial_sym = gen->productions[0].production[0];
-  state = CHAIN_FIRST(gen->states, xlr_state_t, chain);
+  state = CHAIN_FIRST(gen->states, struct xlr_state, chain);
   trans = state->outbound[initial_sym - gen->min_s];
   assert(trans);
   xlr_set_read_set_term(gen, trans->read_set, gen->eof_sym);
 }
 
-static void xlr_add_rel(xlr_trans_t *from, xlr_trans_t *to) {
+static void xlr_add_rel(struct xlr_trans *from, struct xlr_trans *to) {
   if (from->nr_rels == from->nr_rels_allocated) {
     from->nr_rels_allocated += 8;
-    from->rels = (xlr_trans_t **)realloc(from->rels, sizeof(xlr_trans_t *) * from->nr_rels_allocated);
+    from->rels = (struct xlr_trans **)realloc(from->rels, sizeof(struct xlr_trans *) * from->nr_rels_allocated);
   }
   from->rels[from->nr_rels++] = to;
 }
 
-static void xlr_populate_reads_rel(xlr_gen_t *gen) {
-  xlr_state_t *state = NULL;
-  while (0 != (state = CHAIN_NEXT(gen->states, xlr_state_t, chain, state))) {
+static void xlr_populate_reads_rel(struct xlr_gen *gen) {
+  struct xlr_state *state = NULL;
+  while (0 != (state = CHAIN_NEXT(gen->states, struct xlr_state, chain, state))) {
     if (xlr_is_nt(gen, state->sym)) {
-      xlr_trans_t *inbound_trans = NULL;
-      while (0 != (inbound_trans = CHAIN_NEXT(state->inbound, xlr_trans_t, chain_inbound, inbound_trans))) {
+      struct xlr_trans *inbound_trans = NULL;
+      while (0 != (inbound_trans = CHAIN_NEXT(state->inbound, struct xlr_trans, chain_inbound, inbound_trans))) {
         int nt_sym;
         /* Reset any prior relations */
         inbound_trans->nr_rels = 0;
@@ -521,18 +521,18 @@ static void xlr_populate_reads_rel(xlr_gen_t *gen) {
   }
 }
 
-static xlr_error_t xlr_pop_inc_backtrack_item(xlr_gen_t *gen, xlr_state_t *state, xlr_trans_t *oritrans, xlr_item_t *btitem, int backsteps) {
-  xlr_prod_t *prod = gen->productions + btitem->production;
+static xlr_error_t xlr_pop_inc_backtrack_item(struct xlr_gen *gen, struct xlr_state *state, struct xlr_trans *oritrans, struct xlr_item *btitem, int backsteps) {
+  struct xlr_prod *prod = gen->productions + btitem->production;
   int backsym;
   xlr_error_t our_result;
-  xlr_trans_t *predtrans;
+  struct xlr_trans *predtrans;
   if (backsteps == btitem->position) {
     /* Reached root of item - form includes relation from oritrans to the outbound of all reduction syms of btitem. */
     size_t redsymidx;
     our_result = XLR_ITEM_BACKTRACK_FAILED;
     for (redsymidx = 0; redsymidx < prod->nr_reduction_syms; redsymidx++) {
       int redsym = prod->reduction_syms[redsymidx];
-      xlr_trans_t *redtrans = state->outbound[redsym - gen->min_s];
+      struct xlr_trans *redtrans = state->outbound[redsym - gen->min_s];
       if (redsym == gen->synths_sym) {
         /* Synthetic S sym, ultimate root of grammar has no backtrack */
         return XLR_OK;
@@ -555,7 +555,7 @@ static xlr_error_t xlr_pop_inc_backtrack_item(xlr_gen_t *gen, xlr_state_t *state
   our_result = XLR_OK;
   if (state->sym == backsym) {
     /* Inbound transitions to this state will match */
-    while (0 != (predtrans = CHAIN_NEXT(state->inbound, xlr_trans_t, chain_inbound, predtrans))) {
+    while (0 != (predtrans = CHAIN_NEXT(state->inbound, struct xlr_trans, chain_inbound, predtrans))) {
       /* Found matching transition for the item being backtracked. */
       xlr_error_t result = xlr_pop_inc_backtrack_item(gen, predtrans->from, oritrans, btitem, backsteps);
       if (result != XLR_OK) our_result = result;
@@ -564,11 +564,11 @@ static xlr_error_t xlr_pop_inc_backtrack_item(xlr_gen_t *gen, xlr_state_t *state
   return our_result;
 }
 
-static void xlr_reset_rels(xlr_gen_t *gen) {
-  xlr_state_t *state = NULL;
-  while (0 != (state = CHAIN_NEXT(gen->states, xlr_state_t, chain, state))) {
-    xlr_trans_t *trans = NULL;
-    while (0 != (trans = CHAIN_NEXT(state->inbound, xlr_trans_t, chain_inbound, trans))) {
+static void xlr_reset_rels(struct xlr_gen *gen) {
+  struct xlr_state *state = NULL;
+  while (0 != (state = CHAIN_NEXT(gen->states, struct xlr_state, chain, state))) {
+    struct xlr_trans *trans = NULL;
+    while (0 != (trans = CHAIN_NEXT(state->inbound, struct xlr_trans, chain_inbound, trans))) {
       trans->nr_rels = 0;
       trans->index = 0;
       trans->low_index = 0;
@@ -576,13 +576,13 @@ static void xlr_reset_rels(xlr_gen_t *gen) {
   }
 }
 
-static xlr_error_t xlr_populate_includes_rel(xlr_gen_t *gen) {
+static xlr_error_t xlr_populate_includes_rel(struct xlr_gen *gen) {
   xlr_error_t res;
-  xlr_state_t *state = NULL;
-  while (0 != (state = CHAIN_NEXT(gen->states, xlr_state_t, chain, state))) {
+  struct xlr_state *state = NULL;
+  while (0 != (state = CHAIN_NEXT(gen->states, struct xlr_state, chain, state))) {
     if (xlr_is_nt(gen, state->sym)) {
-      xlr_trans_t *trans = NULL;
-      while (0 != (trans = CHAIN_NEXT(state->inbound, xlr_trans_t, chain_inbound, trans))) {
+      struct xlr_trans *trans = NULL;
+      while (0 != (trans = CHAIN_NEXT(state->inbound, struct xlr_trans, chain_inbound, trans))) {
         /* Establish the includes relation with the non-terminal transition(s) of the 
          * reduction of any item that has reached its reduction position. */
         size_t itemidx;
@@ -590,8 +590,8 @@ static xlr_error_t xlr_populate_includes_rel(xlr_gen_t *gen) {
         trans->nr_rels = 0;
         for (itemidx = 0; itemidx < state->nr_items; itemidx++) {
           int pos;
-          xlr_item_t *item = state->items + itemidx;
-          xlr_prod_t *prod = gen->productions + item->production;
+          struct xlr_item *item = state->items + itemidx;
+          struct xlr_prod *prod = gen->productions + item->production;
           pos = item->position;
 
           while (prod->production_length != (size_t)pos) {
@@ -618,16 +618,16 @@ static xlr_error_t xlr_populate_includes_rel(xlr_gen_t *gen) {
   return XLR_OK;
 }
 
-void xlr_find_production_reduced_states(xlr_gen_t *gen, size_t *nr_states, size_t *nr_states_allocated, xlr_state_t ***states, xlr_state_t *current_state, xlr_item_t tracer) {
-  xlr_prod_t *prod = gen->productions + tracer.production;
+void xlr_find_production_reduced_states(struct xlr_gen *gen, size_t *nr_states, size_t *nr_states_allocated, struct xlr_state ***states, struct xlr_state *current_state, struct xlr_item tracer) {
+  struct xlr_prod *prod = gen->productions + tracer.production;
   size_t idx;
   /* Step tracer back until we reach a root position */
   if (tracer.position > 0) {
-    xlr_trans_t *trans = NULL;
+    struct xlr_trans *trans = NULL;
     tracer.position--;
-    for (trans = CHAIN_FIRST(current_state->inbound, xlr_trans_t, chain_inbound);
+    for (trans = CHAIN_FIRST(current_state->inbound, struct xlr_trans, chain_inbound);
          trans;
-         trans = CHAIN_NEXT(current_state->inbound, xlr_trans_t, chain_inbound, trans)) {
+         trans = CHAIN_NEXT(current_state->inbound, struct xlr_trans, chain_inbound, trans)) {
       xlr_find_production_reduced_states(gen, nr_states, nr_states_allocated, states, trans->from, tracer);
     }
     return;
@@ -635,7 +635,7 @@ void xlr_find_production_reduced_states(xlr_gen_t *gen, size_t *nr_states, size_
   /* Determine all reduction symbols from the current production; and trace them out into outbound states */
   for (idx = 0; idx < prod->nr_reduction_syms; idx++) {
     int redsym = prod->reduction_syms[idx];
-    xlr_trans_t *redoutbound = current_state->outbound[redsym - gen->min_s];
+    struct xlr_trans *redoutbound = current_state->outbound[redsym - gen->min_s];
     if (redoutbound) {
       int have_it_already = 0;
       size_t sidx;
@@ -650,7 +650,7 @@ void xlr_find_production_reduced_states(xlr_gen_t *gen, size_t *nr_states, size_
         /* Add it */
         if (*nr_states == *nr_states_allocated) {
           *nr_states_allocated += 8;
-          *states = (xlr_state_t **)realloc(*states, sizeof(xlr_state_t *) * (*nr_states_allocated));
+          *states = (struct xlr_state **)realloc(*states, sizeof(struct xlr_state *) * (*nr_states_allocated));
         }
         (*states)[(*nr_states)++] = redoutbound->to;
       }
@@ -658,7 +658,7 @@ void xlr_find_production_reduced_states(xlr_gen_t *gen, size_t *nr_states, size_
   }
 }
 
-static void xlr_tarjan_visit(xlr_gen_t *gen, xlr_trans_t *trans) {
+static void xlr_tarjan_visit(struct xlr_gen *gen, struct xlr_trans *trans) {
   size_t rel_idx, read_set_size;
   trans->index = gen->next_index++;
   trans->low_index = trans->index;
@@ -667,13 +667,13 @@ static void xlr_tarjan_visit(xlr_gen_t *gen, xlr_trans_t *trans) {
   read_set_size = xlr_read_set_byte_size(gen);
 
   /* Push trans to stack */
-  CHAIN_INIT(trans, xlr_trans_t, stack_chain);
+  CHAIN_INIT(trans, struct xlr_trans, stack_chain);
   /* Push as front, we'll also pop from front. */
-  gen->tarjan_stack = CHAIN_APPEND(trans, gen->tarjan_stack, xlr_trans_t, stack_chain);
+  gen->tarjan_stack = CHAIN_APPEND(trans, gen->tarjan_stack, struct xlr_trans, stack_chain);
 
   for (rel_idx = 0; rel_idx < trans->nr_rels; rel_idx++) {
     size_t n, nr_u32s = read_set_size / sizeof(uint32_t);
-    xlr_trans_t *rel = trans->rels[rel_idx];
+    struct xlr_trans *rel = trans->rels[rel_idx];
     if (!rel->index) {
       /* Rel is undefined */
       xlr_tarjan_visit(gen, rel);
@@ -698,23 +698,23 @@ static void xlr_tarjan_visit(xlr_gen_t *gen, xlr_trans_t *trans) {
 
   if (trans->index == trans->low_index) {
     /* Trans forms head of SCC, pop stack until trans is popped. */
-    xlr_trans_t *scc_member = NULL;
+    struct xlr_trans *scc_member = NULL;
 
     /* Pop members of the SCC and copy the aggregate read set for the whole SCC. */
-    while (trans != (scc_member = CHAIN_POP(&gen->tarjan_stack, xlr_trans_t, stack_chain))) {
+    while (trans != (scc_member = CHAIN_POP(&gen->tarjan_stack, struct xlr_trans, stack_chain))) {
       memcpy(scc_member->read_set, trans->read_set, read_set_size);
     }
   }
 }
 
-static void xlr_tarjan_rel(xlr_gen_t *gen) {
-  xlr_state_t *state = NULL;
+static void xlr_tarjan_rel(struct xlr_gen *gen) {
+  struct xlr_state *state = NULL;
   /* Index should start at 1, an index of 0 is considered "no index assigned yet" */
   gen->next_index = 1;
-  while (0 != (state = CHAIN_NEXT(gen->states, xlr_state_t, chain, state))) {
+  while (0 != (state = CHAIN_NEXT(gen->states, struct xlr_state, chain, state))) {
     if (xlr_is_nt(gen, state->sym)) {
-      xlr_trans_t *trans = NULL;
-      while (0 != (trans = CHAIN_NEXT(state->inbound, xlr_trans_t, chain_inbound, trans))) {
+      struct xlr_trans *trans = NULL;
+      while (0 != (trans = CHAIN_NEXT(state->inbound, struct xlr_trans, chain_inbound, trans))) {
         if (trans->index) {
           /* Already visited; skip. */
           continue;
@@ -726,23 +726,23 @@ static void xlr_tarjan_rel(xlr_gen_t *gen) {
 }
 
 /* Finds all lookahead symbols for the production to be reduced. The production may
- * reduce to one of multiple symbols chosen at runtime (see xlr_prod_t); the viable
+ * reduce to one of multiple symbols chosen at runtime (see xlr_prod); the viable
  * lookaheads for any one such symbol is however not differentiated. Eg. if a production
  * may reduce to either A or B, and nonterminal A & B have different lookaheads for their
  * reduction, that information is not used within context. Consequently, a reduction is
  * not a guarantee that there will be a viable goto for the non-terminal reduced to. In
  * this respect, the xlalr differs from lalr in that a grammar is not context-free. */
-static void xlr_find_reduce_lookaheads(xlr_gen_t *gen, uint32_t *read_set_result, xlr_state_t *state, xlr_state_t *decision_state, int production, int position) {
-  xlr_trans_t *pred = NULL;
+static void xlr_find_reduce_lookaheads(struct xlr_gen *gen, uint32_t *read_set_result, struct xlr_state *state, struct xlr_state *decision_state, int production, int position) {
+  struct xlr_trans *pred = NULL;
   size_t read_set_u32_size = xlr_read_set_byte_size(gen) / sizeof(uint32_t);
   if (!position) {
     /* Reached the root of the item, now find all outbound transitions and combine their read sets */
     size_t redix;
     int found_a_trans = 0;
-    xlr_prod_t *prod = gen->productions + production;
+    struct xlr_prod *prod = gen->productions + production;
     for (redix = 0; redix < prod->nr_reduction_syms; redix++) {
       int redsym = prod->reduction_syms[redix];
-      xlr_trans_t *trans = state->outbound[redsym - gen->min_s];
+      struct xlr_trans *trans = state->outbound[redsym - gen->min_s];
       if (redsym == gen->synths_sym) {
         /* Root of entire grammar has EOF as a lookahead. */
         xlr_set_read_set_term(gen, read_set_result, gen->eof_sym);
@@ -765,7 +765,7 @@ static void xlr_find_reduce_lookaheads(xlr_gen_t *gen, uint32_t *read_set_result
     /* Item cannot possibly pass through this state, discard. */
     return;
   }
-  while (0 != (pred = CHAIN_NEXT(state->inbound, xlr_trans_t, chain_inbound, pred))) {
+  while (0 != (pred = CHAIN_NEXT(state->inbound, struct xlr_trans, chain_inbound, pred))) {
     /* All these transitions already match (see check above) as their symbol
      * is encoded on the destination state (== state); consequently, just
      * recurse. */
@@ -773,10 +773,10 @@ static void xlr_find_reduce_lookaheads(xlr_gen_t *gen, uint32_t *read_set_result
   }
 }
 
-static void xlr_populate_state_reductions(xlr_gen_t *gen, uint32_t *temp_read_set, xlr_state_t *state, int production, int position) {
+static void xlr_populate_state_reductions(struct xlr_gen *gen, uint32_t *temp_read_set, struct xlr_state *state, int production, int position) {
   size_t prodix;
   int nt;
-  xlr_prod_t *prod = gen->productions + production;
+  struct xlr_prod *prod = gen->productions + production;
   size_t read_set_byte_size = xlr_read_set_byte_size(gen);
 
   if (prod->production_length == (size_t)position) {
@@ -787,13 +787,13 @@ static void xlr_populate_state_reductions(xlr_gen_t *gen, uint32_t *temp_read_se
     for (sym = gen->min_t; sym <= gen->max_t; sym++) {
       if (xlr_get_read_set_term(gen, temp_read_set, sym)) {
         /* Part of the lookahead, reduction on prod., create the action. */
-        xlr_action_t **action_cell;
-        xlr_action_t *new_action;
-        xlr_action_t *action = NULL;
+        struct xlr_action **action_cell;
+        struct xlr_action *new_action;
+        struct xlr_action *action = NULL;
         /* Look for the action, it is possible for it to already exist as we'll be coming here
          * for each reduction symbol. */
         action_cell = gen->action_table + state->ordinal * (1 + gen->max_s - gen->min_s) + (sym - gen->min_s);
-        while (0 != (action = CHAIN_NEXT(*action_cell, xlr_action_t, chain, action))) {
+        while (0 != (action = CHAIN_NEXT(*action_cell, struct xlr_action, chain, action))) {
           if ((action->action == XLR_REDUCE) && (action->production == production)) {
             /* Already have the action to reduce */
             break;
@@ -801,12 +801,12 @@ static void xlr_populate_state_reductions(xlr_gen_t *gen, uint32_t *temp_read_se
         }
         if (!action) {
           /* Don't yet have the action to reduce; add it */
-          new_action = (xlr_action_t *)malloc(sizeof(xlr_action_t));
-          CHAIN_INIT(new_action, xlr_action_t, chain);
+          new_action = (struct xlr_action *)malloc(sizeof(struct xlr_action));
+          CHAIN_INIT(new_action, struct xlr_action, chain);
           new_action->action = XLR_REDUCE;
           new_action->production = production;
           new_action->state = NULL;
-          *action_cell = CHAIN_APPEND(*action_cell, new_action, xlr_action_t, chain);
+          *action_cell = CHAIN_APPEND(*action_cell, new_action, struct xlr_action, chain);
         }
       }
     }
@@ -830,35 +830,35 @@ static void xlr_populate_state_reductions(xlr_gen_t *gen, uint32_t *temp_read_se
   }
 }
 
-static void xlr_build_action_table(xlr_gen_t *gen) {
-  xlr_state_t *state = NULL;
+static void xlr_build_action_table(struct xlr_gen *gen) {
+  struct xlr_state *state = NULL;
   size_t nr_states = 0;
   size_t table_width;
   size_t read_set_byte_size = xlr_read_set_byte_size(gen);
   uint32_t *temp_reduction_lookahead;
-  while (0 != (state = CHAIN_NEXT(gen->states, xlr_state_t, chain, state))) {
+  while (0 != (state = CHAIN_NEXT(gen->states, struct xlr_state, chain, state))) {
     state->ordinal = (int)nr_states++;
   }
   gen->nr_states = nr_states;
 
   /* Allocate the action table. */
   table_width = 1 + gen->max_s - gen->min_s;
-  gen->action_table = (xlr_action_t **)malloc(sizeof(xlr_action_t *) * table_width * nr_states);
-  memset(gen->action_table, 0, sizeof(xlr_action_t *) * table_width * nr_states);
+  gen->action_table = (struct xlr_action **)malloc(sizeof(struct xlr_action *) * table_width * nr_states);
+  memset(gen->action_table, 0, sizeof(struct xlr_action *) * table_width * nr_states);
 
   /* Allocate buffer used for accumulating the read sets from reductions */
   temp_reduction_lookahead = (uint32_t *)malloc(read_set_byte_size);
 
-  while (0 != (state = CHAIN_NEXT(gen->states, xlr_state_t, chain, state))) {
+  while (0 != (state = CHAIN_NEXT(gen->states, struct xlr_state, chain, state))) {
     size_t itemidx;
     int sym;
     /* Insert all shifts for the state */
     for (sym = gen->min_s; sym <= gen->max_s; sym++) {
-      xlr_trans_t *trans = state->outbound[sym - gen->min_s];
+      struct xlr_trans *trans = state->outbound[sym - gen->min_s];
       if (trans) {
-        xlr_action_t **action_cell;
-        xlr_action_t *new_action = (xlr_action_t *)malloc(sizeof(xlr_action_t));
-        CHAIN_INIT(new_action, xlr_action_t, chain);
+        struct xlr_action **action_cell;
+        struct xlr_action *new_action = (struct xlr_action *)malloc(sizeof(struct xlr_action));
+        CHAIN_INIT(new_action, struct xlr_action, chain);
         new_action->action = XLR_SHIFT;
         new_action->production = 0;
         new_action->state = trans->to;
@@ -866,14 +866,14 @@ static void xlr_build_action_table(xlr_gen_t *gen) {
         /* Assert that action cell is always empty; otherwise we have an addressing failure (and would like to
          * know about it. */
         assert(!(*action_cell));
-        *action_cell = CHAIN_APPEND(*action_cell, new_action, xlr_action_t, chain);
+        *action_cell = CHAIN_APPEND(*action_cell, new_action, struct xlr_action, chain);
       }
     }
 
     /* Populate all reductions for the state */
     memset(gen->non_kernel_considered, 0, sizeof(int) * (1 + gen->max_nt - gen->min_nt));
     for (itemidx = 0; itemidx < state->nr_items; itemidx++) {
-      xlr_item_t *item = state->items + itemidx;
+      struct xlr_item *item = state->items + itemidx;
       xlr_populate_state_reductions(gen, temp_reduction_lookahead, state, item->production, item->position);
     }
   }
@@ -881,10 +881,10 @@ static void xlr_build_action_table(xlr_gen_t *gen) {
   free(temp_reduction_lookahead);
 }
 
-xlr_error_t xlr_generate(xlr_gen_t *gen, int *grammar,
+xlr_error_t xlr_generate(struct xlr_gen *gen, int *grammar,
                          int eop_sym, int eog_sym, int eof_sym, int eopn_sym, int synths_sym) {
   xlr_error_t xlre;
-  xlr_state_t *initial_state, *work_state, *s;
+  struct xlr_state *initial_state, *work_state, *s;
   size_t n;
 
   xlre = xlr_init_gen_grammar(gen, grammar, eop_sym, eog_sym, eof_sym, eopn_sym, synths_sym);
@@ -892,19 +892,19 @@ xlr_error_t xlr_generate(xlr_gen_t *gen, int *grammar,
   if (xlre != XLR_OK) return xlre;
 
   /* Set up the initial state: S' : .S */
-  initial_state = (xlr_state_t *)malloc(sizeof(xlr_state_t));
-  memset(initial_state, 0, sizeof(xlr_state_t));
-  CHAIN_INIT(initial_state, xlr_state_t, chain);
-  CHAIN_INIT(initial_state, xlr_state_t, workchain);
-  gen->states = CHAIN_APPEND(gen->states, initial_state, xlr_state_t, chain);
-  gen->worklist = CHAIN_APPEND(gen->worklist, initial_state, xlr_state_t, workchain);
+  initial_state = (struct xlr_state *)malloc(sizeof(struct xlr_state));
+  memset(initial_state, 0, sizeof(struct xlr_state));
+  CHAIN_INIT(initial_state, struct xlr_state, chain);
+  CHAIN_INIT(initial_state, struct xlr_state, workchain);
+  gen->states = CHAIN_APPEND(gen->states, initial_state, struct xlr_state, chain);
+  gen->worklist = CHAIN_APPEND(gen->worklist, initial_state, struct xlr_state, workchain);
   initial_state->nr_items = 1;
-  initial_state->items = (xlr_item_t *)malloc(sizeof(xlr_item_t) * initial_state->nr_items);
+  initial_state->items = (struct xlr_item *)malloc(sizeof(struct xlr_item) * initial_state->nr_items);
   initial_state->items[0].production = 0;
   initial_state->items[0].position = 0;
-  initial_state->outbound = (xlr_trans_t **)malloc(sizeof(xlr_trans_t *) * (1 + gen->max_s - gen->min_s));
-  memset(initial_state->outbound, 0, sizeof(xlr_trans_t *) * (1 + gen->max_s - gen->min_s));
-  while (0 != (work_state = CHAIN_POP(&gen->worklist, xlr_state_t, workchain))) {
+  initial_state->outbound = (struct xlr_trans **)malloc(sizeof(struct xlr_trans *) * (1 + gen->max_s - gen->min_s));
+  memset(initial_state->outbound, 0, sizeof(struct xlr_trans *) * (1 + gen->max_s - gen->min_s));
+  while (0 != (work_state = CHAIN_POP(&gen->worklist, struct xlr_state, workchain))) {
     xlr_find_lr0_outbound(gen, work_state);
   }
   /* We now have the set of LR0 items...
@@ -932,23 +932,23 @@ xlr_error_t xlr_generate(xlr_gen_t *gen, int *grammar,
   xlr_build_action_table(gen);
 
   /* .. build array of states */
-  gen->state_array = (xlr_state_t **)malloc(sizeof(xlr_state_t *) * gen->nr_states);
+  gen->state_array = (struct xlr_state **)malloc(sizeof(struct xlr_state *) * gen->nr_states);
   n = 0;
   s = NULL;
-  while (0 != (s = CHAIN_NEXT(gen->states, xlr_state_t, chain, s))) {
+  while (0 != (s = CHAIN_NEXT(gen->states, struct xlr_state, chain, s))) {
     gen->state_array[n++] = s;
   }
   
   return XLR_OK;
 }
 
-void xlr_add_conflict_resolution(xlr_gen_t *gen,
+void xlr_add_conflict_resolution(struct xlr_gen *gen,
                                  int dominant_production, int dominant_position,
                                  int yielding_production, int yielding_position) {
-  xlr_conflict_resolution_t *cr;
+  struct xlr_conflict_resolution *cr;
   if (gen->nr_conflict_resolutions == gen->nr_conflict_resolutions_allocated) {
     gen->nr_conflict_resolutions_allocated += 8;
-    gen->conflict_resolutions = (xlr_conflict_resolution_t *)realloc(gen->conflict_resolutions, sizeof(xlr_conflict_resolution_t) * gen->nr_conflict_resolutions_allocated);
+    gen->conflict_resolutions = (struct xlr_conflict_resolution *)realloc(gen->conflict_resolutions, sizeof(struct xlr_conflict_resolution) * gen->nr_conflict_resolutions_allocated);
   }
   cr = gen->conflict_resolutions + gen->nr_conflict_resolutions++;
   cr->prefer.production = dominant_production;
@@ -968,9 +968,9 @@ static void xlr_count_conflict_pairs(size_t nr_shift_items, size_t nr_reductions
   *nr_shift_reduces = nr_shift_items * nr_reductions;
 }
 
-static xlr_action_t *xlr_find_nth_reduce_action(xlr_action_t *action_list, size_t ordinal) {
-  xlr_action_t *action = NULL;
-  while (0 != (action = CHAIN_NEXT(action_list, xlr_action_t, chain, action))) {
+static struct xlr_action *xlr_find_nth_reduce_action(struct xlr_action *action_list, size_t ordinal) {
+  struct xlr_action *action = NULL;
+  while (0 != (action = CHAIN_NEXT(action_list, struct xlr_action, chain, action))) {
     if (action->action == XLR_REDUCE) {
       if (!ordinal--) break;
     }
@@ -978,22 +978,22 @@ static xlr_action_t *xlr_find_nth_reduce_action(xlr_action_t *action_list, size_
   return action;
 }
 
-static xlr_action_t *xlr_find_shift_action(xlr_action_t *action_list) {
-  xlr_action_t *action = NULL;
-  while (0 != (action = CHAIN_NEXT(action_list, xlr_action_t, chain, action))) {
+static struct xlr_action *xlr_find_shift_action(struct xlr_action *action_list) {
+  struct xlr_action *action = NULL;
+  while (0 != (action = CHAIN_NEXT(action_list, struct xlr_action, chain, action))) {
     if (action->action == XLR_SHIFT) break;
   }
   return action;
 }
 
-static void xlr_find_conflict_pair(xlr_gen_t *gen, xlr_action_t *actionlist, size_t conflict_number,
-                                   xlr_item_t *itema, xlr_item_t *itemb) {
+static void xlr_find_conflict_pair(struct xlr_gen *gen, struct xlr_action *actionlist, size_t conflict_number,
+                                   struct xlr_item *itema, struct xlr_item *itemb) {
   size_t nr_reduce_reduces, nr_shift_reduces;
   size_t nr_shifts = 0, nr_reduces = 0;
-  xlr_action_t *action = NULL;
-  xlr_action_t *shift_state = NULL;
+  struct xlr_action *action = NULL;
+  struct xlr_action *shift_state = NULL;
   /* Count number of shifts and reduces */
-  while (0 != (action = CHAIN_NEXT(actionlist, xlr_action_t, chain, action))) {
+  while (0 != (action = CHAIN_NEXT(actionlist, struct xlr_action, chain, action))) {
     if (action->action == XLR_SHIFT) {
       nr_shifts = action->state->nr_items;
       shift_state = action;
@@ -1007,8 +1007,8 @@ static void xlr_find_conflict_pair(xlr_gen_t *gen, xlr_action_t *actionlist, siz
     size_t shift_selected = conflict_number / nr_reduces;
     size_t reduce_selected = conflict_number % nr_reduces;
     /* Make pair of the shift_selected and reduce_selected items */
-    xlr_action_t *shift_action = xlr_find_shift_action(actionlist);
-    xlr_action_t *reduce_action = xlr_find_nth_reduce_action(actionlist, reduce_selected);
+    struct xlr_action *shift_action = xlr_find_shift_action(actionlist);
+    struct xlr_action *reduce_action = xlr_find_nth_reduce_action(actionlist, reduce_selected);
     itema->production = shift_action->state->items[shift_selected].production;
     itema->position = shift_action->state->items[shift_selected].position - 1;
     itemb->production = reduce_action->production;
@@ -1018,7 +1018,7 @@ static void xlr_find_conflict_pair(xlr_gen_t *gen, xlr_action_t *actionlist, siz
     size_t first_reduce = 0;
     size_t nr_second_pair_candidates = nr_reduces - 1;
     size_t second_reduce = 0;
-    xlr_action_t *first_reduce_action, *second_reduce_action;
+    struct xlr_action *first_reduce_action, *second_reduce_action;
     /* Trying to find the ordinal for all possible matches, this can be visualized
      * according to the following triangle. We'll step rows (first_candidates) until 
      * we have a row in which the second index lies.
@@ -1050,14 +1050,14 @@ static void xlr_find_conflict_pair(xlr_gen_t *gen, xlr_action_t *actionlist, siz
   }
 }
 
-static void xlr_find_conflicts(xlr_gen_t *gen, xlr_action_t *action_list) {
+static void xlr_find_conflicts(struct xlr_gen *gen, struct xlr_action *action_list) {
   size_t nr_reduce_reduces, nr_shift_reduces;
   size_t nr_shifts = 0, nr_reduces = 0;
   size_t n;
-  xlr_action_t *action = NULL;
-  xlr_action_t *shift_state = NULL;
+  struct xlr_action *action = NULL;
+  struct xlr_action *shift_state = NULL;
   /* Count number of shifts and reduces */
-  while (0 != (action = CHAIN_NEXT(action_list, xlr_action_t, chain, action))) {
+  while (0 != (action = CHAIN_NEXT(action_list, struct xlr_action, chain, action))) {
     if (action->action == XLR_SHIFT) {
       nr_shifts = action->state->nr_items;
       shift_state = action;
@@ -1070,26 +1070,26 @@ static void xlr_find_conflicts(xlr_gen_t *gen, xlr_action_t *action_list) {
   gen->nr_temp_conflicts = nr_shift_reduces + nr_reduce_reduces;
   if (gen->nr_temp_conflicts > gen->nr_temp_conflicts_allocated) {
     gen->nr_temp_conflicts_allocated = gen->nr_temp_conflicts;
-    gen->temp_conflicts = (xlr_conflict_t *)realloc(gen->temp_conflicts, sizeof(xlr_conflict_t) * gen->nr_temp_conflicts_allocated);
+    gen->temp_conflicts = (struct xlr_conflict *)realloc(gen->temp_conflicts, sizeof(struct xlr_conflict) * gen->nr_temp_conflicts_allocated);
   }
   for (n = 0; n < gen->nr_temp_conflicts; n++) {
     xlr_find_conflict_pair(gen, action_list, n, &gen->temp_conflicts[n].item_a, &gen->temp_conflicts[n].item_b);
   }
 }
 
-static int xlr_items_equal(xlr_item_t *a, xlr_item_t *b) {
+static int xlr_items_equal(struct xlr_item *a, struct xlr_item *b) {
   return ((a->production == b->production) && (a->position == b->position));
 }
 
-static int xlr_conflict_equals_resolution(xlr_conflict_t *conflict, xlr_conflict_resolution_t *resolution) {
+static int xlr_conflict_equals_resolution(struct xlr_conflict *conflict, struct xlr_conflict_resolution *resolution) {
   return (((xlr_items_equal(&conflict->item_a, &resolution->prefer)) && xlr_items_equal(&conflict->item_b, &resolution->over)) ||
           ((xlr_items_equal(&conflict->item_b, &resolution->prefer)) && xlr_items_equal(&conflict->item_a, &resolution->over)));
 }
 
-xlr_action_t *xlr_resolve_conflicts(xlr_gen_t *gen, xlr_action_t *action_list) {
+struct xlr_action *xlr_resolve_conflicts(struct xlr_gen *gen, struct xlr_action *action_list) {
   size_t n;
   int conflicting_resolutions = 0;
-  xlr_action_t *preferred_action = NULL;
+  struct xlr_action *preferred_action = NULL;
 
   /* Reset conflicting resolutions */
   for (n = 0; n < gen->nr_conflict_resolutions; n++) {
@@ -1102,10 +1102,10 @@ xlr_action_t *xlr_resolve_conflicts(xlr_gen_t *gen, xlr_action_t *action_list) {
   /* Attempt to resolve all conflicts from xlr_find_conflicts -- note that 
    * xlr_find_conflicts stores its results in gen->temp_conflicts. */
   for (n = 0; n < gen->nr_temp_conflicts; /* n does not increment by for() */ ) {
-    xlr_conflict_t *c = gen->temp_conflicts + n;
+    struct xlr_conflict *c = gen->temp_conflicts + n;
     size_t cp;
     for (cp = 0; cp < gen->nr_conflict_resolutions; cp++) {
-      xlr_conflict_resolution_t *cr = gen->conflict_resolutions + cp;
+      struct xlr_conflict_resolution *cr = gen->conflict_resolutions + cp;
       if (xlr_conflict_equals_resolution(c, cr)) {
         /* Mark conflict resolution as having been used for this series of
          * actions. */
@@ -1119,8 +1119,8 @@ xlr_action_t *xlr_resolve_conflicts(xlr_gen_t *gen, xlr_action_t *action_list) {
          * that corresponds to cr->prefer. */
         if (gen->productions[cr->prefer.production].production_length == (size_t)cr->prefer.position) {
           /* A reduce of cr->prefer.production is preferred. */
-          xlr_action_t *action = NULL;
-          while (0 != (action = CHAIN_NEXT(action_list, xlr_action_t, chain, action))) {
+          struct xlr_action *action = NULL;
+          while (0 != (action = CHAIN_NEXT(action_list, struct xlr_action, chain, action))) {
             if ((action->action == XLR_REDUCE) && (action->production == cr->prefer.production)) {
               if (!preferred_action) {
                 preferred_action = action;
@@ -1136,7 +1136,7 @@ xlr_action_t *xlr_resolve_conflicts(xlr_gen_t *gen, xlr_action_t *action_list) {
         }
         else {
           /* The shift is preferred. */
-          xlr_action_t *shift_action = xlr_find_shift_action(action_list);
+          struct xlr_action *shift_action = xlr_find_shift_action(action_list);
           if (!preferred_action) {
             preferred_action = shift_action;
           }
