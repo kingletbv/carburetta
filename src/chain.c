@@ -13,9 +13,15 @@
  * limitations under the License.
  */
 
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
 #include <stdlib.h> /* size_t, NULL */
+#endif
 
+#ifndef CHAIN_H_INCLUDED
+#define CHAIN_H_INCLUDED
 #include "chain.h"
+#endif
 
 /* Returns the 'chain' pointer from a member offset and element pointer. 
  * Because of the indirection, it is returned as an lvalue, eg. the 

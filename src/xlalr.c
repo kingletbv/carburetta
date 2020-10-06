@@ -13,14 +13,35 @@
  * limitations under the License.
  */
 
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
 #include <stdlib.h>
+#endif
+
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
 #include <string.h>
+#endif
+
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
 #include <assert.h>
+#endif
+
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
 #include <stdint.h>
+#endif
 
+#ifndef CHAIN_H_INCLUDED
+#define CHAIN_H_INCLUDED
 #include "chain.h"
+#endif
 
+#ifndef XLALR_H_INCLUDED
+#define XLALR_H_INCLUDED
 #include "xlalr.h"
+#endif
 
 void xlr_init(xlr_gen_t *gen) {
   memset(gen, 0, sizeof(xlr_gen_t));

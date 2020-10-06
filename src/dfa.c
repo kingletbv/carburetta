@@ -13,22 +13,55 @@
  * limitations under the License.
  */
 
+#ifndef STDIO_H_INCLUDED
+#define STDIO_H_INCLUDED
 #include <stdio.h>
+#endif
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
 #include <stdlib.h>
+#endif
+
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
 #include <stdint.h>
+#endif
+
+#ifndef CTYPE_H_INCLUDED
+#define CTYPE_H_INCLUDED
 #include <ctype.h>
+#endif
+
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
 #include <string.h>
+#endif
+
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
 #include <assert.h>
+#endif
+
+#ifndef INTTYPES_H_INCLUDED
+#define INTTYPES_H_INCLUDED
 #include <inttypes.h>
+#endif
 
 #ifndef MUL_H_INCLUDED
 #define MUL_H_INCLUDED
 #include "mul.h"
 #endif
 
+#ifndef DFA_H_INCLUDED
+#define DFA_H_INCLUDED
 #include "dfa.h"
+#endif
 
+#ifndef NFA_H_INCLUDED
+#define NFA_H_INCLUDED
 #include "nfa.h"
+#endif
 
 static void *arealloc(void *mem, size_t count, size_t size) {
   size_t size_to_alloc;

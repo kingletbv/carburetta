@@ -63,7 +63,10 @@
 #include "prd_gram.h"
 #endif
 
+#ifndef PRD_GRAMMAR_ALT_H_INCLUDED
+#define PRD_GRAMMAR_ALT_H_INCLUDED
 #include "prd_grammar_alt.h"
+#endif
 
 %prefix prd_
 

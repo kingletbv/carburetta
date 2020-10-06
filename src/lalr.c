@@ -13,9 +13,20 @@
  * limitations under the License.
  */
  
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
 #include <stdlib.h> /* malloc(), free() */
+#endif
+
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
 #include <string.h> /* memset(), memcpy() */
+#endif
+
+#ifndef LALR_H_INCLUDED
+#define LALR_H_INCLUDED
 #include "lalr.h"
+#endif
 
 /* If you are reading this, you are probably suspecting a bug in this code, wish to modify it, or just in
  * general, would like to understand how it works. A couple of pointers to get you started:
