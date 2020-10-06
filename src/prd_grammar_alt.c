@@ -212,7 +212,7 @@ static const int prd_state_syms[] = {
  14
 };
 
-#ifndef CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED
+#ifndef CINDER_PRD_SRCPRD_GRAMMAR_ALT_H_INCLUDED
 struct prd_stack {
   int error_recovery_:1;
   int report_error_:1;
@@ -240,7 +240,7 @@ struct prd_stack {
 #define PRD_START_C_TOKENIZER 19
 #define PRD_END_C_TOKENIZER 20
 #define PRD_ACCEPT_WHITESPACE 21
-#endif /* CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED */
+#endif /* CINDER_PRD_SRCPRD_GRAMMAR_ALT_H_INCLUDED */
 
 void prd_stack_init(struct prd_stack *stack) {
   stack->error_recovery_ = 0;

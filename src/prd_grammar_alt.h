@@ -1,5 +1,5 @@
-#ifndef CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED
-#define CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED
+#ifndef CINDER_PRD_SRCPRD_GRAMMAR_ALT_H_INCLUDED
+#define CINDER_PRD_SRCPRD_GRAMMAR_ALT_H_INCLUDED
 
 #include <stddef.h> /* size_t */
 
@@ -36,4 +36,4 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 } /* extern "C" */
 #endif
 
-#endif /* CINDER_PRD_PRD_GRAMMAR_ALT_H_INCLUDED */
+#endif /* CINDER_PRD_SRCPRD_GRAMMAR_ALT_H_INCLUDED */
