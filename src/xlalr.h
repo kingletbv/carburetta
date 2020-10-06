@@ -42,6 +42,8 @@ extern "C" {
  * accepted together (they cannot make a decision.) In Extended-LALR this reduce-reduce conflict
  * does not occur because the production for all three non-terminals is the same, and the pro-
  * duction's reduce function is expected to indicate which of the three just occurred.
+ * NOTE: This algorithm requires more rigorous analysis and testing as messing up on LALR is dangerously
+ *       easy. Consequently, use lalr.c if this reduction-time context sensitivity is not required.
  */
 
 typedef enum xlr_error_enum xlr_error_t;
