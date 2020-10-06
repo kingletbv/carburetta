@@ -23,11 +23,6 @@
 #include <assert.h>
 #endif
 
-#ifndef HELPERS_H_INCLUDED
-#define HELPERS_H_INCLUDED
-#include "helpers.h"
-#endif
-
 #ifndef SYMBOL_H_INCLUDED
 #define SYMBOL_H_INCLUDED
 #include "symbol.h"

@@ -19,11 +19,6 @@
 #include <string.h>
 #endif
 
-#ifndef HELPERS_H_INCLUDED
-#define HELPERS_H_INCLUDED
-#include "helpers.h"
-#endif
-
 #ifndef SCANNER_H_INCLUDED
 #define SCANNER_H_INCLUDED
 #include "scanner.h"
