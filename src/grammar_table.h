@@ -16,9 +16,9 @@
 #ifndef GRAMMAR_TABLE_H
 #define GRAMMAR_TABLE_H
 
-#ifndef STDINT_H_INCLUDED
-#define STDINT_H_INCLUDED
-#include <stdint.h>
+#ifndef STDDEF_H_INCLUDED
+#define STDDEF_H_INCLUDED
+#include <stddef.h> /* size_t */
 #endif
 
 #ifndef LALR_H_INCLUDED

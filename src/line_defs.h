@@ -16,11 +16,6 @@
 #ifndef LINE_DEFS_H
 #define LINE_DEFS_H
 
-#ifndef STDINT_H_INCLUDED
-#define STDINT_H_INCLUDED
-#include <stdint.h>
-#endif
-
 #ifndef TOKENIZER_H_INCLUDED
 #define TOKENIZER_H_INCLUDED
 #include "tokenizer.h"

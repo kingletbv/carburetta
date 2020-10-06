@@ -16,6 +16,16 @@
 #ifndef XLALR_H
 #define XLALR_H
 
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
+#include <stdint.h> /* uint32_t */
+#endif
+
+#ifndef STDDEF_H_INCLUDED
+#define STDDEF_H_INCLUDED
+#include <stddef.h> /* size_t */
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */

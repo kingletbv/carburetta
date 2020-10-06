@@ -16,6 +16,11 @@
 #ifndef PRD_GRAM_H
 #define PRD_GRAM_H
 
+#ifndef STDDEF_H_INCLUDED
+#define STDDEF_H_INCLUDED
+#include <stddef.h> /* size_t */
+#endif
+
 #ifndef TOKENS_H_INCLUDED
 #define TOKENS_H_INCLUDED
 #include "tokens.h"

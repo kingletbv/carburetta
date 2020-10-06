@@ -32,9 +32,9 @@
  * must therefore be removed and kept at the same time.
  * Line assembly is surprisingly complicated. */
 
-#ifndef STDINT_H_INCLUDED
-#define STDINT_H_INCLUDED
-#include <stdint.h>
+#ifndef STDDEF_H_INCLUDED
+#define STDDEF_H_INCLUDED
+#include <stddef.h> /* size_t */
 #endif
 
 #ifndef TOKENIZER_H_INCLUDED

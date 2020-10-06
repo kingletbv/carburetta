@@ -16,6 +16,11 @@
 #ifndef CHAIN_H
 #define CHAIN_H
 
+#ifndef STDDEF_H_INCLUDED
+#define STDDEF_H_INCLUDED
+#include <stddef.h> /* size_t */
+#endif
+
 /* Chain "container" support. A chain is a cyclic linked list whereby a pointer to the last element is used to
  * reference it. This has a few benefits; insertion into head, appending to tail, retrieving the first element
  * finding the next element and retrieving the last element are all O(1) operations, and only a single pointer 

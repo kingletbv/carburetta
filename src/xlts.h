@@ -16,6 +16,11 @@
 #ifndef XLTS_H
 #define XLTS_H
 
+#ifndef STDDEF_H_INCLUDED
+#define STDDEF_H_INCLUDED
+#include <stddef.h> /* size_t */
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

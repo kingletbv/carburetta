@@ -21,6 +21,11 @@
 #include <stdint.h>
 #endif
 
+#ifndef STDDEF_H_INCLUDED
+#define STDDEF_H_INCLUDED
+#include <stddef.h> /* size_t */
+#endif
+
 #ifndef SCANNER_H_INCLUDED
 #define SCANNER_H_INCLUDED
 #include "scanner.h"

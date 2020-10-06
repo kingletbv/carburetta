@@ -20,7 +20,15 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#ifndef STDDEF_H_INCLUDED
+#define STDDEF_H_INCLUDED
+#include <stddef.h> /* size_t */
+#endif
+
+#ifndef NFA_H_INCLUDED
+#define NFA_H_INCLUDED
 #include "nfa.h"
+#endif
 
 typedef struct dfa dfa_t;
 typedef struct dfa_node dfa_node_t;

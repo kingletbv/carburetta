@@ -21,6 +21,11 @@
 #include <stdio.h>
 #endif
 
+#ifndef STDDEF_H_INCLUDED
+#define STDDEF_H_INCLUDED
+#include <stddef.h> /* size_t */
+#endif
+
 #ifndef STDINT_H_INCLUDED
 #define STDINT_H_INCLUDED
 #include <stdint.h>

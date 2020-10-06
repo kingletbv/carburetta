@@ -21,6 +21,11 @@
 #include "xlts.h"
 #endif
 
+#ifndef TOKENIZER_H_INCLUDED
+#define TOKENIZER_H_INCLUDED
+#include "tokenizer.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
