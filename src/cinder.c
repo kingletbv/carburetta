@@ -549,12 +549,12 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
                 if (tkr_tokens->best_match_action_ == TOK_IDENT) {
                   struct symbol *sym = symbol_find(st, tkr_str(tkr_tokens));
                   if (!sym) {
-                    re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal\n", tkr_str(tkr_tokens));
+                    re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal", tkr_str(tkr_tokens));
                     r = TKR_SYNTAX_ERROR;
                     goto cleanup_exit;
                   }
                   else if (sym->st_ != SYM_NONTERMINAL) {
-                    re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal but a token.\n", tkr_str(tkr_tokens));
+                    re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal but a token.", tkr_str(tkr_tokens));
                     r = TKR_SYNTAX_ERROR;
                     goto cleanup_exit;
                   }
@@ -562,7 +562,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
                     size_t n;
                     for (n = 0; n < num_typed_symbols; ++n) {
                       if (sym == typed_symbols[n]) {
-                        re_error_tkr(tkr_tokens, "Error: \"%s\" appears more than once in type directive\n", tkr_str(tkr_tokens));
+                        re_error_tkr(tkr_tokens, "Error: \"%s\" appears more than once in type directive", tkr_str(tkr_tokens));
                         r = TKR_SYNTAX_ERROR;
                         goto cleanup_exit;
                       }
@@ -570,19 +570,19 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
                     if (num_typed_symbols == num_typed_symbols_allocated) {
                       size_t new_num_alloc = num_typed_symbols_allocated * 2 + 1;
                       if (new_num_alloc < num_typed_symbols_allocated) {
-                        re_error_tkr(tkr_tokens, "Error: overflow on allocation\n");
+                        re_error_tkr(tkr_tokens, "Error: overflow on allocation");
                         r = TKR_INTERNAL_ERROR;
                         goto cleanup_exit;
                       }
                       if (new_num_alloc > (SIZE_MAX / sizeof(struct symbol *))) {
-                        re_error_tkr(tkr_tokens, "Error: overflow on allocation\n");
+                        re_error_tkr(tkr_tokens, "Error: overflow on allocation");
                         r = TKR_INTERNAL_ERROR;
                         goto cleanup_exit;
                       }
                       size_t alloc_size = new_num_alloc * sizeof(struct symbol *);
                       void *p = realloc(typed_symbols, alloc_size);
                       if (!p) {
-                        re_error_tkr(tkr_tokens, "Error: no memory\n");
+                        re_error_tkr(tkr_tokens, "Error: no memory");
                         r = TKR_INTERNAL_ERROR;
                         goto cleanup_exit;
                       }
@@ -593,7 +593,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
                   }
                 }
                 else {
-                  re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal\n", tkr_str(tkr_tokens));
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal", tkr_str(tkr_tokens));
                   r = TKR_SYNTAX_ERROR;
                   goto cleanup_exit;
                 }
@@ -866,7 +866,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
       if (!cr) {
         conflict_resolution_cleanup(cr);
         free(cr);
-        re_error_tkr(tkr_tokens, "Error: no memory\n");
+        re_error_tkr(tkr_tokens, "Error: no memory");
         r = TKR_INTERNAL_ERROR;
         goto cleanup_exit;
       }
@@ -1288,7 +1288,7 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
         struct symbol *dst_sym = pd->nt_.sym_;
         assert(dst_sym);
         if (!dst_sym->assigned_type_) {
-          re_error(&pd->action_sequence_.tokens_[col].text_, "$$ cannot resolve to a data type for non-terminal %s\n", pd->nt_.id_.translated_);
+          re_error(&pd->action_sequence_.tokens_[col].text_, "$$ cannot resolve to a data type for non-terminal %s", pd->nt_.id_.translated_);
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -1302,19 +1302,19 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
         for (n = 1; n < pd->action_sequence_.tokens_[col].text_.num_translated_; ++n) {
           char c = pd->action_sequence_.tokens_[col].text_.translated_[n];
           if (!isdigit(c)) {
-            re_error(&pd->action_sequence_.tokens_[col].text_, "Unrecognized special identifier\n");
+            re_error(&pd->action_sequence_.tokens_[col].text_, "Unrecognized special identifier");
             failed = 1;
             break;
           }
           if (multiply_size_t(10, special_index, NULL, &special_index)) {
-            re_error(&pd->action_sequence_.tokens_[col].text_, "Overflow on symbol index\n");
+            re_error(&pd->action_sequence_.tokens_[col].text_, "Overflow on symbol index");
             failed = 1;
             break;
           }
           special_index += (size_t)(c - '0');
         }
         if (special_index >= pd->num_syms_) {
-          re_error(&pd->action_sequence_.tokens_[col].text_, "Symbol index exceeds number of symbols in production\n");
+          re_error(&pd->action_sequence_.tokens_[col].text_, "Symbol index exceeds number of symbols in production");
           failed = 1;
         }
         if (failed) {
@@ -1323,7 +1323,7 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
         }
         struct symbol *sym = pd->syms_[special_index].sym_;
         if (!sym->assigned_type_) {
-          re_error(&pd->action_sequence_.tokens_[col].text_, "%s cannot resolve to a data type for a symbol\n", pd->action_sequence_.tokens_[col].text_.translated_);
+          re_error(&pd->action_sequence_.tokens_[col].text_, "%s cannot resolve to a data type for a symbol", pd->action_sequence_.tokens_[col].text_.translated_);
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -1626,7 +1626,7 @@ int main(int argc, char **argv) {
     }
     else if (expecting_hfile) {
       if (h_output_filename) {
-        re_error_nowhere("Error: only one C header output file permitted\n");
+        re_error_nowhere("Error: only one C header output file permitted");
         print_usage();
         goto exit_arg_eval;
       }
@@ -1636,7 +1636,7 @@ int main(int argc, char **argv) {
       else {
         h_output_filename = strdup(*cpv);
         if (!h_output_filename) {
-          re_error_nowhere("Error: no memory\n");
+          re_error_nowhere("Error: no memory");
           goto exit_arg_eval;
         }
       }
@@ -1645,13 +1645,13 @@ int main(int argc, char **argv) {
     }
     else if (expecting_cfile) {
       if (c_output_filename) {
-        re_error_nowhere("Error: only one C output file permitted\n");
+        re_error_nowhere("Error: only one C output file permitted");
         print_usage();
         goto exit_arg_eval;
       }
       c_output_filename = strdup(*cpv);
       if (!c_output_filename) {
-        re_error_nowhere("Error: no memory\n");
+        re_error_nowhere("Error: no memory");
         goto exit_arg_eval;
       }
       expecting_cfile = 0;
@@ -1660,33 +1660,33 @@ int main(int argc, char **argv) {
     else if (expecting_inputfile) {
       input_filename = strdup(*cpv);
       if (!input_filename) {
-        re_error_nowhere("Error: no memory\n");
+        re_error_nowhere("Error: no memory");
         goto exit_arg_eval;
       }
       expecting_inputfile = 0;
       cr--; cpv++;
     }
     else {
-      re_error_nowhere("Error: unrecognized commandline argument \"%s\"\n", *cpv);
+      re_error_nowhere("Error: unrecognized commandline argument \"%s\"", *cpv);
       print_usage();
       goto exit_arg_eval;
     }
   }
 
   if (!input_filename) {
-    re_error_nowhere("Error: need an input filename\n");
+    re_error_nowhere("Error: need an input filename");
     print_usage();
     goto exit_arg_eval;
   }
 
   if (generate_hfile && !h_output_filename) {
     if (!c_output_filename) {
-      re_error_nowhere("Error: Need C output filename to derive a C header output filename\n");
+      re_error_nowhere("Error: Need C output filename to derive a C header output filename");
       goto exit_arg_eval;
     }
     const char *ext = strrchr(c_output_filename, '.');
     if (!ext || (strlen(ext) < 2)) {
-      re_error_nowhere("Error: Need C output filename that ends in a filename extension to derive a C header output filename\n");
+      re_error_nowhere("Error: Need C output filename that ends in a filename extension to derive a C header output filename");
       goto exit_arg_eval;
     }
     h_output_filename = strdup(c_output_filename);
@@ -1702,22 +1702,22 @@ int main(int argc, char **argv) {
   }
   r = ldl_init();
   if (r) {
-    re_error_nowhere("Failed to initialize ldl\n");
+    re_error_nowhere("Failed to initialize ldl");
     return EXIT_FAILURE;
   }
   r = tok_init();
   if (r) {
-    re_error_nowhere("Failed to initialize tok\n");
+    re_error_nowhere("Failed to initialize tok");
     return EXIT_FAILURE;
   }
   r = las_init();
   if (r) {
-    re_error_nowhere("Failed to initialize las\n");
+    re_error_nowhere("Failed to initialize las");
     return EXIT_FAILURE;
   }
   r = dct_init();
   if (r) {
-    re_error_nowhere("Failed to initialize dct\n");
+    re_error_nowhere("Failed to initialize dct");
     return EXIT_FAILURE;
   }
 
@@ -1757,7 +1757,7 @@ int main(int argc, char **argv) {
 
   r = prd_stack_reset(&prds);
   if (r) {
-    re_error_nowhere("Internal error, failed to reset parsing stack\n");
+    re_error_nowhere("Internal error, failed to reset parsing stack");
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -1767,7 +1767,7 @@ int main(int argc, char **argv) {
     fp = fopen(input_filename, "rb");
     if (!fp) {
       int err = errno;
-      re_error_nowhere("Failed to open file \"%s\": %s\n", input_filename, strerror(err));
+      re_error_nowhere("Failed to open file \"%s\": %s", input_filename, strerror(err));
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1821,7 +1821,7 @@ int main(int argc, char **argv) {
       }
 
       if ((r == TKR_END_OF_INPUT) || (r == TKR_FEED_ME)) {
-        re_error_nowhere("%s(%d): Internal error: all lines are expected to match.\n", line_assembly.lc_tkr_.filename_, line_assembly.lc_tkr_.input_line_);
+        re_error_nowhere("%s(%d): Internal error: all lines are expected to match.", line_assembly.lc_tkr_.filename_, line_assembly.lc_tkr_.input_line_);
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2019,14 +2019,14 @@ int main(int argc, char **argv) {
     xlts_init(&error_id);
     r = xlts_append_xlat(&error_id, strlen("error"), "error");
     if (r) {
-      re_error_nowhere("Error: no memory\n");
+      re_error_nowhere("Error: no memory");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
     int is_new = 0;
     struct symbol *sym = symbol_find_or_add(&cc.symtab_, SYM_TERMINAL, &error_id, &is_new);
     if (!sym) {
-      re_error_nowhere("Error: no memory\n");
+      re_error_nowhere("Error: no memory");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2043,14 +2043,14 @@ int main(int argc, char **argv) {
     xlts_init(&error_id);
     r = xlts_append_xlat(&error_id, strlen("input-end"), "input-end");
     if (r) {
-      re_error_nowhere("Error: no memory\n");
+      re_error_nowhere("Error: no memory");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
     int is_new = 0;
     struct symbol *sym = symbol_find_or_add(&cc.symtab_, SYM_TERMINAL, &error_id, &is_new);
     if (!sym) {
-      re_error_nowhere("Error: no memory\n");
+      re_error_nowhere("Error: no memory");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2207,7 +2207,7 @@ int main(int argc, char **argv) {
       /* Productions are 1 based for LALR (as production 0 is the synthetic S reduction) */
       r = lr_add_conflict_resolution(&lalr, 1 + (int)matches[0], confres->prefer_prod_place_, 1 + (int)matches[1], confres->over_prod_place_);
       if (r) {
-        re_error_nowhere("Error, no memory\n");
+        re_error_nowhere("Error, no memory");
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2274,7 +2274,7 @@ int main(int argc, char **argv) {
 
         char *msg = malloc(msg_size);
         if (!msg) {
-          re_error_nowhere("Error, no memory\n");
+          re_error_nowhere("Error, no memory");
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2313,7 +2313,7 @@ int main(int argc, char **argv) {
       outfp = fopen(c_output_filename, "wb");
       if (!outfp) {
         int err = errno;
-        re_error_nowhere("Failed to open file \"%s\" for writing: %s\n", c_output_filename, strerror(err));
+        re_error_nowhere("Failed to open file \"%s\" for writing: %s", c_output_filename, strerror(err));
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2331,7 +2331,7 @@ int main(int argc, char **argv) {
         size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
         if (written != pt->num_chars_) {
           int err = errno;
-          re_error_nowhere("Failed to write to \"%s\": %s\n", c_output_filename, strerror(err));
+          re_error_nowhere("Failed to write to \"%s\": %s", c_output_filename, strerror(err));
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2384,7 +2384,7 @@ int main(int argc, char **argv) {
       include_guard = NULL;
     }
 
-    fprintf(outfp, "/* --------- HERE GOES THE GENERATED FLUFF ------------ */\n");
+    fprintf(outfp, "/* --------- START OF GENERATED CODE ------------ */\n");
 
     fprintf(outfp, "#include <stdlib.h> /* realloc(), free(), NULL, size_t */\n");
 
@@ -2490,7 +2490,7 @@ int main(int argc, char **argv) {
 
     state_syms = (int *)malloc(sizeof(int) * (size_t)lalr.nr_states_);
     if (!state_syms) {
-      re_error_nowhere("Error, no memory\n");
+      re_error_nowhere("Error, no memory");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2509,7 +2509,7 @@ int main(int argc, char **argv) {
               state_syms[state_shifting_to] = sym_shifting;
             }
             else {
-              re_error_nowhere("Inconsistent state entry: each state should be entered by 1 unique symbol\n");
+              re_error_nowhere("Inconsistent state entry: each state should be entered by 1 unique symbol");
               free(state_syms);
               r = EXIT_FAILURE;
               goto cleanup_exit;
@@ -2759,7 +2759,7 @@ int main(int argc, char **argv) {
     r = emit_parse_function(outfp, &cc, &prdg, &lalr, state_syms);
     if (r) goto cleanup_exit;
 
-    fprintf(outfp, "/* --------- HERE ENDS THE GENERATED FLUFF ------------ */\n");
+    fprintf(outfp, "/* --------- END OF GENERATED CODE ------------ */\n");
 
 
     pt = epilogue;
@@ -2770,7 +2770,7 @@ int main(int argc, char **argv) {
         size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
         if (written != pt->num_chars_) {
           int err = errno;
-          re_error_nowhere("Failed to write to \"%s\": %s\n", c_output_filename, strerror(err));
+          re_error_nowhere("Failed to write to \"%s\": %s", c_output_filename, strerror(err));
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2788,13 +2788,13 @@ int main(int argc, char **argv) {
       outfp = fopen(h_output_filename, "wb");
       if (!outfp) {
         int err = errno;
-        re_error_nowhere("Error, failed to open file \"%s\" for writing: %s\n", h_output_filename, strerror(err));
+        re_error_nowhere("Error, failed to open file \"%s\" for writing: %s", h_output_filename, strerror(err));
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
     }
     else {
-      re_error_nowhere("Error, generating header file requires output filename\n");
+      re_error_nowhere("Error, generating header file requires output filename");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
