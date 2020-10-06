@@ -21,17 +21,21 @@
 #include <assert.h>
 #include <inttypes.h>
 
+#ifndef MUL_H_INCLUDED
+#define MUL_H_INCLUDED
+#include "mul.h"
+#endif
+
 #include "dfa.h"
 
 #include "nfa.h"
 
 static void *arealloc(void *mem, size_t count, size_t size) {
-  if (((count >= (((size_t)1) << sizeof(size_t)*4)) ||
-       (size >= (((size_t)1) << (sizeof(size_t)*4)))) &&
-      (((size_t)-1)/(count) < size)) {
-    return NULL;
+  size_t size_to_alloc;
+  if (multiply_size_t(count, size, NULL, &size_to_alloc)) {
+    return NULL; /* overflow */
   }
-  return realloc(mem, count * size);
+  return realloc(mem, size_to_alloc);
 }
 
 void dfa_init(dfa_t *dfa) {
