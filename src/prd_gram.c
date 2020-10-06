@@ -13,12 +13,7 @@
  * limitations under the License.
  */
 
-#if 0
-/* Use prd_gram_gen.c implementation */
-#include "prd_gram_gen.c"
-#elif 1
 #include "prd_grammar_alt.c"
-#endif
 
 #ifndef REPORT_ERROR_H_INCLUDED
 #define REPORT_ERROR_H_INCLUDED
