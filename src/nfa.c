@@ -54,8 +54,15 @@
 #include "mul.h"
 #endif
 
+#ifndef NFA_H_INCLUDED
+#define NFA_H_INCLUDED
 #include "nfa.h"
+#endif
+
+#ifndef XLALR_H_INCLUDED
+#define XLALR_H_INCLUDED
 #include "xlalr.h"
+#endif
 
 typedef struct nfa_parse_context nfa_parse_context_t;
 typedef struct nfa_input_stream nfa_input_stream_t;
