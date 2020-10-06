@@ -44,11 +44,6 @@
     <ClInclude Include="src\xlts.h" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="3rdparty">
-      <UniqueIdentifier>{2438e150-3df8-4465-be55-d8442c7bffe6}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="src\prd_grammar.cnd" />
   </ItemGroup>
 </Project>
