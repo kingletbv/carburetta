@@ -1536,8 +1536,7 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
   fprintf(outfp, "            } /* if (err_sym_action) (if the current sym can continue after an error transition) */\n");
   fprintf(outfp, "          } /* if (err_action) (if the state at position 'n' can accept an error transition) */\n");
 
-  fprintf(outfp, "          --n;\n"
-                 "        } while (n);\n"
+  fprintf(outfp, "        } while (n);\n"
                  "      }\n");
 
   fprintf(outfp, "      if (stack->report_error_) {\n"
@@ -2741,7 +2740,10 @@ int main(int argc, char **argv) {
       "  }\n");
 
     fprintf(outfp,
-      "  stack->pos_ = 0;\n");
+      "  stack->pos_ = 0;\n"
+      "  stack->error_recovery_ = 0;\n"
+      "  stack->report_error_ = 0;\n"
+      "  stack->mute_error_turns_ = 0;\n");
 
     fprintf(outfp, "  switch (%spush_state(stack, 0)) {\n"
       "    case -1: /* overflow */ {\n", cc_prefix(&cc));
