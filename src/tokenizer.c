@@ -95,6 +95,9 @@ void tkr_tokenizer_reset(struct tkr_tokenizer *tkr) {
   tkr->best_match_variant_ = tkr->scanner_->actions[tkr->scanner_->start_state].variant;
   tkr->match_index_ = 0;
   tkr->input_index_ = 0;
+  tkr->input_offset_ = 0;
+  tkr->input_line_ = 1;
+  tkr->input_col_ = 1;
 }
 
 int tkr_tokenizer_inputx(struct tkr_tokenizer *tkr, struct xlts *input, int is_final_input) {
