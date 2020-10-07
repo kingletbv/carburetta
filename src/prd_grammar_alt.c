@@ -398,6 +398,9 @@ int prd_stack_reset(struct prd_stack *stack) {
     }
   }
   stack->pos_ = 0;
+  stack->error_recovery_ = 0;
+  stack->report_error_ = 0;
+  stack->mute_error_turns_ = 0;
   switch (prd_push_state(stack, 0)) {
     case -1: /* overflow */ {
       return -2;
@@ -943,7 +946,6 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
               break;
             } /* if (err_sym_action) (if the current sym can continue after an error transition) */
           } /* if (err_action) (if the state at position 'n' can accept an error transition) */
-          --n;
         } while (n);
       }
       if (stack->report_error_) {
