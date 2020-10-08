@@ -1089,6 +1089,164 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
   return r;
 }
 
+struct snippet_emission {
+  struct snippet *code_;
+
+  enum dest_type {
+    SEDT_NONE,
+    SEDT_FMT_DATATYPE_ORDINAL,
+    SEDT_FMT_PREFIX_DATATYPE_ORDINAL,
+    SEDT_FMT_PREFIX_TYPESTR_ORDINAL,
+    SEDT_FMT_TYPESTR_ORDINAL
+  } dest_type_;
+  const char *dest_fmt_;
+  struct prd_production_sym *dest_;
+  struct typestr *dest_typestr_;
+
+  enum sym_type {
+    SEST_NONE,
+    SEST_FMT_INDEX_ORDINAL
+  } sym_type_;
+  const char *sym_fmt_;
+  struct prd_production *prod_;
+};
+
+static int emit_dest(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  switch (se->dest_type_) {
+  case SEDT_NONE:
+    re_error(&st->text_, "$$ cannot resolve to a symbol");
+    return TKR_SYNTAX_ERROR;
+  case SEDT_FMT_DATATYPE_ORDINAL:
+    if (!se->dest_->sym_->assigned_type_) {
+      re_error(&st->text_, "$$ cannot resolve to a data type for non-terminal %s", se->dest_->id_.translated_);
+      return TKR_SYNTAX_ERROR;
+    }
+    fprintf(outfp, se->dest_fmt_, se->dest_->sym_->assigned_type_->ordinal_);
+    break;
+  case SEDT_FMT_PREFIX_DATATYPE_ORDINAL:
+    if (!se->dest_->sym_->assigned_type_) {
+      re_error(&st->text_, "$$ cannot resolve to a data type for non-terminal %s", se->dest_->id_.translated_);
+      return TKR_SYNTAX_ERROR;
+    }
+    fprintf(outfp, se->dest_fmt_, cc_prefix(cc), se->dest_->sym_->assigned_type_->ordinal_);
+    break;
+  case SEDT_FMT_PREFIX_TYPESTR_ORDINAL:
+    fprintf(outfp, se->dest_fmt_, cc_prefix(cc), se->dest_typestr_->ordinal_);
+    break;
+  case SEDT_FMT_TYPESTR_ORDINAL:
+    fprintf(outfp, se->dest_fmt_, se->dest_typestr_->ordinal_);
+    break;
+  }
+
+  return 0;
+}
+
+static int emit_sym_specific_data(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st, size_t sym_index) {
+  if (se->sym_type_ == SEST_NONE) {
+    re_error(&st->text_, "No symbols to reference");
+    return TKR_SYNTAX_ERROR;
+  }
+  if (sym_index >= se->prod_->num_syms_) {
+    re_error(&st->text_, "Symbol index exceeds number of symbols in production");
+    return TKR_SYNTAX_ERROR;
+  }
+  struct symbol *sym = se->prod_->syms_[sym_index].sym_;
+  if (!sym->assigned_type_) {
+    re_error(&st->text_, "%s cannot resolve to a data type for the symbol", st->text_.translated_);
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->sym_type_) {
+  case SEST_FMT_INDEX_ORDINAL:
+    fprintf(outfp, se->sym_fmt_, sym_index, sym->assigned_type_->ordinal_);
+    break;
+  }
+  return 0;
+}
+
+static int emit_snippet_code_emission(FILE *outfp, struct cinder_context *cc, struct snippet *code, struct snippet_emission *se) {
+  int r;
+  size_t col;
+  for (col = 0; col < code->num_tokens_; ++col) {
+    /* Print the original code, to preserve formatting and line continuations */
+    if (code->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
+      /* Expansion of special destination sym identifier */
+      r = emit_dest(outfp, cc, se, code->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
+    else if (code->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) {
+      /* Expansion of another sym identifier */
+      size_t n;
+      int failed = 0;
+      size_t special_index = 0;
+      for (n = 1; n < code->tokens_[col].text_.num_translated_; ++n) {
+        char c = code->tokens_[col].text_.translated_[n];
+        if (!isdigit(c)) {
+          re_error(&code->tokens_[col].text_, "Unrecognized special identifier");
+          failed = 1;
+          break;
+        }
+        if (multiply_size_t(10, special_index, NULL, &special_index)) {
+          re_error(&code->tokens_[col].text_, "Overflow on symbol index");
+          failed = 1;
+          break;
+        }
+        special_index += (size_t)(c - '0');
+      }
+      if (failed) {
+        return TKR_SYNTAX_ERROR;
+      }
+      if (se->sym_type_ == SEST_NONE) {
+        re_error(&code->tokens_[col].text_, "Symbol reference cannot resolve");
+        return TKR_SYNTAX_ERROR;
+      }
+      r = emit_sym_specific_data(outfp, cc, se, code->tokens_ + col, special_index);
+      if (r) {
+        return r;
+      }
+    }
+    else {
+      fprintf(outfp, "%s", code->tokens_[col].text_.original_);
+    }
+  }
+  fprintf(outfp, "\n");
+
+  return 0;
+}
+
+static int emit_action_snippet(FILE *outfp, struct cinder_context *cc, struct snippet *code, struct prd_production_sym *dest, struct prd_production *prd) {
+  struct snippet_emission se = { 0 };
+  se.code_ = code;
+  se.dest_type_ = SEDT_FMT_DATATYPE_ORDINAL;
+  se.dest_fmt_ = "(nonterminal_sym_data_reduced_to.v_.uv%d_)";
+  se.dest_ = dest;
+  se.sym_type_ = SEST_FMT_INDEX_ORDINAL;
+  se.sym_fmt_ = "(sym_data[%zu].v_.uv%d_)";
+  se.prod_ = prd;
+  return emit_snippet_code_emission(outfp, cc, code, &se);
+}
+
+static int emit_destructor_snippet(FILE *outfp, struct cinder_context *cc, struct snippet *code, struct typestr *ts) {
+  struct snippet_emission se = { 0 };
+  se.code_ = code;
+  se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
+  se.dest_typestr_ = ts;
+  se.dest_fmt_ = "((stack->stack_ + %ssym_idx)->v_.uv%d_)";
+  se.sym_type_ = SEST_NONE;
+  return emit_snippet_code_emission(outfp, cc, code, &se);
+}
+
+static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct cinder_context *cc, struct snippet *code, struct typestr *ts) {
+  struct snippet_emission se = { 0 };
+  se.code_ = code;
+  se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
+  se.dest_typestr_ = ts;
+  se.dest_fmt_ = "((stack->stack_ + n)->v_.uv%d_)";
+  se.sym_type_ = SEST_NONE;
+  return emit_snippet_code_emission(outfp, cc, code, &se);
+}
+
 static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   int r;
 
@@ -1275,73 +1433,23 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
       }
       /* Close this compound block and open the one for the action */
       fprintf(outfp, "\n"
-                     "            }\n"
-                     "            {\n"
-                     "              ");
+        "            }\n"
+        "            {\n"
+        "              ");
     }
 
-    for (col = 0; col < pd->action_sequence_.num_tokens_; ++col) {
-      /* Print the original code, to preserve formatting and line continuations */
-      if (pd->action_sequence_.tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
-        /* Expansion of special destination sym identifier */
-        /* Destination sym -- do we have a datatype for it ? */
-        struct symbol *dst_sym = pd->nt_.sym_;
-        assert(dst_sym);
-        if (!dst_sym->assigned_type_) {
-          re_error(&pd->action_sequence_.tokens_[col].text_, "$$ cannot resolve to a data type for non-terminal %s", pd->nt_.id_.translated_);
-          r = EXIT_FAILURE;
-          goto cleanup_exit;
-        }
-        fprintf(outfp, "(nonterminal_sym_data_reduced_to.v_.uv%d_)", dst_sym->assigned_type_->ordinal_);
-      }
-      else if (pd->action_sequence_.tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) {
-        /* Expansion of another sym identifier */
-        size_t n;
-        int failed = 0;
-        size_t special_index = 0;
-        for (n = 1; n < pd->action_sequence_.tokens_[col].text_.num_translated_; ++n) {
-          char c = pd->action_sequence_.tokens_[col].text_.translated_[n];
-          if (!isdigit(c)) {
-            re_error(&pd->action_sequence_.tokens_[col].text_, "Unrecognized special identifier");
-            failed = 1;
-            break;
-          }
-          if (multiply_size_t(10, special_index, NULL, &special_index)) {
-            re_error(&pd->action_sequence_.tokens_[col].text_, "Overflow on symbol index");
-            failed = 1;
-            break;
-          }
-          special_index += (size_t)(c - '0');
-        }
-        if (special_index >= pd->num_syms_) {
-          re_error(&pd->action_sequence_.tokens_[col].text_, "Symbol index exceeds number of symbols in production");
-          failed = 1;
-        }
-        if (failed) {
-          r = EXIT_FAILURE;
-          goto cleanup_exit;
-        }
-        struct symbol *sym = pd->syms_[special_index].sym_;
-        if (!sym->assigned_type_) {
-          re_error(&pd->action_sequence_.tokens_[col].text_, "%s cannot resolve to a data type for a symbol", pd->action_sequence_.tokens_[col].text_.translated_);
-          r = EXIT_FAILURE;
-          goto cleanup_exit;
-        }
-        fprintf(outfp, "(sym_data[%zu].v_.uv%d_)", special_index, sym->assigned_type_->ordinal_);
-      }
-      else {
-        fprintf(outfp, "%s", pd->action_sequence_.tokens_[col].text_.original_);
-      }
+    if (emit_action_snippet(outfp, cc, &pd->action_sequence_, &pd->nt_, pd)) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
     }
-    fprintf(outfp, "\n"
-                   "            }\n"
+
+    fprintf(outfp, "            }\n"
                    "            break;\n");
   }
   fprintf(outfp, "          } /* switch */\n");
   fprintf(outfp, "        } /* scope guard */\n");
-
-  fprintf(outfp, "\n"
-                 "        /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
+  fprintf(outfp, "\n");
+  fprintf(outfp, "        /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
                  "         * push nonterminal_data_reduced_to */\n"
                  "        size_t %ssym_idx;\n", cc_prefix(cc));
   fprintf(outfp, "        for (%ssym_idx = stack->pos_ - production_length; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
@@ -1365,18 +1473,11 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
       if (have_cases) {
         fprintf(outfp, "            {\n"
                        "              ");
-        struct snippet *action = &ts->destructor_snippet_;
-        for (col = 0; col < action->num_tokens_; ++col) {
-          if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
-            /* Insert destination sym at appropriate ordinal value type. */
-            fprintf(outfp, "((stack->stack_ + %ssym_idx)->v_.uv%d_)", cc_prefix(cc), ts->ordinal_);
-          }
-          else {
-            /* Regular token, just emit as-is */
-            fprintf(outfp, action->tokens_[col].text_.translated_);
-          }
+        if (emit_destructor_snippet(outfp, cc, &ts->destructor_snippet_, ts)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
         }
-        /* Close this compound block  */
+
         fprintf(outfp, "\n"
                        "            }\n"
                        "            break;\n");
@@ -1475,18 +1576,12 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
       }
       if (have_cases) {
         fprintf(outfp, "                  {\n"
-                       "                    ");
-        struct snippet *action = &ts->destructor_snippet_;
-        for (col = 0; col < action->num_tokens_; ++col) {
-          if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
-            /* Insert destination sym at appropriate ordinal value type. */
-            fprintf(outfp, "((stack->stack_ + %ssym_idx)->v_.uv%d_)", cc_prefix(cc), ts->ordinal_);
-          }
-          else {
-            /* Regular token, just emit as-is */
-            fprintf(outfp, action->tokens_[col].text_.translated_);
-          }
+                       "                     ");
+        if (emit_destructor_snippet(outfp, cc, &ts->destructor_snippet_, ts)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
         }
+
         /* Close this compound block  */
         fprintf(outfp, "\n"
                        "                  }\n"
@@ -2627,17 +2722,12 @@ int main(int argc, char **argv) {
         }
         if (have_cases) {
           fprintf(outfp, "    {\n      ");
-          struct snippet *action = &ts->destructor_snippet_;
-          for (col = 0; col < action->num_tokens_; ++col) {
-            if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
-              /* Insert destination sym at appropriate ordinal value type. */
-              fprintf(outfp, "((stack->stack_ + n)->v_.uv%d_)", ts->ordinal_);
-            }
-            else {
-              /* Regular token, just emit as-is */
-              fprintf(outfp, action->tokens_[col].text_.translated_);
-            }
+
+          if (emit_destructor_snippet_indexed_by_n(outfp, &cc, &ts->destructor_snippet_, ts)) {
+            r = EXIT_FAILURE;
+            goto cleanup_exit;
           }
+
           /* Close this compound block  */
           fprintf(outfp, "\n    }\n    break;\n");
         }
@@ -2718,19 +2808,14 @@ int main(int argc, char **argv) {
         }
         if (have_cases) {
           fprintf(outfp, "    {\n    ");
-          struct snippet *action = &ts->destructor_snippet_;
-          for (col = 0; col < action->num_tokens_; ++col) {
-            if (action->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
-              /* Insert destination sym at appropriate ordinal value type. */
-              fprintf(outfp, "((stack->stack_ + n)->v_.uv%d_)", ts->ordinal_);
-            }
-            else {
-              /* Regular token, just emit as-is */
-              fprintf(outfp, action->tokens_[col].text_.translated_);
-            }
+          if (emit_destructor_snippet_indexed_by_n(outfp, &cc, &ts->destructor_snippet_, ts)) {
+            r = EXIT_FAILURE;
+            goto cleanup_exit;
           }
-          /* Close this compound block  */
-          fprintf(outfp, "\n    }\n    break;\n");
+
+          fprintf(outfp, "\n"
+                         "    }\n"
+                         "    break;\n");
         }
       }
     }

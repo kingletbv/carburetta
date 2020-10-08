@@ -300,6 +300,7 @@ void prd_stack_cleanup(struct prd_stack *stack) {
     case 38: /* ident */
     {
        xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+
     }
     break;
     case 1: /* production */
@@ -312,6 +313,7 @@ void prd_stack_cleanup(struct prd_stack *stack) {
     case 36: /* rule */
     {
        prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+
     }
     break;
     }
@@ -381,6 +383,7 @@ int prd_stack_reset(struct prd_stack *stack) {
     case 38: /* ident */
     {
      xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+
     }
     break;
     case 1: /* production */
@@ -393,6 +396,7 @@ int prd_stack_reset(struct prd_stack *stack) {
     case 36: /* rule */
     {
      prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+
     }
     break;
     }
@@ -828,6 +832,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
             case 38: /* ident */
             {
                xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
+
             }
             break;
             case 1: /* production */
@@ -840,6 +845,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
             case 36: /* rule */
             {
                prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
+
             }
             break;
           } /* switch */
@@ -913,6 +919,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
                   case 38: /* ident */
                   {
                      xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
+
                   }
                   break;
                   case 1: /* production */
@@ -925,6 +932,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
                   case 36: /* rule */
                   {
                      prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
+
                   }
                   break;
                 } /* switch */
