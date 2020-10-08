@@ -1247,6 +1247,16 @@ static int emit_constructor_snippet(FILE *outfp, struct cinder_context *cc, stru
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
+static int emit_dst_sym_constructor_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+  struct snippet_emission se = { 0 };
+  se.code_ = &ts->constructor_snippet_;
+  se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
+  se.dest_typestr_ = ts;
+  se.dest_fmt_ = "(nonterminal_sym_data_reduced_to.v_.uv%d_)";
+  se.sym_type_ = SEST_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
 static int emit_token_constructor_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->constructor_snippet_;
@@ -1428,24 +1438,15 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
    
   fprintf(outfp, "          switch (production) {\n");
   size_t row;
-  size_t col;
   for (row = 0; row < prdg->num_productions_; ++row) {
     struct prd_production *pd = prdg->productions_ + row;
     fprintf(outfp, "            case %d: {\n    ", (int)row + 1);
     /* Emit dst_sym_data constructor first */
     if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
-      struct snippet *constructor = &pd->nt_.sym_->assigned_type_->constructor_snippet_;
-      for (col = 0; col < constructor->num_tokens_; ++col) {
-        if (constructor->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
-          /* Insert destination sym at appropriate ordinal value type. */
-          fprintf(outfp, "(nonterminal_sym_data_reduced_to.v_.uv%d_)", pd->nt_.sym_->assigned_type_->ordinal_);
-        }
-        else {
-          /* Regular token, just emit as-is */
-          fprintf(outfp, "%s", constructor->tokens_[col].text_.original_);
-        }
+      if (emit_dst_sym_constructor_snippet(outfp, cc, pd->nt_.sym_->assigned_type_)) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
       }
-      /* Close this compound block and open the one for the action */
       fprintf(outfp, "\n"
         "            }\n"
         "            {\n"
