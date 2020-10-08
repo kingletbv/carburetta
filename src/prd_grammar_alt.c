@@ -438,12 +438,15 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
         /* Fill in the sym from the tokenizer */
         struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
         {
-           (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = 0;              xlts_init(&(sym_data->v_.uv0_).text_);
+           (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = 0; \
+             xlts_init(&(sym_data->v_.uv0_).text_);
+
         }
         {
            (sym_data->v_.uv0_).match_ = tkr->best_match_action_; \
               (sym_data->v_.uv0_).variant_ = tkr->best_match_variant_; \
 			  xlts_append(&(sym_data->v_.uv0_).text_, &tkr->xmatch_);
+
         }
         if (stack->report_error_) {
           /* We're shifting this sym following an error recovery on the same sym, report syntax error */
@@ -918,7 +921,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
                   case 37: /* colon */
                   case 38: /* ident */
                   {
-                     xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
+                      xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
 
                   }
                   break;
@@ -931,7 +934,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
                   case 31: /* action-sequence */
                   case 36: /* rule */
                   {
-                     prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
+                      prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
 
                   }
                   break;
