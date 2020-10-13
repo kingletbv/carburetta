@@ -16,8 +16,9 @@ extern "C" {
 #define PRD_PAR_CLOSE 9
 #define PRD_CUBRACE_OPEN 10
 #define PRD_CUBRACE_CLOSE 11
-#define PRD_ERROR 12
-#define PRD_INPUT_END 13
+#define PRD_DOLLAR 12
+#define PRD_ERROR 13
+#define PRD_INPUT_END 14
 
 struct prd_stack {
   int error_recovery_:1;

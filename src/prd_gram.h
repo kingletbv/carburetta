@@ -78,6 +78,9 @@ struct prd_production {
   size_t num_syms_allocated_;
   struct prd_production_sym *syms_;
 
+  /* Action sequence common with other productions */
+  struct snippet common_action_sequence_;
+
   /* Action sequence that executes when the production matches */
   struct snippet action_sequence_;
 };
@@ -85,6 +88,9 @@ struct prd_production {
 struct prd_grammar {
   int have_errors_ : 1; /* if non-zero, errors were issued and compilation failed */
   int accept_whitespace_ : 1; /* if non-zero, whitespace is passed on to the grammar as PRD_TOKEN */
+
+  /* Attached to any production being added during parsing */
+  struct snippet current_common_action_sequence_;
 
   /* Productions making up the entire grammar */
   size_t num_productions_;

@@ -86,59 +86,77 @@ struct prd_sym_data {
   } v_;
 };
 static const int prd_minimum_sym = 3;
-static const size_t prd_num_columns = 20;
-static const size_t prd_num_rows = 40;
-static const size_t prd_num_productions = 26;
+static const size_t prd_num_columns = 22;
+static const size_t prd_num_rows = 54;
+static const size_t prd_num_productions = 31;
 static const int prd_parse_table[] = {
- -2,  0,  0,  0,  0,  0,  0,  0,  0, 0,-2,39, 0, 0, 0, 0, 0, 0, 0, 0,
- -3,  0,  0,  0,  0,  0,  0,  0,  0, 0,-3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- -4,  0,  0,  0,  0,  0,  0,  0,  0, 0,-4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- -5,  0,  0,  0,  0,  0,  0,  0,  0, 0,-5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,  0,  0,  3,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--10,-10,-10,-10,-10,-10,  0,-10,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--11,-11,-11,-11,-11,-11,  0,-11,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--12,-12,-12,-12,-12,-12,  0,-12,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--13,-13,-13,-13,-13,-13,  0,-13,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--14,-14,-14,-14,-14,-14,  0,-14,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 20, 21, 22, 23, 24, 27,  9, 30,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--16,-16,-16,-16,-16,-16,-16,-16,  0, 0, 0, 0, 0, 0,10, 0, 0, 0, 0, 0,
--15,-15,-15,-15,-15,-15,  0,-15,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 20, 21, 22, 23, 24, 27,  0, 30, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--16,-16,-16,-16,-16,-16,  0,-16,-16, 0, 0, 0, 0, 0,13, 0, 0, 0, 0, 0,
-  5,  6,  7,-25,  8, 11,  0, 14,  0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0,
- -9, -9, -9, -9, -9, -9,  0, -9,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--26,-26,-26,-26,-26,-26,  0,-26,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,16, 0,
- -6,  0,  0,  0,  0,  0,  0,  0,  0, 0,-6, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,  0,  0,  0,  0,  0,  0,  0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--17,-17,-17,-17,-17,-17,-17,-17,-17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--18,-18,-18,-18,-18,-18,-18,-18,-18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--19,-19,-19,-19,-19,-19,-19,-19,-19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--20,-20,-20,-20,-20,-20,-20,-20,-20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--21,-21,-21,-21,-21,-21,-21,-21,-21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--22,-22,-22,-22,-22,-22,-22,-22,-22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 20, 21, 22, 23, 24, 27, 25, 30,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--16,-16,-16,-16,-16,-16,-16,-16,  0, 0, 0, 0, 0, 0,26, 0, 0, 0, 0, 0,
--23,-23,-23,-23,-23,-23,-23,-23,-23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 20, 21, 22, 23, 24, 27,  0, 30, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--16,-16,-16,-16,-16,-16,  0,-16,-16, 0, 0, 0, 0, 0,29, 0, 0, 0, 0, 0,
- 20, 21, 22, 23, 24, 27,  0, 30,-25, 0, 0, 0, 0, 0, 0, 0, 0,19, 0, 0,
--16,-16,-16,-16,-16,-16,  0,-16,-16, 0, 0, 0, 0, 0,31, 0, 0, 0, 0, 0,
-  0,  0,  0,  0,  0,  0,  0, 32,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,  0, 17,  0,  0,  0,  0,-26,  0, 0, 0, 0, 0, 0, 0,15, 0, 0,33, 0,
- -8,  0, -8, -8,  0,  0,  0, -8,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 35,  0,-24,  2,  0,  0,  0,-24,  0, 0, 0, 0, 0, 0, 0, 0,34, 0, 0, 0,
- -7,  0, -7, -7,  0,  0,  0, -7,  0, 0, 0, 0,36, 0, 0, 0, 0, 0, 0, 0,
-  0, 37,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 38,  0,  0,  0,  0,  0,  0,  0,  0, 0,-1, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+ -2,  0,  0,  0,  0,  0,  0,  0,  0, -2, 0,-2,53, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ -3,  0,  0,  0,  0,  0,  0,  0,  0, -3, 0,-3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ -5,  0,  0,  0,  0,  0,  0,  0,  0, -5, 0,-5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ -6,  0,  0,  0,  0,  0,  0,  0,  0, -6, 0,-6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  3,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 19, 20, 21,-30, 22, 26,  0, 29,  0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0,
+ -7,  0,  0,  0,  0,  0,  0,  0,  0, -7, 0,-7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0,  0,  6,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 35, 36, 37, 38, 39, 43,  0, 46,-30, 40, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0,
+-20,-20,-20,-20,-20,-20,  0,-20,-20,-20, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0,  9,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0, 32,  0,  0,  0,  0,-31,  0,  0, 0, 0, 0, 0, 0, 0, 5, 0, 0,10, 0, 0,
+-11,  0,-11,-11,  0,  0,  0,-11,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 12,  0,-29,  2,  0,  0,  0,-29,  0,  0, 0, 0, 0, 0, 0, 0, 0,11, 0, 0, 0, 0,
+-10,  0,-10,-10,  0,  0,  0,-10,  0,  0, 0, 0, 0,13, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 14,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ -4,  0,  0,  0,  0,  0,  0,  0,  0, -4, 0,-4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ -8,  0,  0,  0,  0,  0,  0,  0,  0, -8, 0,-8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0, 17,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-13,-13,-13,-13,-13,-13,  0,-13,  0,-13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-14,-14,-14,-14,-14,-14,  0,-14,  0,-14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-15,-15,-15,-15,-15,-15,  0,-15,  0,-15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-16,-16,-16,-16,-16,-16,  0,-16,  0,-16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-17,-17,-17,-17,-17,-17,  0,-17,  0,-17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-18,-18,-18,-18,-18,-18,  0,-18,  0,-18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 35, 36, 37, 38, 39, 43, 24, 46,  0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-20,-20,-20,-20,-20,-20,-20,-20,  0,-20, 0, 0, 0, 0, 0,25, 0, 0, 0, 0, 0, 0,
+-19,-19,-19,-19,-19,-19,  0,-19,  0,-19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 35, 36, 37, 38, 39, 43,  0, 46, 27, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-20,-20,-20,-20,-20,-20,  0,-20,-20,-20, 0, 0, 0, 0, 0,28, 0, 0, 0, 0, 0, 0,
+ 19, 20, 21,-30, 22, 26,  0, 29,  0, 23, 0, 0, 0, 0, 0, 0, 0, 0,18, 0, 0, 0,
+-12,-12,-12,-12,-12,-12,  0,-12,  0,-12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-31,-31,-31,-31,-31,-31,  0,-31,  0,-31, 0, 0, 0, 0, 0, 0, 0, 0, 0,31, 0, 0,
+ -9,  0,  0,  0,  0,  0,  0,  0,  0, -9, 0,-9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0,  0, 33,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-21,-21,-21,-21,-21,-21,-21,-21,-21,-21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-22,-22,-22,-22,-22,-22,-22,-22,-22,-22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-23,-23,-23,-23,-23,-23,-23,-23,-23,-23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-24,-24,-24,-24,-24,-24,-24,-24,-24,-24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-25,-25,-25,-25,-25,-25,-25,-25,-25,-25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-26,-26,-26,-26,-26,-26,-26,-26,-26,-26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-27,-27,-27,-27,-27,-27,-27,-27,-27,-27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 35, 36, 37, 38, 39, 43, 41, 46,  0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-20,-20,-20,-20,-20,-20,-20,-20,  0,-20, 0, 0, 0, 0, 0,42, 0, 0, 0, 0, 0, 0,
+-28,-28,-28,-28,-28,-28,-28,-28,-28,-28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 35, 36, 37, 38, 39, 43,  0, 46, 44, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-20,-20,-20,-20,-20,-20,  0,-20,-20,-20, 0, 0, 0, 0, 0,45, 0, 0, 0, 0, 0, 0,
+ 35, 36, 37, 38, 39, 43,  0, 46,-30, 40, 0, 0, 0, 0, 0, 0, 0, 0,34, 0, 0, 0,
+-20,-20,-20,-20,-20,-20,  0,-20,-20,-20, 0, 0, 0, 0, 0,47, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0, 48,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0, 32,  0,  0,  0,  0,-31,  0,  0, 0, 0, 0, 0, 0, 0,30, 0, 0,49, 0, 0,
+  0,  0,-29,  0,  0,  0,  0,-29,  0,  0, 0, 0, 0, 0, 0, 0, 0,50, 0, 0, 0, 0,
+  0, 51,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 15,  0,  0,  0,  0,  0,  0,  0,  0, 52, 0,-1, 0, 0, 1, 0, 0, 0, 0, 0,16, 0,
 };
 static const size_t prd_production_lengths[] = {
  1,
  0,
  2,
+ 2,
  4,
  7,
  9,
+ 6,
+ 8,
  0,
+ 2,
  2,
  2,
  2,
@@ -148,6 +166,7 @@ static const size_t prd_production_lengths[] = {
  4,
  4,
  0,
+ 2,
  2,
  2,
  2,
@@ -160,74 +179,93 @@ static const size_t prd_production_lengths[] = {
  0
 };
 static const int prd_production_syms[] = {
- 22,
- 14,
- 14,
- 16,
- 16,
- 16,
+ 24,
  15,
  15,
- 18,
- 18,
- 18,
- 18,
- 18,
- 18,
- 18,
+ 15,
  17,
  17,
  17,
- 17,
- 17,
- 17,
- 17,
- 17,
+ 23,
+ 23,
+ 16,
+ 16,
  19,
+ 19,
+ 19,
+ 19,
+ 19,
+ 19,
+ 19,
+ 19,
+ 18,
+ 18,
+ 18,
+ 18,
+ 18,
+ 18,
+ 18,
+ 18,
+ 18,
  20,
- 21
+ 21,
+ 22
 };
 static const int prd_state_syms[] = {
  -1,
- 16,
+ 17,
  6,
  6,
- 20,
- 3,
- 4,
- 5,
- 7,
- 9,
- 17,
- 8,
- 11,
- 17,
- 10,
- 18,
- 21,
- 5,
- 11,
- 20,
- 3,
- 4,
- 5,
- 6,
- 7,
- 9,
- 17,
- 8,
- 11,
- 17,
- 10,
- 17,
- 10,
  21,
  19,
+ 11,
+ 21,
+ 18,
+ 10,
+ 22,
+ 20,
  3,
- 15,
+ 16,
  4,
  3,
- 14
+ 23,
+ 6,
+ 21,
+ 3,
+ 4,
+ 5,
+ 7,
+ 12,
+ 9,
+ 18,
+ 8,
+ 11,
+ 18,
+ 10,
+ 19,
+ 22,
+ 5,
+ 11,
+ 21,
+ 3,
+ 4,
+ 5,
+ 6,
+ 7,
+ 12,
+ 9,
+ 18,
+ 8,
+ 11,
+ 18,
+ 10,
+ 18,
+ 10,
+ 22,
+ 20,
+ 4,
+ 12,
+ 15
 };
 
 #ifndef CINDER_PRD_SRCPRD_GRAMMAR_ALT_H_INCLUDED
@@ -247,17 +285,19 @@ struct prd_stack {
 #define PRD_PAR_CLOSE 9
 #define PRD_CUBRACE_OPEN 10
 #define PRD_CUBRACE_CLOSE 11
-#define PRD_ERROR 12
-#define PRD_INPUT_END 13
+#define PRD_DOLLAR 12
+#define PRD_ERROR 13
+#define PRD_INPUT_END 14
 
-#define PRD_GRAMMAR 14
-#define PRD_RULE 15
-#define PRD_PRODUCTION 16
-#define PRD_ACTION_SEQUENCE 17
-#define PRD_STMT_ACTION 18
-#define PRD_START_C_TOKENIZER 19
-#define PRD_END_C_TOKENIZER 20
-#define PRD_ACCEPT_WHITESPACE 21
+#define PRD_GRAMMAR 15
+#define PRD_RULE 16
+#define PRD_PRODUCTION 17
+#define PRD_ACTION_SEQUENCE 18
+#define PRD_STMT_ACTION 19
+#define PRD_START_C_TOKENIZER 20
+#define PRD_END_C_TOKENIZER 21
+#define PRD_ACCEPT_WHITESPACE 22
+#define PRD_COMMON_ACTION 23
 #endif /* CINDER_PRD_SRCPRD_GRAMMAR_ALT_H_INCLUDED */
 
 void prd_stack_init(struct prd_stack *stack) {
@@ -275,48 +315,57 @@ void prd_stack_cleanup(struct prd_stack *stack) {
     switch (stack->stack_[n].state_) {
     case 2: /* semicolon */
     case 3: /* semicolon */
-    case 5: /* ident */
-    case 6: /* colon */
-    case 7: /* equals */
-    case 8: /* token */
-    case 9: /* par-close */
-    case 11: /* par-open */
-    case 12: /* cubrace-close */
-    case 14: /* cubrace-open */
-    case 17: /* equals */
-    case 18: /* cubrace-close */
-    case 20: /* ident */
-    case 21: /* colon */
-    case 22: /* equals */
-    case 23: /* semicolon */
-    case 24: /* token */
-    case 25: /* par-close */
-    case 27: /* par-open */
-    case 28: /* cubrace-close */
-    case 30: /* cubrace-open */
-    case 32: /* cubrace-open */
+    case 6: /* cubrace-close */
+    case 9: /* cubrace-open */
+    case 12: /* ident */
+    case 14: /* colon */
+    case 15: /* ident */
+    case 17: /* semicolon */
+    case 19: /* ident */
+    case 20: /* colon */
+    case 21: /* equals */
+    case 22: /* token */
+    case 23: /* dollar */
+    case 24: /* par-close */
+    case 26: /* par-open */
+    case 27: /* cubrace-close */
+    case 29: /* cubrace-open */
+    case 32: /* equals */
+    case 33: /* cubrace-close */
     case 35: /* ident */
-    case 37: /* colon */
-    case 38: /* ident */
+    case 36: /* colon */
+    case 37: /* equals */
+    case 38: /* semicolon */
+    case 39: /* token */
+    case 40: /* dollar */
+    case 41: /* par-close */
+    case 43: /* par-open */
+    case 44: /* cubrace-close */
+    case 46: /* cubrace-open */
+    case 48: /* cubrace-open */
+    case 51: /* colon */
+    case 52: /* dollar */
     {
        xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
 
     }
     break;
     case 1: /* production */
-    case 10: /* action-sequence */
-    case 13: /* action-sequence */
-    case 15: /* stmt-action */
-    case 26: /* action-sequence */
-    case 29: /* action-sequence */
-    case 31: /* action-sequence */
-    case 36: /* rule */
+    case 5: /* stmt-action */
+    case 8: /* action-sequence */
+    case 13: /* rule */
+    case 25: /* action-sequence */
+    case 28: /* action-sequence */
+    case 30: /* stmt-action */
+    case 42: /* action-sequence */
+    case 45: /* action-sequence */
+    case 47: /* action-sequence */
     {
        prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
 
     }
     break;
-    }
+    } /* switch */
   }
 
   if (stack->stack_) free(stack->stack_);
@@ -358,48 +407,57 @@ int prd_stack_reset(struct prd_stack *stack) {
     switch (stack->stack_[n].state_) {
     case 2: /* semicolon */
     case 3: /* semicolon */
-    case 5: /* ident */
-    case 6: /* colon */
-    case 7: /* equals */
-    case 8: /* token */
-    case 9: /* par-close */
-    case 11: /* par-open */
-    case 12: /* cubrace-close */
-    case 14: /* cubrace-open */
-    case 17: /* equals */
-    case 18: /* cubrace-close */
-    case 20: /* ident */
-    case 21: /* colon */
-    case 22: /* equals */
-    case 23: /* semicolon */
-    case 24: /* token */
-    case 25: /* par-close */
-    case 27: /* par-open */
-    case 28: /* cubrace-close */
-    case 30: /* cubrace-open */
-    case 32: /* cubrace-open */
+    case 6: /* cubrace-close */
+    case 9: /* cubrace-open */
+    case 12: /* ident */
+    case 14: /* colon */
+    case 15: /* ident */
+    case 17: /* semicolon */
+    case 19: /* ident */
+    case 20: /* colon */
+    case 21: /* equals */
+    case 22: /* token */
+    case 23: /* dollar */
+    case 24: /* par-close */
+    case 26: /* par-open */
+    case 27: /* cubrace-close */
+    case 29: /* cubrace-open */
+    case 32: /* equals */
+    case 33: /* cubrace-close */
     case 35: /* ident */
-    case 37: /* colon */
-    case 38: /* ident */
+    case 36: /* colon */
+    case 37: /* equals */
+    case 38: /* semicolon */
+    case 39: /* token */
+    case 40: /* dollar */
+    case 41: /* par-close */
+    case 43: /* par-open */
+    case 44: /* cubrace-close */
+    case 46: /* cubrace-open */
+    case 48: /* cubrace-open */
+    case 51: /* colon */
+    case 52: /* dollar */
     {
      xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
 
     }
     break;
     case 1: /* production */
-    case 10: /* action-sequence */
-    case 13: /* action-sequence */
-    case 15: /* stmt-action */
-    case 26: /* action-sequence */
-    case 29: /* action-sequence */
-    case 31: /* action-sequence */
-    case 36: /* rule */
+    case 5: /* stmt-action */
+    case 8: /* action-sequence */
+    case 13: /* rule */
+    case 25: /* action-sequence */
+    case 28: /* action-sequence */
+    case 30: /* stmt-action */
+    case 42: /* action-sequence */
+    case 45: /* action-sequence */
+    case 47: /* action-sequence */
     {
      prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
 
     }
     break;
-    }
+    } /* switch */
   }
   stack->pos_ = 0;
   stack->error_recovery_ = 0;
@@ -479,21 +537,37 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
         struct prd_production *pd;
           switch (production) {
             case 1: {
-    { }
+    { fprintf(stderr, "reduction of production %d\n", production); }
+
+            }
+            {
+              { }
             }
             break;
             case 2: {
-    {
+    { fprintf(stderr, "reduction of production %d\n", production); }
+
+            }
+            {
+              {
 	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
 	r = prd_grammar_check_production_reserve(g);
 	if (r) return r;
 	pd = g->productions_ + g->num_productions_++;
 	prd_prod_init(pd);
 	prd_prod_swap(pd, &(sym_data[1].v_.uv1_));
+  r = snippet_append_snippet(&pd->common_action_sequence_, &g->current_common_action_sequence_);
+  if (r) return r;
 }
             }
             break;
             case 3: {
+    {
+  /* Common actions are recorded in their own productions */
+}
+            }
+            break;
+            case 4: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
             }
@@ -505,7 +579,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
-            case 4: {
+            case 5: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
             }
@@ -525,7 +599,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
-            case 5: {
+            case 6: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
             }
@@ -550,7 +624,44 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
-            case 6: {
+            case 7: {
+    {
+  /* Analogous to regular production actions, except we're moving it into the grammar's
+   * current common action sequence. */
+  snippet_clear(&g->current_common_action_sequence_);
+
+  /* append stmt-action */
+  r = snippet_append_snippet(&g->current_common_action_sequence_, &(sym_data[3].v_.uv1_).action_sequence_);
+  if (r) return r;
+  
+  /* append semicolon */
+  r = snippet_append(&g->current_common_action_sequence_, (sym_data[5].v_.uv0_).match_, (sym_data[5].v_.uv0_).variant_, &(sym_data[5].v_.uv0_).text_);
+  if (r) return r;
+}
+            }
+            break;
+            case 8: {
+    {
+  /* Analogous to regular production actions, except we're moving it into the grammar's
+   * current common action sequence. */
+  snippet_clear(&g->current_common_action_sequence_);
+
+  /* If action-sequence is empty, then we'd like to preserve this empty-ness by making the common-action 
+   * empty as well. This allows generating code to discover that there is no common-action */
+  if ((sym_data[5].v_.uv1_).action_sequence_.num_tokens_) {
+    r = snippet_append(&g->current_common_action_sequence_, (sym_data[4].v_.uv0_).match_, (sym_data[4].v_.uv0_).variant_, &(sym_data[4].v_.uv0_).text_);
+    if (r) return r;
+
+    r = snippet_append_snippet(&g->current_common_action_sequence_, &(sym_data[5].v_.uv1_).action_sequence_);
+    if (r) return r;
+
+    r = snippet_append(&g->current_common_action_sequence_, (sym_data[7].v_.uv0_).match_, (sym_data[7].v_.uv0_).variant_, &(sym_data[7].v_.uv0_).text_);
+    if (r) return r;
+  }
+}
+            }
+            break;
+            case 9: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
             }
@@ -558,7 +669,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            case 7: {
+            case 10: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
             }
@@ -578,51 +689,12 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
-            case 8: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
-            }
-            {
-              
-            }
-            break;
-            case 9: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
-            }
-            {
-              {
-	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-            }
-            break;
-            case 10: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
-            }
-            {
-              {
-	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-            }
-            break;
             case 11: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
             }
             {
-              {
-	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
+              
             }
             break;
             case 12: {
@@ -646,6 +718,58 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
               {
 	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
 	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 14: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 15: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 16: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+            }
+            {
+              {
+  prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+  pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+  r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+  if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 17: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
 
 	/* Append the par-open to the snippets */
 	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
@@ -661,7 +785,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
-            case 14: {
+            case 18: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
             }
@@ -683,64 +807,12 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
-            case 15: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
-            }
-            {
-              
-            }
-            break;
-            case 16: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
-            }
-            {
-              {
-	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-            }
-            break;
-            case 17: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
-            }
-            {
-              {
-	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-            }
-            break;
-            case 18: {
-     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
-
-            }
-            {
-              {
-	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-            }
-            break;
             case 19: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
             }
             {
-              {
-	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
-	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
+              
             }
             break;
             case 20: {
@@ -764,6 +836,71 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
               {
 	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
 	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 22: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 23: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 24: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 25: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+            }
+            break;
+            case 26: {
+     prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
+
+            }
+            {
+              {
+	prd_prod_swap(&(nonterminal_sym_data_reduced_to.v_.uv1_), &(sym_data[0].v_.uv1_));
+	pd = &(nonterminal_sym_data_reduced_to.v_.uv1_);
 	/* Append the par-open to the snippets */
 	r = snippet_append(&pd->action_sequence_, (sym_data[1].v_.uv0_).match_, (sym_data[1].v_.uv0_).variant_, &(sym_data[1].v_.uv0_).text_);
 	if (r) return r;
@@ -778,7 +915,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
-            case 22: {
+            case 27: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
             }
@@ -800,18 +937,18 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
-            case 23: {
+            case 28: {
     tok_switch_to_c_idents(tkr);
             }
             break;
-            case 24: {
+            case 29: {
     {
 	tok_switch_to_nonterminal_idents(tkr);
 	g->accept_whitespace_ = 0; /* Reset to normal tokens */
 }
             }
             break;
-            case 25: {
+            case 30: {
     {
 	/* Welcome whitespace from this point. Note that this point is *after* the lookahead at the point
 	 * that the PRD_ACCEPT_WHITESPACE non-terminal appears. Therefore, it is *after* the EQUALS sign and
@@ -830,42 +967,51 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
           switch (stack->stack_[prd_sym_idx].state_) {
             case 2: /* semicolon */
             case 3: /* semicolon */
-            case 5: /* ident */
-            case 6: /* colon */
-            case 7: /* equals */
-            case 8: /* token */
-            case 9: /* par-close */
-            case 11: /* par-open */
-            case 12: /* cubrace-close */
-            case 14: /* cubrace-open */
-            case 17: /* equals */
-            case 18: /* cubrace-close */
-            case 20: /* ident */
-            case 21: /* colon */
-            case 22: /* equals */
-            case 23: /* semicolon */
-            case 24: /* token */
-            case 25: /* par-close */
-            case 27: /* par-open */
-            case 28: /* cubrace-close */
-            case 30: /* cubrace-open */
-            case 32: /* cubrace-open */
+            case 6: /* cubrace-close */
+            case 9: /* cubrace-open */
+            case 12: /* ident */
+            case 14: /* colon */
+            case 15: /* ident */
+            case 17: /* semicolon */
+            case 19: /* ident */
+            case 20: /* colon */
+            case 21: /* equals */
+            case 22: /* token */
+            case 23: /* dollar */
+            case 24: /* par-close */
+            case 26: /* par-open */
+            case 27: /* cubrace-close */
+            case 29: /* cubrace-open */
+            case 32: /* equals */
+            case 33: /* cubrace-close */
             case 35: /* ident */
-            case 37: /* colon */
-            case 38: /* ident */
+            case 36: /* colon */
+            case 37: /* equals */
+            case 38: /* semicolon */
+            case 39: /* token */
+            case 40: /* dollar */
+            case 41: /* par-close */
+            case 43: /* par-open */
+            case 44: /* cubrace-close */
+            case 46: /* cubrace-open */
+            case 48: /* cubrace-open */
+            case 51: /* colon */
+            case 52: /* dollar */
             {
                xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
 
             }
             break;
             case 1: /* production */
-            case 10: /* action-sequence */
-            case 13: /* action-sequence */
-            case 15: /* stmt-action */
-            case 26: /* action-sequence */
-            case 29: /* action-sequence */
-            case 31: /* action-sequence */
-            case 36: /* rule */
+            case 5: /* stmt-action */
+            case 8: /* action-sequence */
+            case 13: /* rule */
+            case 25: /* action-sequence */
+            case 28: /* action-sequence */
+            case 30: /* stmt-action */
+            case 42: /* action-sequence */
+            case 45: /* action-sequence */
+            case 47: /* action-sequence */
             {
                prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
 
@@ -905,7 +1051,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
         do {
           --n;
           /* Can we shift an error token? */
-          int err_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (12 /* error token */ - prd_minimum_sym)];
+          int err_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (13 /* error token */ - prd_minimum_sym)];
           if (err_action > 0) {
             /* Does the resulting state accept the current symbol? */
             int err_sym_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (sym - prd_minimum_sym)];
@@ -917,42 +1063,51 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
                 switch (stack->stack_[prd_sym_idx].state_) {
                   case 2: /* semicolon */
                   case 3: /* semicolon */
-                  case 5: /* ident */
-                  case 6: /* colon */
-                  case 7: /* equals */
-                  case 8: /* token */
-                  case 9: /* par-close */
-                  case 11: /* par-open */
-                  case 12: /* cubrace-close */
-                  case 14: /* cubrace-open */
-                  case 17: /* equals */
-                  case 18: /* cubrace-close */
-                  case 20: /* ident */
-                  case 21: /* colon */
-                  case 22: /* equals */
-                  case 23: /* semicolon */
-                  case 24: /* token */
-                  case 25: /* par-close */
-                  case 27: /* par-open */
-                  case 28: /* cubrace-close */
-                  case 30: /* cubrace-open */
-                  case 32: /* cubrace-open */
+                  case 6: /* cubrace-close */
+                  case 9: /* cubrace-open */
+                  case 12: /* ident */
+                  case 14: /* colon */
+                  case 15: /* ident */
+                  case 17: /* semicolon */
+                  case 19: /* ident */
+                  case 20: /* colon */
+                  case 21: /* equals */
+                  case 22: /* token */
+                  case 23: /* dollar */
+                  case 24: /* par-close */
+                  case 26: /* par-open */
+                  case 27: /* cubrace-close */
+                  case 29: /* cubrace-open */
+                  case 32: /* equals */
+                  case 33: /* cubrace-close */
                   case 35: /* ident */
-                  case 37: /* colon */
-                  case 38: /* ident */
+                  case 36: /* colon */
+                  case 37: /* equals */
+                  case 38: /* semicolon */
+                  case 39: /* token */
+                  case 40: /* dollar */
+                  case 41: /* par-close */
+                  case 43: /* par-open */
+                  case 44: /* cubrace-close */
+                  case 46: /* cubrace-open */
+                  case 48: /* cubrace-open */
+                  case 51: /* colon */
+                  case 52: /* dollar */
                   {
                       xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
 
                   }
                   break;
                   case 1: /* production */
-                  case 10: /* action-sequence */
-                  case 13: /* action-sequence */
-                  case 15: /* stmt-action */
-                  case 26: /* action-sequence */
-                  case 29: /* action-sequence */
-                  case 31: /* action-sequence */
-                  case 36: /* rule */
+                  case 5: /* stmt-action */
+                  case 8: /* action-sequence */
+                  case 13: /* rule */
+                  case 25: /* action-sequence */
+                  case 28: /* action-sequence */
+                  case 30: /* stmt-action */
+                  case 42: /* action-sequence */
+                  case 45: /* action-sequence */
+                  case 47: /* action-sequence */
                   {
                       prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
 
@@ -1016,6 +1171,15 @@ int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tok
     case TOK_PAR_CLOSE: sym = PRD_PAR_CLOSE; break;
     case TOK_CUBRACE_OPEN: sym = PRD_CUBRACE_OPEN; break;
     case TOK_CUBRACE_CLOSE: sym = PRD_CUBRACE_CLOSE; break;
+    case TOK_SPECIAL_IDENT: 
+      if (!strcmp("$", tkr_str(tkr))) {
+        /* Single '$' is recognized as a dollar.. */
+        sym = PRD_DOLLAR;
+      }
+      else {
+        sym = PRD_TOKEN;
+      }
+      break;
     default: sym = PRD_TOKEN; break;
     }
   }

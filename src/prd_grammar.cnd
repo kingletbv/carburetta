@@ -70,8 +70,8 @@
 
 %prefix prd_
 
-%token ident colon equals semicolon token par-open par-close cubrace-open cubrace-close
-%nt grammar rule production action-sequence stmt-action start-c-tokenizer end-c-tokenizer accept-whitespace
+%token ident colon equals semicolon token par-open par-close cubrace-open cubrace-close dollar
+%nt grammar rule production action-sequence stmt-action start-c-tokenizer end-c-tokenizer accept-whitespace common-action
 
 %token_type struct { \
   token_type_t match_; \
@@ -111,6 +111,8 @@
 
 %%
 
+$: { fprintf(stderr, "reduction of production %d\n", production); }
+
 grammar: { }
 grammar: grammar production {
 	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
@@ -119,6 +121,14 @@ grammar: grammar production {
 	pd = g->productions_ + g->num_productions_++;
 	prd_prod_init(pd);
 	prd_prod_swap(pd, &$1);
+  r = snippet_append_snippet(&pd->common_action_sequence_, &g->current_common_action_sequence_);
+  if (r) return r;
+}
+
+$: {}
+
+grammar: grammar common-action {
+  /* Common actions are recorded in their own productions */
 }
 
 production: IDENT COLON rule SEMICOLON {
@@ -157,6 +167,39 @@ production: IDENT COLON rule start-c-tokenizer accept-whitespace CUBRACE_OPEN ac
 	/* Append the cubrace-close to the snippets */
 	r = snippet_append(&pd->action_sequence_, $8.match_, $8.variant_, &$8.text_);
 	if (r) return r;
+}
+
+common-action: DOLLAR COLON start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON {
+  /* Analogous to regular production actions, except we're moving it into the grammar's
+   * current common action sequence. */
+  snippet_clear(&g->current_common_action_sequence_);
+
+  /* append stmt-action */
+  r = snippet_append_snippet(&g->current_common_action_sequence_, &$3.action_sequence_);
+  if (r) return r;
+  
+  /* append semicolon */
+  r = snippet_append(&g->current_common_action_sequence_, $5.match_, $5.variant_, &$5.text_);
+  if (r) return r;
+}
+
+common-action: DOLLAR COLON start-c-tokenizer accept-whitespace CUBRACE_OPEN action-sequence end-c-tokenizer CUBRACE_CLOSE {
+  /* Analogous to regular production actions, except we're moving it into the grammar's
+   * current common action sequence. */
+  snippet_clear(&g->current_common_action_sequence_);
+
+  /* If action-sequence is empty, then we'd like to preserve this empty-ness by making the common-action 
+   * empty as well. This allows generating code to discover that there is no common-action */
+  if ($5.action_sequence_.num_tokens_) {
+    r = snippet_append(&g->current_common_action_sequence_, $4.match_, $4.variant_, &$4.text_);
+    if (r) return r;
+
+    r = snippet_append_snippet(&g->current_common_action_sequence_, &$5.action_sequence_);
+    if (r) return r;
+
+    r = snippet_append(&g->current_common_action_sequence_, $7.match_, $7.variant_, &$7.text_);
+    if (r) return r;
+  }
 }
 
 rule: ; /* Default PRD_RULE reduction sym has empty initialized prod_ which works for us. */
@@ -198,6 +241,12 @@ stmt-action: stmt-action TOKEN {
 	pd = &$$;
 	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
 	if (r) return PRD_INTERNAL_ERROR;
+}
+stmt-action: stmt-action DOLLAR {
+  prd_prod_swap(&$$, &$0);
+  pd = &$$;
+  r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
+  if (r) return PRD_INTERNAL_ERROR;
 }
 stmt-action: stmt-action PAR_OPEN action-sequence PAR_CLOSE {
 	prd_prod_swap(&$$, &$0);
@@ -257,6 +306,12 @@ action-sequence: action-sequence SEMICOLON {
 	if (r) return PRD_INTERNAL_ERROR;
 }
 action-sequence: action-sequence TOKEN {
+	prd_prod_swap(&$$, &$0);
+	pd = &$$;
+	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+action-sequence: action-sequence DOLLAR {
 	prd_prod_swap(&$$, &$0);
 	pd = &$$;
 	r = snippet_append(&pd->action_sequence_, $1.match_, $1.variant_, &$1.text_);
@@ -327,6 +382,15 @@ int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tok
     case TOK_PAR_CLOSE: sym = PRD_PAR_CLOSE; break;
     case TOK_CUBRACE_OPEN: sym = PRD_CUBRACE_OPEN; break;
     case TOK_CUBRACE_CLOSE: sym = PRD_CUBRACE_CLOSE; break;
+    case TOK_SPECIAL_IDENT: 
+      if (!strcmp("$", tkr_str(tkr))) {
+        /* Single '$' is recognized as a dollar.. */
+        sym = PRD_DOLLAR;
+      }
+      else {
+        sym = PRD_TOKEN;
+      }
+      break;
     default: sym = PRD_TOKEN; break;
     }
   }

@@ -144,10 +144,12 @@ struct conflict_resolution {
 
 struct cinder_context {
   struct snippet token_type_;
+  struct snippet common_data_type_;
   struct symbol_table symtab_;
   struct typestr_table tstab_;
   struct typestr *most_recent_typestr_;
   struct typestr *token_assigned_type_;
+  struct typestr *common_data_assigned_type_;
   struct snippet token_action_snippet_;
   struct xlts prefix_;
   char *prefix_uppercase_;
@@ -183,10 +185,12 @@ void conflict_resolution_cleanup(struct conflict_resolution *cr) {
 
 void cinder_context_init(struct cinder_context *cc) {
   snippet_init(&cc->token_type_);
+  snippet_init(&cc->common_data_type_);
   symbol_table_init(&cc->symtab_);
   typestr_table_init(&cc->tstab_);
   cc->most_recent_typestr_ = NULL;
   cc->token_assigned_type_ = NULL;
+  cc->common_data_assigned_type_ = NULL;
   snippet_init(&cc->token_action_snippet_);
   xlts_init(&cc->prefix_);
   cc->prefix_uppercase_ = NULL;
@@ -210,6 +214,7 @@ void cinder_context_init(struct cinder_context *cc) {
 
 void cinder_context_cleanup(struct cinder_context *cc) {
   snippet_cleanup(&cc->token_type_);
+  snippet_cleanup(&cc->common_data_type_);
   symbol_table_cleanup(&cc->symtab_);
   typestr_table_cleanup(&cc->tstab_);
   snippet_cleanup(&cc->token_action_snippet_);
@@ -263,6 +268,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     PCD_TOKEN_DIRECTIVE,
     PCD_TOKEN_TYPE_DIRECTIVE,
     PCD_NT_TYPE_DIRECTIVE,
+    PCD_COMMON_TYPE_DIRECTIVE,
     PCD_CONSTRUCTOR_DIRECTIVE,
     PCD_DESTRUCTOR_DIRECTIVE,
     PCD_TOKEN_ACTION_DIRECTIVE,
@@ -347,6 +353,9 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             }
             else if (!strcmp("nt_type", tkr_str(tkr_tokens))) {
               directive = PCD_NT_TYPE_DIRECTIVE;
+            }
+            else if (!strcmp("common_type", tkr_str(tkr_tokens))) {
+              directive = PCD_COMMON_TYPE_DIRECTIVE;
             }
             else if (!strcmp("constructor", tkr_str(tkr_tokens))) {
               directive = PCD_CONSTRUCTOR_DIRECTIVE;
@@ -627,14 +636,31 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
               }
             }
           }
-          else if (directive == PCD_CONSTRUCTOR_DIRECTIVE) {
-            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
-              if ((tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) &&
-                  (tkr_tokens->best_match_action_ != TOK_SPECIAL_IDENT_DST)) {
-                re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a constructor may only have a single \"$$\" special identifier as the object to initialize", tkr_str(tkr_tokens));
-                r = TKR_SYNTAX_ERROR;
+          else if (directive == PCD_COMMON_TYPE_DIRECTIVE) {
+            /* Trim simple whitespace off the head end, otherwise simply copy. */
+            if (cc->common_data_type_.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+              if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
+                if (strcmp("$", tkr_str(tkr_tokens))) {
+                  re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a type string may only have a single \"$\" special identifier as a declarator identifier placeholder", tkr_str(tkr_tokens));
+                  r = TKR_SYNTAX_ERROR;
+                  goto cleanup_exit;
+                }
+                if (found_a_placeholder) {
+                  re_error_tkr(tkr_tokens, "Error: a type string may have at most 1 declarator identifier placeholder");
+                  r = TKR_SYNTAX_ERROR;
+                  goto cleanup_exit;
+                }
+                found_a_placeholder = 1;
+              }
+              r = snippet_append_tkr(&cc->common_data_type_, tkr_tokens);
+              if (r) {
+                r = TKR_INTERNAL_ERROR;
                 goto cleanup_exit;
               }
+            }
+          }
+          else if (directive == PCD_CONSTRUCTOR_DIRECTIVE) {
+            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
               r = snippet_append_tkr(&dir_snippet, tkr_tokens);
               if (r) {
                 r = TKR_INTERNAL_ERROR;
@@ -644,12 +670,6 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
           }
           else if (directive == PCD_DESTRUCTOR_DIRECTIVE) {
             if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
-              if ((tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) &&
-                  (tkr_tokens->best_match_action_ != TOK_SPECIAL_IDENT_DST)) {
-                re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a destructor may only have a single \"$$\" special identifier as the object to deconstruct", tkr_str(tkr_tokens));
-                r = TKR_SYNTAX_ERROR;
-                goto cleanup_exit;
-              }
               r = snippet_append_tkr(&dir_snippet, tkr_tokens);
               if (r) {
                 r = TKR_INTERNAL_ERROR;
@@ -659,12 +679,6 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
           }
           else if (directive == PCD_TOKEN_ACTION_DIRECTIVE) {
             if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
-              if ((tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) &&
-                  (tkr_tokens->best_match_action_ != TOK_SPECIAL_IDENT_DST)) {
-                re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a token action may only have a single \"$$\" special identifier as the object to construct", tkr_str(tkr_tokens));
-                r = TKR_SYNTAX_ERROR;
-                goto cleanup_exit;
-              }
               r = snippet_append_tkr(&dir_snippet, tkr_tokens);
               if (r) {
                 r = TKR_INTERNAL_ERROR;
@@ -892,12 +906,23 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   }
 
   if ((directive == PCD_NT_TYPE_DIRECTIVE) ||
-      (directive == PCD_TOKEN_TYPE_DIRECTIVE)) {
+      (directive == PCD_TOKEN_TYPE_DIRECTIVE) ||
+      (directive == PCD_COMMON_TYPE_DIRECTIVE)) {
     /* Trim all whitespace off, pop any "$$" special identifiers at the tail end */
-    while (dir_snippet.num_tokens_ && 
-           ((dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].variant_ == TOK_WHITESPACE) ||
-            (dir_snippet.tokens_[dir_snippet.num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
-      snippet_pop_last_token(&dir_snippet);
+    struct snippet *snip;
+    if (directive == PCD_NT_TYPE_DIRECTIVE) {
+      snip = &dir_snippet;
+    }
+    else if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
+      snip = &cc->token_type_;
+    }
+    else if (directive == PCD_COMMON_TYPE_DIRECTIVE) {
+      snip = &cc->common_data_type_;
+    }
+    while (snip->num_tokens_ &&
+           ((snip->tokens_[snip->num_tokens_ - 1].variant_ == TOK_WHITESPACE) ||
+           (snip->tokens_[snip->num_tokens_ - 1].variant_ == TOK_SPECIAL_IDENT))) {
+      snippet_pop_last_token(snip);
     }
   }
 
@@ -919,7 +944,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     int is_new;
     struct typestr *nt_ts = typestr_find_or_add(&cc->tstab_, &dir_snippet, &is_new);
     if (!nt_ts) {
-      r = EXIT_FAILURE;
+      r = TKR_INTERNAL_ERROR;
       goto cleanup_exit;
     }
     cc->most_recent_typestr_ = nt_ts;
@@ -936,11 +961,22 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     int is_new;
     struct typestr *token_ts = typestr_find_or_add(&cc->tstab_, &cc->token_type_, &is_new);
     if (!token_ts) {
-      r = EXIT_FAILURE;
+      r = TKR_INTERNAL_ERROR;
       goto cleanup_exit;
     }
     cc->token_assigned_type_ = token_ts;
     cc->most_recent_typestr_ = token_ts;
+  }
+
+  if (directive == PCD_COMMON_TYPE_DIRECTIVE) {
+    int is_new;
+    struct typestr *common_ts = typestr_find_or_add(&cc->tstab_, &cc->common_data_type_, &is_new);
+    if (!common_ts) {
+      r = TKR_INTERNAL_ERROR;
+      goto cleanup_exit;
+    }
+    cc->common_data_assigned_type_ = common_ts;
+    cc->most_recent_typestr_ = common_ts;
   }
 
   if (directive == PCD_CONSTRUCTOR_DIRECTIVE) {
@@ -1056,6 +1092,7 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
         break;
       case PRD_SYNTAX_ERROR:
         /* XXX: Need to recover, but how! (Transition on all parent Error syms and attempt to shift input) */
+        g->have_errors_ = 1;
         break;
       case PRD_NEXT:
         break;
@@ -1079,7 +1116,9 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
     case PRD_NEXT:
       /* Grammar should not exit regularly awaiting next token when the next token is INPUT_END.
        * (INPUT_END, i.e. end_of_input==1, never shifts) */
-      re_error_tkr(tkr_tokens, "Internal error, grammar expected to end");
+      if (!g->have_errors_) {
+        re_error_tkr(tkr_tokens, "Internal error, grammar expected to end");
+      }
       return TKR_INTERNAL_ERROR;
     case PRD_INTERNAL_ERROR:
       return TKR_INTERNAL_ERROR;
@@ -1094,6 +1133,8 @@ struct snippet_emission {
 
   enum dest_type {
     SEDT_NONE,
+    SEDT_FMT,
+    SEDT_FMT_PREFIX,
     SEDT_FMT_DATATYPE_ORDINAL,
     SEDT_FMT_PREFIX_DATATYPE_ORDINAL,
     SEDT_FMT_PREFIX_TYPESTR_ORDINAL,
@@ -1109,6 +1150,27 @@ struct snippet_emission {
   } sym_type_;
   const char *sym_fmt_;
   struct prd_production *prod_;
+
+  enum common_type {
+    SECT_NONE,
+    SECT_FMT_PREFIX,
+    SECT_FMT
+  } common_type_;
+  const char *common_fmt_prefix_;
+  const char *common_fmt_suffix_;
+
+  enum common_dest_type {
+    SECDT_NONE,
+    SECDT_FMT_PREFIX,
+    SECDT_FMT
+  } common_dest_type_;
+  const char *common_dest_fmt_;
+
+  enum len_type {
+    SELT_NONE,
+    SELT_FMT
+  } len_type_;
+  const char *len_fmt_;
 };
 
 static int emit_dest(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
@@ -1116,6 +1178,12 @@ static int emit_dest(FILE *outfp, struct cinder_context *cc, struct snippet_emis
   case SEDT_NONE:
     re_error(&st->text_, "$$ cannot resolve to a symbol");
     return TKR_SYNTAX_ERROR;
+  case SEDT_FMT:
+    fprintf(outfp, se->dest_fmt_);
+    break;
+  case SEDT_FMT_PREFIX:
+    fprintf(outfp, se->dest_fmt_, cc_prefix(cc));
+    break;
   case SEDT_FMT_DATATYPE_ORDINAL:
     if (!se->dest_->sym_->assigned_type_) {
       re_error(&st->text_, "$$ cannot resolve to a data type for non-terminal %s", se->dest_->id_.translated_);
@@ -1163,6 +1231,65 @@ static int emit_sym_specific_data(FILE *outfp, struct cinder_context *cc, struct
   return 0;
 }
 
+static int emit_dest_commondata(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->common_dest_type_ == SECDT_NONE) {
+    re_error(&st->text_, "$ cannot resolve to a symbol");
+    return TKR_SYNTAX_ERROR;
+  }
+  if (!cc->common_data_assigned_type_) {
+    re_error(&st->text_, "$ cannot resolve, no common data type defined");
+  }
+
+  switch (se->common_dest_type_) {
+  case SECDT_FMT_PREFIX:
+    fprintf(outfp, se->common_dest_fmt_, cc_prefix(cc));
+    break;
+  case SECDT_FMT:
+    fprintf(outfp, se->common_dest_fmt_);
+    break;
+  }
+
+  return 0;
+}
+
+static int emit_len(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->len_type_ == SELT_NONE) {
+    re_error(&st->text_, "%len cannot resolve to a length");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->len_type_) {
+  case SELT_FMT:
+    fprintf(outfp, se->len_fmt_);
+    break;
+  }
+  return 0;
+}
+
+static int emit_common(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *special_ident_token, size_t start_of_index, size_t end_of_index) {
+  if (se->common_type_ == SECT_NONE) {
+    re_error(&special_ident_token->text_, "No symbols to reference");
+    return TKR_SYNTAX_ERROR;
+  }
+  if (!cc->common_data_assigned_type_) {
+    re_error(&special_ident_token->text_, "${} cannot resolve, no common data type defined");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->common_type_) {
+  case SECT_FMT_PREFIX:
+    fprintf(outfp, se->common_fmt_prefix_, cc_prefix(cc));
+    break;
+  case SECT_FMT:
+    fprintf(outfp, se->common_fmt_prefix_);
+    break;
+  }
+  size_t n;
+  for (n = start_of_index; n < end_of_index; ++n) {
+    fprintf(outfp, "%s", se->code_->tokens_[n].text_.original_);
+  }
+  fprintf(outfp, se->common_fmt_suffix_);
+  return 0;
+}
+
 static int emit_snippet_code_emission(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se) {
   int r;
   size_t col;
@@ -1171,6 +1298,52 @@ static int emit_snippet_code_emission(FILE *outfp, struct cinder_context *cc, st
     if (se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
       /* Expansion of special destination sym identifier */
       r = emit_dest(outfp, cc, se, se->code_->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$", se->code_->tokens_[col].text_.translated_)) {
+      /* Isolated single $; if this is followed by a { in the immediately adjacent next token, we expand to index to common data */
+      if ((se->code_->num_tokens_ > (col + 1)) && (se->code_->tokens_[col + 1].variant_ == TOK_CUBRACE_OPEN)) {
+        int num_open_cubraces = 0;
+        size_t special_ident_at = col;
+        size_t open_cubrace_at = col + 1;
+        size_t index_starts_at = col + 2; /* beyond the opening brace */
+        do {
+          col++;
+          
+          if (se->code_->tokens_[col].variant_ == TOK_CUBRACE_CLOSE) {
+            num_open_cubraces--;
+          }
+          else if (se->code_->tokens_[col].variant_ == TOK_CUBRACE_OPEN) {
+            num_open_cubraces++;
+          }
+
+        } while ((col < se->code_->num_tokens_) && num_open_cubraces);
+
+        size_t index_ends_at = col; /* after the closing brace */
+        col--; /* Reposition *at* the closing brace, the toplevel for () loop will increment col */
+
+        if (num_open_cubraces) {
+          re_error(&se->code_->tokens_[open_cubrace_at].text_, "Unmatched brace");
+        }
+        else {
+          r = emit_common(outfp, cc, se, se->code_->tokens_ + special_ident_at, index_starts_at, index_ends_at);
+          if (r) {
+            return r;
+          }
+        }
+      }
+      else {
+        /* Single $ with no { } following it refers to the destination symbol's common data */
+        r = emit_dest_commondata(outfp, cc, se, se->code_->tokens_ + col);
+        if (r) {
+          return r;
+        }
+      }
+    }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$len", se->code_->tokens_[col].text_.translated_)) {
+      r = emit_len(outfp, cc, se, se->code_->tokens_ + col);
       if (r) {
         return r;
       }
@@ -1215,15 +1388,37 @@ static int emit_snippet_code_emission(FILE *outfp, struct cinder_context *cc, st
   return 0;
 }
 
-static int emit_action_snippet(FILE *outfp, struct cinder_context *cc, struct snippet *code, struct prd_production_sym *dest, struct prd_production *prd) {
+static int emit_common_action_snippet(FILE *outfp, struct cinder_context *cc, struct prd_production *prd) {
+  struct snippet_emission se = { 0 };
+  se.code_ = &prd->common_action_sequence_;
+  se.dest_type_ = SEDT_NONE;
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_FMT;
+  se.common_fmt_prefix_ = "(sym_data[";
+  se.common_fmt_suffix_ = "].common_)";
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
+  se.len_type_ = SELT_FMT;
+  se.len_fmt_ = "((size_t)production_length)";
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_action_snippet(FILE *outfp, struct cinder_context *cc, struct prd_production *prd) {
   struct snippet_emission se = { 0 };
   se.code_ = &prd->action_sequence_;
   se.dest_type_ = SEDT_FMT_DATATYPE_ORDINAL;
   se.dest_fmt_ = "(nonterminal_sym_data_reduced_to.v_.uv%d_)";
-  se.dest_ = dest;
+  se.dest_ = &prd->nt_;
   se.sym_type_ = SEST_FMT_INDEX_ORDINAL;
   se.sym_fmt_ = "(sym_data[%zu].v_.uv%d_)";
   se.prod_ = prd;
+  se.common_type_ = SECT_FMT;
+  se.common_fmt_prefix_ = "(sym_data[";
+  se.common_fmt_suffix_ = "].common_)";
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
+  se.len_type_ = SELT_FMT;
+  se.len_fmt_ = "((size_t)production_length)";
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1234,6 +1429,10 @@ static int emit_token_action_snippet(FILE *outfp, struct cinder_context *cc, str
   se.dest_typestr_ = cc->token_assigned_type_;
   se.dest_fmt_ = "(sym_data->v_.uv%d_)";
   se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(sym_data->common_)";
+  se.len_type_ = SELT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1244,6 +1443,10 @@ static int emit_constructor_snippet(FILE *outfp, struct cinder_context *cc, stru
   se.dest_typestr_ = ts;
   se.dest_fmt_ = "((stack->stack_ + %ssym_idx)->v_.uv%d_)";
   se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT_PREFIX;
+  se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
+  se.len_type_ = SELT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1254,6 +1457,52 @@ static int emit_dst_sym_constructor_snippet(FILE *outfp, struct cinder_context *
   se.dest_typestr_ = ts;
   se.dest_fmt_ = "(nonterminal_sym_data_reduced_to.v_.uv%d_)";
   se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
+  se.len_type_ = SELT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_common_constructor_snippet(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
+  se.dest_type_ = SEDT_FMT_PREFIX;
+  se.dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT_PREFIX;
+  se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
+  se.len_type_ = SELT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_dst_common_constructor_snippet(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
+  se.len_type_ = SELT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_token_common_constructor_snippet(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "(sym_data->common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(sym_data->common_)";
+  se.len_type_ = SELT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1264,6 +1513,10 @@ static int emit_token_constructor_snippet(FILE *outfp, struct cinder_context *cc
   se.dest_typestr_ = ts;
   se.dest_fmt_ = "(sym_data->v_.uv%d_)";
   se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(sym_data->common_)";
+  se.len_type_ = SELT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1274,6 +1527,10 @@ static int emit_destructor_snippet(FILE *outfp, struct cinder_context *cc, struc
   se.dest_typestr_ = ts;
   se.dest_fmt_ = "((stack->stack_ + %ssym_idx)->v_.uv%d_)";
   se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT_PREFIX;
+  se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
+  se.len_type_ = SELT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1284,6 +1541,38 @@ static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct cinder_conte
   se.dest_typestr_ = ts;
   se.dest_fmt_ = "((stack->stack_ + n)->v_.uv%d_)";
   se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
+  se.len_type_ = SELT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_common_destructor_snippet(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
+  se.dest_type_ = SEDT_FMT_PREFIX;
+  se.dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT_PREFIX;
+  se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
+  se.len_type_ = SELT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "((stack->stack_ + n)->common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
+  se.len_type_ = SELT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1350,6 +1639,16 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
   }
   if (need_sym_data) {
     fprintf(outfp, "        struct %ssym_data *sym_data = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
+  }
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+    fprintf(outfp, "        {\n"
+                   "          ");
+    if (emit_token_common_constructor_snippet(outfp, cc)) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    fprintf(outfp, "\n"
+                   "        }\n");
   }
   if (cc->token_assigned_type_ && cc->token_assigned_type_->constructor_snippet_.num_tokens_) {
     fprintf(outfp, "        {\n"
@@ -1442,18 +1741,38 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
     struct prd_production *pd = prdg->productions_ + row;
     fprintf(outfp, "            case %d: {\n    ", (int)row + 1);
     /* Emit dst_sym_data constructor first */
+    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+      if (emit_dst_common_constructor_snippet(outfp, cc)) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+      fprintf(outfp, "\n"
+                     "            }\n"
+                     "            {\n"
+                     "              ");
+    }
     if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
       if (emit_dst_sym_constructor_snippet(outfp, cc, pd->nt_.sym_->assigned_type_)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
       fprintf(outfp, "\n"
-        "            }\n"
-        "            {\n"
-        "              ");
+                     "            }\n"
+                     "            {\n"
+                     "              ");
+    }
+    if (pd->common_action_sequence_.num_tokens_) {
+      if (emit_common_action_snippet(outfp, cc, pd)) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+      fprintf(outfp, "\n"
+                     "            }\n"
+                     "            {\n"
+                     "              ");
     }
 
-    if (emit_action_snippet(outfp, cc, &pd->action_sequence_, &pd->nt_, pd)) {
+    if (emit_action_snippet(outfp, cc, pd)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1500,8 +1819,19 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
     }
   }
   /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
-  fprintf(outfp, "          } /* switch */\n"
-                 "        } /* for */\n"
+  fprintf(outfp, "          } /* switch */\n");
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+    fprintf(outfp, "        {\n"
+                   "          ");
+    if (emit_common_destructor_snippet(outfp, cc)) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    fprintf(outfp, "\n"
+                   "        }\n");
+  }
+
+  fprintf(outfp, "        } /* for */\n"
                  "        stack->pos_ -= production_length;\n"
                  "        action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   fprintf(outfp, "        if (action <= 0) {\n"
@@ -1604,9 +1934,19 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
       }
     }
   }
+  fprintf(outfp, "                } /* switch */\n");
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+    fprintf(outfp, "                {\n"
+                   "                  ");
+    if (emit_common_destructor_snippet(outfp, cc)) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    fprintf(outfp, "\n"
+                   "                }\n");
+  }
   /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
-  fprintf(outfp, "                } /* switch */\n"
-                 "              } /* for */\n"
+  fprintf(outfp, "              } /* for */\n"
                  "              stack->pos_ = n + 1;\n");
 
   fprintf(outfp, "              /* Push the state of the error transition */\n"
@@ -2499,6 +2839,27 @@ int main(int argc, char **argv) {
 
     fprintf(outfp, "struct %ssym_data {\n", cc_prefix(&cc));
     fprintf(outfp, "  int state_;\n");
+    if (cc.common_data_assigned_type_) {
+      struct typestr *ts = cc.common_data_assigned_type_;
+      fprintf(outfp, "  ");
+      int found_placeholder = 0;
+      size_t tok_idx;
+      for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
+        struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
+        if (st->variant_ != TOK_SPECIAL_IDENT) {
+          fprintf(outfp, "%s%s", tok_idx ? " " : "", st->text_.translated_);
+        }
+        else {
+          found_placeholder = 1;
+          fprintf(outfp, " common_");
+        }
+      }
+      if (!found_placeholder) {
+        /* Placeholder is implied at the end */
+        fprintf(outfp, " common_");
+      }
+      fprintf(outfp, ";\n");
+    }
     if (cc.tstab_.num_typestrs_) {
       fprintf(outfp, "  union {\n");
       size_t ts_idx;
@@ -2506,6 +2867,11 @@ int main(int argc, char **argv) {
         struct typestr *ts;
         ts = cc.tstab_.typestrs_[ts_idx];
         int found_placeholder = 0;
+
+        if (ts == cc.common_data_assigned_type_) {
+          /* Skip the common data type, as it is not part of the union but shared by all */
+          continue;
+        }
 
         fprintf(outfp, "    ");
         size_t tok_idx;
@@ -2750,8 +3116,18 @@ int main(int argc, char **argv) {
     }
 
 
-    fprintf(outfp,
-      "    }\n");
+    fprintf(outfp, "    } /* switch */\n");
+    if (cc.common_data_assigned_type_ && cc.common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+      fprintf(outfp, "    {\n"
+                     "      ");
+      if (emit_common_destructor_snippet_indexed_by_n(outfp, &cc)) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+      fprintf(outfp, "\n"
+                     "    }\n");
+    }
+
     fprintf(outfp,
       "  }\n"
       "\n"
@@ -2834,8 +3210,18 @@ int main(int argc, char **argv) {
         }
       }
     }
-    fprintf(outfp,
-      "    }\n");
+    fprintf(outfp, "    } /* switch */\n");
+    if (cc.common_data_assigned_type_ && cc.common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+      fprintf(outfp, "    {\n"
+                     "      ");
+      if (emit_common_destructor_snippet_indexed_by_n(outfp, &cc)) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+      fprintf(outfp, "\n"
+                     "    }\n");
+    }
+
     fprintf(outfp,
       "  }\n");
 

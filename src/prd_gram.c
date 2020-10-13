@@ -45,6 +45,7 @@ void prd_prod_init(struct prd_production *ppd) {
   prd_production_sym_init(&ppd->nt_);
   ppd->num_syms_ = ppd->num_syms_allocated_ = 0;
   ppd->syms_ = NULL;
+  snippet_init(&ppd->common_action_sequence_);
   snippet_init(&ppd->action_sequence_);
 }
 
@@ -55,6 +56,7 @@ void prd_prod_reset(struct prd_production *ppd) {
     prd_production_sym_cleanup(&ppd->syms_[n]);
   }
   ppd->num_syms_ = 0;
+  snippet_clear(&ppd->common_action_sequence_);
   snippet_clear(&ppd->action_sequence_);
 }
 
@@ -67,12 +69,14 @@ void prd_prod_cleanup(struct prd_production *ppd) {
     }
     free(ppd->syms_);
   }
+  snippet_cleanup(&ppd->common_action_sequence_);
   snippet_cleanup(&ppd->action_sequence_);
 }
 
 void prd_grammar_init(struct prd_grammar *g) {
   g->have_errors_ = 0;
   g->accept_whitespace_ = 0;
+  snippet_init(&g->current_common_action_sequence_);
   g->num_productions_ = g->num_productions_allocated_ = 0;
   g->productions_ = NULL;
 }
@@ -80,6 +84,7 @@ void prd_grammar_init(struct prd_grammar *g) {
 void prd_grammar_cleanup(struct prd_grammar *g) {
   size_t n;
 
+  snippet_cleanup(&g->current_common_action_sequence_);
   for (n = 0; n < g->num_productions_; ++n) {
     prd_prod_cleanup(g->productions_ + n);
   }
