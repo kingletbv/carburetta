@@ -1171,6 +1171,12 @@ struct snippet_emission {
     SELT_FMT
   } len_type_;
   const char *len_fmt_;
+
+  enum discard_type {
+    SEDIT_NONE,
+    SEDIT_FMT
+  } discard_type_;
+  const char *discard_fmt_;
 };
 
 static int emit_dest(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
@@ -1265,6 +1271,19 @@ static int emit_len(FILE *outfp, struct cinder_context *cc, struct snippet_emiss
   return 0;
 }
 
+static int emit_discard(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->discard_type_ == SEDIT_NONE) {
+    re_error(&st->text_, "%discard use limited to common actions");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->discard_type_) {
+  case SEDIT_FMT:
+    fprintf(outfp, se->discard_fmt_);
+    break;
+  }
+  return 0;
+}
+
 static int emit_common(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *special_ident_token, size_t start_of_index, size_t end_of_index) {
   if (se->common_type_ == SECT_NONE) {
     re_error(&special_ident_token->text_, "No symbols to reference");
@@ -1321,8 +1340,7 @@ static int emit_snippet_code_emission(FILE *outfp, struct cinder_context *cc, st
 
         } while ((col < se->code_->num_tokens_) && num_open_cubraces);
 
-        size_t index_ends_at = col; /* after the closing brace */
-        col--; /* Reposition *at* the closing brace, the toplevel for () loop will increment col */
+        size_t index_ends_at = col; /* at (but not including) the closing brace */
 
         if (num_open_cubraces) {
           re_error(&se->code_->tokens_[open_cubrace_at].text_, "Unmatched brace");
@@ -1344,6 +1362,12 @@ static int emit_snippet_code_emission(FILE *outfp, struct cinder_context *cc, st
     }
     else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$len", se->code_->tokens_[col].text_.translated_)) {
       r = emit_len(outfp, cc, se, se->code_->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$discard", se->code_->tokens_[col].text_.translated_)) {
+      r = emit_discard(outfp, cc, se, se->code_->tokens_ + col);
       if (r) {
         return r;
       }
@@ -1400,6 +1424,8 @@ static int emit_common_action_snippet(FILE *outfp, struct cinder_context *cc, st
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "((size_t)production_length)";
+  se.discard_type_ = SEDT_FMT;
+  se.discard_fmt_ = "discard_action = 1;";
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1419,6 +1445,7 @@ static int emit_action_snippet(FILE *outfp, struct cinder_context *cc, struct pr
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "((size_t)production_length)";
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1433,6 +1460,7 @@ static int emit_token_action_snippet(FILE *outfp, struct cinder_context *cc, str
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1447,6 +1475,7 @@ static int emit_constructor_snippet(FILE *outfp, struct cinder_context *cc, stru
   se.common_dest_type_ = SECDT_FMT_PREFIX;
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1461,6 +1490,7 @@ static int emit_dst_sym_constructor_snippet(FILE *outfp, struct cinder_context *
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1475,6 +1505,7 @@ static int emit_common_constructor_snippet(FILE *outfp, struct cinder_context *c
   se.common_dest_type_ = SECDT_FMT_PREFIX;
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1489,6 +1520,7 @@ static int emit_dst_common_constructor_snippet(FILE *outfp, struct cinder_contex
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1503,6 +1535,7 @@ static int emit_token_common_constructor_snippet(FILE *outfp, struct cinder_cont
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1517,6 +1550,7 @@ static int emit_token_constructor_snippet(FILE *outfp, struct cinder_context *cc
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1531,6 +1565,7 @@ static int emit_destructor_snippet(FILE *outfp, struct cinder_context *cc, struc
   se.common_dest_type_ = SECDT_FMT_PREFIX;
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1545,6 +1580,7 @@ static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct cinder_conte
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1559,6 +1595,7 @@ static int emit_common_destructor_snippet(FILE *outfp, struct cinder_context *cc
   se.common_dest_type_ = SECDT_FMT_PREFIX;
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1573,6 +1610,7 @@ static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct cinde
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
   se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1704,6 +1742,7 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
 
   fprintf(outfp, "      else if (action < 0) {\n"
                  "        int production = -action - 1;\n"
+                 "        int discard_action = 0;\n"
                  "        size_t production_length = %sproduction_lengths[production];\n", cc_prefix(cc));
   fprintf(outfp, "        int nonterminal = %sproduction_syms[production];\n", cc_prefix(cc));
   fprintf(outfp, "        if (0 == production) {\n"
@@ -1768,7 +1807,7 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
       }
       fprintf(outfp, "\n"
                      "            }\n"
-                     "            {\n"
+                     "            if (!discard_action) {\n"
                      "              ");
     }
 

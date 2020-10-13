@@ -524,6 +524,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       } /* action > 0 */
       else if (action < 0) {
         int production = -action - 1;
+        int discard_action = 0;
         size_t production_length = prd_production_lengths[production];
         int nonterminal = prd_production_syms[production];
         if (0 == production) {
@@ -537,19 +538,11 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
         struct prd_production *pd;
           switch (production) {
             case 1: {
-    { fprintf(stderr, "reduction of production %d\n", production); }
-
-            }
-            {
-              { }
+    { }
             }
             break;
             case 2: {
-    { fprintf(stderr, "reduction of production %d\n", production); }
-
-            }
-            {
-              {
+    {
 	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
 	r = prd_grammar_check_production_reserve(g);
 	if (r) return r;

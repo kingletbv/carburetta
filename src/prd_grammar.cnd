@@ -111,8 +111,6 @@
 
 %%
 
-$: { fprintf(stderr, "reduction of production %d\n", production); }
-
 grammar: { }
 grammar: grammar production {
 	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
@@ -124,8 +122,6 @@ grammar: grammar production {
   r = snippet_append_snippet(&pd->common_action_sequence_, &g->current_common_action_sequence_);
   if (r) return r;
 }
-
-$: {}
 
 grammar: grammar common-action {
   /* Common actions are recorded in their own productions */
