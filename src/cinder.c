@@ -1778,6 +1778,12 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
   size_t row;
   for (row = 0; row < prdg->num_productions_; ++row) {
     struct prd_production *pd = prdg->productions_ + row;
+    fprintf(outfp, "            /* %s:", pd->nt_.id_.translated_);
+    size_t n;
+    for (n = 0; n < pd->num_syms_; ++n) {
+      fprintf(outfp, " %s", pd->syms_[n].id_.translated_);
+    }
+    fprintf(outfp, " */\n");
     fprintf(outfp, "            case %d: {\n    ", (int)row + 1);
     /* Emit dst_sym_data constructor first */
     if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
