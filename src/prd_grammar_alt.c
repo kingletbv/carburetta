@@ -537,10 +537,12 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
           int r; \
         struct prd_production *pd;
           switch (production) {
+            /* grammar: */
             case 1: {
     { }
             }
             break;
+            /* grammar: grammar production */
             case 2: {
     {
 	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
@@ -554,12 +556,14 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* grammar: grammar common-action */
             case 3: {
     {
   /* Common actions are recorded in their own productions */
 }
             }
             break;
+            /* production: IDENT COLON rule SEMICOLON */
             case 4: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -572,6 +576,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* production: IDENT COLON rule start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
             case 5: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -592,6 +597,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* production: IDENT COLON rule start-c-tokenizer accept-whitespace CUBRACE_OPEN action-sequence end-c-tokenizer CUBRACE_CLOSE */
             case 6: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -617,6 +623,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* common-action: DOLLAR COLON start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
             case 7: {
     {
   /* Analogous to regular production actions, except we're moving it into the grammar's
@@ -633,6 +640,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* common-action: DOLLAR COLON start-c-tokenizer accept-whitespace CUBRACE_OPEN action-sequence end-c-tokenizer CUBRACE_CLOSE */
             case 8: {
     {
   /* Analogous to regular production actions, except we're moving it into the grammar's
@@ -654,6 +662,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* rule: */
             case 9: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -662,6 +671,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
+            /* rule: rule IDENT */
             case 10: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -682,6 +692,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* stmt-action: EQUALS accept-whitespace */
             case 11: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -690,6 +701,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
+            /* stmt-action: stmt-action IDENT */
             case 12: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -703,6 +715,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* stmt-action: stmt-action COLON */
             case 13: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -716,6 +729,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* stmt-action: stmt-action EQUALS */
             case 14: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -729,6 +743,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* stmt-action: stmt-action TOKEN */
             case 15: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -742,6 +757,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* stmt-action: stmt-action DOLLAR */
             case 16: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -755,6 +771,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* stmt-action: stmt-action PAR_OPEN action-sequence PAR_CLOSE */
             case 17: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -778,6 +795,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* stmt-action: stmt-action CUBRACE_OPEN action-sequence CUBRACE_CLOSE */
             case 18: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -800,6 +818,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* action-sequence: */
             case 19: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -808,6 +827,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
+            /* action-sequence: action-sequence IDENT */
             case 20: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -821,6 +841,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* action-sequence: action-sequence COLON */
             case 21: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -834,6 +855,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* action-sequence: action-sequence EQUALS */
             case 22: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -847,6 +869,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* action-sequence: action-sequence SEMICOLON */
             case 23: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -860,6 +883,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* action-sequence: action-sequence TOKEN */
             case 24: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -873,6 +897,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* action-sequence: action-sequence DOLLAR */
             case 25: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -886,6 +911,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
             case 26: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -908,6 +934,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* action-sequence: action-sequence CUBRACE_OPEN action-sequence CUBRACE_CLOSE */
             case 27: {
      prd_prod_init(&(nonterminal_sym_data_reduced_to.v_.uv1_));
 
@@ -930,10 +957,12 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* start-c-tokenizer: */
             case 28: {
     tok_switch_to_c_idents(tkr);
             }
             break;
+            /* end-c-tokenizer: */
             case 29: {
     {
 	tok_switch_to_nonterminal_idents(tkr);
@@ -941,6 +970,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
+            /* accept-whitespace: */
             case 30: {
     {
 	/* Welcome whitespace from this point. Note that this point is *after* the lookahead at the point
