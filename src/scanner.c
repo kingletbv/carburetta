@@ -253,9 +253,9 @@ void sc_scanner_dump(struct sc_scanner *sc) {
   }
 }
 
-void sc_scanner_write_to_c_file(struct sc_scanner *sc, FILE *fp) {
+void sc_scanner_write_to_c_file(struct sc_scanner *sc, FILE *fp, const char *transition_table_id, const char *state_actions_id, const char *scanner_id) {
   size_t n;
-  fprintf(fp, "static size_t scanner_transition_table[] = {\n");
+  fprintf(fp, "static size_t %s[] = {\n", transition_table_id);
   for (n = 0; n < sc->num_states; ++n) {
     int c;
     for (c = 0; c < 256; ++c) {
@@ -264,11 +264,11 @@ void sc_scanner_write_to_c_file(struct sc_scanner *sc, FILE *fp) {
     fprintf(fp, "%s\n", (n != (sc->num_states - 1)) ? "," : "");
   }
   fprintf(fp, "};\n");
-  fprintf(fp, "static struct sc_action scanner_state_actions[] = {\n");
+  fprintf(fp, "static struct sc_action %s[] = {\n", state_actions_id);
   for (n = 0; n < sc->num_states; ++n) {
     fprintf(fp, "  {%"PRIuPTR",%"PRIuPTR"}%s", sc->actions[n].action, sc->actions[n].variant, n == (sc->num_states - 1) ? "\n" : ",\n");
   }
   fprintf(fp, "};\n");
-  fprintf(fp, "static struct sc_scanner scanner = { %u, %u, scanner_transition_table, scanner_state_actions, %u };\n",
-          (unsigned int)sc->num_states, (unsigned int)sc->start_state, (unsigned int)sc->default_action);
+  fprintf(fp, "static struct sc_scanner %s = { %u, %u, %s, %s, %u };\n", scanner_id,
+          (unsigned int)sc->num_states, (unsigned int)sc->start_state, transition_table_id, state_actions_id, (unsigned int)sc->default_action);
 }

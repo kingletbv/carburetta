@@ -93,7 +93,7 @@ void sc_scanner_cleanup(struct sc_scanner *sc);
 int sc_scanner_compile(struct sc_scanner *sc, uintptr_t default_action, size_t num_rules, const struct sc_scan_rule *rules);
 void sc_scanner_dump(struct sc_scanner *sc);
 
-void sc_scanner_write_to_c_file(struct sc_scanner *sc, FILE *fp);
+void sc_scanner_write_to_c_file(struct sc_scanner *sc, FILE *fp, const char *transition_table_id, const char *state_actions_id, const char *scanner_id);
 
 #ifdef __cplusplus
 } /* extern "C" */

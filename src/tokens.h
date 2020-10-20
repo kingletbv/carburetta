@@ -109,7 +109,24 @@ xz(TOK_WHITESPACE) \
 xy("/\\*([^\\*]|[\\r\\n]|(\\*+([^\\*/]|[\\r\\n])))*\\*/", TOK_C_STYLE_COMMENT, TOK_WHITESPACE) \
 xy("//.*", TOK_CPP_STYLE_COMMENT, TOK_WHITESPACE) \
 xy("\\n", TOK_NEWLINE, TOK_WHITESPACE) \
-xy("[ \\x9\\xb\\xc\\xd]+", TOK_WHITESPACE_CHAR, TOK_WHITESPACE)
+xy("[ \\x9\\xb\\xc\\xd]+", TOK_WHITESPACE_CHAR, TOK_WHITESPACE) \
+xz(TOK_RESERVED_REGEX_CHAR) \
+xz(TOK_DOLLAR) \
+xz(TOK_CHAR) \
+xz(TOK_ESC_A) \
+xz(TOK_ESC_B) \
+xz(TOK_ESC_F) \
+xz(TOK_ESC_N) \
+xz(TOK_ESC_R) \
+xz(TOK_ESC_T) \
+xz(TOK_ESC_V) \
+xz(TOK_ESC_CHAR) \
+xz(TOK_ESC_HEX1) \
+xz(TOK_ESC_HEX2) \
+xz(TOK_ESC_OCT1) \
+xz(TOK_ESC_OCT2) \
+xz(TOK_ESC_OCT3)
+
 
 #define ENUM_SCANNER_PRODUCTION_DEFS \
 xz(TOK_NO_MATCH) \
@@ -184,6 +201,40 @@ xy("/\\*([^\\*]|[\\r\\n]|(\\*+([^\\*/]|[\\r\\n])))*\\*/", TOK_C_STYLE_COMMENT, T
 xy("//.*", TOK_CPP_STYLE_COMMENT, TOK_WHITESPACE) \
 xy("\\n", TOK_NEWLINE, TOK_WHITESPACE) \
 xy("[ \\x9\\xb\\xc\\xd]+", TOK_WHITESPACE_CHAR, TOK_WHITESPACE)
+
+#define ENUM_SCANNER_REGEX_DEFS \
+xx("\\(", TOK_PAR_OPEN) \
+xx("\\)", TOK_PAR_CLOSE) \
+xx("\\[", TOK_SQBRACE_OPEN) \
+xx("\\]", TOK_SQBRACE_CLOSE) \
+xx("\\.", TOK_DOT) \
+xx("\\$", TOK_DOLLAR) \
+xx("\\^", TOK_CARET) \
+xx("\\-", TOK_MINUS) \
+xx("\\|", TOK_BAR) \
+xx("\\*", TOK_ASTERISK) \
+xx("\\+", TOK_PLUS) \
+xx("\\?", TOK_QUESTION_MARK) \
+xx("\\{", TOK_RESERVED_REGEX_CHAR) \
+xx("\\}", TOK_RESERVED_REGEX_CHAR) \
+xx("\\,", TOK_RESERVED_REGEX_CHAR) \
+xx("\\+", TOK_RESERVED_REGEX_CHAR) \
+xx("\\:", TOK_RESERVED_REGEX_CHAR) \
+xy("\\\\a", TOK_ESC_A, TOK_CHAR) \
+xy("\\\\b", TOK_ESC_B, TOK_CHAR) \
+xy("\\\\f", TOK_ESC_F, TOK_CHAR) \
+xy("\\\\n", TOK_ESC_N, TOK_CHAR) \
+xy("\\\\r", TOK_ESC_R, TOK_CHAR) \
+xy("\\\\t", TOK_ESC_T, TOK_CHAR) \
+xy("\\\\v", TOK_ESC_V, TOK_CHAR) \
+xy("[\\{\\}\\[\\]\\(\\)\\,\\.\\^\\$\\*\\|\\?\\+\\:\\-\\\'\\\"]", TOK_ESC_CHAR, TOK_CHAR) \
+xy("\\\\x[0-9a-fA-F]", TOK_ESC_HEX1, TOK_CHAR) \
+xy("\\\\x[0-9a-fA-F][0-9a-fA-F]", TOK_ESC_HEX2, TOK_CHAR) \
+xy("\\\\[0-7]", TOK_ESC_OCT1, TOK_CHAR) \
+xy("\\\\[0-7][0-7]", TOK_ESC_OCT2, TOK_CHAR) \
+xy("\\\\[0-7][0-7][0-7]", TOK_ESC_OCT3, TOK_CHAR) \
+xy("[ \\x9\\xb\\xc\\xd]+", TOK_WHITESPACE_CHAR, TOK_WHITESPACE) \
+xx("[\\x20-\\x7e]", TOK_CHAR)
 
 
 typedef enum token_type {
