@@ -117,6 +117,8 @@ int tkr_tokenizer_inputx(struct tkr_tokenizer *tkr, struct xlts *input, int is_f
   uintptr_t best_match_variant = tkr->best_match_variant_;
   size_t best_match_size = tkr->best_match_size_;
 
+  size_t input_index = tkr->input_index_;
+
   /* Move any prior token out of the way */
   if (tkr->token_size_) {
     /* Discard current token out of the way, repair buffer, get ready for next token */
@@ -166,8 +168,6 @@ int tkr_tokenizer_inputx(struct tkr_tokenizer *tkr, struct xlts *input, int is_f
       return TKR_MATCH;
     }
   }
-
-  size_t input_index = tkr->input_index_;
 
   while (input_index < input->num_translated_) {
     c = ((const uint8_t *)(input->translated_))[input_index];
@@ -314,6 +314,11 @@ int tkr_tokenizer_inputs(struct tkr_tokenizer *tkr, const char *input, size_t in
   uintptr_t best_match_variant = tkr->best_match_variant_;
   size_t best_match_size = tkr->best_match_size_;
 
+  size_t input_index = tkr->input_index_;
+  size_t input_offset = tkr->input_offset_;
+  int input_line = tkr->input_line_;
+  int input_col = tkr->input_col_;
+
   /* Move any prior token out of the way */
   if (tkr->token_size_) {
     /* Discard current token out of the way, repair buffer, get ready for next token */
@@ -363,11 +368,6 @@ int tkr_tokenizer_inputs(struct tkr_tokenizer *tkr, const char *input, size_t in
       return TKR_MATCH;
     }
   }
-
-  size_t input_index = tkr->input_index_;
-  size_t input_offset = tkr->input_offset_;
-  int input_line = tkr->input_line_;
-  int input_col = tkr->input_col_;
 
   while (input_index < input_size) {
     c = ((const uint8_t *)input)[input_index];
