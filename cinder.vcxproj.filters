@@ -22,6 +22,7 @@
     <ClCompile Include="src\xlalr.c" />
     <ClCompile Include="src\xlts.c" />
     <ClCompile Include="src\regex_grammar.c" />
+    <ClCompile Include="src\tokens_generated_scanners.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\chain.h" />

@@ -37,6 +37,12 @@
     <ClCompile Include="src\symbol.c" />
     <ClCompile Include="src\tokenizer.c" />
     <ClCompile Include="src\tokens.c" />
+    <ClCompile Include="src\tokens_generated_scanners.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\typestr.c" />
     <ClCompile Include="src\xlalr.c" />
     <ClCompile Include="src\xlts.c" />
