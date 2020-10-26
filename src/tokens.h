@@ -228,13 +228,13 @@ xy("\\\\n", TOK_ESC_N, TOK_CHAR) \
 xy("\\\\r", TOK_ESC_R, TOK_CHAR) \
 xy("\\\\t", TOK_ESC_T, TOK_CHAR) \
 xy("\\\\v", TOK_ESC_V, TOK_CHAR) \
-xy("[\\{\\}\\[\\]\\(\\)\\,\\.\\^\\$\\*\\|\\?\\+\\:\\;\\-\\\'\\\"]", TOK_ESC_CHAR, TOK_CHAR) \
+xy("\\\\[\\{\\}\\[\\]\\(\\)\\,\\.\\^\\$\\*\\|\\?\\+\\:\\;\\-\\\'\\\"]", TOK_ESC_CHAR, TOK_CHAR) \
 xy("\\\\x[0-9a-fA-F]", TOK_ESC_HEX1, TOK_CHAR) \
 xy("\\\\x[0-9a-fA-F][0-9a-fA-F]", TOK_ESC_HEX2, TOK_CHAR) \
 xy("\\\\[0-7]", TOK_ESC_OCT1, TOK_CHAR) \
 xy("\\\\[0-7][0-7]", TOK_ESC_OCT2, TOK_CHAR) \
 xy("\\\\[0-7][0-7][0-7]", TOK_ESC_OCT3, TOK_CHAR) \
-xy("[ \\x9\\xb\\xc\\xd]+", TOK_WHITESPACE_CHAR, TOK_WHITESPACE) \
+xy("[ \\x9\\xb\\xc\\xd\\r\\n]+", TOK_WHITESPACE_CHAR, TOK_WHITESPACE) \
 xx("[\\x20-\\x7e]", TOK_CHAR)
 
 

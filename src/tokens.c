@@ -93,7 +93,7 @@ int tok_init(void) {
   r = sc_scanner_compile(&g_tok_regex_scanner_, TOK_NO_MATCH, sizeof(g_scanner_regex_rules_) / sizeof(*g_scanner_regex_rules_), g_scanner_regex_rules_);
   if (r) return r;
 
-  FILE *fp = fopen("tokens_generated_scanners.c", "wb");
+  FILE *fp = fopen("src/tokens_generated_scanners.c", "wb");
   fprintf(fp, "/* Copyright 2020 Kinglet B.V.\n"
               " *\n"
               " * Licensed under the Apache License, Version 2.0 (the \"License\");\n"
