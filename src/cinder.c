@@ -78,6 +78,11 @@
 #include "prd_gram.h"
 #endif
 
+#ifndef REGEX_GRAMMAR_H_INCLUDED
+#define REGEX_GRAMMAR_H_INCLUDED
+#include "regex_grammar.h"
+#endif
+
 #ifndef GRAMMAR_TABLE_H_INCLUDED
 #define GRAMMAR_TABLE_H_INCLUDED
 #include "grammar_table.h"
@@ -1068,7 +1073,7 @@ static const char *cc_TOKEN_PREFIX(struct cinder_context *cc) {
   return cc_PREFIX(cc);
 }
 
-static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct prd_stack *prds, struct prd_grammar *g, struct symbol_table *st) {
+static int process_grammar_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct prd_stack *prds, struct prd_grammar *g, struct symbol_table *st) {
   int r;
   struct xlts empty;
   xlts_init(&empty);
@@ -1131,6 +1136,71 @@ static int process_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_l
 
   return r;
 }
+
+static int process_scanner_tokens(struct tkr_tokenizer *tkr_tokens, struct xlts *input_line, int is_final, struct rxg_stack *rxgs, struct prd_grammar *g, struct symbol_table *st) {
+  int r;
+  struct xlts empty;
+  xlts_init(&empty);
+  if (is_final) input_line = &empty;
+  r = tkr_tokenizer_inputx(tkr_tokens, input_line, is_final);
+  while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
+    if (r == TKR_SYNTAX_ERROR) {
+      if (isprint(tkr_str(tkr_tokens)[0])) {
+        re_error_tkr(tkr_tokens, "Syntax error character \"%s\" not expected", tkr_str(tkr_tokens));
+      }
+      else {
+        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", tkr_str(tkr_tokens)[0]);
+      }
+    }
+    else if (r == TKR_INTERNAL_ERROR) {
+      return r;
+    }
+    else if (r == TKR_MATCH) {
+      r = rxg_parse_tkr(rxgs, g, tkr_tokens, 0, st);
+      switch (r) {
+      case PRD_SUCCESS:
+        /* This should not be possible without is_final==1 */
+        re_error_tkr(tkr_tokens, "Internal error, premature end of scanner");
+        return TKR_INTERNAL_ERROR;
+        break;
+      case PRD_SYNTAX_ERROR:
+        /* XXX: Need to recover, but how! (Transition on all parent Error syms and attempt to shift input) */
+        g->have_errors_ = 1;
+        break;
+      case PRD_NEXT:
+        break;
+      case PRD_INTERNAL_ERROR:
+        return TKR_INTERNAL_ERROR;
+      }
+    }
+
+    r = tkr_tokenizer_inputx(tkr_tokens, input_line, is_final);
+  }
+
+  if (r == TKR_END_OF_INPUT) {
+    r = rxg_parse_tkr(rxgs, g, tkr_tokens, 1, st);
+    switch (r) {
+    case PRD_SUCCESS:
+      return TKR_END_OF_INPUT;
+      break;
+    case PRD_SYNTAX_ERROR:
+      /* Not attempting to recover because there is no more input to synchronize with, end here. */
+      return TKR_END_OF_INPUT;
+    case PRD_NEXT:
+      /* Grammar should not exit regularly awaiting next token when the next token is INPUT_END.
+      * (INPUT_END, i.e. end_of_input==1, never shifts) */
+      if (!g->have_errors_) {
+        re_error_tkr(tkr_tokens, "Internal error, scanner expected to end");
+      }
+      return TKR_INTERNAL_ERROR;
+    case PRD_INTERNAL_ERROR:
+      return TKR_INTERNAL_ERROR;
+    }
+  }
+
+  return r;
+}
+
 
 struct snippet_emission {
   struct snippet *code_;
@@ -2237,6 +2307,9 @@ int main(int argc, char **argv) {
   struct prd_stack prds;
   prd_stack_init(&prds);
 
+  struct rxg_stack rxgs;
+  rxg_stack_init(&rxgs);
+
   struct prd_grammar prdg;
   prd_grammar_init(&prdg);
 
@@ -2258,7 +2331,14 @@ int main(int argc, char **argv) {
 
   r = prd_stack_reset(&prds);
   if (r) {
-    re_error_nowhere("Internal error, failed to reset parsing stack");
+    re_error_nowhere("Internal error, failed to reset grammar parsing stack");
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+
+  r = rxg_stack_reset(&rxgs);
+  if (r) {
+    re_error_nowhere("Internal error, failed to reset scanner parsing stack");
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -2286,8 +2366,10 @@ int main(int argc, char **argv) {
   enum {
     PROLOGUE,
     GRAMMAR,
+    SCANNER,
     EPILOGUE
-  } where_are_we = PROLOGUE;
+  } where_are_we = PROLOGUE, default_mode = GRAMMAR;
+  
 
   size_t num_bytes_read;
   static char buf[2400];
@@ -2348,8 +2430,14 @@ int main(int argc, char **argv) {
             /* Preserve line continuations */
             append_part(&prologue, token_buf.num_original_, token_buf.original_);
             break;
+          case LD_CINDER_SCANNER_SECTION_DELIMETER:
+            where_are_we = default_mode = SCANNER;
+            break;
+          case LD_CINDER_GRAMMAR_SECTION_DELIMETER:
+            where_are_we = default_mode = GRAMMAR;
+            break;
           case LD_CINDER_SECTION_DELIMITER:
-            where_are_we = GRAMMAR;
+            where_are_we = default_mode;
             break;
           case LD_REGULAR:
             /* Preserve line continuations */
@@ -2373,17 +2461,64 @@ int main(int argc, char **argv) {
             re_error_tkr(&tkr_lines, "Error, preprocessor directives do not belong in grammar area");
             have_error = 1;
             break;
+          case LD_CINDER_GRAMMAR_SECTION_DELIMETER:
+            re_error_tkr(&tkr_lines, "Error, already in grammar area");
+            have_error = 1;
+            break;
+          case LD_CINDER_SCANNER_SECTION_DELIMETER:
+            /* Finish up */
+            r = process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, &prdg, &cc.symtab_);
+
+            where_are_we = default_mode = SCANNER;
+            break;
           case LD_CINDER_SECTION_DELIMITER:
             /* Finish up */
-            r = process_tokens(&tkr_tokens, &token_buf, 1, &prds, &prdg, &cc.symtab_);
+            r = process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, &prdg, &cc.symtab_);
 
             where_are_we = EPILOGUE;
             break;
           case LD_REGULAR:
           {
-            r = process_tokens(&tkr_tokens, &token_buf, 0, &prds, &prdg, &cc.symtab_);
+            r = process_grammar_tokens(&tkr_tokens, &token_buf, 0, &prds, &prdg, &cc.symtab_);
             break;
           }
+          case LD_CINDER_DIRECTIVE:
+            r = process_cinder_directive(&tkr_tokens, &token_buf, &cc);
+            if (r == TKR_INTERNAL_ERROR) {
+              r = EXIT_FAILURE;
+              goto cleanup_exit;
+            }
+            else if (r) {
+              have_error = 1;
+            }
+            break;
+          }
+        }
+        else if (where_are_we == SCANNER) {
+          switch (tkr_lines.best_match_variant_) {
+          case LD_C_PREPROCESSOR:
+            re_error_tkr(&tkr_lines, "Error, preprocessor directives do not belong in scanner area");
+            have_error = 1;
+            break;
+          case LD_CINDER_SCANNER_SECTION_DELIMETER:
+            re_error_tkr(&tkr_lines, "Error, already in scanner area");
+            have_error = 1;
+            break;
+          case LD_CINDER_GRAMMAR_SECTION_DELIMETER:
+            /* Finish up */
+            r = process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, &prdg, &cc.symtab_);
+
+            where_are_we = default_mode = GRAMMAR;
+            break;
+          case LD_CINDER_SECTION_DELIMITER:
+            /* Finish up */
+            r = process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, &prdg, &cc.symtab_);
+
+            where_are_we = EPILOGUE;
+            break;
+          case LD_REGULAR:
+            r = process_scanner_tokens(&tkr_tokens, &token_buf, 0, &rxgs, &prdg, &cc.symtab_);
+            break;
           case LD_CINDER_DIRECTIVE:
             r = process_cinder_directive(&tkr_tokens, &token_buf, &cc);
             if (r == TKR_INTERNAL_ERROR) {
@@ -2401,8 +2536,10 @@ int main(int argc, char **argv) {
           case LD_C_PREPROCESSOR:
             append_part(&epilogue, token_buf.num_original_, token_buf.original_);
             break;
+          case LD_CINDER_SCANNER_SECTION_DELIMETER:
+          case LD_CINDER_GRAMMAR_SECTION_DELIMETER:
           case LD_CINDER_SECTION_DELIMITER:
-            /* Going back to the grammar, append the epilogue we gathered to the prologue as it is
+            /* Going back to the grammar or scanner, append the epilogue we gathered to the prologue as it is
              * actually inline code. */
           {
             struct part *prologue_head, *prologue_tail, *epilogue_head, *epilogue_tail;
@@ -2423,7 +2560,16 @@ int main(int argc, char **argv) {
               }
             }
           }
-          where_are_we = GRAMMAR;
+          if (tkr_lines.best_match_variant_ == LD_CINDER_SCANNER_SECTION_DELIMETER) {
+            where_are_we = default_mode = SCANNER;
+          }
+          else if (tkr_lines.best_match_variant_ == LD_CINDER_GRAMMAR_SECTION_DELIMETER) {
+            where_are_we = default_mode = GRAMMAR;
+          }
+          else {
+            /* Back to previous or default */
+            where_are_we = default_mode;
+          }
           break;
           case LD_REGULAR:
             /* Preserve line continuations */
@@ -3135,7 +3281,7 @@ int main(int argc, char **argv) {
       "void %sstack_cleanup(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
     fprintf(outfp,
       "  size_t n;\n"
-      "  for (n = 0; n < stack->pos_; ++n) {\n");
+      "  for (n = 1; n < stack->pos_; ++n) {\n");
     fprintf(outfp,
       "    switch (stack->stack_[n].state_) {\n");
     size_t typestr_idx;
@@ -3433,6 +3579,8 @@ cleanup_exit:
   cinder_context_cleanup(&cc);
 
   prd_grammar_cleanup(&prdg);
+
+  rxg_stack_cleanup(&rxgs);
 
   prd_stack_cleanup(&prds);
 

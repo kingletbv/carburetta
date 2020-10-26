@@ -30,6 +30,7 @@
     <ClCompile Include="src\mul.c" />
     <ClCompile Include="src\nfa.c" />
     <ClCompile Include="src\prd_gram.c" />
+    <ClCompile Include="src\regex_grammar.c" />
     <ClCompile Include="src\report_error.c" />
     <ClCompile Include="src\scanner.c" />
     <ClCompile Include="src\snippet.c" />
@@ -51,6 +52,7 @@
     <ClInclude Include="src\mul.h" />
     <ClInclude Include="src\nfa.h" />
     <ClInclude Include="src\prd_gram.h" />
+    <ClInclude Include="src\regex_grammar.h" />
     <ClInclude Include="src\report_error.h" />
     <ClInclude Include="src\scanner.h" />
     <ClInclude Include="src\snippet.h" />
@@ -63,6 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src\prd_grammar.cnd" />
+    <None Include="src\regex_grammar.cnd" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

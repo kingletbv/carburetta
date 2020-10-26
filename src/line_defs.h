@@ -28,6 +28,8 @@ extern "C" {
 #define ENUM_LINE_DEFS \
 xz(LD_UNKNOWN) \
 xx("[ \\x9\\xb\\xc\\xd]*#.*\\n?", LD_C_PREPROCESSOR) \
+xx("[ \\x9\\xb\\xc\\xd]*%scanner%[ \\x9\\xb\\xc\\xd]*\\n?", LD_CINDER_SCANNER_SECTION_DELIMETER) \
+xx("[ \\x9\\xb\\xc\\xd]*%grammar%[ \\x9\\xb\\xc\\xd]*\\n?", LD_CINDER_GRAMMAR_SECTION_DELIMETER) \
 xx("[ \\x9\\xb\\xc\\xd]*%%[ \\x9\\xb\\xc\\xd]*\\n?", LD_CINDER_SECTION_DELIMITER) \
 xx("[ \\x9\\xb\\xc\\xd]*%.*\\n?", LD_CINDER_DIRECTIVE) \
 xx(".*\\n?", LD_REGULAR)

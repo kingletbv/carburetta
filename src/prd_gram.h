@@ -99,6 +99,7 @@ struct prd_grammar {
 };
 
 int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
+int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
 
 void prd_production_sym_init(struct prd_production_sym *pps);
 void prd_production_sym_cleanup(struct prd_production_sym *pps);

@@ -1,0 +1,241 @@
+/* Copyright 2020 Kinglet B.V.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http ://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+#ifndef STDIO_H_INCLUDED
+#define STDIO_H_INCLUDED
+#include <stdio.h>
+#endif
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
+#include <stdint.h>
+#endif
+
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
+#include <string.h>
+#endif
+
+#ifndef ERRNO_H_INCLUDED
+#define ERNNO_H_INCLUDED
+#include <errno.h>
+#endif
+
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
+#include <assert.h>
+#endif
+
+#ifndef TOKENIZER_H_INCLUDED
+#define TOKENIZER_H_INCLUDED
+#include "tokenizer.h"
+#endif
+
+#ifndef XLTS_H_INCLUDED
+#define XLTS_H_INCLUDED
+#include "xlts.h"
+#endif
+
+#ifndef TOKENS_H_INCLUDED
+#define TOKENS_H_INCLUDED
+#include "tokens.h"
+#endif
+
+#ifndef REPORT_ERROR_H_INCLUDED
+#define REPORT_ERROR_H_INCLUDED
+#include "report_error.h"
+#endif
+
+#ifndef REGEX_GRAMMAR_H_INCLUDED
+#define REGEX_GRAMMAR_H_INCLUDED
+#include "regex_grammar.h"
+#endif
+
+#ifndef PRD_GRAM_H_INCLUDED
+#define PRD_GRAM_H_INCLUDED
+#include "prd_gram.h"
+#endif
+
+%prefix rxg_
+%params struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value
+
+%token CHAR IDENT PAR_OPEN PAR_CLOSE CUR_OPEN CUR_CLOSE COLON SEMICOLON SQ_OPEN SQ_CLOSE DOT DOLLAR CARET DASH BAR ASTERISK PLUS QUESTION_MARK WHITESPACE
+%nt exp term elm sym range range-elm
+
+%nt grammar pattern action-sequence start-regex end-regex
+
+%common_type struct xlts
+%constructor xlts_init(&$);
+%destructor xlts_cleanup(&$);
+
+%scanner%
+
+%grammar%
+
+grammar: ;
+grammar: grammar pattern;
+
+pattern: IDENT start-regex COLON exp end-regex SEMICOLON;
+pattern: IDENT start-regex COLON exp end-regex CUR_OPEN action-sequence CUR_CLOSE;
+
+$: {
+  size_t n;
+  for (n = 0; n < $len; ++n) {
+    xlts_append(&$, &${n});
+  }
+}
+exp: term;
+exp: exp BAR term;
+
+term: ;
+term: term elm;
+
+elm: sym;
+elm: sym ASTERISK;
+elm: sym PLUS;
+elm: sym QUESTION_MARK;
+
+sym: CHAR;
+sym: DOT;
+sym: CARET;
+sym: DOLLAR;
+sym: PAR_OPEN exp PAR_CLOSE;
+sym: SQ_OPEN range SQ_CLOSE;
+sym: SQ_OPEN CARET range SQ_CLOSE;
+
+range: range range-elm;
+range: range-elm;
+
+range-elm: CHAR;
+range-elm: CHAR DASH CHAR;
+
+$:{}
+
+start-regex: {
+  g->accept_whitespace_ = 0; /* ignore whitespace */
+  tok_switch_to_regex(tkr);
+}
+
+end-regex: {
+  g->accept_whitespace_ = 1; /* explicit whitespace */
+  tok_switch_to_nonterminal_idents(tkr);
+}
+
+%%
+
+int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
+  int sym;
+  char char_value = 0;
+
+  if (!end_of_input) {
+    token_type_t tkt = (token_type_t)tkr->best_match_variant_;
+    if (!g->accept_whitespace_ && (tkt == TOK_WHITESPACE)) {
+      /* Eat whitespace */
+      return PRD_NEXT;
+    }
+
+    switch (tkt) {
+    case TOK_IDENT: sym = RXG_IDENT; break;
+    case TOK_PAR_OPEN: sym = RXG_PAR_OPEN; break;
+    case TOK_PAR_CLOSE: sym = RXG_PAR_CLOSE; break;
+    case TOK_CUBRACE_OPEN: sym = RXG_CUR_OPEN; break;
+    case TOK_CUBRACE_CLOSE: sym = RXG_CUR_CLOSE; break;
+    case TOK_COLON: sym = RXG_COLON; break;
+    case TOK_SEMICOLON: sym = RXG_SEMICOLON; break;
+    case TOK_SQBRACE_OPEN: sym = RXG_SQ_OPEN; break;
+    case TOK_SQBRACE_CLOSE: sym = RXG_SQ_CLOSE; break;
+    case TOK_DOT: sym = RXG_DOT; break;
+    case TOK_DOLLAR: sym = RXG_DOLLAR; break;
+    case TOK_CARET: sym = RXG_CARET; break;
+    case TOK_MINUS: sym = RXG_DASH; break;
+    case TOK_BAR: sym = RXG_BAR; break;
+    case TOK_ASTERISK: sym = RXG_ASTERISK; break;
+    case TOK_PLUS: sym = RXG_PLUS; break;
+    case TOK_QUESTION_MARK: sym = RXG_QUESTION_MARK; break;
+    case TOK_RESERVED_REGEX_CHAR: {
+      return PRD_SYNTAX_ERROR;
+    }
+    case TOK_ESC_A: sym = RXG_CHAR; char_value = '\a'; break;
+    case TOK_ESC_B: sym = RXG_CHAR; char_value = '\b'; break;
+    case TOK_ESC_F: sym = RXG_CHAR; char_value = '\f'; break;
+    case TOK_ESC_N: sym = RXG_CHAR; char_value = '\n'; break;
+    case TOK_ESC_R: sym = RXG_CHAR; char_value = '\r'; break;
+    case TOK_ESC_T: sym = RXG_CHAR; char_value = '\t'; break;
+    case TOK_ESC_V: sym = RXG_CHAR; char_value = '\v'; break;
+    case TOK_ESC_CHAR: sym = RXG_CHAR; char_value = tkr->xmatch_.translated_[1]; break;
+    case TOK_ESC_HEX1: {
+      sym = RXG_CHAR; 
+      char c = tkr->xmatch_.translated_[2];
+      if ((c >= '0') && (c <= '9')) char_value = c - '0';
+      if ((c >= 'a') && (c <= 'f')) char_value = 0xA + c - 'a';
+      if ((c >= 'A') && (c <= 'F')) char_value = 0xA + c - 'A';
+      break;
+    }
+    case TOK_ESC_HEX2: {
+      sym = RXG_CHAR; 
+      char c = tkr->xmatch_.translated_[2];
+      if ((c >= '0') && (c <= '9')) char_value = c - '0';
+      if ((c >= 'a') && (c <= 'f')) char_value = 0xA + c - 'a';
+      if ((c >= 'A') && (c <= 'F')) char_value = 0xA + c - 'A';
+      c = tkr->xmatch_.translated_[3];
+      if ((c >= '0') && (c <= '9')) char_value = (char_value << 4) + c - '0';
+      if ((c >= 'a') && (c <= 'f')) char_value = (char_value << 4) + 0xA + c - 'a';
+      if ((c >= 'A') && (c <= 'F')) char_value = (char_value << 4) + 0xA + c - 'A';
+      break;
+    }
+    case TOK_ESC_OCT1: {
+      sym = RXG_CHAR;
+      char c = tkr->xmatch_.translated_[1];
+      char_value = c - '0';
+      break;
+    }
+    case TOK_ESC_OCT2: {
+      sym = RXG_CHAR;
+      char c = tkr->xmatch_.translated_[1];
+      char_value = c - '0';
+      c = tkr->xmatch_.translated_[2];
+      char_value = (char_value << 3) + c - '0';
+      break;
+    }
+    case TOK_ESC_OCT3: {
+      sym = RXG_CHAR;
+      char c = tkr->xmatch_.translated_[1];
+      char_value = c - '0';
+      c = tkr->xmatch_.translated_[2];
+      char_value = (char_value << 3) + c - '0';
+      c = tkr->xmatch_.translated_[3];
+      char_value = (char_value << 3) + c - '0';
+      break;
+    }
+    case TOK_CHAR: {
+      sym = RXG_CHAR;
+      char_value = tkr->xmatch_.translated_[0];
+      break;
+    }
+    case TOK_WHITESPACE: sym = RXG_WHITESPACE; break;
+    }
+  }
+  else {
+    sym = RXG_INPUT_END;
+  }
+
+  return rxg_parse(stack, sym, g, tkr, st, char_value);
+}
+
