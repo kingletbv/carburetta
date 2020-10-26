@@ -169,6 +169,7 @@ struct cinder_context {
   struct prd_production over_prod_;
   int over_prod_place_;
   struct conflict_resolution *conflict_resolutions_;
+  int have_typed_symbols_ :1;
 };
 
 void conflict_resolution_init(struct conflict_resolution *cr) {
@@ -210,6 +211,7 @@ void cinder_context_init(struct cinder_context *cc) {
   prd_prod_init(&cc->over_prod_);
   cc->over_prod_place_ = -1;
   cc->conflict_resolutions_ = NULL;
+  cc->have_typed_symbols_ = 0;
 }
 
 void cinder_context_cleanup(struct cinder_context *cc) {
@@ -955,6 +957,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
       if (r) goto cleanup_exit;
       sym->assigned_type_ = nt_ts;
     }
+    cc->have_typed_symbols_ = 1;
   }
 
   if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
@@ -966,6 +969,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     }
     cc->token_assigned_type_ = token_ts;
     cc->most_recent_typestr_ = token_ts;
+    cc->have_typed_symbols_ = 1;
   }
 
   if (directive == PCD_COMMON_TYPE_DIRECTIVE) {
@@ -1675,6 +1679,9 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
   if (cc->token_action_snippet_.num_tokens_) {
     need_sym_data = 1;
   }
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+    need_sym_data = 1;
+  }
   if (need_sym_data) {
     fprintf(outfp, "        struct %ssym_data *sym_data = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
   }
@@ -1980,7 +1987,7 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
     }
   }
   fprintf(outfp, "                } /* switch */\n");
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     fprintf(outfp, "                {\n"
                    "                  ");
     if (emit_common_destructor_snippet(outfp, cc)) {
@@ -2905,7 +2912,7 @@ int main(int argc, char **argv) {
       }
       fprintf(outfp, ";\n");
     }
-    if (cc.tstab_.num_typestrs_) {
+    if (cc.have_typed_symbols_) {
       fprintf(outfp, "  union {\n");
       size_t ts_idx;
       for (ts_idx = 0; ts_idx < cc.tstab_.num_typestrs_; ++ts_idx) {
