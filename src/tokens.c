@@ -138,6 +138,10 @@ void tok_switch_to_nonterminal_idents(struct tkr_tokenizer *tkr) {
   tkr_tokenizer_switch(tkr, &g_tok_nonterminal_ident_scanner_);
 }
 
+void tok_switch_to_regex(struct tkr_tokenizer *tkr) {
+  tkr_tokenizer_switch(tkr, &g_tok_regex_scanner_);
+}
+
 const char *tok_token_type_to_str(token_type_t tkt) {
   switch (tkt) {
 #define xx(regex, minor) case minor: return #minor;

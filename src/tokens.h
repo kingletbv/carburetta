@@ -215,11 +215,12 @@ xx("\\|", TOK_BAR) \
 xx("\\*", TOK_ASTERISK) \
 xx("\\+", TOK_PLUS) \
 xx("\\?", TOK_QUESTION_MARK) \
-xx("\\{", TOK_RESERVED_REGEX_CHAR) \
-xx("\\}", TOK_RESERVED_REGEX_CHAR) \
+xx("\\{", TOK_CUBRACE_OPEN) \
+xx("\\}", TOK_CUBRACE_CLOSE) \
 xx("\\,", TOK_RESERVED_REGEX_CHAR) \
 xx("\\+", TOK_RESERVED_REGEX_CHAR) \
 xx("\\:", TOK_RESERVED_REGEX_CHAR) \
+xx("\\;", TOK_SEMICOLON) \
 xy("\\\\a", TOK_ESC_A, TOK_CHAR) \
 xy("\\\\b", TOK_ESC_B, TOK_CHAR) \
 xy("\\\\f", TOK_ESC_F, TOK_CHAR) \
@@ -227,7 +228,7 @@ xy("\\\\n", TOK_ESC_N, TOK_CHAR) \
 xy("\\\\r", TOK_ESC_R, TOK_CHAR) \
 xy("\\\\t", TOK_ESC_T, TOK_CHAR) \
 xy("\\\\v", TOK_ESC_V, TOK_CHAR) \
-xy("[\\{\\}\\[\\]\\(\\)\\,\\.\\^\\$\\*\\|\\?\\+\\:\\-\\\'\\\"]", TOK_ESC_CHAR, TOK_CHAR) \
+xy("[\\{\\}\\[\\]\\(\\)\\,\\.\\^\\$\\*\\|\\?\\+\\:\\;\\-\\\'\\\"]", TOK_ESC_CHAR, TOK_CHAR) \
 xy("\\\\x[0-9a-fA-F]", TOK_ESC_HEX1, TOK_CHAR) \
 xy("\\\\x[0-9a-fA-F][0-9a-fA-F]", TOK_ESC_HEX2, TOK_CHAR) \
 xy("\\\\[0-7]", TOK_ESC_OCT1, TOK_CHAR) \
@@ -258,6 +259,9 @@ void tok_switch_to_c_idents(struct tkr_tokenizer *tkr);
 
 /* Switch to non-terminal identifiers (eg. identifiers with '-' permitted.) */
 void tok_switch_to_nonterminal_idents(struct tkr_tokenizer *tkr);
+
+/* Switch to regular expressions (eg. limited tokens, escapes permitted) */
+void tok_switch_to_regex(struct tkr_tokenizer *tkr);
 
 const char *tok_token_type_to_str(token_type_t tkt);
 
