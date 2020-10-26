@@ -25,9 +25,10 @@ extern "C" {
 #define RXG_ASTERISK 18
 #define RXG_PLUS 19
 #define RXG_QUESTION_MARK 20
-#define RXG_WHITESPACE 21
-#define RXG_ERROR 22
-#define RXG_INPUT_END 23
+#define RXG_TOKEN 21
+#define RXG_WHITESPACE 22
+#define RXG_ERROR 23
+#define RXG_INPUT_END 24
 
 struct rxg_stack {
   int error_recovery_:1;

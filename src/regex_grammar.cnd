@@ -76,16 +76,41 @@
 %prefix rxg_
 %params struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value
 
-%token CHAR IDENT PAR_OPEN PAR_CLOSE CUR_OPEN CUR_CLOSE COLON SEMICOLON SQ_OPEN SQ_CLOSE DOT DOLLAR CARET DASH BAR ASTERISK PLUS QUESTION_MARK WHITESPACE
+%token CHAR IDENT PAR_OPEN PAR_CLOSE CUR_OPEN CUR_CLOSE COLON SEMICOLON SQ_OPEN SQ_CLOSE DOT DOLLAR CARET DASH BAR ASTERISK PLUS QUESTION_MARK TOKEN WHITESPACE
 %nt exp term elm sym range range-elm
 
-%nt grammar pattern action-sequence start-regex end-regex
+%nt grammar pattern action-sequence stmt-action start-regex end-regex start-c-tokenizer end-c-tokenizer accept-whitespace
 
 %common_type struct xlts
 %constructor xlts_init(&$);
 %destructor xlts_cleanup(&$);
 
+%on_success        return PRD_SUCCESS;
+%on_syntax_error   re_error_tkr(tkr, "Syntax error"); return PRD_SYNTAX_ERROR;
+%on_alloc_error    re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+%on_internal_error re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+%on_next_token     return PRD_NEXT;
+
+%on_syntax_error /* Syntax error */ \
+  if (sym != PRD_INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
+
+
 %scanner%
+comment: [\*] {
+}
+//comment: x {
+//}
+//comment: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
+//}
+
+
+//xy("/\\*([^\\*]|[\\r\\n]|(\\*+([^\\*/]|[\\r\\n])))*\\*/", TOK_C_STYLE_COMMENT, TOK_WHITESPACE)
 
 %grammar%
 
@@ -93,7 +118,8 @@ grammar: ;
 grammar: grammar pattern;
 
 pattern: IDENT start-regex COLON exp end-regex SEMICOLON;
-pattern: IDENT start-regex COLON exp end-regex CUR_OPEN action-sequence CUR_CLOSE;
+pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE;
+pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON;
 
 $: {
   size_t n;
@@ -126,16 +152,47 @@ range: range-elm;
 range-elm: CHAR;
 range-elm: CHAR DASH CHAR;
 
+action-sequence: ;
+action-sequence: action-sequence CHAR;
+action-sequence: action-sequence IDENT;
+action-sequence: action-sequence COLON;
+action-sequence: action-sequence SEMICOLON;
+action-sequence: action-sequence SQ_OPEN;
+action-sequence: action-sequence SQ_CLOSE;
+action-sequence: action-sequence DOT;
+action-sequence: action-sequence DOLLAR;
+action-sequence: action-sequence CARET;
+action-sequence: action-sequence DASH;
+action-sequence: action-sequence BAR;
+action-sequence: action-sequence ASTERISK;
+action-sequence: action-sequence PLUS;
+action-sequence: action-sequence QUESTION_MARK;
+action-sequence: action-sequence TOKEN;
+action-sequence: action-sequence WHITESPACE;
+action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE;
+action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE;
+
+
 $:{}
 
 start-regex: {
-  g->accept_whitespace_ = 0; /* ignore whitespace */
   tok_switch_to_regex(tkr);
 }
 
 end-regex: {
-  g->accept_whitespace_ = 1; /* explicit whitespace */
   tok_switch_to_nonterminal_idents(tkr);
+}
+
+start-c-tokenizer: {
+  tok_switch_to_c_idents(tkr);
+}
+end-c-tokenizer: {
+  g->accept_whitespace_ = 0; /* ignore whitespace */
+  tok_switch_to_nonterminal_idents(tkr);
+}
+
+accept-whitespace: {
+  g->accept_whitespace_ = 1;
 }
 
 %%
@@ -230,6 +287,9 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
       break;
     }
     case TOK_WHITESPACE: sym = RXG_WHITESPACE; break;
+    default: {
+      sym = RXG_TOKEN;
+    }
     }
   }
   else {

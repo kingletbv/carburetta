@@ -77,6 +77,9 @@
 
 
 
+
+
+
 /* --------- START OF GENERATED CODE ------------ */
 #include <stdlib.h> /* realloc(), free(), NULL, size_t */
 struct rxg_sym_data {
@@ -84,55 +87,84 @@ struct rxg_sym_data {
   struct xlts common_;
 };
 static const int rxg_minimum_sym = 3;
-static const size_t rxg_num_columns = 33;
-static const size_t rxg_num_rows = 38;
-static const size_t rxg_num_productions = 26;
+static const size_t rxg_num_columns = 38;
+static const size_t rxg_num_rows = 66;
+static const size_t rxg_num_productions = 49;
 static const int rxg_parse_table[] = {
-  0,-2,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0,-2, 0, 0, 0, 0, 0, 0,37, 0, 0, 0, 0, 0,
-  0,-3,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0,-3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,-4,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0,-4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,-5,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0,-5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0,  0,  0,  0, 3,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0,
-  0, 0,  0,  0,  5, 0,  0,  2,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0,  0,  0,-26, 0,  0,-26,  0,  0,  0,  0,  0, 0, 18,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0,
- -9, 0, -9, -9, -9, 0,  0, -9, -9,  0, -9, -9, -9, 0, -9,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--11, 0,-11,-11,-11, 0,  0,-11,-11,  0,-11,-11,-11, 0,-11,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--12, 0,-12,-12,-12, 0,  0,-12,-12,  0,-12,-12,-12, 0,-12,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--13, 0,-13,-13,-13, 0,  0,-13,-13,  0,-13,-13,-13, 0,-13,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--10, 0,-10,-10,-10, 0,  0,-10,-10,  0,-10,-10,-10, 0,-10,  9, 10, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--14, 0,-14,-14,-14, 0,  0,-14,-14,  0,-14,-14,-14, 0,-14,-14,-14,-14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--15, 0,-15,-15,-15, 0,  0,-15,-15,  0,-15,-15,-15, 0,-15,-15,-15,-15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--16, 0,-16,-16,-16, 0,  0,-16,-16,  0,-16,-16,-16, 0,-16,-16,-16,-16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--17, 0,-17,-17,-17, 0,  0,-17,-17,  0,-17,-17,-17, 0,-17,-17,-17,-17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 13, 0, 21, -7, -7, 0,  0, -7, 32,  0, 14, 16, 15, 0, -7,  0,  0,  0, 0, 0, 0, 0, 0, 8,12, 0, 0, 0, 0, 0, 0, 0, 0,
- -8, 0, -8, -8, -8, 0,  0, -8, -8,  0, -8, -8, -8, 0, -8,  0,  0,  0, 0, 0, 0, 0,17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--18, 0,-18,-18,-18, 0,  0,-18,-18,  0,-18,-18,-18, 0,-18,-18,-18,-18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0,  0, 19,  0, 0,  0,  0,  0,  0,  0,  0,  0, 0, 18,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- -8, 0, -8, -8,  0, 0,  0,  0, -8,  0, -8, -8, -8, 0, -8,  0,  0,  0, 0, 0, 0,20,33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--19, 0,-19,-19,-19, 0,  0,-19,-19,  0,-19,-19,-19, 0,-19,-19,-19,-19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 30, 0,  0,  0,  0, 0,  0,  0,  0, 22,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0,25, 0, 0, 0, 0, 0, 0,
--20, 0,-20,-20,-20, 0,  0,-20,-20,  0,-20,-20,-20, 0,-20,-20,-20,-20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--21, 0,  0,  0,  0, 0,  0,  0,  0,-21,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 30, 0,  0,  0,  0, 0,  0,  0,  0, 24,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0,25, 0, 0, 0, 0, 0, 0,
--22, 0,  0,  0,  0, 0,  0,  0,  0,-22,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--24, 0,  0,  0,  0, 0,  0,  0,  0,-24,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 28, 0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--23, 0,  0,  0,  0, 0,  0,  0,  0,-23,  0,  0,  0,29,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 30, 0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0,26,27, 0, 0, 0, 0, 0, 0,
- 30, 0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0, 31, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0,23,27, 0, 0, 0, 0, 0, 0,
- 13, 0, 21, -6, -6, 0,  0, -6, 32,  0, 14, 16, 15, 0, -6,  0,  0,  0, 0, 0, 0, 0, 0, 8,12, 0, 0, 0, 0, 0, 0, 0, 0,
- -8, 0, -8,  0, -8, 0,  0, -8, -8,  0, -8, -8, -8, 0, -8,  0,  0,  0, 0, 0, 0, 7,33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0,  0,  0,  0, 0, 34,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0,  0,  0,  0, 0,-25,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,35, 0, 0,
-  0,36,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+  0, -2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-2, 0, 0, 0, 0, 0, 0,65, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33,-33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35,-35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36,-36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37,-37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38,-38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39,-39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  5,  6, 23, 21, 26,  0,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-26,-26,-26,-26,-26,  0,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,22, 0, 0, 0, 0, 0, 0, 0,
+-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  5,  6, 23,  0, 26, 24,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-26,-26,-26,  0,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,25, 0, 0, 0, 0, 0, 0, 0,
+  5,  6, 23,  0, 26,-48,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0,
+-26,-26,-26,  0,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,27, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0, 28,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0,-48,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,31, 0, 0,
+  0,  0,  0,  0,-49,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,32, 0, 0, 0, 0,29, 0,
+  0,  0,  0,  0,-47,  0,  0,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,33, 0, 0, 0,
+  0,  0,  0,  0,-46,  0,  0,-46,  0,  0,  0,  0,  0,  0, 46,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,34, 0, 0, 0, 0,
+-10,  0,-10,-10,-10,  0,  0,-10,-10,  0,-10,-10,-10,  0,-10,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-12,  0,-12,-12,-12,  0,  0,-12,-12,  0,-12,-12,-12,  0,-12,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-13,  0,-13,-13,-13,  0,  0,-13,-13,  0,-13,-13,-13,  0,-13,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-14,  0,-14,-14,-14,  0,  0,-14,-14,  0,-14,-14,-14,  0,-14,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-11,  0,-11,-11,-11,  0,  0,-11,-11,  0,-11,-11,-11,  0,-11, 37, 38, 39,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-15,  0,-15,-15,-15,  0,  0,-15,-15,  0,-15,-15,-15,  0,-15,-15,-15,-15,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-16,  0,-16,-16,-16,  0,  0,-16,-16,  0,-16,-16,-16,  0,-16,-16,-16,-16,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-17,  0,-17,-17,-17,  0,  0,-17,-17,  0,-17,-17,-17,  0,-17,-17,-17,-17,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-18,  0,-18,-18,-18,  0,  0,-18,-18,  0,-18,-18,-18,  0,-18,-18,-18,-18,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 41,  0, 49, -8, -8,  0,  0, -8, 60,  0, 42, 44, 43,  0, -8,  0,  0,  0,  0,  0, 0, 0, 0, 0,36,40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ -9,  0, -9, -9, -9,  0,  0, -9, -9,  0, -9, -9, -9,  0, -9,  0,  0,  0,  0,  0, 0, 0, 0,45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-19,  0,-19,-19,-19,  0,  0,-19,-19,  0,-19,-19,-19,  0,-19,-19,-19,-19,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0, 47,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 46,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ -9,  0, -9, -9,  0,  0,  0,  0, -9,  0, -9, -9, -9,  0, -9,  0,  0,  0,  0,  0, 0, 0,48,61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-20,  0,-20,-20,-20,  0,  0,-20,-20,  0,-20,-20,-20,  0,-20,-20,-20,-20,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 58,  0,  0,  0,  0,  0,  0,  0,  0, 50,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0,53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-21,  0,-21,-21,-21,  0,  0,-21,-21,  0,-21,-21,-21,  0,-21,-21,-21,-21,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-22,  0,  0,  0,  0,  0,  0,  0,  0,-22,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 58,  0,  0,  0,  0,  0,  0,  0,  0, 52,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0,53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-23,  0,  0,  0,  0,  0,  0,  0,  0,-23,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-25,  0,  0,  0,  0,  0,  0,  0,  0,-25,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 56,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-24,  0,  0,  0,  0,  0,  0,  0,  0,-24,  0,  0,  0, 57,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 58,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0,54,55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 58,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 59,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0,51,55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 41,  0, 49, -7, -7,  0,  0, -7, 60,  0, 42, 44, 43,  0, -7,  0,  0,  0,  0,  0, 0, 0, 0, 0,36,40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ -9,  0, -9,  0, -9,  0,  0, -9, -9,  0, -9, -9, -9,  0, -9,  0,  0,  0,  0,  0, 0, 0,35,61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0, 62,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,-45,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,63, 0, 0, 0, 0, 0,
+  0, 64,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 static const size_t rxg_production_lengths[] = {
  1,
  0,
  2,
  6,
- 8,
+ 11,
+ 9,
  1,
  3,
  0,
@@ -153,75 +185,148 @@ static const size_t rxg_production_lengths[] = {
  1,
  3,
  0,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 2,
+ 4,
+ 4,
+ 0,
+ 0,
+ 0,
+ 0,
  0
 };
 static const int rxg_production_syms[] = {
- 35,
- 30,
- 30,
+ 40,
  31,
  31,
- 24,
- 24,
+ 32,
+ 32,
+ 32,
  25,
  25,
  26,
  26,
- 26,
- 26,
- 27,
- 27,
- 27,
  27,
  27,
  27,
  27,
  28,
  28,
+ 28,
+ 28,
+ 28,
+ 28,
+ 28,
  29,
  29,
+ 30,
+ 30,
  33,
- 34
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 33,
+ 35,
+ 36,
+ 37,
+ 38,
+ 39
 };
 static const int rxg_state_syms[] = {
  -1,
- 31,
+ 32,
  10,
  8,
- 32,
- 7,
- 34,
- 24,
- 26,
+ 38,
+ 3,
+ 4,
+ 9,
+ 10,
+ 11,
+ 12,
+ 13,
+ 14,
+ 15,
+ 16,
+ 17,
  18,
  19,
  20,
+ 21,
+ 22,
+ 6,
+ 33,
+ 5,
+ 8,
+ 33,
+ 7,
+ 33,
+ 7,
+ 39,
+ 10,
+ 38,
+ 34,
+ 37,
+ 36,
+ 25,
  27,
+ 18,
+ 19,
+ 20,
+ 28,
  3,
  13,
  15,
  14,
- 25,
+ 26,
  17,
  6,
- 24,
+ 25,
  5,
  12,
- 28,
+ 29,
  12,
+ 30,
  29,
- 28,
- 29,
+ 30,
  3,
  16,
  3,
  15,
  11,
- 25,
+ 26,
  9,
- 33,
+ 35,
  4,
- 30
+ 31
 };
 
 #ifndef CINDER_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
@@ -250,21 +355,26 @@ struct rxg_stack {
 #define RXG_ASTERISK 18
 #define RXG_PLUS 19
 #define RXG_QUESTION_MARK 20
-#define RXG_WHITESPACE 21
-#define RXG_ERROR 22
-#define RXG_INPUT_END 23
+#define RXG_TOKEN 21
+#define RXG_WHITESPACE 22
+#define RXG_ERROR 23
+#define RXG_INPUT_END 24
 
-#define RXG_EXP 24
-#define RXG_TERM 25
-#define RXG_ELM 26
-#define RXG_SYM 27
-#define RXG_RANGE 28
-#define RXG_RANGE_ELM 29
-#define RXG_GRAMMAR 30
-#define RXG_PATTERN 31
-#define RXG_ACTION_SEQUENCE 32
-#define RXG_START_REGEX 33
-#define RXG_END_REGEX 34
+#define RXG_EXP 25
+#define RXG_TERM 26
+#define RXG_ELM 27
+#define RXG_SYM 28
+#define RXG_RANGE 29
+#define RXG_RANGE_ELM 30
+#define RXG_GRAMMAR 31
+#define RXG_PATTERN 32
+#define RXG_ACTION_SEQUENCE 33
+#define RXG_STMT_ACTION 34
+#define RXG_START_REGEX 35
+#define RXG_END_REGEX 36
+#define RXG_START_C_TOKENIZER 37
+#define RXG_END_C_TOKENIZER 38
+#define RXG_ACCEPT_WHITESPACE 39
 #endif /* CINDER_RXG_SRCREGEX_GRAMMAR_H_INCLUDED */
 
 void rxg_stack_init(struct rxg_stack *stack) {
@@ -355,11 +465,11 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
       if (action > 0) {
         switch (rxg_push_state(stack, action /* action for a shift is the ordinal */)) {
           case -1: /* overflow */ {
-            return -2;
+            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
           }
           break;
           case -2: /* out of memory */ {
-            return -2;
+            re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
           }
           break;
         } /* switch */
@@ -373,12 +483,17 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         if (stack->report_error_) {
           /* We're shifting this sym following an error recovery on the same sym, report syntax error */
           stack->report_error_ = 0;
-          /* Syntax error */
-          return -1;
+          /* Syntax error */ \
+  if (sym != PRD_INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
         }
         else {
-          /* Next token */
-          return 1;
+          return PRD_NEXT;
         }
       } /* action > 0 */
       else if (action < 0) {
@@ -387,8 +502,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         size_t production_length = rxg_production_lengths[production];
         int nonterminal = rxg_production_syms[production];
         if (0 == production) {
-          /* Synth S we're done */
-          return 0;
+          return PRD_SUCCESS;
         }
 
         struct rxg_sym_data nonterminal_sym_data_reduced_to = { 0 };
@@ -422,7 +536,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* pattern: IDENT start-regex COLON exp end-regex CUR_OPEN action-sequence CUR_CLOSE */
+            /* pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE */
             case 4: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -431,25 +545,16 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* exp: term */
+            /* pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
             case 5: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
-              {
-  size_t n;
-  for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
-  }
-}
-
-            }
-            if (!discard_action) {
               
             }
             break;
-            /* exp: exp BAR term */
+            /* exp: term */
             case 6: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -467,7 +572,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* term: */
+            /* exp: exp BAR term */
             case 7: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -485,7 +590,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* term: term elm */
+            /* term: */
             case 8: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -503,7 +608,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* elm: sym */
+            /* term: term elm */
             case 9: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -521,7 +626,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* elm: sym ASTERISK */
+            /* elm: sym */
             case 10: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -539,7 +644,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* elm: sym PLUS */
+            /* elm: sym ASTERISK */
             case 11: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -557,7 +662,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* elm: sym QUESTION_MARK */
+            /* elm: sym PLUS */
             case 12: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -575,7 +680,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: CHAR */
+            /* elm: sym QUESTION_MARK */
             case 13: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -593,7 +698,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: DOT */
+            /* sym: CHAR */
             case 14: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -611,7 +716,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: CARET */
+            /* sym: DOT */
             case 15: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -629,7 +734,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: DOLLAR */
+            /* sym: CARET */
             case 16: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -647,7 +752,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: PAR_OPEN exp PAR_CLOSE */
+            /* sym: DOLLAR */
             case 17: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -665,7 +770,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: SQ_OPEN range SQ_CLOSE */
+            /* sym: PAR_OPEN exp PAR_CLOSE */
             case 18: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -683,7 +788,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: SQ_OPEN CARET range SQ_CLOSE */
+            /* sym: SQ_OPEN range SQ_CLOSE */
             case 19: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -701,7 +806,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* range: range range-elm */
+            /* sym: SQ_OPEN CARET range SQ_CLOSE */
             case 20: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -719,7 +824,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* range: range-elm */
+            /* range: range range-elm */
             case 21: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -737,7 +842,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* range-elm: CHAR */
+            /* range: range-elm */
             case 22: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -755,7 +860,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* range-elm: CHAR DASH CHAR */
+            /* range-elm: CHAR */
             case 23: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -773,27 +878,419 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* start-regex: */
+            /* range-elm: CHAR DASH CHAR */
             case 24: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
-  g->accept_whitespace_ = 0; /* ignore whitespace */
-  tok_switch_to_regex(tkr);
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
 }
+
+            }
+            if (!discard_action) {
+              
             }
             break;
-            /* end-regex: */
+            /* action-sequence: */
             case 25: {
      xlts_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
-  g->accept_whitespace_ = 1; /* explicit whitespace */
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence CHAR */
+            case 26: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence IDENT */
+            case 27: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence COLON */
+            case 28: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence SEMICOLON */
+            case 29: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence SQ_OPEN */
+            case 30: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence SQ_CLOSE */
+            case 31: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence DOT */
+            case 32: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence DOLLAR */
+            case 33: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence CARET */
+            case 34: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence DASH */
+            case 35: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence BAR */
+            case 36: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence ASTERISK */
+            case 37: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence PLUS */
+            case 38: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence QUESTION_MARK */
+            case 39: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence TOKEN */
+            case 40: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence WHITESPACE */
+            case 41: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
+            case 42: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
+            case 43: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* start-regex: */
+            case 44: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  tok_switch_to_regex(tkr);
+}
+            }
+            break;
+            /* end-regex: */
+            case 45: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
   tok_switch_to_nonterminal_idents(tkr);
+}
+            }
+            break;
+            /* start-c-tokenizer: */
+            case 46: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  tok_switch_to_c_idents(tkr);
+}
+            }
+            break;
+            /* end-c-tokenizer: */
+            case 47: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  g->accept_whitespace_ = 0; /* ignore whitespace */
+  tok_switch_to_nonterminal_idents(tkr);
+}
+            }
+            break;
+            /* accept-whitespace: */
+            case 48: {
+     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  g->accept_whitespace_ = 1;
 }
             }
             break;
@@ -814,16 +1311,15 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         stack->pos_ -= production_length;
         action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - rxg_minimum_sym)];
         if (action <= 0) {
-          /* Internal error: cannot shift an already reduced non-terminal */
-          return -2;
+          re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
         }
         switch (rxg_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
           case -1: /* overflow */ {
-            return -2;
+            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
           }
           break;
           case -2: /* out of memory */ {
-            return -2;
+            re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
           }
           break;
         } /* switch */
@@ -844,7 +1340,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         do {
           --n;
           /* Can we shift an error token? */
-          int err_action = rxg_parse_table[rxg_num_columns * stack->stack_[n].state_ + (22 /* error token */ - rxg_minimum_sym)];
+          int err_action = rxg_parse_table[rxg_num_columns * stack->stack_[n].state_ + (23 /* error token */ - rxg_minimum_sym)];
           if (err_action > 0) {
             /* Does the resulting state accept the current symbol? */
             int err_sym_action = rxg_parse_table[rxg_num_columns * stack->stack_[n].state_ + (sym - rxg_minimum_sym)];
@@ -864,11 +1360,11 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               /* Push the state of the error transition */
               switch (rxg_push_state(stack, err_action /* action for a shift is the state */)) {
                 case -1: /* overflow */ {
-                  return -2;
+                  re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
                 }
                 break;
                 case -2: /* out of memory */ {
-                  return -2;
+                  re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
                 }
                 break;
               } /* switch */
@@ -881,12 +1377,17 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       if (stack->report_error_) {
         stack->report_error_ = 0;
-        /* Syntax error */
-        return -1;
+        /* Syntax error */ \
+  if (sym != PRD_INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
       }
       else {
-        /* Next token */
-        return 1;
+        return PRD_NEXT;
       }
     } /* stack->error_recovery_ */
   } /* for (;;) */
@@ -983,6 +1484,9 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
       break;
     }
     case TOK_WHITESPACE: sym = RXG_WHITESPACE; break;
+    default: {
+      sym = RXG_TOKEN;
+    }
     }
   }
   else {
