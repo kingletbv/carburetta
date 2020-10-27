@@ -73,6 +73,12 @@
 #include "prd_gram.h"
 #endif
 
+#ifndef SNIPPET_H_INCLUDED
+#define SNIPPET_H_INCLUDED
+#include "snippet.h"
+#endif
+
+
 
 
 
@@ -84,8 +90,22 @@
 #include <stdlib.h> /* realloc(), free(), NULL, size_t */
 struct rxg_sym_data {
   int state_;
-  struct xlts common_;
+  struct snippet common_;
 };
+static const size_t rxg_scan_table[] = {
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 7, 7, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 9, 7, 7, 7, 7,10, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 7, 7, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 9, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+static const size_t rxg_scan_actions[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
 static const int rxg_minimum_sym = 3;
 static const size_t rxg_num_columns = 38;
 static const size_t rxg_num_rows = 66;
@@ -336,7 +356,36 @@ struct rxg_stack {
   int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
   struct rxg_sym_data *stack_;
+  size_t scan_state_;
+  size_t match_index_;
+  size_t best_match_action_;
+  size_t best_match_size_;
+  size_t input_index_;
+  size_t input_offset_;
+  size_t match_buffer_size_;
+  size_t match_buffer_size_allocated_;
+  /* offset, line and column at the start of match_buffer_ */
+  size_t match_offset_;
+  int match_line_;
+  int match_col_;
+  /* offset, line and column at the zero-termination (best_match_size_) of a match 
+   * in match_buffer_ (the actual buffer may well be longer.) */
+  size_t best_match_offset_;
+  int best_match_line_;
+  int best_match_col_;
+  size_t token_size_;
+  char *match_buffer_;
+  char terminator_repair_;
+  int input_line_;
+  int input_col_;
 };
+#define _RXG_MATCH 1
+#define _RXG_OVERFLOW 2
+#define _RXG_NO_MEMORY 3
+#define _RXG_FEED_ME 4
+#define _RXG_END_OF_INPUT 5
+#define _RXG_SYNTAX_ERROR 6
+
 #define RXG_CHAR 3
 #define RXG_IDENT 4
 #define RXG_PAR_OPEN 5
@@ -384,6 +433,25 @@ void rxg_stack_init(struct rxg_stack *stack) {
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
   stack->stack_ = NULL;
+  stack->scan_state_ = 1;
+  stack->input_index_ = 0;
+  stack->input_offset_ = 0;
+  stack->input_line_ = 1;
+  stack->input_col_ = 1;
+  stack->match_index_ = 0;
+  stack->match_buffer_ = NULL;
+  stack->match_buffer_size_ = 0;
+  stack->match_buffer_size_allocated_ = 0;
+  stack->terminator_repair_ = '\0';
+  stack->token_size_ = 0;
+  stack->match_offset_ = 0;
+  stack->match_line_ = 1;
+  stack->match_col_ = 1;
+  stack->best_match_action_ = 0;
+  stack->best_match_size_ = 0;
+  stack->best_match_offset_ = 0;
+  stack->best_match_line_ = 1;
+  stack->best_match_col_ = 1;
 }
 
 void rxg_stack_cleanup(struct rxg_stack *stack) {
@@ -392,12 +460,13 @@ void rxg_stack_cleanup(struct rxg_stack *stack) {
     switch (stack->stack_[n].state_) {
     } /* switch */
     {
-       xlts_cleanup(&((stack->stack_ + n)->common_));
+       snippet_cleanup(&((stack->stack_ + n)->common_));
 
     }
   }
 
   if (stack->stack_) free(stack->stack_);
+    if (stack->match_buffer_) free(stack->match_buffer_);
 }
 
 static int rxg_push_state(struct rxg_stack *stack, int state) {
@@ -436,7 +505,7 @@ int rxg_stack_reset(struct rxg_stack *stack) {
     switch (stack->stack_[n].state_) {
     } /* switch */
     {
-       xlts_cleanup(&((stack->stack_ + n)->common_));
+       snippet_cleanup(&((stack->stack_ + n)->common_));
 
     }
   }
@@ -454,9 +523,298 @@ int rxg_stack_reset(struct rxg_stack *stack) {
     }
     break;
   }
+  stack->scan_state_ = 1;
+  stack->input_index_ = 0;
+  stack->input_offset_ = 0;
+  stack->input_line_ = 1;
+  stack->input_col_ = 1;
+  stack->match_index_ = 0;
+  stack->match_buffer_size_ = 0;
+  stack->terminator_repair_ = '\0';
+  stack->token_size_ = 0;
+  stack->match_offset_ = 0;
+  stack->match_line_ = 1;
+  stack->match_col_ = 1;
+  stack->best_match_action_ = 0;
+  stack->best_match_size_ = 0;
+  stack->best_match_offset_ = 0;
+  stack->best_match_line_ = 1;
+  stack->best_match_col_ = 1;
   return 0;
 }
 
+static int rxg_append_match_buffer(struct rxg_stack *stack, const char *s, size_t len) {
+  size_t size_needed = len;
+  size_needed += stack->match_buffer_size_;
+  if (size_needed < stack->match_buffer_size_) {
+    return _RXG_OVERFLOW;
+  }
+  if (size_needed == SIZE_MAX) {
+    /* cannot fit null terminator */
+    return _RXG_OVERFLOW;
+  }
+  size_needed++; /* null terminator */
+  if (size_needed < 128) {
+    size_needed = 128;
+  }
+  if (size_needed > stack->match_buffer_size_allocated_) {
+    /* intent of code: grow buffer size by powers of 2-1, unless our needs require more now. */
+    size_t size_to_allocate = stack->match_buffer_size_allocated_ * 2 + 1;
+    if (size_to_allocate <= stack->match_buffer_size_allocated_) {
+      return _RXG_OVERFLOW;
+    }
+    if (size_to_allocate < size_needed) {
+      size_to_allocate = size_needed;
+    }
+    void *buf = realloc(stack->match_buffer_, size_to_allocate);
+    if (!buf) {
+      return _RXG_OVERFLOW;
+    }
+    stack->match_buffer_ = (char *)buf;
+    stack->match_buffer_size_allocated_ = size_to_allocate;
+  }
+
+  memcpy(stack->match_buffer_ + stack->match_buffer_size_, s, len);
+  stack->match_buffer_size_ += len;
+  stack->match_buffer_[stack->match_buffer_size_] = '\0';
+  return 0;
+}
+
+int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input) {
+  int r;
+  unsigned char c;
+  size_t scan_state = stack->scan_state_;
+  const size_t *transition_table = rxg_scan_table;
+  const size_t *actions = rxg_scan_actions;
+  const size_t default_action = 0;
+  const size_t start_state = 1;
+  const size_t start_action = rxg_scan_actions[start_state];
+
+  size_t match_index = stack->match_index_;
+
+  size_t best_match_action = stack->best_match_action_;
+  size_t best_match_size = stack->best_match_size_;
+  size_t best_match_offset = stack->best_match_offset_;
+  int best_match_line = stack->best_match_line_;
+  int best_match_col = stack->best_match_col_;
+
+  size_t input_index = stack->input_index_;
+  size_t input_offset = stack->input_offset_;
+  int input_line = stack->input_line_;
+  int input_col = stack->input_col_;
+
+  /* Move any prior token out of the way */
+  if (stack->token_size_) {
+    stack->match_buffer_[stack->token_size_] = stack->terminator_repair_;
+
+    memcpy(stack->match_buffer_, stack->match_buffer_ + stack->token_size_, stack->match_buffer_size_ - stack->token_size_);
+    stack->match_buffer_size_ -= stack->token_size_;
+    stack->match_offset_ = stack->best_match_offset_;
+    stack->match_line_ = stack->best_match_line_;
+    stack->match_col_ = stack->best_match_col_;
+    
+    /* Reset scanner to get ready for next token */
+    stack->match_index_ = 0;
+    stack->best_match_action_ = best_match_action = start_action;
+    stack->best_match_size_ = best_match_size = 0;
+    stack->scan_state_ = scan_state = start_state;
+    stack->token_size_ = 0;
+    
+  }
+
+  size_t at_match_index_offset = stack->match_offset_;
+  int at_match_index_line = stack->match_line_;
+  int at_match_index_col = stack->match_col_;
+  assert(!match_index || (match_index == stack->match_buffer_size_));
+  while (match_index < stack->match_buffer_size_) {
+    c = (unsigned char)stack->match_buffer_[match_index];
+    scan_state = transition_table[256 * scan_state + c];
+    if (scan_state) {
+      at_match_index_offset++;
+      if (c != '\n') {
+        at_match_index_col++;
+      }
+      else {
+        at_match_index_col = 1;
+        at_match_index_line++;
+      }
+
+      size_t state_action = actions[scan_state];
+      if (state_action != default_action) /* replace with actual */ {
+        best_match_action = state_action;
+        best_match_size = match_index + 1;
+        best_match_offset = at_match_index_offset;
+        best_match_line = at_match_index_line;
+        best_match_col = at_match_index_col;
+      }
+      match_index++;
+    }
+    else {
+      /* error, or, end of token, depending on whether we have a match before */
+      if (best_match_action == default_action) {
+        goto syntax_error;
+      }
+
+      /* Ensure token match is null terminated */
+      stack->terminator_repair_ = stack->match_buffer_[best_match_size];
+      stack->match_buffer_[best_match_size] = '\0';
+      stack->token_size_ = best_match_size;
+      stack->best_match_action_ = best_match_action;
+      stack->best_match_size_ = best_match_size;
+      stack->best_match_offset_ = best_match_offset;
+      stack->best_match_line_ = best_match_line;
+      stack->best_match_col_ = best_match_col;
+
+      return _RXG_MATCH;
+    }
+  }
+
+  while (input_index < input_size) {
+    c = (unsigned char)input[input_index];
+    scan_state = transition_table[256 * scan_state + c];
+    if (scan_state) {
+      input_offset++;
+      if (c != '\n') {
+        input_col++;
+      }
+      else {
+        input_col = 1;
+        input_line++;
+      }
+      size_t state_action = actions[scan_state];
+      if (state_action != default_action) /* replace with actual */ {
+        best_match_action = state_action;
+        best_match_size = stack->match_buffer_size_ + input_index - stack->input_index_ + 1;
+        best_match_col = input_col;
+        best_match_line = input_line;
+      }
+      input_index++;
+    }
+    else {
+      /* Append from stack->input_index_ to input_index, excluding input_index itself */
+      r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);
+      if (r) return r;
+ 
+      if (best_match_action == default_action) {
+        goto syntax_error;
+      }
+
+      /* Ensure token match is null terminated, note that the size we just appended may
+       * (likely) be longer than the last section we matched. */
+      stack->terminator_repair_ = stack->match_buffer_[best_match_size];
+      stack->match_buffer_[best_match_size] = '\0';
+      stack->token_size_ = best_match_size;
+      stack->best_match_action_ = best_match_action;
+      stack->best_match_size_ = best_match_size;
+      stack->best_match_offset_ = best_match_offset;
+      stack->best_match_line_ = best_match_line;
+      stack->best_match_col_ = best_match_col;
+
+      return _RXG_MATCH;
+    }
+  }
+
+  r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);
+  if (r) return r;
+
+  if (!is_final_input) {
+    /* Need more input */
+    stack->scan_state_ = scan_state;
+    stack->token_size_ = 0; /* no match yet */
+    stack->input_index_ = 0;
+    stack->input_offset_ = input_offset;
+    stack->input_line_ = input_line;
+    stack->input_col_ = input_col;
+
+    stack->best_match_action_ = best_match_action;
+    stack->best_match_size_ = best_match_size;
+    stack->best_match_offset_ = best_match_offset;
+    stack->best_match_line_ = best_match_line;
+    stack->best_match_col_ = best_match_col;
+
+    stack->match_index_ = match_index;
+
+    return _RXG_FEED_ME;
+  }
+
+  if (!stack->match_buffer_size_ && (stack->input_index_ == input_size)) {
+    /* Exhausted all input - leave stack in a state where we can
+     * immediately re-use it in its initial state */
+    stack->match_index_ = 0;
+    stack->best_match_action_ = best_match_action = start_action;
+    stack->best_match_size_ = best_match_size;
+    stack->best_match_offset_ = best_match_offset;
+    stack->best_match_line_ = best_match_line;
+    stack->best_match_col_ = best_match_col;
+    stack->scan_state_ = scan_state = start_state;
+
+    stack->token_size_ = 0;
+    stack->input_index_ = 0;
+    stack->input_offset_ = input_offset;
+    stack->input_line_ = input_line;
+    stack->input_col_ = input_col;
+
+    return _RXG_END_OF_INPUT;
+  }
+
+  if (best_match_action == default_action) {
+    goto syntax_error;
+  }
+
+  /* Ensure token match is null terminated */
+  stack->terminator_repair_ = stack->match_buffer_[best_match_size];
+  stack->match_buffer_[best_match_size] = '\0';
+  stack->token_size_ = best_match_size;
+  stack->best_match_action_ = best_match_action;
+  stack->best_match_size_ = best_match_size;
+  stack->best_match_offset_ = best_match_offset;
+  stack->best_match_line_ = best_match_line;
+  stack->best_match_col_ = best_match_col;
+
+      return _RXG_MATCH;
+syntax_error:
+  if (stack->match_buffer_size_) {
+    stack->best_match_offset_ = stack->match_offset_ + 1;
+    if (stack->match_buffer_[0] != '\n') {
+      stack->best_match_line_ = stack->match_line_;
+      stack->best_match_col_ = stack->match_col_ + 1;
+    }
+    else {
+      stack->best_match_line_ = stack->match_line_ + 1;
+      stack->best_match_col_ = 1;
+    }
+  }
+  else {
+    /* Append the single character causing the syntax error */
+    r = rxg_append_match_buffer(stack, input + stack->input_index_, 1);
+    if (r) return r;
+
+    input_offset++;
+    if (input[stack->input_index_] != '\n') {
+      input_col++;
+    }
+    else {
+      input_col = 1;
+      input_line++;
+    }
+    input_index = stack->input_index_ + 1;
+    stack->best_match_offset_ = input_offset;
+    stack->best_match_line_ = input_line;
+    stack->best_match_col_ = input_col;
+  }
+  
+  /* Reset scanner to get ready for next token */
+  stack->token_size_ = 1;
+  stack->terminator_repair_ = stack->match_buffer_[1];
+  stack->match_buffer_[1] = '\0';
+
+  stack->input_index_ = input_index;
+  stack->input_offset_ = input_offset;
+  stack->input_line_ = input_line;
+  stack->input_col_ = input_col;
+
+  return _RXG_SYNTAX_ERROR;
+}
 int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value) {
   if (stack->mute_error_turns_) stack->mute_error_turns_--;
   for (;;) {
@@ -477,7 +835,11 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         /* Fill in the sym from the tokenizer */
         struct rxg_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
         {
-           xlts_init(&(sym_data->common_));
+           snippet_init(&(sym_data->common_));
+
+        }
+        {
+           snippet_append_tkr(&(sym_data->common_), tkr);
 
         }
         if (stack->report_error_) {
@@ -508,10 +870,12 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         struct rxg_sym_data nonterminal_sym_data_reduced_to = { 0 };
         { /* scope guard */
           struct rxg_sym_data *sym_data = stack->stack_ + stack->pos_ - production_length;
+          int r; \
+        struct prd_pattern *pat;
           switch (production) {
             /* grammar: */
             case 1: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
@@ -520,7 +884,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* grammar: grammar pattern */
             case 2: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
@@ -529,41 +893,85 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* pattern: IDENT start-regex COLON exp end-regex SEMICOLON */
             case 3: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
-              
+              {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[3].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_to_xlts(&pat->term_.id_, &(sym_data[0].common_));
+  if (r) return r;
+}
             }
             break;
             /* pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE */
             case 4: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
-              
+              {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[3].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_to_xlts(&pat->term_.id_, &(sym_data[0].common_));
+  if (r) return r;
+  r = snippet_append_snippet(&pat->action_sequence_, &(sym_data[8].common_));
+  if (r) return r;
+}
             }
             break;
             /* pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
             case 5: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
-              
+              {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[3].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_to_xlts(&pat->term_.id_, &(sym_data[0].common_));
+  if (r) return r;
+  r = snippet_append_snippet(&pat->action_sequence_, &(sym_data[6].common_));
+  if (r) return r;
+  /* Pop the '=' token from stmt-action as it is not part of the action sequence itself. */
+  if (pat->action_sequence_.num_tokens_ && (pat->action_sequence_.tokens_[0].match_ == TOK_EQUALS)) {
+    snippet_pop_first_token(&pat->action_sequence_);
+  }
+}
             }
             break;
             /* exp: term */
             case 6: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -574,14 +982,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* exp: exp BAR term */
             case 7: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -592,14 +1000,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* term: */
             case 8: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -610,14 +1018,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* term: term elm */
             case 9: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -628,14 +1036,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* elm: sym */
             case 10: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -646,14 +1054,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* elm: sym ASTERISK */
             case 11: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -664,14 +1072,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* elm: sym PLUS */
             case 12: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -682,14 +1090,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* elm: sym QUESTION_MARK */
             case 13: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -700,14 +1108,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* sym: CHAR */
             case 14: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -718,14 +1126,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* sym: DOT */
             case 15: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -736,14 +1144,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* sym: CARET */
             case 16: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -754,14 +1162,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* sym: DOLLAR */
             case 17: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -772,14 +1180,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* sym: PAR_OPEN exp PAR_CLOSE */
             case 18: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -790,14 +1198,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* sym: SQ_OPEN range SQ_CLOSE */
             case 19: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -808,14 +1216,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* sym: SQ_OPEN CARET range SQ_CLOSE */
             case 20: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -826,14 +1234,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* range: range range-elm */
             case 21: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -844,14 +1252,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* range: range-elm */
             case 22: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -862,14 +1270,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* range-elm: CHAR */
             case 23: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -880,14 +1288,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* range-elm: CHAR DASH CHAR */
             case 24: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -898,14 +1306,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: */
             case 25: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -916,14 +1324,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence CHAR */
             case 26: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -934,14 +1342,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence IDENT */
             case 27: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -952,14 +1360,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence COLON */
             case 28: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -970,14 +1378,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence SEMICOLON */
             case 29: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -988,14 +1396,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence SQ_OPEN */
             case 30: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1006,14 +1414,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence SQ_CLOSE */
             case 31: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1024,14 +1432,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence DOT */
             case 32: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1042,14 +1450,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence DOLLAR */
             case 33: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1060,14 +1468,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence CARET */
             case 34: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1078,14 +1486,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence DASH */
             case 35: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1096,14 +1504,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence BAR */
             case 36: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1114,14 +1522,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence ASTERISK */
             case 37: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1132,14 +1540,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence PLUS */
             case 38: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1150,14 +1558,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence QUESTION_MARK */
             case 39: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1168,14 +1576,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence TOKEN */
             case 40: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1186,14 +1594,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence WHITESPACE */
             case 41: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1204,14 +1612,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
             case 42: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1222,14 +1630,14 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
             case 43: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
   size_t n;
   for (n = 0; n < ((size_t)production_length); ++n) {
-    xlts_append(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
 
@@ -1240,7 +1648,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* start-regex: */
             case 44: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
@@ -1251,7 +1659,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* end-regex: */
             case 45: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
@@ -1262,7 +1670,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* start-c-tokenizer: */
             case 46: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
@@ -1273,7 +1681,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* end-c-tokenizer: */
             case 47: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
@@ -1285,7 +1693,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             break;
             /* accept-whitespace: */
             case 48: {
-     xlts_init(&(nonterminal_sym_data_reduced_to.common_));
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
@@ -1304,7 +1712,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
           switch (stack->stack_[rxg_sym_idx].state_) {
           } /* switch */
         {
-           xlts_cleanup(&((stack->stack_ + rxg_sym_idx)->common_));
+           snippet_cleanup(&((stack->stack_ + rxg_sym_idx)->common_));
 
         }
         } /* for */
@@ -1352,7 +1760,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
                 switch (stack->stack_[rxg_sym_idx].state_) {
                 } /* switch */
                 {
-                   xlts_cleanup(&((stack->stack_ + rxg_sym_idx)->common_));
+                   snippet_cleanup(&((stack->stack_ + rxg_sym_idx)->common_));
 
                 }
               } /* for */
@@ -1393,6 +1801,287 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
   } /* for (;;) */
 }
 /* --------- END OF GENERATED CODE ------------ */
+#if 0
+#define RXG_MATCH 1
+#define RXG_OVERFLOW 2
+#define RXG_NO_MEMORY 3
+#define RXG_FEED_ME 4
+#define RXG_END_OF_INPUT 5
+#define RXG_SYNTAX_ERROR 6
+
+static int rxg_append_match_buffer(struct rxg_stack *stack, const char *s, size_t len) {
+  size_t size_needed = len;
+  size_needed += stack->match_buffer_size_;
+  if (size_needed < stack->match_buffer_size_) {
+    return RXG_OVERFLOW;
+  }
+  if (size_needed == SIZE_MAX) {
+    /* cannot fit null terminator */
+    return RXG_OVERFLOW;
+  }
+  size_needed++; /* null terminator */
+  if (size_needed < 128) {
+    size_needed = 128;
+  }
+  if (size_needed > stack->match_buffer_size_allocated_) {
+    /* intent of code: grow buffer size by powers of 2-1, unless our needs require more now. */
+    size_t size_to_allocate = stack->match_buffer_size_allocated_ * 2 + 1;
+    if (size_to_allocate <= stack->match_buffer_size_allocated_) {
+      return RXG_OVERFLOW;
+    }
+    if (size_to_allocate < size_needed) {
+      size_to_allocate = size_needed;
+    }
+    void *buf = realloc(stack->match_buffer_, size_to_allocate);
+    if (!buf) {
+      return RXG_NO_MEMORY;
+    }
+    stack->match_buffer_ = (char *)buf;
+    stack->match_buffer_size_allocated_ = size_to_allocate;
+  }
+
+  memcpy(stack->match_buffer_ + stack->match_buffer_size_, s, len);
+  stack->match_buffer_size_ += len;
+  stack->match_buffer_[stack->match_buffer_size_] = '\0';
+  return 0;
+}
+
+int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input) {
+  int r;
+  unsigned char c;
+  size_t scan_state = stack->scan_state_;
+  const size_t *transition_table = rxg_scan_table; /* replace with actual */
+  const size_t *actions = rxg_scan_actions;        /* replace with actual */
+  const size_t default_action = 0;                 /* replace with actual */
+  const size_t start_state = 1;                    /* replace with actual */
+  const size_t start_action = rxg_scan_actions[start_state];
+
+  size_t match_index = stack->match_index_;
+
+  size_t best_match_action = stack->best_match_action_;
+  size_t best_match_size = stack->best_match_size_;
+  size_t best_match_offset = stack->best_match_offset_;
+  int best_match_line = stack->best_match_line_;
+  int best_match_col = stack->best_match_col_;
+
+  size_t input_index = stack->input_index_;
+  size_t input_offset = stack->input_offset_;
+  int input_line = stack->input_line_;
+  int input_col = stack->input_col_;
+
+  /* Move any prior token out of the way */
+  if (stack->token_size_) {
+    stack->match_buffer_[stack->token_size_] = stack->terminator_repair_;
+
+    memcpy(stack->match_buffer_, stack->match_buffer_ + stack->token_size_, stack->match_buffer_size_ - stack->token_size_);
+    stack->match_buffer_size_ -= stack->token_size_;
+    stack->match_offset_ = stack->best_match_offset_;
+    stack->match_line_ = stack->best_match_line_;
+    stack->match_col_ = stack->best_match_col_;
+    
+    /* Reset scanner to get ready for next token */
+    stack->match_index_ = 0;
+    stack->best_match_action_ = best_match_action = start_action;
+    stack->best_match_size_ = best_match_size = 0;
+    stack->scan_state_ = scan_state = start_state;
+    stack->token_size_ = 0;
+    
+  }
+
+  size_t at_match_index_offset = stack->match_offset_;
+  int at_match_index_line = stack->match_line_;
+  int at_match_index_col = stack->match_col_;
+  assert(!match_index || (match_index == stack->match_buffer_size_));
+  while (match_index < stack->match_buffer_size_) {
+    c = (unsigned char)stack->match_buffer_[match_index];
+    scan_state = transition_table[256 * scan_state + c];
+    if (scan_state) {
+      at_match_index_offset++;
+      if (c != '\n') {
+        at_match_index_col++;
+      }
+      else {
+        at_match_index_col = 1;
+        at_match_index_line++;
+      }
+
+      size_t state_action = actions[scan_state];
+      if (state_action != default_action) /* replace with actual */ {
+        best_match_action = state_action;
+        best_match_size = match_index + 1;
+        best_match_offset = at_match_index_offset;
+        best_match_line = at_match_index_line;
+        best_match_col = at_match_index_col;
+      }
+      match_index++;
+    }
+    else {
+      /* error, or, end of token, depending on whether we have a match before */
+      if (best_match_action == default_action) {
+        goto syntax_error;
+      }
+
+      /* Ensure token match is null terminated */
+      stack->terminator_repair_ = stack->match_buffer_[best_match_size];
+      stack->match_buffer_[best_match_size] = '\0';
+      stack->token_size_ = best_match_size;
+      stack->best_match_action_ = best_match_action;
+      stack->best_match_size_ = best_match_size;
+      stack->best_match_offset_ = best_match_offset;
+      stack->best_match_line_ = best_match_line;
+      stack->best_match_col_ = best_match_col;
+
+      return RXG_MATCH;
+    }
+  }
+
+  while (input_index < input_size) {
+    c = (unsigned char)input[input_index];
+    scan_state = transition_table[256 * scan_state + c];
+    if (scan_state) {
+      input_offset++;
+      if (c != '\n') {
+        input_col++;
+      }
+      else {
+        input_col = 1;
+        input_line++;
+      }
+      size_t state_action = actions[scan_state];
+      if (state_action != default_action) /* replace with actual */ {
+        best_match_action = state_action;
+        best_match_size = stack->match_buffer_size_ + input_index - stack->input_index_ + 1;
+        best_match_col = input_col;
+        best_match_line = input_line;
+      }
+      input_index++;
+    }
+    else {
+      /* Append from stack->input_index_ to input_index, excluding input_index itself */
+      r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);
+      if (r) return r;
+ 
+      if (best_match_action == default_action) {
+        goto syntax_error;
+      }
+
+      /* Ensure token match is null terminated, note that the size we just appended may
+       * (likely) be longer than the last section we matched. */
+      stack->terminator_repair_ = stack->match_buffer_[best_match_size];
+      stack->match_buffer_[best_match_size] = '\0';
+      stack->token_size_ = best_match_size;
+      stack->best_match_action_ = best_match_action;
+      stack->best_match_size_ = best_match_size;
+      stack->best_match_offset_ = best_match_offset;
+      stack->best_match_line_ = best_match_line;
+      stack->best_match_col_ = best_match_col;
+
+      return RXG_MATCH;
+    }
+  }
+
+  r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);
+  if (r) return r;
+
+  if (!is_final_input) {
+    /* Need more input */
+    stack->scan_state_ = scan_state;
+    stack->token_size_ = 0; /* no match yet */
+    stack->input_index_ = 0;
+    stack->input_offset_ = input_offset;
+    stack->input_line_ = input_line;
+    stack->input_col_ = input_col;
+
+    stack->best_match_action_ = best_match_action;
+    stack->best_match_size_ = best_match_size;
+    stack->best_match_offset_ = best_match_offset;
+    stack->best_match_line_ = best_match_line;
+    stack->best_match_col_ = best_match_col;
+
+    stack->match_index_ = match_index;
+
+    return RXG_FEED_ME;
+  }
+
+  if (!stack->match_buffer_size_ && (stack->input_index_ == input_size)) {
+    /* Exhausted all input - leave stack in a state where we can
+     * immediately re-use it in its initial state */
+    stack->match_index_ = 0;
+    stack->best_match_action_ = best_match_action = start_action;
+    stack->best_match_size_ = best_match_size;
+    stack->best_match_offset_ = best_match_offset;
+    stack->best_match_line_ = best_match_line;
+    stack->best_match_col_ = best_match_col;
+    stack->scan_state_ = scan_state = start_state;
+
+    stack->token_size_ = 0;
+    stack->input_index_ = 0;
+    stack->input_offset_ = input_offset;
+    stack->input_line_ = input_line;
+    stack->input_col_ = input_col;
+
+    return RXG_END_OF_INPUT;
+  }
+
+  if (best_match_action == default_action) {
+    goto syntax_error;
+  }
+
+  /* Ensure token match is null terminated */
+  stack->terminator_repair_ = stack->match_buffer_[best_match_size];
+  stack->match_buffer_[best_match_size] = '\0';
+  stack->token_size_ = best_match_size;
+  stack->best_match_action_ = best_match_action;
+  stack->best_match_size_ = best_match_size;
+  stack->best_match_offset_ = best_match_offset;
+  stack->best_match_line_ = best_match_line;
+  stack->best_match_col_ = best_match_col;
+
+  return RXG_MATCH;
+syntax_error:
+  if (stack->match_buffer_size_) {
+    stack->best_match_offset_ = stack->match_offset_ + 1;
+    if (stack->match_buffer_[0] != '\n') {
+      stack->best_match_line_ = stack->match_line_;
+      stack->best_match_col_ = stack->match_col_ + 1;
+    }
+    else {
+      stack->best_match_line_ = stack->match_line_ + 1;
+      stack->best_match_col_ = 1;
+    }
+  }
+  else {
+    /* Append the single character causing the syntax error */
+    r = rxg_append_match_buffer(stack, input + stack->input_index_, 1);
+    if (r) return r;
+
+    input_offset++;
+    if (input[stack->input_index_] != '\n') {
+      input_col++;
+    }
+    else {
+      input_col = 1;
+      input_line++;
+    }
+    input_index = stack->input_index_ + 1;
+    stack->best_match_offset_ = input_offset;
+    stack->best_match_line_ = input_line;
+    stack->best_match_col_ = input_col;
+  }
+  
+  /* Reset scanner to get ready for next token */
+  stack->token_size_ = 1;
+  stack->terminator_repair_ = stack->match_buffer_[1];
+  stack->match_buffer_[1] = '\0';
+
+  stack->input_index_ = input_index;
+  stack->input_offset_ = input_offset;
+  stack->input_line_ = input_line;
+  stack->input_col_ = input_col;
+
+  return RXG_SYNTAX_ERROR;
+}
+#endif
 
 int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;

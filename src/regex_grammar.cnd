@@ -73,17 +73,26 @@
 #include "prd_gram.h"
 #endif
 
+#ifndef SNIPPET_H_INCLUDED
+#define SNIPPET_H_INCLUDED
+#include "snippet.h"
+#endif
+
 %prefix rxg_
 %params struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value
+%locals int r; \
+        struct prd_pattern *pat;
 
 %token CHAR IDENT PAR_OPEN PAR_CLOSE CUR_OPEN CUR_CLOSE COLON SEMICOLON SQ_OPEN SQ_CLOSE DOT DOLLAR CARET DASH BAR ASTERISK PLUS QUESTION_MARK TOKEN WHITESPACE
 %nt exp term elm sym range range-elm
 
 %nt grammar pattern action-sequence stmt-action start-regex end-regex start-c-tokenizer end-c-tokenizer accept-whitespace
 
-%common_type struct xlts
-%constructor xlts_init(&$);
-%destructor xlts_cleanup(&$);
+%common_type struct snippet
+%constructor snippet_init(&$);
+%destructor snippet_cleanup(&$);
+
+%token_action snippet_append_tkr(&$, tkr);
 
 %on_success        return PRD_SUCCESS;
 %on_syntax_error   re_error_tkr(tkr, "Syntax error"); return PRD_SYNTAX_ERROR;
@@ -102,11 +111,10 @@
 
 
 %scanner%
-comment: [\*] {
+WHITESPACE: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
+  fprintf(stderr, "Imagine a sensible action here.\n");
 }
 //comment: x {
-//}
-//comment: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
 //}
 
 
@@ -117,14 +125,59 @@ comment: [\*] {
 grammar: ;
 grammar: grammar pattern;
 
-pattern: IDENT start-regex COLON exp end-regex SEMICOLON;
-pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE;
-pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON;
+pattern: IDENT start-regex COLON exp end-regex SEMICOLON {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&${3});
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_to_xlts(&pat->term_.id_, &${0});
+  if (r) return r;
+}
+
+pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&${3});
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_to_xlts(&pat->term_.id_, &${0});
+  if (r) return r;
+  r = snippet_append_snippet(&pat->action_sequence_, &${8});
+  if (r) return r;
+}
+pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&${3});
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_to_xlts(&pat->term_.id_, &${0});
+  if (r) return r;
+  r = snippet_append_snippet(&pat->action_sequence_, &${6});
+  if (r) return r;
+  /* Pop the '=' token from stmt-action as it is not part of the action sequence itself. */
+  if (pat->action_sequence_.num_tokens_ && (pat->action_sequence_.tokens_[0].match_ == TOK_EQUALS)) {
+    snippet_pop_first_token(&pat->action_sequence_);
+  }
+}
 
 $: {
   size_t n;
   for (n = 0; n < $len; ++n) {
-    xlts_append(&$, &${n});
+    snippet_append_snippet(&$, &${n});
   }
 }
 exp: term;
@@ -196,6 +249,287 @@ accept-whitespace: {
 }
 
 %%
+#if 0
+#define RXG_MATCH 1
+#define RXG_OVERFLOW 2
+#define RXG_NO_MEMORY 3
+#define RXG_FEED_ME 4
+#define RXG_END_OF_INPUT 5
+#define RXG_SYNTAX_ERROR 6
+
+static int rxg_append_match_buffer(struct rxg_stack *stack, const char *s, size_t len) {
+  size_t size_needed = len;
+  size_needed += stack->match_buffer_size_;
+  if (size_needed < stack->match_buffer_size_) {
+    return RXG_OVERFLOW;
+  }
+  if (size_needed == SIZE_MAX) {
+    /* cannot fit null terminator */
+    return RXG_OVERFLOW;
+  }
+  size_needed++; /* null terminator */
+  if (size_needed < 128) {
+    size_needed = 128;
+  }
+  if (size_needed > stack->match_buffer_size_allocated_) {
+    /* intent of code: grow buffer size by powers of 2-1, unless our needs require more now. */
+    size_t size_to_allocate = stack->match_buffer_size_allocated_ * 2 + 1;
+    if (size_to_allocate <= stack->match_buffer_size_allocated_) {
+      return RXG_OVERFLOW;
+    }
+    if (size_to_allocate < size_needed) {
+      size_to_allocate = size_needed;
+    }
+    void *buf = realloc(stack->match_buffer_, size_to_allocate);
+    if (!buf) {
+      return RXG_NO_MEMORY;
+    }
+    stack->match_buffer_ = (char *)buf;
+    stack->match_buffer_size_allocated_ = size_to_allocate;
+  }
+
+  memcpy(stack->match_buffer_ + stack->match_buffer_size_, s, len);
+  stack->match_buffer_size_ += len;
+  stack->match_buffer_[stack->match_buffer_size_] = '\0';
+  return 0;
+}
+
+int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input) {
+  int r;
+  unsigned char c;
+  size_t scan_state = stack->scan_state_;
+  const size_t *transition_table = rxg_scan_table; /* replace with actual */
+  const size_t *actions = rxg_scan_actions;        /* replace with actual */
+  const size_t default_action = 0;                 /* replace with actual */
+  const size_t start_state = 1;                    /* replace with actual */
+  const size_t start_action = rxg_scan_actions[start_state];
+
+  size_t match_index = stack->match_index_;
+
+  size_t best_match_action = stack->best_match_action_;
+  size_t best_match_size = stack->best_match_size_;
+  size_t best_match_offset = stack->best_match_offset_;
+  int best_match_line = stack->best_match_line_;
+  int best_match_col = stack->best_match_col_;
+
+  size_t input_index = stack->input_index_;
+  size_t input_offset = stack->input_offset_;
+  int input_line = stack->input_line_;
+  int input_col = stack->input_col_;
+
+  /* Move any prior token out of the way */
+  if (stack->token_size_) {
+    stack->match_buffer_[stack->token_size_] = stack->terminator_repair_;
+
+    memcpy(stack->match_buffer_, stack->match_buffer_ + stack->token_size_, stack->match_buffer_size_ - stack->token_size_);
+    stack->match_buffer_size_ -= stack->token_size_;
+    stack->match_offset_ = stack->best_match_offset_;
+    stack->match_line_ = stack->best_match_line_;
+    stack->match_col_ = stack->best_match_col_;
+    
+    /* Reset scanner to get ready for next token */
+    stack->match_index_ = 0;
+    stack->best_match_action_ = best_match_action = start_action;
+    stack->best_match_size_ = best_match_size = 0;
+    stack->scan_state_ = scan_state = start_state;
+    stack->token_size_ = 0;
+    
+  }
+
+  size_t at_match_index_offset = stack->match_offset_;
+  int at_match_index_line = stack->match_line_;
+  int at_match_index_col = stack->match_col_;
+  assert(!match_index || (match_index == stack->match_buffer_size_));
+  while (match_index < stack->match_buffer_size_) {
+    c = (unsigned char)stack->match_buffer_[match_index];
+    scan_state = transition_table[256 * scan_state + c];
+    if (scan_state) {
+      at_match_index_offset++;
+      if (c != '\n') {
+        at_match_index_col++;
+      }
+      else {
+        at_match_index_col = 1;
+        at_match_index_line++;
+      }
+
+      size_t state_action = actions[scan_state];
+      if (state_action != default_action) /* replace with actual */ {
+        best_match_action = state_action;
+        best_match_size = match_index + 1;
+        best_match_offset = at_match_index_offset;
+        best_match_line = at_match_index_line;
+        best_match_col = at_match_index_col;
+      }
+      match_index++;
+    }
+    else {
+      /* error, or, end of token, depending on whether we have a match before */
+      if (best_match_action == default_action) {
+        goto syntax_error;
+      }
+
+      /* Ensure token match is null terminated */
+      stack->terminator_repair_ = stack->match_buffer_[best_match_size];
+      stack->match_buffer_[best_match_size] = '\0';
+      stack->token_size_ = best_match_size;
+      stack->best_match_action_ = best_match_action;
+      stack->best_match_size_ = best_match_size;
+      stack->best_match_offset_ = best_match_offset;
+      stack->best_match_line_ = best_match_line;
+      stack->best_match_col_ = best_match_col;
+
+      return RXG_MATCH;
+    }
+  }
+
+  while (input_index < input_size) {
+    c = (unsigned char)input[input_index];
+    scan_state = transition_table[256 * scan_state + c];
+    if (scan_state) {
+      input_offset++;
+      if (c != '\n') {
+        input_col++;
+      }
+      else {
+        input_col = 1;
+        input_line++;
+      }
+      size_t state_action = actions[scan_state];
+      if (state_action != default_action) /* replace with actual */ {
+        best_match_action = state_action;
+        best_match_size = stack->match_buffer_size_ + input_index - stack->input_index_ + 1;
+        best_match_col = input_col;
+        best_match_line = input_line;
+      }
+      input_index++;
+    }
+    else {
+      /* Append from stack->input_index_ to input_index, excluding input_index itself */
+      r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);
+      if (r) return r;
+ 
+      if (best_match_action == default_action) {
+        goto syntax_error;
+      }
+
+      /* Ensure token match is null terminated, note that the size we just appended may
+       * (likely) be longer than the last section we matched. */
+      stack->terminator_repair_ = stack->match_buffer_[best_match_size];
+      stack->match_buffer_[best_match_size] = '\0';
+      stack->token_size_ = best_match_size;
+      stack->best_match_action_ = best_match_action;
+      stack->best_match_size_ = best_match_size;
+      stack->best_match_offset_ = best_match_offset;
+      stack->best_match_line_ = best_match_line;
+      stack->best_match_col_ = best_match_col;
+
+      return RXG_MATCH;
+    }
+  }
+
+  r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);
+  if (r) return r;
+
+  if (!is_final_input) {
+    /* Need more input */
+    stack->scan_state_ = scan_state;
+    stack->token_size_ = 0; /* no match yet */
+    stack->input_index_ = 0;
+    stack->input_offset_ = input_offset;
+    stack->input_line_ = input_line;
+    stack->input_col_ = input_col;
+
+    stack->best_match_action_ = best_match_action;
+    stack->best_match_size_ = best_match_size;
+    stack->best_match_offset_ = best_match_offset;
+    stack->best_match_line_ = best_match_line;
+    stack->best_match_col_ = best_match_col;
+
+    stack->match_index_ = match_index;
+
+    return RXG_FEED_ME;
+  }
+
+  if (!stack->match_buffer_size_ && (stack->input_index_ == input_size)) {
+    /* Exhausted all input - leave stack in a state where we can
+     * immediately re-use it in its initial state */
+    stack->match_index_ = 0;
+    stack->best_match_action_ = best_match_action = start_action;
+    stack->best_match_size_ = best_match_size;
+    stack->best_match_offset_ = best_match_offset;
+    stack->best_match_line_ = best_match_line;
+    stack->best_match_col_ = best_match_col;
+    stack->scan_state_ = scan_state = start_state;
+
+    stack->token_size_ = 0;
+    stack->input_index_ = 0;
+    stack->input_offset_ = input_offset;
+    stack->input_line_ = input_line;
+    stack->input_col_ = input_col;
+
+    return RXG_END_OF_INPUT;
+  }
+
+  if (best_match_action == default_action) {
+    goto syntax_error;
+  }
+
+  /* Ensure token match is null terminated */
+  stack->terminator_repair_ = stack->match_buffer_[best_match_size];
+  stack->match_buffer_[best_match_size] = '\0';
+  stack->token_size_ = best_match_size;
+  stack->best_match_action_ = best_match_action;
+  stack->best_match_size_ = best_match_size;
+  stack->best_match_offset_ = best_match_offset;
+  stack->best_match_line_ = best_match_line;
+  stack->best_match_col_ = best_match_col;
+
+  return RXG_MATCH;
+syntax_error:
+  if (stack->match_buffer_size_) {
+    stack->best_match_offset_ = stack->match_offset_ + 1;
+    if (stack->match_buffer_[0] != '\n') {
+      stack->best_match_line_ = stack->match_line_;
+      stack->best_match_col_ = stack->match_col_ + 1;
+    }
+    else {
+      stack->best_match_line_ = stack->match_line_ + 1;
+      stack->best_match_col_ = 1;
+    }
+  }
+  else {
+    /* Append the single character causing the syntax error */
+    r = rxg_append_match_buffer(stack, input + stack->input_index_, 1);
+    if (r) return r;
+
+    input_offset++;
+    if (input[stack->input_index_] != '\n') {
+      input_col++;
+    }
+    else {
+      input_col = 1;
+      input_line++;
+    }
+    input_index = stack->input_index_ + 1;
+    stack->best_match_offset_ = input_offset;
+    stack->best_match_line_ = input_line;
+    stack->best_match_col_ = input_col;
+  }
+  
+  /* Reset scanner to get ready for next token */
+  stack->token_size_ = 1;
+  stack->terminator_repair_ = stack->match_buffer_[1];
+  stack->match_buffer_[1] = '\0';
+
+  stack->input_index_ = input_index;
+  stack->input_offset_ = input_offset;
+  stack->input_line_ = input_line;
+  stack->input_col_ = input_col;
+
+  return RXG_SYNTAX_ERROR;
+}
+#endif
 
 int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;

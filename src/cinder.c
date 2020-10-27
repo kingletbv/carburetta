@@ -1688,6 +1688,284 @@ static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct cinde
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
+static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable) {
+  /* Emit the scan function, it scans the input for regex matches without actually executing any actions */
+  /* (we're obviously in need of a templating language..) */
+  fprintf(outfp,  "static int %sappend_match_buffer(struct %sstack *stack, const char *s, size_t len) {\n", cc_prefix(cc), cc_prefix(cc));
+  fprintf(outfp,  "  size_t size_needed = len;\n"
+                  "  size_needed += stack->match_buffer_size_;\n"
+                  "  if (size_needed < stack->match_buffer_size_) {\n");
+  fprintf(outfp,  "    return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "  }\n"
+                  "  if (size_needed == SIZE_MAX) {\n"
+                  "    /* cannot fit null terminator */\n");
+  fprintf(outfp,  "    return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "  }\n"
+                  "  size_needed++; /* null terminator */\n"
+                  "  if (size_needed < 128) {\n"
+                  "    size_needed = 128;\n"
+                  "  }\n"
+                  "  if (size_needed > stack->match_buffer_size_allocated_) {\n"
+                  "    /* intent of code: grow buffer size by powers of 2-1, unless our needs require more now. */\n"
+                  "    size_t size_to_allocate = stack->match_buffer_size_allocated_ * 2 + 1;\n"
+                  "    if (size_to_allocate <= stack->match_buffer_size_allocated_) {\n");
+  fprintf(outfp,  "      return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "    }\n"
+                  "    if (size_to_allocate < size_needed) {\n"
+                  "      size_to_allocate = size_needed;\n"
+                  "    }\n"
+                  "    void *buf = realloc(stack->match_buffer_, size_to_allocate);\n"
+                  "    if (!buf) {\n");
+  fprintf(outfp,  "      return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "    }\n"
+                  "    stack->match_buffer_ = (char *)buf;\n"
+                  "    stack->match_buffer_size_allocated_ = size_to_allocate;\n"
+                  "  }\n"
+                  "\n"
+                  "  memcpy(stack->match_buffer_ + stack->match_buffer_size_, s, len);\n"
+                  "  stack->match_buffer_size_ += len;\n"
+                  "  stack->match_buffer_[stack->match_buffer_size_] = '\\0';\n"
+                  "  return 0;\n"
+                  "}\n"
+                  "\n");
+  fprintf(outfp,  "int %sscan(struct %sstack *stack, const char *input, size_t input_size, int is_final_input) {\n", cc_prefix(cc), cc_prefix(cc));
+  fprintf(outfp,  "  int r;\n"
+                  "  unsigned char c;\n"
+                  "  size_t scan_state = stack->scan_state_;\n");
+  fprintf(outfp,  "  const size_t *transition_table = %sscan_table;\n", cc_prefix(cc));
+  fprintf(outfp,  "  const size_t *actions = %sscan_actions;\n", cc_prefix(cc));
+  fprintf(outfp,  "  const size_t default_action = %zu;\n", scantable->default_action);
+  fprintf(outfp,  "  const size_t start_state = %zu;\n", scantable->start_state);
+  fprintf(outfp,  "  const size_t start_action = %sscan_actions[start_state];\n", cc_prefix(cc));
+  fprintf(outfp,  "\n"
+                  "  size_t match_index = stack->match_index_;\n"
+                  "\n"
+                  "  size_t best_match_action = stack->best_match_action_;\n"
+                  "  size_t best_match_size = stack->best_match_size_;\n"
+                  "  size_t best_match_offset = stack->best_match_offset_;\n"
+                  "  int best_match_line = stack->best_match_line_;\n"
+                  "  int best_match_col = stack->best_match_col_;\n"
+                  "\n"
+                  "  size_t input_index = stack->input_index_;\n"
+                  "  size_t input_offset = stack->input_offset_;\n"
+                  "  int input_line = stack->input_line_;\n"
+                  "  int input_col = stack->input_col_;\n"
+                  "\n"
+                  "  /* Move any prior token out of the way */\n"
+                  "  if (stack->token_size_) {\n"
+                  "    stack->match_buffer_[stack->token_size_] = stack->terminator_repair_;\n"
+                  "\n"
+                  "    memcpy(stack->match_buffer_, stack->match_buffer_ + stack->token_size_, stack->match_buffer_size_ - stack->token_size_);\n"
+                  "    stack->match_buffer_size_ -= stack->token_size_;\n"
+                  "    stack->match_offset_ = stack->best_match_offset_;\n"
+                  "    stack->match_line_ = stack->best_match_line_;\n"
+                  "    stack->match_col_ = stack->best_match_col_;\n"
+                  "    \n"
+                  "    /* Reset scanner to get ready for next token */\n"
+                  "    stack->match_index_ = 0;\n"
+                  "    stack->best_match_action_ = best_match_action = start_action;\n"
+                  "    stack->best_match_size_ = best_match_size = 0;\n"
+                  "    stack->scan_state_ = scan_state = start_state;\n"
+                  "    stack->token_size_ = 0;\n"
+                  "    \n"
+                  "  }\n"
+                  "\n"
+                  "  size_t at_match_index_offset = stack->match_offset_;\n"
+                  "  int at_match_index_line = stack->match_line_;\n"
+                  "  int at_match_index_col = stack->match_col_;\n"
+                  "  while (match_index < stack->match_buffer_size_) {\n"
+                  "    c = (unsigned char)stack->match_buffer_[match_index];\n"
+                  "    scan_state = transition_table[256 * scan_state + c];\n"
+                  "    if (scan_state) {\n"
+                  "      at_match_index_offset++;\n"
+                  "      if (c != '\\n') {\n"
+                  "        at_match_index_col++;\n"
+                  "      }\n"
+                  "      else {\n"
+                  "        at_match_index_col = 1;\n"
+                  "        at_match_index_line++;\n"
+                  "      }\n"
+                  "\n"
+                  "      size_t state_action = actions[scan_state];\n"
+                  "      if (state_action != default_action) /* replace with actual */ {\n"
+                  "        best_match_action = state_action;\n"
+                  "        best_match_size = match_index + 1;\n"
+                  "        best_match_offset = at_match_index_offset;\n"
+                  "        best_match_line = at_match_index_line;\n"
+                  "        best_match_col = at_match_index_col;\n"
+                  "      }\n"
+                  "      match_index++;\n"
+                  "    }\n"
+                  "    else {\n"
+                  "      /* error, or, end of token, depending on whether we have a match before */\n"
+                  "      if (best_match_action == default_action) {\n"
+                  "        goto syntax_error;\n"
+                  "      }\n"
+                  "\n"
+                  "      /* Ensure token match is null terminated */\n"
+                  "      stack->terminator_repair_ = stack->match_buffer_[best_match_size];\n"
+                  "      stack->match_buffer_[best_match_size] = '\\0';\n"
+                  "      stack->token_size_ = best_match_size;\n"
+                  "      stack->best_match_action_ = best_match_action;\n"
+                  "      stack->best_match_size_ = best_match_size;\n"
+                  "      stack->best_match_offset_ = best_match_offset;\n"
+                  "      stack->best_match_line_ = best_match_line;\n"
+                  "      stack->best_match_col_ = best_match_col;\n"
+                  "\n");
+  fprintf(outfp,  "      return _%sMATCH;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "    }\n"
+                  "  }\n"
+                  "\n"
+                  "  while (input_index < input_size) {\n"
+                  "    c = (unsigned char)input[input_index];\n"
+                  "    scan_state = transition_table[256 * scan_state + c];\n"
+                  "    if (scan_state) {\n"
+                  "      input_offset++;\n"
+                  "      if (c != '\\n') {\n"
+                  "        input_col++;\n"
+                  "      }\n"
+                  "      else {\n"
+                  "        input_col = 1;\n"
+                  "        input_line++;\n"
+                  "      }\n"
+                  "      size_t state_action = actions[scan_state];\n"
+                  "      if (state_action != default_action) /* replace with actual */ {\n"
+                  "        best_match_action = state_action;\n"
+                  "        best_match_size = stack->match_buffer_size_ + input_index - stack->input_index_ + 1;\n"
+                  "        best_match_col = input_col;\n"
+                  "        best_match_line = input_line;\n"
+                  "      }\n"
+                  "      input_index++;\n"
+                  "    }\n"
+                  "    else {\n"
+                  "      /* Append from stack->input_index_ to input_index, excluding input_index itself */\n"
+                  "      r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);\n"
+                  "      if (r) return r;\n"
+                  " \n"
+                  "      if (best_match_action == default_action) {\n"
+                  "        goto syntax_error;\n"
+                  "      }\n"
+                  "\n"
+                  "      /* Ensure token match is null terminated, note that the size we just appended may\n"
+                  "       * (likely) be longer than the last section we matched. */\n"
+                  "      stack->terminator_repair_ = stack->match_buffer_[best_match_size];\n"
+                  "      stack->match_buffer_[best_match_size] = '\\0';\n"
+                  "      stack->token_size_ = best_match_size;\n"
+                  "      stack->best_match_action_ = best_match_action;\n"
+                  "      stack->best_match_size_ = best_match_size;\n"
+                  "      stack->best_match_offset_ = best_match_offset;\n"
+                  "      stack->best_match_line_ = best_match_line;\n"
+                  "      stack->best_match_col_ = best_match_col;\n"
+                  "\n");
+  fprintf(outfp,  "      return _%sMATCH;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "    }\n"
+                  "  }\n"
+                  "\n"
+                  "  r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);\n"
+                  "  if (r) return r;\n"
+                  "\n"
+                  "  if (!is_final_input) {\n"
+                  "    /* Need more input */\n"
+                  "    stack->scan_state_ = scan_state;\n"
+                  "    stack->token_size_ = 0; /* no match yet */\n"
+                  "    stack->input_index_ = 0;\n"
+                  "    stack->input_offset_ = input_offset;\n"
+                  "    stack->input_line_ = input_line;\n"
+                  "    stack->input_col_ = input_col;\n"
+                  "\n"
+                  "    stack->best_match_action_ = best_match_action;\n"
+                  "    stack->best_match_size_ = best_match_size;\n"
+                  "    stack->best_match_offset_ = best_match_offset;\n"
+                  "    stack->best_match_line_ = best_match_line;\n"
+                  "    stack->best_match_col_ = best_match_col;\n"
+                  "\n"
+                  "    stack->match_index_ = match_index;\n"
+                  "\n");
+  fprintf(outfp,  "    return _%sFEED_ME;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "  }\n"
+                  "\n"
+                  "  if (!stack->match_buffer_size_ && (stack->input_index_ == input_size)) {\n"
+                  "    /* Exhausted all input - leave stack in a state where we can\n"
+                  "     * immediately re-use it in its initial state */\n"
+                  "    stack->match_index_ = 0;\n"
+                  "    stack->best_match_action_ = best_match_action = start_action;\n"
+                  "    stack->best_match_size_ = best_match_size;\n"
+                  "    stack->best_match_offset_ = best_match_offset;\n"
+                  "    stack->best_match_line_ = best_match_line;\n"
+                  "    stack->best_match_col_ = best_match_col;\n"
+                  "    stack->scan_state_ = scan_state = start_state;\n"
+                  "\n"
+                  "    stack->token_size_ = 0;\n"
+                  "    stack->input_index_ = 0;\n"
+                  "    stack->input_offset_ = input_offset;\n"
+                  "    stack->input_line_ = input_line;\n"
+                  "    stack->input_col_ = input_col;\n"
+                  "\n");
+  fprintf(outfp,  "    return _%sEND_OF_INPUT;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "  }\n"
+                  "\n"
+                  "  if (best_match_action == default_action) {\n"
+                  "    goto syntax_error;\n"
+                  "  }\n"
+                  "\n"
+                  "  /* Ensure token match is null terminated */\n"
+                  "  stack->terminator_repair_ = stack->match_buffer_[best_match_size];\n"
+                  "  stack->match_buffer_[best_match_size] = '\\0';\n"
+                  "  stack->token_size_ = best_match_size;\n"
+                  "  stack->best_match_action_ = best_match_action;\n"
+                  "  stack->best_match_size_ = best_match_size;\n"
+                  "  stack->best_match_offset_ = best_match_offset;\n"
+                  "  stack->best_match_line_ = best_match_line;\n"
+                  "  stack->best_match_col_ = best_match_col;\n"
+                  "\n");
+  fprintf(outfp,  "      return _%sMATCH;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "syntax_error:\n"
+                  "  if (stack->match_buffer_size_) {\n"
+                  "    stack->best_match_offset_ = stack->match_offset_ + 1;\n"
+                  "    if (stack->match_buffer_[0] != '\\n') {\n"
+                  "      stack->best_match_line_ = stack->match_line_;\n"
+                  "      stack->best_match_col_ = stack->match_col_ + 1;\n"
+                  "    }\n"
+                  "    else {\n"
+                  "      stack->best_match_line_ = stack->match_line_ + 1;\n"
+                  "      stack->best_match_col_ = 1;\n"
+                  "    }\n"
+                  "  }\n"
+                  "  else {\n"
+                  "    /* Append the single character causing the syntax error */\n"
+                  "    r = rxg_append_match_buffer(stack, input + stack->input_index_, 1);\n"
+                  "    if (r) return r;\n"
+                  "\n"
+                  "    input_offset++;\n"
+                  "    if (input[stack->input_index_] != '\\n') {\n"
+                  "      input_col++;\n"
+                  "    }\n"
+                  "    else {\n"
+                  "      input_col = 1;\n"
+                  "      input_line++;\n"
+                  "    }\n"
+                  "    input_index = stack->input_index_ + 1;\n"
+                  "    stack->best_match_offset_ = input_offset;\n"
+                  "    stack->best_match_line_ = input_line;\n"
+                  "    stack->best_match_col_ = input_col;\n"
+                  "  }\n"
+                  "  \n"
+                  "  /* Reset scanner to get ready for next token */\n"
+                  "  stack->token_size_ = 1;\n"
+                  "  stack->terminator_repair_ = stack->match_buffer_[1];\n"
+                  "  stack->match_buffer_[1] = '\\0';\n"
+                  "\n"
+                  "  stack->input_index_ = input_index;\n"
+                  "  stack->input_offset_ = input_offset;\n"
+                  "  stack->input_line_ = input_line;\n"
+                  "  stack->input_col_ = input_col;\n"
+                  "\n");
+  fprintf(outfp,  "  return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
+  fprintf(outfp,  "}\n");
+
+  return 0;
+}
+
 static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   int r;
 
@@ -2319,6 +2597,9 @@ int main(int argc, char **argv) {
   struct lr_generator lalr;
   lr_init(&lalr);
 
+  struct sc_scanner scantable;
+  sc_scanner_init(&scantable);
+
   struct xlts token_buf;
   xlts_init(&token_buf);
 
@@ -2744,7 +3025,7 @@ int main(int argc, char **argv) {
       continue;
     }
     struct symbol *sym = symbol_find(&cc.symtab_, prod->nt_.id_.translated_);
-    if (!sym) {
+    if (!sym || (sym->st_ != SYM_NONTERMINAL)) {
       re_error(&prod->nt_.id_, "Error, symbol \"%s\" not declared as %%nt", prod->nt_.id_.translated_);
       prdg.have_errors_ = 1;
     }
@@ -2765,6 +3046,28 @@ int main(int argc, char **argv) {
         continue;
       }
       prod_sym->sym_ = sym;
+    }
+  }
+
+  /* Resolve all symbol references in the patterns */
+  size_t pat_idx;
+  for (pat_idx = 0; pat_idx < prdg.num_patterns_; ++pat_idx) {
+    struct prd_pattern *pat = prdg.patterns_ + pat_idx;
+    if (!pat->term_.id_.num_translated_) {
+      /* Not resolving to a terminal.. but pattern will still match its action so keep it around */
+      continue;
+    }
+    struct symbol *sym = symbol_find(&cc.symtab_, pat->term_.id_.translated_);
+    if (!sym) {
+      re_error(&pat->term_.id_, "Error, symbol \"%s\" not declared as %%token", pat->term_.id_.translated_);
+      prdg.have_errors_ = 1;
+    }
+    else if (sym->st_ != SYM_TERMINAL) {
+      re_error(&pat->term_.id_, "Error, pattern symbol \"%s\" must be declared as %%token, not as %%nt", pat->term_.id_.translated_);
+      prdg.have_errors_ = 1;
+    }
+    else {
+      pat->term_.sym_ = sym;
     }
   }
 
@@ -2953,6 +3256,43 @@ int main(int argc, char **argv) {
     goto cleanup_exit;
   }
 
+  if (prdg.num_patterns_) {
+    /* Build DFA scantable */
+    struct sc_scan_rule *scanner_rules = NULL;
+    if (prdg.num_patterns_ > (SIZE_MAX / sizeof(struct sc_scan_rule))) {
+      re_error_nowhere("Internal error, overflow");
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    scanner_rules = (struct sc_scan_rule *)malloc(sizeof(struct sc_scan_rule) * prdg.num_patterns_);
+    if (!scanner_rules) {
+      re_error_nowhere("Internal error, no memory");
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    size_t n;
+    for (n = 0; n < prdg.num_patterns_; ++n) {
+      struct prd_pattern *pat = prdg.patterns_ + n;
+      struct sc_scan_rule *sr = scanner_rules + n;
+      /* Set the action to the index of the pattern, set the variant to the ordinal of the symbol..
+       * .. if we have such a symbol.
+       * This is mostly for debugging, resolution of the symbol occurs on a per-action basis. */
+      sr->regexp = pat->regex_;
+      sr->action.action = n + 1;
+      sr->action.variant = pat->term_.sym_ ? pat->term_.sym_->ordinal_ : 0;
+    }
+    r = sc_scanner_compile(&scantable, 0, prdg.num_patterns_, scanner_rules);
+    free(scanner_rules);
+    if (r) {
+      /* If this fails, it means the grammar we used for parsing the regular expression
+       * in regex_grammar.cnd mismatched the grammar used in nfa.c for *actually* parsing
+       * the regular expression and constructing an NFA out of it. */
+      fprintf(stderr, "Internal error, failed to compile pattern scantable (%d)\n", r);
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+  }
+
   FILE *outfp = NULL;
 
   if (generate_cfile) {
@@ -3093,6 +3433,54 @@ int main(int argc, char **argv) {
     }
     fprintf(outfp, "};\n");
 
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "static const size_t %sscan_table[] = {\n", cc_prefix(&cc));
+      size_t row, col;
+      char column_widths[256] = {0};
+
+      for (col = 0; col < 256; ++col) {
+        column_widths[col] = 1;
+        for (row = 0; row < scantable.num_states; ++row) {
+          size_t v = scantable.transition_table[row * 256 + col];
+
+          int width_needed = 1;
+          if (v < 100) {
+            width_needed = 2;
+          }
+          else if (v < 1000) {
+            width_needed = 3;
+          }
+          else if (v < 10000) {
+            width_needed = 4;
+          }
+          else {
+            width_needed = 5;
+          }
+          if (width_needed > column_widths[col]) {
+            column_widths[col] = width_needed;
+          }
+        }
+      }
+
+      for (row = 0; row < scantable.num_states; ++row) {
+        for (col = 0; col < 256; ++col) {
+          fprintf(outfp, "%s%*zu", col ? "," : "  ", column_widths[col], scantable.transition_table[256 * row + col]);
+        }
+        if (row != (scantable.num_states - 1)) {
+          fprintf(outfp, ",\n");
+        }
+        else {
+          fprintf(outfp, "\n");
+        }
+      }
+      fprintf(outfp, "};\n");
+      fprintf(outfp, "static const size_t %sscan_actions[] = { ", cc_prefix(&cc));
+      for (col = 0; col < scantable.num_states; ++col) {
+        fprintf(outfp, "%s%zu", col ? ", " : "", (size_t)scantable.actions[col].action);
+      }
+      fprintf(outfp, " };\n");
+    }
+
     size_t num_columns = (size_t)(1 + lalr.max_sym_ - lalr.min_sym_);
     fprintf(outfp, "static const int %sminimum_sym = %d;\n", cc_prefix(&cc), lalr.min_sym_);
     fprintf(outfp, "static const size_t %snum_columns = %zu;\n", cc_prefix(&cc), num_columns);
@@ -3207,7 +3595,40 @@ int main(int argc, char **argv) {
     fprintf(outfp, "  int mute_error_turns_;\n");
     fprintf(outfp, "  size_t pos_, num_stack_allocated_;\n");
     fprintf(outfp, "  struct %ssym_data *stack_;\n", cc_prefix(&cc));
+    if (prdg.num_patterns_) {
+      fprintf(outfp, 
+              "  size_t scan_state_;\n"
+              "  size_t match_index_;\n"
+              "  size_t best_match_action_;\n"
+              "  size_t best_match_size_;\n"
+              "  size_t input_index_;\n"
+              "  size_t input_offset_;\n"
+              "  size_t match_buffer_size_;\n"
+              "  size_t match_buffer_size_allocated_;\n"
+              "  /* offset, line and column at the start of match_buffer_ */\n"
+              "  size_t match_offset_;\n"
+              "  int match_line_;\n"
+              "  int match_col_;\n"
+              "  /* offset, line and column at the zero-termination (best_match_size_) of a match \n"
+              "   * in match_buffer_ (the actual buffer may well be longer.) */\n"
+              "  size_t best_match_offset_;\n"
+              "  int best_match_line_;\n"
+              "  int best_match_col_;\n"
+              "  size_t token_size_;\n"
+              "  char *match_buffer_;\n"
+              "  char terminator_repair_;\n"
+              "  int input_line_;\n"
+              "  int input_col_;\n");
+    }
     fprintf(outfp, "};\n");
+
+    fprintf(outfp, "#define _%sMATCH 1\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sOVERFLOW 2\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sNO_MEMORY 3\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sFEED_ME 4\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(&cc));
+    fprintf(outfp, "\n");
 
     sym = cc.symtab_.terminals_;
     if (sym) {
@@ -3274,9 +3695,34 @@ int main(int argc, char **argv) {
       "  stack->mute_error_turns_ = 0;\n"
       "  stack->pos_ = 0;\n"
       "  stack->num_stack_allocated_ = 0;\n"
-      "  stack->stack_ = NULL;\n"
+      "  stack->stack_ = NULL;\n");
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "  stack->scan_state_ = %zu;\n", scantable.start_state);
+      fprintf(outfp, "  stack->input_index_ = 0;\n"
+                     "  stack->input_offset_ = 0;\n"
+                     "  stack->input_line_ = 1;\n"
+                     "  stack->input_col_ = 1;\n"
+                     "  stack->match_index_ = 0;\n"
+                     "  stack->match_buffer_ = NULL;\n"
+                     "  stack->match_buffer_size_ = 0;\n"
+                     "  stack->match_buffer_size_allocated_ = 0;\n"
+                     "  stack->terminator_repair_ = '\\0';\n"
+                     "  stack->token_size_ = 0;\n"
+                     "  stack->match_offset_ = 0;\n"
+                     "  stack->match_line_ = 1;\n"
+                     "  stack->match_col_ = 1;\n");
+      fprintf(outfp, "  stack->best_match_action_ = %zu;\n", (size_t)scantable.actions[scantable.start_state].action);
+      fprintf(outfp, "  stack->best_match_size_ = 0;\n"
+                     "  stack->best_match_offset_ = 0;\n"
+                     "  stack->best_match_line_ = 1;\n"
+                     "  stack->best_match_col_ = 1;\n");
+    }
+
+    fprintf(outfp,
       "}\n"
       "\n");
+
+
     fprintf(outfp,
       "void %sstack_cleanup(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
     fprintf(outfp,
@@ -3329,7 +3775,11 @@ int main(int argc, char **argv) {
     fprintf(outfp,
       "  }\n"
       "\n"
-      "  if (stack->stack_) free(stack->stack_);\n"
+      "  if (stack->stack_) free(stack->stack_);\n");
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "    if (stack->match_buffer_) free(stack->match_buffer_);\n");
+    }
+    fprintf(outfp,
       "}\n"
       "\n");
 
@@ -3430,20 +3880,52 @@ int main(int argc, char **argv) {
       "  stack->mute_error_turns_ = 0;\n");
 
     fprintf(outfp, "  switch (%spush_state(stack, 0)) {\n"
-      "    case -1: /* overflow */ {\n", cc_prefix(&cc));
+                   "    case -1: /* overflow */ {\n", cc_prefix(&cc));
     fprintf(outfp, "      return -2;\n");
     fprintf(outfp, "    }\n    break;\n"
-      "    case -2: /* out of memory */ {\n");
+                   "    case -2: /* out of memory */ {\n");
     fprintf(outfp, "      return -2;\n");
-    fprintf(outfp, "    }\n    break;\n  }\n");
+    fprintf(outfp, "    }\n"
+                   "    break;\n"
+                   "  }\n");
 
-    fprintf(outfp,
-      "  return 0;\n"
-      "}\n"
-      "\n");
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "  stack->scan_state_ = %zu;\n", scantable.start_state);
+      fprintf(outfp, "  stack->input_index_ = 0;\n"
+                     "  stack->input_offset_ = 0;\n"
+                     "  stack->input_line_ = 1;\n"
+                     "  stack->input_col_ = 1;\n"
+                     "  stack->match_index_ = 0;\n"
+                     "  stack->match_buffer_size_ = 0;\n"
+                     "  stack->terminator_repair_ = '\\0';\n"
+                     "  stack->token_size_ = 0;\n"
+                     "  stack->match_offset_ = 0;\n"
+                     "  stack->match_line_ = 1;\n"
+                     "  stack->match_col_ = 1;\n");
+      fprintf(outfp, "  stack->best_match_action_ = %zu;\n", (size_t)scantable.actions[scantable.start_state].action);
+      fprintf(outfp, "  stack->best_match_size_ = 0;\n"
+                     "  stack->best_match_offset_ = 0;\n"
+                     "  stack->best_match_line_ = 1;\n"
+                     "  stack->best_match_col_ = 1;\n");
+    }
+
+    fprintf(outfp, "  return 0;\n"
+                   "}\n"
+                   "\n");
+
+    if (prdg.num_patterns_) {
+      r = emit_scan_function(outfp, &cc, &prdg, &scantable);
+      if (r) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+    }
 
     r = emit_parse_function(outfp, &cc, &prdg, &lalr, state_syms);
-    if (r) goto cleanup_exit;
+    if (r) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
 
     fprintf(outfp, "/* --------- END OF GENERATED CODE ------------ */\n");
 
@@ -3497,6 +3979,14 @@ int main(int argc, char **argv) {
                    "#endif\n"
                    "\n");
 
+    fprintf(outfp, "#define _%sMATCH 1\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sOVERFLOW 2\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sNO_MEMORY 3\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sFEED_ME 4\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(&cc));
+    fprintf(outfp, "\n");
+
     sym = cc.symtab_.terminals_;
     if (sym) {
       do {
@@ -3530,6 +4020,31 @@ int main(int argc, char **argv) {
     fprintf(outfp, "  int mute_error_turns_;\n");
     fprintf(outfp, "  size_t pos_, num_stack_allocated_;\n");
     fprintf(outfp, "  struct %ssym_data *stack_;\n", cc_prefix(&cc));
+    if (prdg.num_patterns_) {
+      fprintf(outfp, 
+              "  size_t scan_state_;\n"
+              "  size_t match_index_;\n"
+              "  size_t best_match_action_;\n"
+              "  size_t best_match_size_;\n"
+              "  size_t input_index_;\n"
+              "  size_t input_offset_;\n"
+              "  size_t match_buffer_size_;\n"
+              "  size_t match_buffer_size_allocated_;\n"
+              "  /* offset, line and column at the start of match_buffer_ */\n"
+              "  size_t match_offset_;\n"
+              "  int match_line_;\n"
+              "  int match_col_;\n"
+              "  /* offset, line and column at the zero-termination (best_match_size_) of a match \n"
+              "   * in match_buffer_ (the actual buffer may well be longer.) */\n"
+              "  size_t best_match_offset_;\n"
+              "  int best_match_line_;\n"
+              "  int best_match_col_;\n"
+              "  size_t token_size_;\n"
+              "  char *match_buffer_;\n"
+              "  char terminator_repair_;\n"
+              "  int input_line_;\n"
+              "  int input_col_;\n");
+    }
     fprintf(outfp, "};\n");
     fprintf(outfp, "\n");
     fprintf(outfp, "void %sstack_init(struct %sstack *stack);\n", cc_prefix(&cc), cc_prefix(&cc));
@@ -3573,6 +4088,8 @@ cleanup_exit:
   xlts_cleanup(&token_buf);
 
   lr_cleanup(&lalr);
+
+  sc_scanner_cleanup(&scantable);
 
   gt_grammar_table_cleanup(&gt);
 
