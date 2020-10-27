@@ -88,10 +88,10 @@ int xlts_append_xlat(struct xlts *x, size_t num_bytes, const char *bytes);
 int xlts_append_equal(struct xlts *x, const char *filename, int line, int col, size_t offset, size_t num_bytes, const char *bytes);
 int xlts_append_original(struct xlts *x, const char *filename, int line, int col, size_t offset, size_t num_bytes, const char *bytes);
 
-int xlts_append(struct xlts *dst, struct xlts *src);
-int xlts_append_as_original(struct xlts *dst, struct xlts *src);
-int xlts_append_mid_translated(struct xlts *dst, struct xlts *src, size_t start_byte, size_t end_byte);
-int xlts_append_left_translated(struct xlts *dst, struct xlts *src, size_t num_translated_bytes);
+int xlts_append(struct xlts *dst, const struct xlts *src);
+int xlts_append_as_original(struct xlts *dst, const struct xlts *src);
+int xlts_append_mid_translated(struct xlts *dst, const struct xlts *src, size_t start_byte, size_t end_byte);
+int xlts_append_left_translated(struct xlts *dst, const struct xlts *src, size_t num_translated_bytes);
 void xlts_strip_left_translated(struct xlts *x, size_t num_translated_bytes);
 
 /* xlts_clamp allows you to, temporarily, shorten the size of the string contained in an xlts, without

@@ -262,7 +262,7 @@ int xlts_append_equal(struct xlts *x, const char *filename, int line, int col, s
   return r;
 }
 
-int xlts_append(struct xlts *dst, struct xlts *src) {
+int xlts_append(struct xlts *dst, const struct xlts *src) {
   int r;
   size_t idx;
 
@@ -278,7 +278,7 @@ int xlts_append(struct xlts *dst, struct xlts *src) {
         last_chunk = dst->chunks_[old_num_chunks - 1];
       }
       for (idx = 0; idx < src->num_chunks_; ++idx) {
-        struct xlts_chunk *c = src->chunks_ + idx;
+        const struct xlts_chunk *c = src->chunks_ + idx;
         r = xlts_append_chunk(dst, c->ct_, c->filename_, c->line_, c->col_, c->offset_, (c->ct_ != XLTS_XLAT) ? c->num_original_bytes_ : c->num_translated_bytes_);
         if (r) {
           break;
@@ -308,7 +308,7 @@ int xlts_append(struct xlts *dst, struct xlts *src) {
   return r;
 }
 
-int xlts_append_as_original(struct xlts *dst, struct xlts *src) {
+int xlts_append_as_original(struct xlts *dst, const struct xlts *src) {
   int r;
   size_t idx;
 
@@ -349,13 +349,13 @@ int xlts_append_as_original(struct xlts *dst, struct xlts *src) {
   return r;
 }
 
-int xlts_append_left_translated(struct xlts *dst, struct xlts *src, size_t num_translated_bytes) {
+int xlts_append_left_translated(struct xlts *dst, const struct xlts *src, size_t num_translated_bytes) {
   int r;
   size_t idx;
   size_t num_bytes_remaining = num_translated_bytes;
-  char *ori = src->original_, *xlt = src->translated_;
+  const char *ori = src->original_, *xlt = src->translated_;
   for (idx = 0; idx < src->num_chunks_; ++idx) {
-    struct xlts_chunk *c = src->chunks_ + idx;
+    const struct xlts_chunk *c = src->chunks_ + idx;
     if (num_bytes_remaining >= c->num_translated_bytes_) {
       /* Either we still need to move more bytes than there are bytes in this chunk, or, there 
        * are no translated bytes in this chunk */
@@ -418,13 +418,13 @@ int xlts_append_left_translated(struct xlts *dst, struct xlts *src, size_t num_t
   return 0;
 }
 
-int xlts_append_mid_translated(struct xlts *dst, struct xlts *src, size_t start_byte, size_t end_byte) {
+int xlts_append_mid_translated(struct xlts *dst, const struct xlts *src, size_t start_byte, size_t end_byte) {
   int r;
   size_t idx;
   size_t num_bytes_remaining_to_start = start_byte;
   size_t num_bytes_remaining_to_end = end_byte - start_byte;
-  char *ori = src->original_;
-  char *xlt = src->translated_;
+  const char *ori = src->original_;
+  const char *xlt = src->translated_;
   for (idx = 0; idx < src->num_chunks_; ++idx) {
     struct xlts_chunk *c = src->chunks_ + idx;
     if (num_bytes_remaining_to_start < c->num_translated_bytes_) {
@@ -436,7 +436,7 @@ int xlts_append_mid_translated(struct xlts *dst, struct xlts *src, size_t start_
   }
 
   for (; idx < src->num_chunks_; ++idx) {
-    struct xlts_chunk *c = src->chunks_ + idx;
+    const struct xlts_chunk *c = src->chunks_ + idx;
 
     if (c->ct_ != XLTS_ORIGINAL) {
       if (!num_bytes_remaining_to_end) {

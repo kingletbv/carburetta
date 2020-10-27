@@ -158,6 +158,12 @@ void snippet_pop_last_token(struct snippet *s) {
   s->num_tokens_--;
 }
 
+void snippet_pop_first_token(struct snippet *s) {
+  if (!s->num_tokens_) return;
+  s->num_tokens_--;
+  memcpy(s->tokens_, s->tokens_ + 1, sizeof(struct snippet_token) * s->num_tokens_);
+}
+
 uint64_t snippet_hash(const struct snippet *s) {
   uint64_t hash_value = 0;
   size_t n;
@@ -209,3 +215,43 @@ int snippet_cmp(const struct snippet *left, const struct snippet *right) {
   return 0;
 }
 
+char *snippet_dup_xlt(const struct snippet *s) {
+  size_t xlt_size = 0;
+  size_t n;
+  for (n = 0; n < s->num_tokens_; ++n) {
+    struct xlts *x = &s->tokens_[n].text_;
+    xlt_size += x->num_translated_;
+    if (xlt_size < x->num_translated_) {
+      /* Overflow */
+      re_error_nowhere("Internal error, overflow on allocation");
+      return NULL;
+    }
+  }
+
+  char *ds = malloc(xlt_size + 1);
+  if (!ds) {
+    re_error_nowhere("Internal error, no memory");
+    return NULL;
+  }
+  char *p = ds;
+  for (n = 0; n < s->num_tokens_; ++n) {
+    struct xlts *x = &s->tokens_[n].text_;
+    xlt_size += x->num_translated_;
+    memcpy(p, x->translated_, x->num_translated_);
+    p += x->num_translated_;
+  }
+  *p++ = '\0';
+  return ds;
+}
+
+int snippet_append_to_xlts(struct xlts *x, const struct snippet *s) {
+  int r;
+  size_t n;
+  for (n = 0; n < s->num_tokens_; ++n) {
+    const struct xlts *srcx = &s->tokens_[n].text_;
+    r = xlts_append(x, srcx);
+    /* XXX: If this fails it would be better if we unwound. */
+    if (r) return r;
+  }
+  return 0;
+}
