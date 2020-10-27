@@ -73,12 +73,26 @@ void prd_prod_cleanup(struct prd_production *ppd) {
   snippet_cleanup(&ppd->action_sequence_);
 }
 
+void prd_pattern_init(struct prd_pattern *pat) {
+  prd_production_sym_init(&pat->term_);
+  pat->regex_ = NULL;
+  snippet_init(&pat->action_sequence_);
+}
+
+void prd_pattern_cleanup(struct prd_pattern *pat) {
+  prd_production_sym_cleanup(&pat->term_);
+  if (pat->regex_) free(pat->regex_);
+  snippet_cleanup(&pat->action_sequence_);
+}
+
 void prd_grammar_init(struct prd_grammar *g) {
   g->have_errors_ = 0;
   g->accept_whitespace_ = 0;
   snippet_init(&g->current_common_action_sequence_);
   g->num_productions_ = g->num_productions_allocated_ = 0;
   g->productions_ = NULL;
+  g->num_patterns_ = g->num_patterns_allocated_ = 0;
+  g->patterns_ = NULL;
 }
 
 void prd_grammar_cleanup(struct prd_grammar *g) {
@@ -89,6 +103,10 @@ void prd_grammar_cleanup(struct prd_grammar *g) {
     prd_prod_cleanup(g->productions_ + n);
   }
   if (g->productions_) free(g->productions_);
+  for (n = 0; n < g->num_patterns_; ++n) {
+    prd_pattern_cleanup(g->patterns_ + n);
+  }
+  if (g->patterns_) free(g->patterns_);
 }
 
 void prd_prod_swap(struct prd_production *a, struct prd_production *b) {
@@ -120,6 +138,30 @@ int prd_grammar_check_production_reserve(struct prd_grammar *g) {
     g->num_productions_allocated_ = new_num;
   }
 
+  return 0;
+}
+
+int prd_grammar_check_pattern_reserve(struct prd_grammar *g) {
+  if (g->num_patterns_ == g->num_patterns_allocated_) {
+    size_t new_num = g->num_patterns_allocated_ * 2 + 1;
+    if (new_num < 7) new_num = 7;
+    if (new_num <= g->num_patterns_allocated_) {
+      re_error_nowhere("Internal error, overflow on allocation");
+      return PRD_INTERNAL_ERROR;
+    }
+    if (new_num > (SIZE_MAX / sizeof(struct prd_pattern))) {
+      re_error_nowhere("Internal error, overflow on allocation");
+      return PRD_INTERNAL_ERROR;
+    }
+    size_t size_to_alloc = new_num * sizeof(struct prd_pattern);
+    void *p = realloc(g->patterns_, size_to_alloc);
+    if (!p) {
+      re_error_nowhere("Internal error, no memory");
+      return PRD_INTERNAL_ERROR;
+    }
+    g->patterns_ = (struct prd_pattern *)p;
+    g->num_patterns_allocated_ = new_num;
+  }
   return 0;
 }
 
