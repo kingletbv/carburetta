@@ -353,6 +353,8 @@ static const int rxg_state_syms[] = {
 struct rxg_stack {
   int error_recovery_:1;
   int report_error_:1;
+  int need_sym_:1;
+  int current_sym_;
   int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
   struct rxg_sym_data *stack_;
@@ -429,6 +431,8 @@ struct rxg_stack {
 void rxg_stack_init(struct rxg_stack *stack) {
   stack->error_recovery_ = 0;
   stack->report_error_ = 0;
+  stack->need_sym_ = 1;
+  stack->current_sym_ = 0;
   stack->mute_error_turns_ = 0;
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
@@ -512,6 +516,8 @@ int rxg_stack_reset(struct rxg_stack *stack) {
   stack->pos_ = 0;
   stack->error_recovery_ = 0;
   stack->report_error_ = 0;
+  stack->need_sym_ = 1;
+  stack->current_sym_ = 0;
   stack->mute_error_turns_ = 0;
   switch (rxg_push_state(stack, 0)) {
     case -1: /* overflow */ {
@@ -580,7 +586,7 @@ static int rxg_append_match_buffer(struct rxg_stack *stack, const char *s, size_
   return 0;
 }
 
-int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input) {
+int rxg_lex(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input) {
   int r;
   unsigned char c;
   size_t scan_state = stack->scan_state_;
@@ -625,7 +631,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   size_t at_match_index_offset = stack->match_offset_;
   int at_match_index_line = stack->match_line_;
   int at_match_index_col = stack->match_col_;
-  assert(!match_index || (match_index == stack->match_buffer_size_));
   while (match_index < stack->match_buffer_size_) {
     c = (unsigned char)stack->match_buffer_[match_index];
     scan_state = transition_table[256 * scan_state + c];
@@ -814,6 +819,1007 @@ syntax_error:
   stack->input_col_ = input_col;
 
   return _RXG_SYNTAX_ERROR;
+}
+int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value) {
+  for (;;) {
+    if (stack->need_sym_) {
+      switch (rxg_lex(stack, input, input_size, is_final_input)) {
+        case _RXG_MATCH:
+          stack->current_sym_ = (int)stack->best_match_action_;
+          stack->need_sym_ = 0;
+          if (stack->mute_error_turns_) stack->mute_error_turns_--;
+          break;
+        case _RXG_OVERFLOW:
+          return -2;
+        case _RXG_NO_MEMORY:
+          return -2;
+        case _RXG_FEED_ME:
+          return 1;
+        case _RXG_END_OF_INPUT:
+          stack->current_sym_ = 24; /* input-end */
+          stack->need_sym_ = 0;
+          if (stack->mute_error_turns_) stack->mute_error_turns_--;
+          break;
+        case _RXG_SYNTAX_ERROR:
+          return -1;
+      } /* switch */
+    } /* if (need_sym_) */
+    else {
+      int sym = stack->current_sym_;
+      if (!stack->error_recovery_) {
+        int action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - rxg_minimum_sym)];
+        if (action > 0) {
+          switch (rxg_push_state(stack, action /* action for a shift is the ordinal */)) {
+            case -1: /* overflow */ {
+              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            }
+            break;
+            case -2: /* out of memory */ {
+              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+            }
+            break;
+          } /* switch */
+
+          /* Fill in the sym from the tokenizer */
+          stack->need_sym_ = 1;
+          struct rxg_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
+          {
+             snippet_init(&(sym_data->common_));
+
+          }
+          {
+             snippet_append_tkr(&(sym_data->common_), tkr);
+
+          }
+          if (stack->report_error_) {
+            /* We're shifting this sym following an error recovery on the same sym, report syntax error */
+            stack->report_error_ = 0;
+            /* Syntax error */ \
+  if (sym != PRD_INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
+          }
+          else {
+            return PRD_NEXT;
+          }
+        } /* action > 0 */
+        else if (action < 0) {
+          int production = -action - 1;
+          int discard_action = 0;
+          size_t production_length = rxg_production_lengths[production];
+          int nonterminal = rxg_production_syms[production];
+          if (0 == production) {
+            return PRD_SUCCESS;
+          }
+
+          struct rxg_sym_data nonterminal_sym_data_reduced_to = { 0 };
+          { /* scope guard */
+            struct rxg_sym_data *sym_data = stack->stack_ + stack->pos_ - production_length;
+          int r; \
+        struct prd_pattern *pat;
+            switch (production) {
+            /* grammar: */
+              case 1: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                
+              }
+              break;
+            /* grammar: grammar pattern */
+              case 2: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                
+              }
+              break;
+            /* pattern: IDENT start-regex COLON exp end-regex SEMICOLON */
+              case 3: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[3].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_to_xlts(&pat->term_.id_, &(sym_data[0].common_));
+  if (r) return r;
+}
+              }
+              break;
+            /* pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE */
+              case 4: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[3].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_to_xlts(&pat->term_.id_, &(sym_data[0].common_));
+  if (r) return r;
+  r = snippet_append_snippet(&pat->action_sequence_, &(sym_data[8].common_));
+  if (r) return r;
+}
+              }
+              break;
+            /* pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
+              case 5: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[3].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_to_xlts(&pat->term_.id_, &(sym_data[0].common_));
+  if (r) return r;
+  r = snippet_append_snippet(&pat->action_sequence_, &(sym_data[6].common_));
+  if (r) return r;
+  /* Pop the '=' token from stmt-action as it is not part of the action sequence itself. */
+  if (pat->action_sequence_.num_tokens_ && (pat->action_sequence_.tokens_[0].match_ == TOK_EQUALS)) {
+    snippet_pop_first_token(&pat->action_sequence_);
+  }
+}
+              }
+              break;
+            /* exp: term */
+              case 6: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* exp: exp BAR term */
+              case 7: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* term: */
+              case 8: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* term: term elm */
+              case 9: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* elm: sym */
+              case 10: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* elm: sym ASTERISK */
+              case 11: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* elm: sym PLUS */
+              case 12: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* elm: sym QUESTION_MARK */
+              case 13: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* sym: CHAR */
+              case 14: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* sym: DOT */
+              case 15: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* sym: CARET */
+              case 16: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* sym: DOLLAR */
+              case 17: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* sym: PAR_OPEN exp PAR_CLOSE */
+              case 18: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* sym: SQ_OPEN range SQ_CLOSE */
+              case 19: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* sym: SQ_OPEN CARET range SQ_CLOSE */
+              case 20: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* range: range range-elm */
+              case 21: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* range: range-elm */
+              case 22: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* range-elm: CHAR */
+              case 23: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* range-elm: CHAR DASH CHAR */
+              case 24: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: */
+              case 25: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence CHAR */
+              case 26: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence IDENT */
+              case 27: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence COLON */
+              case 28: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence SEMICOLON */
+              case 29: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence SQ_OPEN */
+              case 30: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence SQ_CLOSE */
+              case 31: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence DOT */
+              case 32: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence DOLLAR */
+              case 33: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence CARET */
+              case 34: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence DASH */
+              case 35: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence BAR */
+              case 36: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence ASTERISK */
+              case 37: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence PLUS */
+              case 38: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence QUESTION_MARK */
+              case 39: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence TOKEN */
+              case 40: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence WHITESPACE */
+              case 41: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
+              case 42: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
+              case 43: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* start-regex: */
+              case 44: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  tok_switch_to_regex(tkr);
+}
+              }
+              break;
+            /* end-regex: */
+              case 45: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  tok_switch_to_nonterminal_idents(tkr);
+}
+              }
+              break;
+            /* start-c-tokenizer: */
+              case 46: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  tok_switch_to_c_idents(tkr);
+}
+              }
+              break;
+            /* end-c-tokenizer: */
+              case 47: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  g->accept_whitespace_ = 0; /* ignore whitespace */
+  tok_switch_to_nonterminal_idents(tkr);
+}
+              }
+              break;
+            /* accept-whitespace: */
+              case 48: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  g->accept_whitespace_ = 1;
+}
+              }
+              break;
+            } /* switch */
+          } /* scope guard */
+
+          /* Free symdata for every symbol in the production, including the first slot where we will soon
+           * push nonterminal_data_reduced_to */
+          size_t rxg_sym_idx;
+          for (rxg_sym_idx = stack->pos_ - production_length; rxg_sym_idx < stack->pos_; ++rxg_sym_idx) {
+            switch (stack->stack_[rxg_sym_idx].state_) {
+            } /* switch */
+          {
+             snippet_cleanup(&((stack->stack_ + rxg_sym_idx)->common_));
+
+          }
+          } /* for */
+          stack->pos_ -= production_length;
+          action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - rxg_minimum_sym)];
+          if (action <= 0) {
+            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+          }
+          switch (rxg_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
+            case -1: /* overflow */ {
+              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            }
+            break;
+            case -2: /* out of memory */ {
+              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+            }
+            break;
+          } /* switch */
+          struct rxg_sym_data *sd = stack->stack_ + stack->pos_ - 1;
+          *sd = nonterminal_sym_data_reduced_to;
+          sd->state_ = action;
+        } /* action < 0 */
+        else /* action == 0 */ {
+          stack->error_recovery_ = 1;
+          stack->report_error_ = !stack->mute_error_turns_;
+          stack->mute_error_turns_ = 3;
+        }
+      } /* !stack->error_recovery_ */
+      if (stack->error_recovery_) {
+        size_t n;
+        n = stack->pos_;
+        if (n) {
+          do {
+            --n;
+            /* Can we shift an error token? */
+            int err_action = rxg_parse_table[rxg_num_columns * stack->stack_[n].state_ + (23 /* error token */ - rxg_minimum_sym)];
+            if (err_action > 0) {
+              /* Does the resulting state accept the current symbol? */
+              int err_sym_action = rxg_parse_table[rxg_num_columns * stack->stack_[n].state_ + (sym - rxg_minimum_sym)];
+              if (err_sym_action) {
+                /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */
+                /* Free symdata for every symbol up to the state where we will shift the error token */
+                size_t rxg_sym_idx;
+                for (rxg_sym_idx = n + 1; rxg_sym_idx < stack->pos_; ++rxg_sym_idx) {
+                  switch (stack->stack_[rxg_sym_idx].state_) {
+                  } /* switch */
+                  {
+                     snippet_cleanup(&((stack->stack_ + rxg_sym_idx)->common_));
+
+                  }
+                } /* for */
+                stack->pos_ = n + 1;
+                /* Push the state of the error transition */
+                switch (rxg_push_state(stack, err_action /* action for a shift is the state */)) {
+                  case -1: /* overflow */ {
+                    re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                  }
+                  break;
+                  case -2: /* out of memory */ {
+                    re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                  }
+                  break;
+                } /* switch */
+                stack->error_recovery_ = 0;
+                /* Break out of do { .. } while loop, we've recovered */
+                break;
+              } /* if (err_sym_action) (if the current sym can continue after an error transition) */
+            } /* if (err_action) (if the state at position 'n' can accept an error transition) */
+          } while (n);
+        }
+        if (stack->error_recovery_) {
+          /* Did not yet recover, discard current sym and get next */
+          stack->need_sym_ = 1;
+return PRD_NEXT;
+        }
+      } /* stack->error_recovery_ */
+    } /* for (;;) */
+  } /* for (;;) lexing loop */
 }
 int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value) {
   if (stack->mute_error_turns_) stack->mute_error_turns_--;
@@ -1783,18 +2789,8 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
           } /* if (err_action) (if the state at position 'n' can accept an error transition) */
         } while (n);
       }
-      if (stack->report_error_) {
-        stack->report_error_ = 0;
-        /* Syntax error */ \
-  if (sym != PRD_INPUT_END) {\
-    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
-  } \
-  else { \
-    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
-  } \
-  return PRD_SYNTAX_ERROR;
-      }
-      else {
+      if (stack->error_recovery_) {
+        /* Did not yet recover, discard current sym and get next */
         return PRD_NEXT;
       }
     } /* stack->error_recovery_ */

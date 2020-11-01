@@ -1972,7 +1972,7 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
   /* Emit the parse function */
   if (cc->params_snippet_.num_tokens_) {
     fprintf(outfp,
-      "int %sscan(struct %sstack *stack, size_t input_size, const char *input, ", cc_prefix(cc), cc_prefix(cc));
+      "int %sscan(struct %sstack *stack, const char *input, size_t input_size, int is_final_input, ", cc_prefix(cc), cc_prefix(cc));
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->params_snippet_.num_tokens_; ++token_idx) {
       fprintf(outfp, "%s", cc->params_snippet_.tokens_[token_idx].text_.original_);
@@ -1980,14 +1980,44 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
     fprintf(outfp, ") {\n");
   }
   else {
-    fprintf(outfp, "int %sparse(struct %sstack *stack, size_t input_size, const char *input) {\n", cc_prefix(cc), cc_prefix(cc));
+    fprintf(outfp, "int %sscan(struct %sstack *stack, const char *input, size_t input_size, int is_final_input) {\n", cc_prefix(cc), cc_prefix(cc));
   }
-  fprintf(outfp, "  int sym;\n");
-  fprintf(outfp, "  if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
-  fprintf(outfp, "    for (;;) {\n"
+#if 0
+  fprintf(outfp, "#define _%sMATCH 1\n", cc_PREFIX(&cc));
+  fprintf(outfp, "#define _%sOVERFLOW 2\n", cc_PREFIX(&cc));
+  fprintf(outfp, "#define _%sNO_MEMORY 3\n", cc_PREFIX(&cc));
+  fprintf(outfp, "#define _%sFEED_ME 4\n", cc_PREFIX(&cc));
+  fprintf(outfp, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(&cc));
+  fprintf(outfp, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(&cc));
+#endif
+
+  fprintf(outfp, "  for (;;) {\n");
+  fprintf(outfp, "    if (stack->need_sym_) {\n");
+  fprintf(outfp, "      switch (%slex(stack, input, input_size, is_final_input)) {\n", cc_prefix(cc));
+  fprintf(outfp, "        case _%sMATCH:\n", cc_PREFIX(cc));
+  fprintf(outfp, "          stack->current_sym_ = (int)stack->best_match_action_;\n");
+  fprintf(outfp, "          stack->need_sym_ = 0;\n");
+  fprintf(outfp, "          if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
+  fprintf(outfp, "          break;\n");
+  fprintf(outfp, "        case _%sOVERFLOW:\n", cc_PREFIX(cc));
+  fprintf(outfp, "          return -2;\n");
+  fprintf(outfp, "        case _%sNO_MEMORY:\n", cc_PREFIX(cc));
+  fprintf(outfp, "          return -2;\n");
+  fprintf(outfp, "        case _%sFEED_ME:\n", cc_PREFIX(cc));
+  fprintf(outfp, "          return 1;\n");
+  fprintf(outfp, "        case _%sEND_OF_INPUT:\n", cc_PREFIX(cc));
+  fprintf(outfp, "          stack->current_sym_ = %d; /* %s */\n", cc->input_end_sym_->ordinal_, cc->input_end_sym_->def_.translated_);
+  fprintf(outfp, "          stack->need_sym_ = 0;\n");
+  fprintf(outfp, "          if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
+  fprintf(outfp, "          break;\n");
+  fprintf(outfp, "        case _%sSYNTAX_ERROR:\n", cc_PREFIX(cc));
+  fprintf(outfp, "          return -1;\n");
+  fprintf(outfp, "      } /* switch */\n");
+  fprintf(outfp, "    } /* if (need_sym_) */\n");
+  fprintf(outfp, "    else {\n");
+  fprintf(outfp, "      int sym = stack->current_sym_;\n"
                  "      if (!stack->error_recovery_) {\n"
                  "        int action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
-
   /* Shift logic */
   fprintf(outfp, "        if (action > 0) {\n");
   fprintf(outfp, "          switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n"
@@ -2021,6 +2051,11 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
 
   fprintf(outfp, "\n"
                  "          /* Fill in the sym from the tokenizer */\n");
+  /* We already pushed the new state and so have committed to needing a new sym.
+   * In the future, we may want to avoid pushing the state until the action snippets all
+   * complete. Doing so would allow those action snippets to return to caller with the
+   * expectation of re-entering (which is now not the case..) */
+  fprintf(outfp, "          stack->need_sym_ = 1;\n");
   int need_sym_data = 0;
   if (cc->token_assigned_type_ && cc->token_assigned_type_->constructor_snippet_.num_tokens_) {
     need_sym_data = 1;
@@ -2090,8 +2125,7 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
     }
   }
   else {
-    fprintf(outfp, "/* Next token */\n"
-                   "            return 1;\n");
+    fprintf(outfp, "/* Fall through to fetch next token */\n");
   }
   fprintf(outfp, "          }\n");
   fprintf(outfp, "        } /* action > 0 */\n");
@@ -2110,7 +2144,7 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
     }
   }
   else {
-    fprintf(outfp, "/* Synth S we're done */\n"
+    fprintf(outfp, "/* Synth S production we're done */\n"
                    "            return 0;\n");
   }
 
@@ -2390,35 +2424,19 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
   fprintf(outfp, "          } while (n);\n"
                  "        }\n");
 
-  fprintf(outfp, "        if (stack->report_error_) {\n"
-                 "          stack->report_error_ = 0;\n"
-                 "          ");
-  if (cc->on_syntax_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
-      fprintf(outfp, "%s", cc->on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    fprintf(outfp, "/* Syntax error */\n"
-                   "          return -1;\n");
-  }
-  fprintf(outfp, "        }\n"
-                 "        else {\n"
-                 "          ");
+  fprintf(outfp, "        if (stack->error_recovery_) {\n"
+                 "          /* Did not yet recover, discard current sym and get next */\n"
+                 "          stack->need_sym_ = 1;\n");
   if (cc->on_next_token_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
       fprintf(outfp, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
     }
   }
-  else {
-    fprintf(outfp, "/* Next token */\n"
-                   "          return 1;\n");
-  }
   fprintf(outfp, "        }\n");
   fprintf(outfp, "      } /* stack->error_recovery_ */\n");
   fprintf(outfp, "    } /* for (;;) */\n");
+  fprintf(outfp, "  } /* for (;;) lexing loop */\n");
   fprintf(outfp, "}\n");
 
   r = 0;
@@ -2432,8 +2450,7 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
 
   /* Emit the parse function */
   if (cc->params_snippet_.num_tokens_) {
-    fprintf(outfp,
-      "int %sparse(struct %sstack *stack, int sym, ", cc_prefix(cc), cc_prefix(cc));
+    fprintf(outfp, "int %sparse(struct %sstack *stack, int sym, ", cc_prefix(cc), cc_prefix(cc));
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->params_snippet_.num_tokens_; ++token_idx) {
       fprintf(outfp, "%s", cc->params_snippet_.tokens_[token_idx].text_.original_);
@@ -2850,21 +2867,8 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
   fprintf(outfp, "        } while (n);\n"
                  "      }\n");
 
-  fprintf(outfp, "      if (stack->report_error_) {\n"
-                 "        stack->report_error_ = 0;\n"
-                 "        ");
-  if (cc->on_syntax_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
-      fprintf(outfp, "%s", cc->on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    fprintf(outfp, "/* Syntax error */\n"
-                   "        return -1;\n");
-  }
-  fprintf(outfp, "      }\n"
-                 "      else {\n"
+  fprintf(outfp, "      if (stack->error_recovery_) {\n"
+                 "        /* Did not yet recover, discard current sym and get next */\n"
                  "        ");
   if (cc->on_next_token_snippet_.num_tokens_) {
     size_t token_idx;
@@ -3428,16 +3432,16 @@ int main(int argc, char **argv) {
   }
 
   if (!cc.input_end_sym_) {
-    struct xlts error_id;
-    xlts_init(&error_id);
-    r = xlts_append_xlat(&error_id, strlen("input-end"), "input-end");
+    struct xlts input_end_id;
+    xlts_init(&input_end_id);
+    r = xlts_append_xlat(&input_end_id, strlen("input-end"), "input-end");
     if (r) {
       re_error_nowhere("Error: no memory");
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
     int is_new = 0;
-    struct symbol *sym = symbol_find_or_add(&cc.symtab_, SYM_TERMINAL, &error_id, &is_new);
+    struct symbol *sym = symbol_find_or_add(&cc.symtab_, SYM_TERMINAL, &input_end_id, &is_new);
     if (!sym) {
       re_error_nowhere("Error: no memory");
       r = EXIT_FAILURE;
@@ -4053,6 +4057,10 @@ int main(int argc, char **argv) {
     fprintf(outfp, "struct %sstack {\n", cc_prefix(&cc));
     fprintf(outfp, "  int error_recovery_:1;\n");
     fprintf(outfp, "  int report_error_:1;\n");
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "  int need_sym_:1;\n"
+                     "  int current_sym_;\n");
+    }
     fprintf(outfp, "  int mute_error_turns_;\n");
     fprintf(outfp, "  size_t pos_, num_stack_allocated_;\n");
     fprintf(outfp, "  struct %ssym_data *stack_;\n", cc_prefix(&cc));
@@ -4152,7 +4160,12 @@ int main(int argc, char **argv) {
       "void %sstack_init(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
     fprintf(outfp,
       "  stack->error_recovery_ = 0;\n"
-      "  stack->report_error_ = 0;\n"
+      "  stack->report_error_ = 0;\n");
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "  stack->need_sym_ = 1;\n"
+                     "  stack->current_sym_ = 0;\n");
+    }
+    fprintf(outfp, 
       "  stack->mute_error_turns_ = 0;\n"
       "  stack->pos_ = 0;\n"
       "  stack->num_stack_allocated_ = 0;\n"
@@ -4337,7 +4350,12 @@ int main(int argc, char **argv) {
     fprintf(outfp,
       "  stack->pos_ = 0;\n"
       "  stack->error_recovery_ = 0;\n"
-      "  stack->report_error_ = 0;\n"
+      "  stack->report_error_ = 0;\n");
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "  stack->need_sym_ = 1;\n"
+                     "  stack->current_sym_ = 0;\n");
+    }
+    fprintf(outfp,
       "  stack->mute_error_turns_ = 0;\n");
 
     fprintf(outfp, "  switch (%spush_state(stack, 0)) {\n"
@@ -4380,6 +4398,7 @@ int main(int argc, char **argv) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
+      r = emit_scan_function(outfp, &cc, &prdg, &lalr, state_syms);
     }
 
     r = emit_parse_function(outfp, &cc, &prdg, &lalr, state_syms);
@@ -4478,6 +4497,10 @@ int main(int argc, char **argv) {
     fprintf(outfp, "struct %sstack {\n", cc_prefix(&cc));
     fprintf(outfp, "  int error_recovery_:1;\n");
     fprintf(outfp, "  int report_error_:1;\n");
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "  int need_sym_:1;\n"
+                     "  int current_sym_;\n");
+    }
     fprintf(outfp, "  int mute_error_turns_;\n");
     fprintf(outfp, "  size_t pos_, num_stack_allocated_;\n");
     fprintf(outfp, "  struct %ssym_data *stack_;\n", cc_prefix(&cc));

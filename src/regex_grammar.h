@@ -40,6 +40,8 @@ extern "C" {
 struct rxg_stack {
   int error_recovery_:1;
   int report_error_:1;
+  int need_sym_:1;
+  int current_sym_;
   int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
   struct rxg_sym_data *stack_;
