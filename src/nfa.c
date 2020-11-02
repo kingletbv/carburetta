@@ -464,7 +464,7 @@ static int scan_token(struct nfa_parse_context *ctx, char *c) {
         break;
     }
     if (!esc) {
-      if (is_in_set(inc, "{}[](),.^$*|?+:;-\\\'\"")) {
+      if (is_in_set(inc, "{}[](),.^$*|?+:;-\\\'\" ")) {
         esc = inc;
       }
     }
