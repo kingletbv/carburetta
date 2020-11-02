@@ -111,7 +111,7 @@
 
 
 %scanner%
-WHITESPACE: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
+: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
   fprintf(stderr, "Imagine a sensible action here.\n");
 }
 //comment: x {
@@ -173,6 +173,50 @@ pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end
     snippet_pop_first_token(&pat->action_sequence_);
   }
 }
+
+pattern: start-regex COLON exp end-regex SEMICOLON {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&${2});
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+}
+
+pattern: start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&${2});
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_snippet(&pat->action_sequence_, &${7});
+  if (r) return r;
+}
+pattern: start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON {
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&${2});
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_snippet(&pat->action_sequence_, &${5});
+  if (r) return r;
+  /* Pop the '=' token from stmt-action as it is not part of the action sequence itself. */
+  if (pat->action_sequence_.num_tokens_ && (pat->action_sequence_.tokens_[0].match_ == TOK_EQUALS)) {
+    snippet_pop_first_token(&pat->action_sequence_);
+  }
+}
+
 
 $: {
   size_t n;

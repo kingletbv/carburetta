@@ -1251,6 +1251,12 @@ struct snippet_emission {
     SEDIT_FMT
   } discard_type_;
   const char *discard_fmt_;
+
+  enum text_type {
+    SETT_NONE,
+    SETT_FMT
+  } text_type_;
+  const char *text_fmt_;
 };
 
 static int emit_dest(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
@@ -1334,7 +1340,7 @@ static int emit_dest_commondata(FILE *outfp, struct cinder_context *cc, struct s
 
 static int emit_len(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->len_type_ == SELT_NONE) {
-    re_error(&st->text_, "%len cannot resolve to a length");
+    re_error(&st->text_, "%%len cannot resolve to a length");
     return TKR_SYNTAX_ERROR;
   }
   switch (se->len_type_) {
@@ -1347,12 +1353,25 @@ static int emit_len(FILE *outfp, struct cinder_context *cc, struct snippet_emiss
 
 static int emit_discard(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->discard_type_ == SEDIT_NONE) {
-    re_error(&st->text_, "%discard use limited to common actions");
+    re_error(&st->text_, "%%discard use is limited to common actions");
     return TKR_SYNTAX_ERROR;
   }
   switch (se->discard_type_) {
   case SEDIT_FMT:
     fprintf(outfp, se->discard_fmt_);
+    break;
+  }
+  return 0;
+}
+
+static int emit_text(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->text_type_ == SETT_NONE) {
+    re_error(&st->text_, "%%text use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->text_type_) {
+  case SETT_FMT:
+    fprintf(outfp, se->text_fmt_);
     break;
   }
   return 0;
@@ -1446,6 +1465,12 @@ static int emit_snippet_code_emission(FILE *outfp, struct cinder_context *cc, st
         return r;
       }
     }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$text", se->code_->tokens_[col].text_.translated_)) {
+      r = emit_text(outfp, cc, se, se->code_->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
     else if (se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) {
       /* Expansion of another sym identifier */
       size_t n;
@@ -1500,6 +1525,7 @@ static int emit_common_action_snippet(FILE *outfp, struct cinder_context *cc, st
   se.len_fmt_ = "((size_t)production_length)";
   se.discard_type_ = SEDT_FMT;
   se.discard_fmt_ = "discard_action = 1;";
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1520,6 +1546,23 @@ static int emit_action_snippet(FILE *outfp, struct cinder_context *cc, struct pr
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "((size_t)production_length)";
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_pattern_token_action_snippet(FILE *outfp, struct cinder_context *cc, struct snippet *code) {
+  struct snippet_emission se = { 0 };
+  se.code_ = code;
+  se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
+  se.dest_typestr_ = cc->token_assigned_type_;
+  se.dest_fmt_ = "(stack->stack_[0].v_.uv%d_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1535,6 +1578,7 @@ static int emit_token_action_snippet(FILE *outfp, struct cinder_context *cc, str
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1550,6 +1594,7 @@ static int emit_constructor_snippet(FILE *outfp, struct cinder_context *cc, stru
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1565,6 +1610,7 @@ static int emit_dst_sym_constructor_snippet(FILE *outfp, struct cinder_context *
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1580,6 +1626,7 @@ static int emit_common_constructor_snippet(FILE *outfp, struct cinder_context *c
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1595,6 +1642,7 @@ static int emit_dst_common_constructor_snippet(FILE *outfp, struct cinder_contex
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1610,6 +1658,23 @@ static int emit_token_common_constructor_snippet(FILE *outfp, struct cinder_cont
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_pattern_token_common_constructor_snippet(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "(stack->stack_[0].common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1625,6 +1690,23 @@ static int emit_token_constructor_snippet(FILE *outfp, struct cinder_context *cc
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_pattern_token_constructor_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+  struct snippet_emission se = { 0 };
+  se.code_ = &ts->constructor_snippet_;
+  se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
+  se.dest_typestr_ = ts;
+  se.dest_fmt_ = "(stack->stack_[0].v_.uv%d_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1640,6 +1722,7 @@ static int emit_destructor_snippet(FILE *outfp, struct cinder_context *cc, struc
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1655,6 +1738,23 @@ static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct cinder_conte
   se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_destructor_snippet_indexed_by_0(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+  struct snippet_emission se = { 0 };
+  se.code_ = &ts->destructor_snippet_;
+  se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
+  se.dest_typestr_ = ts;
+  se.dest_fmt_ = "(stack->stack_[0].v_.uv%d_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1670,6 +1770,7 @@ static int emit_common_destructor_snippet(FILE *outfp, struct cinder_context *cc
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
@@ -1685,7 +1786,73 @@ static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct cinde
   se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_common_destructor_snippet_index_0(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "(stack->stack_[0].common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+
+static int emit_pattern_action_snippet(FILE *outfp, struct cinder_context *cc, struct prd_pattern *pat) {
+  struct snippet_emission se = { 0 };
+  struct typestr *ts = pat->term_.sym_ ? pat->term_.sym_->assigned_type_ : NULL;
+  se.code_ = &pat->action_sequence_;
+  if (ts) {
+    se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
+    se.dest_typestr_ = ts;
+    se.dest_fmt_ = "(pattern_sym_data.v_.uv%d_)";
+  }
+  else {
+    se.dest_type_ = SEDT_NONE;
+  }
+  se.sym_type_ = SEST_NONE;
+  se.prod_ = NULL;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(pattern_sym_data.common_)";
+  se.len_type_ = SELT_FMT;
+  se.len_fmt_ = "(stack->token_size_)";
+  se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_FMT;
+  se.text_fmt_ = "(stack->match_buffer_)";
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+int print_sym_as_c_ident(FILE *fp, struct cinder_context *cc, struct symbol *sym) {
+  char *ident = malloc(1 + sym->def_.num_translated_);
+  char *s = ident;
+  const char *p;
+  if (!ident) {
+    return -1;
+  }
+  /* Transform into C identifier */
+  for (p = sym->def_.translated_; p < (sym->def_.translated_ + sym->def_.num_translated_); ++p) {
+    int c = *p;
+    if ((c >= 'a') && (c <= 'z')) c = c - 'a' + 'A';
+    if (c == '-') c = '_';
+    *s++ = c;
+  }
+  *s++ = '\0';
+
+  fprintf(fp, "%s%s", cc_TOKEN_PREFIX(cc), ident);
+
+  free(ident);
+
+  return 0;
 }
 
 static int emit_lex_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable) {
@@ -1966,6 +2133,21 @@ static int emit_lex_function(FILE *outfp, struct cinder_context *cc, struct prd_
   return 0;
 }
 
+static void print_regex_as_comment(FILE *outfp, const char *regex) {
+  fwrite("/* ", 1, 3, outfp);
+  while (*regex) {
+    /* Make sure we don't accidentally close the comment */
+    if ((regex[0] == '*') && (regex[1] == '/')) {
+      fwrite("* /", 1, 3, outfp);
+    }
+    else {
+      fwrite(regex, 1, 1, outfp);
+    }
+    regex++;
+  }
+  fwrite(" */", 1, 3, outfp);
+}
+
 static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   int r;
 
@@ -1995,9 +2177,84 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
   fprintf(outfp, "    if (stack->need_sym_) {\n");
   fprintf(outfp, "      switch (%slex(stack, input, input_size, is_final_input)) {\n", cc_prefix(cc));
   fprintf(outfp, "        case _%sMATCH:\n", cc_PREFIX(cc));
-  fprintf(outfp, "          stack->current_sym_ = (int)stack->best_match_action_;\n");
   fprintf(outfp, "          stack->need_sym_ = 0;\n");
+  fprintf(outfp, "          stack->current_sym_ = ");
+  if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+  fprintf(outfp, "; /* no sym specific type associated, changed when we successfully construct it below */\n");
   fprintf(outfp, "          if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
+
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+    fprintf(outfp, "          {\n"
+                   "            ");
+    if (emit_pattern_token_common_constructor_snippet(outfp, cc)) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    fprintf(outfp, "          }\n");
+  }
+
+  fprintf(outfp, "          switch (stack->best_match_action_) {\n");
+  size_t pat_idx;
+  for (pat_idx = 0; pat_idx < prdg->num_patterns_; ++pat_idx) {
+    struct prd_pattern *pat = prdg->patterns_ + pat_idx;
+    fprintf(outfp, "            case %zu: ", pat_idx + 1);
+    print_regex_as_comment(outfp, pat->regex_);
+    fprintf(outfp, "\n");
+    if (pat->term_.sym_) {
+      fprintf(outfp, "              stack->current_sym_ = ");
+      if (print_sym_as_c_ident(outfp, cc, pat->term_.sym_)) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+      fprintf(outfp, ";\n");
+      if (pat->term_.sym_->assigned_type_ && pat->term_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
+        fprintf(outfp, "              {\n"
+                       "                ");
+        if (emit_pattern_token_constructor_snippet(outfp, cc, pat->term_.sym_->assigned_type_)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "              }\n");
+      }
+      if (pat->term_.sym_->assigned_type_ == cc->token_assigned_type_) {
+        /* Emit token action snippet as the types are compatible. */
+        if (cc->token_action_snippet_.num_tokens_) {
+          fprintf(outfp, "              {\n"
+                         "                ");
+
+          if (emit_pattern_token_action_snippet(outfp, cc, &cc->token_action_snippet_)) {
+            r = EXIT_FAILURE;
+            goto cleanup_exit;
+          }
+
+          fprintf(outfp, "              }\n");
+        }
+      }
+    }
+    else {
+      /* Pattern matches no symbol */
+      fprintf(outfp, "              /* Pattern does not have a symbol */\n"
+                     "              stack->current_sym_ = ");
+      if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+      fprintf(outfp, ";\n"
+                     "              stack->need_sym_ = 1; /* keep scanning */\n");
+    }
+    if (pat->action_sequence_.num_tokens_) {
+      fprintf(outfp, "              {\n"
+                     "                ");
+      emit_pattern_action_snippet(outfp, cc, pat);
+      fprintf(outfp, "              }\n");
+    }
+    fprintf(outfp, "              break;\n");
+  }
+  fprintf(outfp, "          } /* switch */\n");
+  
   fprintf(outfp, "          break;\n");
   fprintf(outfp, "        case _%sOVERFLOW:\n", cc_PREFIX(cc));
   fprintf(outfp, "          return -2;\n");
@@ -2006,7 +2263,12 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
   fprintf(outfp, "        case _%sFEED_ME:\n", cc_PREFIX(cc));
   fprintf(outfp, "          return 1;\n");
   fprintf(outfp, "        case _%sEND_OF_INPUT:\n", cc_PREFIX(cc));
-  fprintf(outfp, "          stack->current_sym_ = %d; /* %s */\n", cc->input_end_sym_->ordinal_, cc->input_end_sym_->def_.translated_);
+  fprintf(outfp, "          stack->current_sym_ = ");
+  if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+  fprintf(outfp, ";\n");
   fprintf(outfp, "          stack->need_sym_ = 0;\n");
   fprintf(outfp, "          if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
   fprintf(outfp, "          break;\n");
@@ -2051,56 +2313,9 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
 
   fprintf(outfp, "\n"
                  "          /* Fill in the sym from the tokenizer */\n");
-  /* We already pushed the new state and so have committed to needing a new sym.
-   * In the future, we may want to avoid pushing the state until the action snippets all
-   * complete. Doing so would allow those action snippets to return to caller with the
-   * expectation of re-entering (which is now not the case..) */
   fprintf(outfp, "          stack->need_sym_ = 1;\n");
-  int need_sym_data = 0;
-  if (cc->token_assigned_type_ && cc->token_assigned_type_->constructor_snippet_.num_tokens_) {
-    need_sym_data = 1;
-  }
-  if (cc->token_action_snippet_.num_tokens_) {
-    need_sym_data = 1;
-  }
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-    need_sym_data = 1;
-  }
-  if (need_sym_data) {
-    fprintf(outfp, "          struct %ssym_data *sym_data = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
-  }
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-    fprintf(outfp, "          {\n"
-                   "            ");
-    if (emit_token_common_constructor_snippet(outfp, cc)) {
-      r = EXIT_FAILURE;
-      goto cleanup_exit;
-    }
-    fprintf(outfp, "\n"
-                   "          }\n");
-  }
-  if (cc->token_assigned_type_ && cc->token_assigned_type_->constructor_snippet_.num_tokens_) {
-    fprintf(outfp, "          {\n"
-                   "            ");
-    if (emit_token_constructor_snippet(outfp, cc, cc->token_assigned_type_)) {
-      r = EXIT_FAILURE;
-      goto cleanup_exit;
-    }
-    fprintf(outfp, "\n"
-                   "          }\n");
-  }
-  if (cc->token_action_snippet_.num_tokens_) {
-    fprintf(outfp, "          {\n"
-                   "            ");
+  fprintf(outfp, "          stack->stack_[stack->pos_ - 1] = stack->stack_[0];\n");
 
-    if (emit_token_action_snippet(outfp, cc, &cc->token_action_snippet_)) {
-      r = EXIT_FAILURE;
-      goto cleanup_exit;
-    }
-
-    fprintf(outfp, "\n"
-                   "          }\n");
-  }
   fprintf(outfp, "          if (stack->report_error_) {\n"
                  "            /* We're shifting this sym following an error recovery on the same sym, report syntax error */\n"
                  "            stack->report_error_ = 0;\n"
@@ -4104,24 +4319,13 @@ int main(int argc, char **argv) {
       do {
         sym = sym->next_;
 
-        char *ident = malloc(1 + sym->def_.num_translated_);
-        char *s = ident;
-        const char *p;
-        if (!ident) {
+        fprintf(outfp, "#define ");
+        if (print_sym_as_c_ident(outfp, &cc, sym)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
-        /* Transform into C identifier */
-        for (p = sym->def_.translated_; p < (sym->def_.translated_ + sym->def_.num_translated_); ++p) {
-          int c = *p;
-          if ((c >= 'a') && (c <= 'z')) c = c - 'a' + 'A';
-          if (c == '-') c = '_';
-          *s++ = c;
-        }
-        *s++ = '\0';
+        fprintf(outfp, " %d\n", sym->ordinal_);
 
-        fprintf(outfp, "#define %s%s %d\n", cc_TOKEN_PREFIX(&cc), ident, sym->ordinal_);
-        free(ident);
       } while (sym != cc.symtab_.terminals_);
     }
     fprintf(outfp, "\n");
@@ -4246,12 +4450,66 @@ int main(int argc, char **argv) {
                      "    }\n");
     }
 
-    fprintf(outfp,
-      "  }\n"
-      "\n"
-      "  if (stack->stack_) free(stack->stack_);\n");
+    fprintf(outfp, "  }\n");
     if (prdg.num_patterns_) {
-      fprintf(outfp, "    if (stack->match_buffer_) free(stack->match_buffer_);\n");
+      fprintf(outfp, "  if ((!stack->need_sym_) && stack->pos_) {\n"
+                     "    /* Deconstruct placeholder location for terminal not yet shifted */\n");
+      fprintf(outfp, "    switch (stack->current_sym_) {\n");
+
+      size_t ts_idx;
+      for (ts_idx = 0; ts_idx < cc.tstab_.num_typestrs_; ++ts_idx) {
+        struct typestr *ts = cc.tstab_.typestrs_[ts_idx];
+        struct symbol *the_syms[] = { cc.symtab_.terminals_, cc.symtab_.non_terminals_ };
+        size_t n;
+        int have_some = 0;
+        for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+          struct symbol *sym = the_syms[n];
+          if (sym) {
+            do {
+              if (sym->assigned_type_ == ts) {
+                have_some = 1;
+                fprintf(outfp, "      case %d:\n", sym->ordinal_);
+              }
+
+              sym = sym->next_;
+            } while (sym != the_syms[n]);
+          }
+        }
+        if (have_some) {
+          /* Execute destructors for typestr ts at stack->stack_[0] */
+          if (ts->destructor_snippet_.num_tokens_) {
+            fprintf(outfp, "        {\n"
+                           "          ");
+            if (emit_destructor_snippet_indexed_by_0(outfp, &cc, ts)) {
+              r = EXIT_FAILURE;
+              goto cleanup_exit;
+            }
+            fprintf(outfp, "\n"
+                           "        }\n"
+                           "        break;\n");
+          }
+        }
+      }
+      fprintf(outfp, "    } /* switch */\n");
+
+      if (cc.common_data_assigned_type_ && cc.common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+        fprintf(outfp, "    {\n"
+                       "      ");
+        if (emit_common_destructor_snippet_index_0(outfp, &cc)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "\n"
+                       "    }\n");
+      }
+      fprintf(outfp, "  }\n");
+    }
+
+
+    fprintf(outfp, "\n"
+                   "  if (stack->stack_) free(stack->stack_);\n");
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "  if (stack->match_buffer_) free(stack->match_buffer_);\n");
     }
     fprintf(outfp,
       "}\n"
@@ -4302,7 +4560,7 @@ int main(int argc, char **argv) {
       "int %sstack_reset(struct %sstack *stack) {\n", cc_prefix(&cc), cc_prefix(&cc));
     fprintf(outfp,
       "  size_t n;\n"
-      "  for (n = 0; n < stack->pos_; ++n) {\n");
+      "  for (n = 1; n < stack->pos_; ++n) {\n");
     fprintf(outfp,
       "    switch (stack->stack_[n].state_) {\n");
     for (typestr_idx = 0; typestr_idx < cc.tstab_.num_typestrs_; ++typestr_idx) {
@@ -4346,6 +4604,60 @@ int main(int argc, char **argv) {
 
     fprintf(outfp,
       "  }\n");
+
+    if (prdg.num_patterns_) {
+      fprintf(outfp, "  if ((!stack->need_sym_) && stack->pos_) {\n"
+                     "    /* Deconstruct placeholder location for terminal not yet shifted */\n");
+      fprintf(outfp, "    switch (stack->current_sym_) {\n");
+
+      size_t ts_idx;
+      for (ts_idx = 0; ts_idx < cc.tstab_.num_typestrs_; ++ts_idx) {
+        struct typestr *ts = cc.tstab_.typestrs_[ts_idx];
+        struct symbol *the_syms[] = { cc.symtab_.terminals_, cc.symtab_.non_terminals_ };
+        size_t n;
+        int have_some = 0;
+        for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+          struct symbol *sym = the_syms[n];
+          if (sym) {
+            do {
+              if (sym->assigned_type_ == ts) {
+                have_some = 1;
+                fprintf(outfp, "      case %d:\n", sym->ordinal_);
+              }
+
+              sym = sym->next_;
+            } while (sym != the_syms[n]);
+          }
+        }
+        if (have_some) {
+          /* Execute destructors for typestr ts at stack->stack_[0] */
+          if (ts->destructor_snippet_.num_tokens_) {
+            fprintf(outfp, "        {\n"
+                           "          ");
+            if (emit_destructor_snippet_indexed_by_0(outfp, &cc, ts)) {
+              r = EXIT_FAILURE;
+              goto cleanup_exit;
+            }
+            fprintf(outfp, "\n"
+                           "        }\n"
+                           "        break;\n");
+          }
+        }
+      }
+      fprintf(outfp, "    } /* switch */\n");
+
+      if (cc.common_data_assigned_type_ && cc.common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+        fprintf(outfp, "    {\n"
+                       "      ");
+        if (emit_common_destructor_snippet_index_0(outfp, &cc)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "\n"
+                       "    }\n");
+      }
+      fprintf(outfp, "  }\n");
+    }
 
     fprintf(outfp,
       "  stack->pos_ = 0;\n"

@@ -108,17 +108,29 @@ static const size_t rxg_scan_table[] = {
 static const size_t rxg_scan_actions[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
 static const int rxg_minimum_sym = 3;
 static const size_t rxg_num_columns = 38;
-static const size_t rxg_num_rows = 66;
-static const size_t rxg_num_productions = 49;
+static const size_t rxg_num_rows = 80;
+static const size_t rxg_num_productions = 52;
 static const int rxg_parse_table[] = {
-  0, -2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-2, 0, 0, 0, 0, 0, 0,65, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, -3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, -4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, -5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -2,  0,  0,  0,  0, -2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-2, 0, 0, 0, 0, 0, 0,79, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -3,  0,  0,  0,  0, -3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -4,  0,  0,  0,  0, -4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -5,  0,  0,  0,  0, -5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0,  0,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27,-27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28,-28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 20, 21, 38,  0, 41,-51, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0,
+-29,-29,-29,  0,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -6,  0,  0,  0,  0, -6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0,-51,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0,
+  0,  0,  0,  0,-52,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,10, 0, 0, 0, 0, 7, 0,
+  0,  0,  0,  0,-50,  0,  0,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,11, 0, 0, 0,
+  0,  0,  0,  0,-49,  0,  0,-49,  0,  0,  0,  0,  0,  0, 61,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,12, 0, 0, 0, 0,
+-12,  0,-12,  0,-12,  0,  0,-12,-12,  0,-12,-12,-12,  0,-12,  0,  0,  0,  0,  0, 0, 0,13,76, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0, 14,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,-48,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,15, 0, 0, 0, 0, 0,
+  0, -7,  0,  0,  0,  0, -7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -8,  0,  0,  0,  0, -8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0, 18,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31,-31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32,-32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -133,50 +145,52 @@ static const int rxg_parse_table[] = {
 -41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42,-42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43,-43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  5,  6, 23, 21, 26,  0,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--26,-26,-26,-26,-26,  0,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,22, 0, 0, 0, 0, 0, 0, 0,
 -44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44,-44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  5,  6, 23,  0, 26, 24,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--26,-26,-26,  0,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,25, 0, 0, 0, 0, 0, 0, 0,
-  5,  6, 23,  0, 26,-48,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0,
--26,-26,-26,  0,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26,-26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,27, 0, 0, 0, 0, 0, 0, 0,
-  0,  0,  0,  0, 28,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, -6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,  0,  0,  0,  0,  0,  0, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,  0,  0,  0,  0,  0,  0,-48,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,31, 0, 0,
-  0,  0,  0,  0,-49,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,32, 0, 0, 0, 0,29, 0,
-  0,  0,  0,  0,-47,  0,  0,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,33, 0, 0, 0,
-  0,  0,  0,  0,-46,  0,  0,-46,  0,  0,  0,  0,  0,  0, 46,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,34, 0, 0, 0, 0,
--10,  0,-10,-10,-10,  0,  0,-10,-10,  0,-10,-10,-10,  0,-10,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--12,  0,-12,-12,-12,  0,  0,-12,-12,  0,-12,-12,-12,  0,-12,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45,-45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46,-46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 20, 21, 38, 36, 41,  0, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-29,-29,-29,-29,-29,  0,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,37, 0, 0, 0, 0, 0, 0, 0,
+-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47,-47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 20, 21, 38,  0, 41, 39, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-29,-29,-29,  0,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,40, 0, 0, 0, 0, 0, 0, 0,
+ 20, 21, 38,  0, 41,-51, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,19, 0, 0,
+-29,-29,-29,  0,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,42, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0, 43,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, -9,  0,  0,  0,  0, -9,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0, 45,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0,  0,-51,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,46, 0, 0,
+  0,  0,  0,  0,-52,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,47, 0, 0, 0, 0,44, 0,
+  0,  0,  0,  0,-50,  0,  0, 17,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,48, 0, 0, 0,
+  0,  0,  0,  0,-49,  0,  0,-49,  0,  0,  0,  0,  0,  0, 61,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,49, 0, 0, 0, 0,
 -13,  0,-13,-13,-13,  0,  0,-13,-13,  0,-13,-13,-13,  0,-13,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--14,  0,-14,-14,-14,  0,  0,-14,-14,  0,-14,-14,-14,  0,-14,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--11,  0,-11,-11,-11,  0,  0,-11,-11,  0,-11,-11,-11,  0,-11, 37, 38, 39,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--15,  0,-15,-15,-15,  0,  0,-15,-15,  0,-15,-15,-15,  0,-15,-15,-15,-15,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--16,  0,-16,-16,-16,  0,  0,-16,-16,  0,-16,-16,-16,  0,-16,-16,-16,-16,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--17,  0,-17,-17,-17,  0,  0,-17,-17,  0,-17,-17,-17,  0,-17,-17,-17,-17,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-15,  0,-15,-15,-15,  0,  0,-15,-15,  0,-15,-15,-15,  0,-15,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-16,  0,-16,-16,-16,  0,  0,-16,-16,  0,-16,-16,-16,  0,-16,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-17,  0,-17,-17,-17,  0,  0,-17,-17,  0,-17,-17,-17,  0,-17,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-14,  0,-14,-14,-14,  0,  0,-14,-14,  0,-14,-14,-14,  0,-14, 52, 53, 54,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -18,  0,-18,-18,-18,  0,  0,-18,-18,  0,-18,-18,-18,  0,-18,-18,-18,-18,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 41,  0, 49, -8, -8,  0,  0, -8, 60,  0, 42, 44, 43,  0, -8,  0,  0,  0,  0,  0, 0, 0, 0, 0,36,40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- -9,  0, -9, -9, -9,  0,  0, -9, -9,  0, -9, -9, -9,  0, -9,  0,  0,  0,  0,  0, 0, 0, 0,45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -19,  0,-19,-19,-19,  0,  0,-19,-19,  0,-19,-19,-19,  0,-19,-19,-19,-19,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,  0,  0, 47,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 46,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- -9,  0, -9, -9,  0,  0,  0,  0, -9,  0, -9, -9, -9,  0, -9,  0,  0,  0,  0,  0, 0, 0,48,61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -20,  0,-20,-20,-20,  0,  0,-20,-20,  0,-20,-20,-20,  0,-20,-20,-20,-20,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 58,  0,  0,  0,  0,  0,  0,  0,  0, 50,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0,53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -21,  0,-21,-21,-21,  0,  0,-21,-21,  0,-21,-21,-21,  0,-21,-21,-21,-21,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--22,  0,  0,  0,  0,  0,  0,  0,  0,-22,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 58,  0,  0,  0,  0,  0,  0,  0,  0, 52,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0,53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--23,  0,  0,  0,  0,  0,  0,  0,  0,-23,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 56,  0, 64,-11,-11,  0,  0,-11, 75,  0, 57, 59, 58,  0,-11,  0,  0,  0,  0,  0, 0, 0, 0, 0,51,55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-12,  0,-12,-12,-12,  0,  0,-12,-12,  0,-12,-12,-12,  0,-12,  0,  0,  0,  0,  0, 0, 0, 0,60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-22,  0,-22,-22,-22,  0,  0,-22,-22,  0,-22,-22,-22,  0,-22,-22,-22,-22,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0, 62,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 61,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-12,  0,-12,-12,  0,  0,  0,  0,-12,  0,-12,-12,-12,  0,-12,  0,  0,  0,  0,  0, 0, 0,63,76, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-23,  0,-23,-23,-23,  0,  0,-23,-23,  0,-23,-23,-23,  0,-23,-23,-23,-23,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 73,  0,  0,  0,  0,  0,  0,  0,  0, 65,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0,68, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-24,  0,-24,-24,-24,  0,  0,-24,-24,  0,-24,-24,-24,  0,-24,-24,-24,-24,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 -25,  0,  0,  0,  0,  0,  0,  0,  0,-25,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 56,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--24,  0,  0,  0,  0,  0,  0,  0,  0,-24,  0,  0,  0, 57,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 58,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0,54,55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 58,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 59,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0,51,55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 41,  0, 49, -7, -7,  0,  0, -7, 60,  0, 42, 44, 43,  0, -7,  0,  0,  0,  0,  0, 0, 0, 0, 0,36,40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- -9,  0, -9,  0, -9,  0,  0, -9, -9,  0, -9, -9, -9,  0, -9,  0,  0,  0,  0,  0, 0, 0,35,61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,  0,  0,  0,  0,  0, 62,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0,  0,  0,  0,  0,  0,-45,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,63, 0, 0, 0, 0, 0,
-  0, 64,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+ 73,  0,  0,  0,  0,  0,  0,  0,  0, 67,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0,68, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-26,  0,  0,  0,  0,  0,  0,  0,  0,-26,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-28,  0,  0,  0,  0,  0,  0,  0,  0,-28,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 71,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-27,  0,  0,  0,  0,  0,  0,  0,  0,-27,  0,  0,  0, 72,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 73,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0,69,70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 73,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 74,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0,66,70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 56,  0, 64,-10,-10,  0,  0,-10, 75,  0, 57, 59, 58,  0,-10,  0,  0,  0,  0,  0, 0, 0, 0, 0,51,55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-12,  0,-12,  0,-12,  0,  0,-12,-12,  0,-12,-12,-12,  0,-12,  0,  0,  0,  0,  0, 0, 0,50,76, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0,  0,  0,  0,  0,  0, 77,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 16,  0,  0,  0,  0,-48,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,78, 0, 0, 0, 0, 0,
 };
 static const size_t rxg_production_lengths[] = {
  1,
@@ -185,6 +199,9 @@ static const size_t rxg_production_lengths[] = {
  6,
  11,
  9,
+ 5,
+ 10,
+ 8,
  1,
  3,
  0,
@@ -236,6 +253,9 @@ static const int rxg_production_syms[] = {
  32,
  32,
  32,
+ 32,
+ 32,
+ 32,
  25,
  25,
  26,
@@ -283,6 +303,21 @@ static const int rxg_production_syms[] = {
 static const int rxg_state_syms[] = {
  -1,
  32,
+ 10,
+ 8,
+ 38,
+ 33,
+ 7,
+ 39,
+ 10,
+ 38,
+ 34,
+ 37,
+ 36,
+ 25,
+ 9,
+ 35,
+ 4,
  10,
  8,
  38,
@@ -345,7 +380,6 @@ static const int rxg_state_syms[] = {
  26,
  9,
  35,
- 4,
  31
 };
 
@@ -468,9 +502,18 @@ void rxg_stack_cleanup(struct rxg_stack *stack) {
 
     }
   }
+  if ((!stack->need_sym_) && stack->pos_) {
+    /* Deconstruct placeholder location for terminal not yet shifted */
+    switch (stack->current_sym_) {
+    } /* switch */
+    {
+       snippet_cleanup(&(stack->stack_[0].common_));
+
+    }
+  }
 
   if (stack->stack_) free(stack->stack_);
-    if (stack->match_buffer_) free(stack->match_buffer_);
+  if (stack->match_buffer_) free(stack->match_buffer_);
 }
 
 static int rxg_push_state(struct rxg_stack *stack, int state) {
@@ -505,11 +548,20 @@ static int rxg_push_state(struct rxg_stack *stack, int state) {
 }
 int rxg_stack_reset(struct rxg_stack *stack) {
   size_t n;
-  for (n = 0; n < stack->pos_; ++n) {
+  for (n = 1; n < stack->pos_; ++n) {
     switch (stack->stack_[n].state_) {
     } /* switch */
     {
        snippet_cleanup(&((stack->stack_ + n)->common_));
+
+    }
+  }
+  if ((!stack->need_sym_) && stack->pos_) {
+    /* Deconstruct placeholder location for terminal not yet shifted */
+    switch (stack->current_sym_) {
+    } /* switch */
+    {
+       snippet_cleanup(&(stack->stack_[0].common_));
 
     }
   }
@@ -825,9 +877,24 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     if (stack->need_sym_) {
       switch (rxg_lex(stack, input, input_size, is_final_input)) {
         case _RXG_MATCH:
-          stack->current_sym_ = (int)stack->best_match_action_;
           stack->need_sym_ = 0;
+          stack->current_sym_ = RXG_INPUT_END; /* no sym specific type associated, changed when we successfully construct it below */
           if (stack->mute_error_turns_) stack->mute_error_turns_--;
+          {
+             snippet_init(&(stack->stack_[0].common_));
+          }
+          switch (stack->best_match_action_) {
+            case 1: /* /\*([^\*]|[\r\n]|(\*+([^\* //]|[\r\n])))*\* // */
+              /* Pattern does not have a symbol */
+              stack->current_sym_ = RXG_INPUT_END;
+              stack->need_sym_ = 1; /* keep scanning */
+              {
+                
+  fprintf(stderr, "Imagine a sensible action here.\n");
+
+              }
+              break;
+          } /* switch */
           break;
         case _RXG_OVERFLOW:
           return -2;
@@ -836,7 +903,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
         case _RXG_FEED_ME:
           return 1;
         case _RXG_END_OF_INPUT:
-          stack->current_sym_ = 24; /* input-end */
+          stack->current_sym_ = RXG_INPUT_END;
           stack->need_sym_ = 0;
           if (stack->mute_error_turns_) stack->mute_error_turns_--;
           break;
@@ -862,15 +929,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
 
           /* Fill in the sym from the tokenizer */
           stack->need_sym_ = 1;
-          struct rxg_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
-          {
-             snippet_init(&(sym_data->common_));
-
-          }
-          {
-             snippet_append_tkr(&(sym_data->common_), tkr);
-
-          }
+          stack->stack_[stack->pos_ - 1] = stack->stack_[0];
           if (stack->report_error_) {
             /* We're shifting this sym following an error recovery on the same sym, report syntax error */
             stack->report_error_ = 0;
@@ -991,61 +1050,72 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
 }
               }
               break;
-            /* exp: term */
+            /* pattern: start-regex COLON exp end-regex SEMICOLON */
               case 6: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
               }
               {
                 {
-  size_t n;
-  for (n = 0; n < ((size_t)production_length); ++n) {
-    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[2].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
   }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
 }
-
-              }
-              if (!discard_action) {
-                
               }
               break;
-            /* exp: exp BAR term */
+            /* pattern: start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE */
               case 7: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
               }
               {
                 {
-  size_t n;
-  for (n = 0; n < ((size_t)production_length); ++n) {
-    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[2].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
   }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_snippet(&pat->action_sequence_, &(sym_data[7].common_));
+  if (r) return r;
 }
-
-              }
-              if (!discard_action) {
-                
               }
               break;
-            /* term: */
+            /* pattern: start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
               case 8: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
               }
               {
                 {
-  size_t n;
-  for (n = 0; n < ((size_t)production_length); ++n) {
-    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[2].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_snippet(&pat->action_sequence_, &(sym_data[5].common_));
+  if (r) return r;
+  /* Pop the '=' token from stmt-action as it is not part of the action sequence itself. */
+  if (pat->action_sequence_.num_tokens_ && (pat->action_sequence_.tokens_[0].match_ == TOK_EQUALS)) {
+    snippet_pop_first_token(&pat->action_sequence_);
   }
 }
-
-              }
-              if (!discard_action) {
-                
               }
               break;
-            /* term: term elm */
+            /* exp: term */
               case 9: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1063,7 +1133,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* elm: sym */
+            /* exp: exp BAR term */
               case 10: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1081,7 +1151,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* elm: sym ASTERISK */
+            /* term: */
               case 11: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1099,7 +1169,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* elm: sym PLUS */
+            /* term: term elm */
               case 12: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1117,7 +1187,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* elm: sym QUESTION_MARK */
+            /* elm: sym */
               case 13: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1135,7 +1205,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* sym: CHAR */
+            /* elm: sym ASTERISK */
               case 14: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1153,7 +1223,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* sym: DOT */
+            /* elm: sym PLUS */
               case 15: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1171,7 +1241,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* sym: CARET */
+            /* elm: sym QUESTION_MARK */
               case 16: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1189,7 +1259,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* sym: DOLLAR */
+            /* sym: CHAR */
               case 17: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1207,7 +1277,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* sym: PAR_OPEN exp PAR_CLOSE */
+            /* sym: DOT */
               case 18: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1225,7 +1295,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* sym: SQ_OPEN range SQ_CLOSE */
+            /* sym: CARET */
               case 19: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1243,7 +1313,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* sym: SQ_OPEN CARET range SQ_CLOSE */
+            /* sym: DOLLAR */
               case 20: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1261,7 +1331,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* range: range range-elm */
+            /* sym: PAR_OPEN exp PAR_CLOSE */
               case 21: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1279,7 +1349,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* range: range-elm */
+            /* sym: SQ_OPEN range SQ_CLOSE */
               case 22: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1297,7 +1367,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* range-elm: CHAR */
+            /* sym: SQ_OPEN CARET range SQ_CLOSE */
               case 23: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1315,7 +1385,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* range-elm: CHAR DASH CHAR */
+            /* range: range range-elm */
               case 24: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1333,7 +1403,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: */
+            /* range: range-elm */
               case 25: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1351,7 +1421,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence CHAR */
+            /* range-elm: CHAR */
               case 26: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1369,7 +1439,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence IDENT */
+            /* range-elm: CHAR DASH CHAR */
               case 27: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1387,7 +1457,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence COLON */
+            /* action-sequence: */
               case 28: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1405,7 +1475,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence SEMICOLON */
+            /* action-sequence: action-sequence CHAR */
               case 29: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1423,7 +1493,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence SQ_OPEN */
+            /* action-sequence: action-sequence IDENT */
               case 30: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1441,7 +1511,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence SQ_CLOSE */
+            /* action-sequence: action-sequence COLON */
               case 31: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1459,7 +1529,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence DOT */
+            /* action-sequence: action-sequence SEMICOLON */
               case 32: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1477,7 +1547,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence DOLLAR */
+            /* action-sequence: action-sequence SQ_OPEN */
               case 33: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1495,7 +1565,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence CARET */
+            /* action-sequence: action-sequence SQ_CLOSE */
               case 34: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1513,7 +1583,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence DASH */
+            /* action-sequence: action-sequence DOT */
               case 35: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1531,7 +1601,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence BAR */
+            /* action-sequence: action-sequence DOLLAR */
               case 36: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1549,7 +1619,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence ASTERISK */
+            /* action-sequence: action-sequence CARET */
               case 37: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1567,7 +1637,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence PLUS */
+            /* action-sequence: action-sequence DASH */
               case 38: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1585,7 +1655,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence QUESTION_MARK */
+            /* action-sequence: action-sequence BAR */
               case 39: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1603,7 +1673,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence TOKEN */
+            /* action-sequence: action-sequence ASTERISK */
               case 40: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1621,7 +1691,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence WHITESPACE */
+            /* action-sequence: action-sequence PLUS */
               case 41: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1639,7 +1709,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
+            /* action-sequence: action-sequence QUESTION_MARK */
               case 42: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1657,7 +1727,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
+            /* action-sequence: action-sequence TOKEN */
               case 43: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -1675,8 +1745,62 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 
               }
               break;
-            /* start-regex: */
+            /* action-sequence: action-sequence WHITESPACE */
               case 44: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
+              case 45: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
+              case 46: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+              }
+              {
+                {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+              }
+              if (!discard_action) {
+                
+              }
+              break;
+            /* start-regex: */
+              case 47: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
               }
@@ -1687,7 +1811,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
               }
               break;
             /* end-regex: */
-              case 45: {
+              case 48: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
               }
@@ -1698,7 +1822,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
               }
               break;
             /* start-c-tokenizer: */
-              case 46: {
+              case 49: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
               }
@@ -1709,7 +1833,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
               }
               break;
             /* end-c-tokenizer: */
-              case 47: {
+              case 50: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
               }
@@ -1721,7 +1845,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
               }
               break;
             /* accept-whitespace: */
-              case 48: {
+              case 51: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
               }
@@ -1968,61 +2092,72 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
 }
             }
             break;
-            /* exp: term */
+            /* pattern: start-regex COLON exp end-regex SEMICOLON */
             case 6: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
-  size_t n;
-  for (n = 0; n < ((size_t)production_length); ++n) {
-    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[2].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
   }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
 }
-
-            }
-            if (!discard_action) {
-              
             }
             break;
-            /* exp: exp BAR term */
+            /* pattern: start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE */
             case 7: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
-  size_t n;
-  for (n = 0; n < ((size_t)production_length); ++n) {
-    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[2].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
   }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_snippet(&pat->action_sequence_, &(sym_data[7].common_));
+  if (r) return r;
 }
-
-            }
-            if (!discard_action) {
-              
             }
             break;
-            /* term: */
+            /* pattern: start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
             case 8: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
             {
               {
-  size_t n;
-  for (n = 0; n < ((size_t)production_length); ++n) {
-    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  r = prd_grammar_check_pattern_reserve(g);
+  if (r) return r;
+  char *regex = snippet_dup_xlt(&(sym_data[2].common_));
+  if (!regex) {
+    return PRD_INTERNAL_ERROR;
+  }
+  pat = g->patterns_ + g->num_patterns_++;
+  prd_pattern_init(pat);
+  pat->regex_ = regex;
+  r = snippet_append_snippet(&pat->action_sequence_, &(sym_data[5].common_));
+  if (r) return r;
+  /* Pop the '=' token from stmt-action as it is not part of the action sequence itself. */
+  if (pat->action_sequence_.num_tokens_ && (pat->action_sequence_.tokens_[0].match_ == TOK_EQUALS)) {
+    snippet_pop_first_token(&pat->action_sequence_);
   }
 }
-
-            }
-            if (!discard_action) {
-              
             }
             break;
-            /* term: term elm */
+            /* exp: term */
             case 9: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2040,7 +2175,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* elm: sym */
+            /* exp: exp BAR term */
             case 10: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2058,7 +2193,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* elm: sym ASTERISK */
+            /* term: */
             case 11: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2076,7 +2211,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* elm: sym PLUS */
+            /* term: term elm */
             case 12: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2094,7 +2229,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* elm: sym QUESTION_MARK */
+            /* elm: sym */
             case 13: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2112,7 +2247,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: CHAR */
+            /* elm: sym ASTERISK */
             case 14: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2130,7 +2265,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: DOT */
+            /* elm: sym PLUS */
             case 15: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2148,7 +2283,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: CARET */
+            /* elm: sym QUESTION_MARK */
             case 16: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2166,7 +2301,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: DOLLAR */
+            /* sym: CHAR */
             case 17: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2184,7 +2319,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: PAR_OPEN exp PAR_CLOSE */
+            /* sym: DOT */
             case 18: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2202,7 +2337,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: SQ_OPEN range SQ_CLOSE */
+            /* sym: CARET */
             case 19: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2220,7 +2355,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* sym: SQ_OPEN CARET range SQ_CLOSE */
+            /* sym: DOLLAR */
             case 20: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2238,7 +2373,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* range: range range-elm */
+            /* sym: PAR_OPEN exp PAR_CLOSE */
             case 21: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2256,7 +2391,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* range: range-elm */
+            /* sym: SQ_OPEN range SQ_CLOSE */
             case 22: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2274,7 +2409,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* range-elm: CHAR */
+            /* sym: SQ_OPEN CARET range SQ_CLOSE */
             case 23: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2292,7 +2427,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* range-elm: CHAR DASH CHAR */
+            /* range: range range-elm */
             case 24: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2310,7 +2445,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: */
+            /* range: range-elm */
             case 25: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2328,7 +2463,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence CHAR */
+            /* range-elm: CHAR */
             case 26: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2346,7 +2481,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence IDENT */
+            /* range-elm: CHAR DASH CHAR */
             case 27: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2364,7 +2499,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence COLON */
+            /* action-sequence: */
             case 28: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2382,7 +2517,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence SEMICOLON */
+            /* action-sequence: action-sequence CHAR */
             case 29: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2400,7 +2535,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence SQ_OPEN */
+            /* action-sequence: action-sequence IDENT */
             case 30: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2418,7 +2553,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence SQ_CLOSE */
+            /* action-sequence: action-sequence COLON */
             case 31: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2436,7 +2571,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence DOT */
+            /* action-sequence: action-sequence SEMICOLON */
             case 32: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2454,7 +2589,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence DOLLAR */
+            /* action-sequence: action-sequence SQ_OPEN */
             case 33: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2472,7 +2607,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence CARET */
+            /* action-sequence: action-sequence SQ_CLOSE */
             case 34: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2490,7 +2625,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence DASH */
+            /* action-sequence: action-sequence DOT */
             case 35: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2508,7 +2643,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence BAR */
+            /* action-sequence: action-sequence DOLLAR */
             case 36: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2526,7 +2661,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence ASTERISK */
+            /* action-sequence: action-sequence CARET */
             case 37: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2544,7 +2679,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence PLUS */
+            /* action-sequence: action-sequence DASH */
             case 38: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2562,7 +2697,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence QUESTION_MARK */
+            /* action-sequence: action-sequence BAR */
             case 39: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2580,7 +2715,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence TOKEN */
+            /* action-sequence: action-sequence ASTERISK */
             case 40: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2598,7 +2733,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence WHITESPACE */
+            /* action-sequence: action-sequence PLUS */
             case 41: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2616,7 +2751,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
+            /* action-sequence: action-sequence QUESTION_MARK */
             case 42: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2634,7 +2769,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
+            /* action-sequence: action-sequence TOKEN */
             case 43: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
@@ -2652,8 +2787,62 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               
             }
             break;
-            /* start-regex: */
+            /* action-sequence: action-sequence WHITESPACE */
             case 44: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
+            case 45: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
+            case 46: {
+     snippet_init(&(nonterminal_sym_data_reduced_to.common_));
+
+            }
+            {
+              {
+  size_t n;
+  for (n = 0; n < ((size_t)production_length); ++n) {
+    snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
+  }
+}
+
+            }
+            if (!discard_action) {
+              
+            }
+            break;
+            /* start-regex: */
+            case 47: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
@@ -2664,7 +2853,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             }
             break;
             /* end-regex: */
-            case 45: {
+            case 48: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
@@ -2675,7 +2864,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             }
             break;
             /* start-c-tokenizer: */
-            case 46: {
+            case 49: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
@@ -2686,7 +2875,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             }
             break;
             /* end-c-tokenizer: */
-            case 47: {
+            case 50: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
@@ -2698,7 +2887,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             }
             break;
             /* accept-whitespace: */
-            case 48: {
+            case 51: {
      snippet_init(&(nonterminal_sym_data_reduced_to.common_));
 
             }
