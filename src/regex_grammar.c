@@ -893,6 +893,9 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   fprintf(stderr, "Imagine a sensible action here.\n");
 
               }
+              if (stack->need_sym_) {
+                 snippet_cleanup(&(stack->stack_[0].common_));
+              }
               break;
           } /* switch */
           break;
@@ -3273,11 +3276,11 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
   char char_value = 0;
 
   if (!end_of_input) {
-    token_type_t tkt = (token_type_t)tkr->best_match_variant_;
-    if (!g->accept_whitespace_ && (tkt == TOK_WHITESPACE)) {
+    if (!g->accept_whitespace_ && (tkr->best_match_variant_ == TOK_WHITESPACE)) {
       /* Eat whitespace */
       return PRD_NEXT;
     }
+    token_type_t tkt = (token_type_t)tkr->best_match_action_;
 
     switch (tkt) {
     case TOK_IDENT: sym = RXG_IDENT; break;
@@ -3307,7 +3310,9 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
     case TOK_ESC_R: sym = RXG_CHAR; char_value = '\r'; break;
     case TOK_ESC_T: sym = RXG_CHAR; char_value = '\t'; break;
     case TOK_ESC_V: sym = RXG_CHAR; char_value = '\v'; break;
-    case TOK_ESC_CHAR: sym = RXG_CHAR; char_value = tkr->xmatch_.translated_[1]; break;
+    case TOK_ESC_CHAR: {
+      sym = RXG_CHAR; char_value = tkr->xmatch_.translated_[1]; break;
+    }
     case TOK_ESC_HEX1: {
       sym = RXG_CHAR; 
       char c = tkr->xmatch_.translated_[2];
@@ -3351,6 +3356,10 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
       c = tkr->xmatch_.translated_[3];
       char_value = (char_value << 3) + c - '0';
       break;
+    }
+    case TOK_ESC_INVALID_ESCAPE: {
+      re_error_tkr(tkr, "Error, invalid escape \"\\%c\"", tkr->xmatch_.translated_[1]);
+      return PRD_SYNTAX_ERROR;
     }
     case TOK_CHAR: {
       sym = RXG_CHAR;

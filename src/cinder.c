@@ -1774,6 +1774,22 @@ static int emit_common_destructor_snippet(FILE *outfp, struct cinder_context *cc
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
+static int emit_pattern_token_common_destructor_snippet(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
+  se.dest_type_ = SEDT_FMT;;
+  se.dest_fmt_ = "(stack->stack_[0].common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
 static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct cinder_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
@@ -1814,7 +1830,7 @@ static int emit_pattern_action_snippet(FILE *outfp, struct cinder_context *cc, s
   if (ts) {
     se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
     se.dest_typestr_ = ts;
-    se.dest_fmt_ = "(pattern_sym_data.v_.uv%d_)";
+    se.dest_fmt_ = "(stack->stack_[0].v_.uv%d_)";
   }
   else {
     se.dest_type_ = SEDT_NONE;
@@ -1823,7 +1839,7 @@ static int emit_pattern_action_snippet(FILE *outfp, struct cinder_context *cc, s
   se.prod_ = NULL;
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT;
-  se.common_dest_fmt_ = "(pattern_sym_data.common_)";
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->token_size_)";
   se.discard_type_ = SEDT_NONE;
@@ -1978,7 +1994,12 @@ static int emit_lex_function(FILE *outfp, struct cinder_context *cc, struct prd_
                   "      stack->best_match_offset_ = best_match_offset;\n"
                   "      stack->best_match_line_ = best_match_line;\n"
                   "      stack->best_match_col_ = best_match_col;\n"
-                  "\n");
+                  "\n"
+                  "      stack->input_index_ = input_index;\n"
+                  "      stack->input_offset_ = input_offset;\n"
+                  "      stack->input_line_ = input_line;\n"
+                  "      stack->input_col_ = input_col;\n"
+                  );
   fprintf(outfp,  "      return _%sMATCH;\n", cc_PREFIX(cc));
   fprintf(outfp,  "    }\n"
                   "  }\n"
@@ -2006,8 +2027,8 @@ static int emit_lex_function(FILE *outfp, struct cinder_context *cc, struct prd_
                   "    }\n"
                   "    else {\n"
                   "      /* Append from stack->input_index_ to input_index, excluding input_index itself */\n"
-                  "      r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);\n"
-                  "      if (r) return r;\n"
+                  "      r = %sappend_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);\n", cc_prefix(cc));
+  fprintf(outfp,  "      if (r) return r;\n"
                   " \n"
                   "      if (best_match_action == default_action) {\n"
                   "        goto syntax_error;\n"
@@ -2023,13 +2044,17 @@ static int emit_lex_function(FILE *outfp, struct cinder_context *cc, struct prd_
                   "      stack->best_match_offset_ = best_match_offset;\n"
                   "      stack->best_match_line_ = best_match_line;\n"
                   "      stack->best_match_col_ = best_match_col;\n"
-                  "\n");
+                  "\n"
+                  "      stack->input_index_ = input_index;\n"
+                  "      stack->input_offset_ = input_offset;\n"
+                  "      stack->input_line_ = input_line;\n"
+                  "      stack->input_col_ = input_col;\n");
   fprintf(outfp,  "      return _%sMATCH;\n", cc_PREFIX(cc));
   fprintf(outfp,  "    }\n"
                   "  }\n"
                   "\n"
-                  "  r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);\n"
-                  "  if (r) return r;\n"
+                  "  r = %sappend_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);\n", cc_prefix(cc));
+  fprintf(outfp,  "  if (r) return r;\n"
                   "\n"
                   "  if (!is_final_input) {\n"
                   "    /* Need more input */\n"
@@ -2084,8 +2109,12 @@ static int emit_lex_function(FILE *outfp, struct cinder_context *cc, struct prd_
                   "  stack->best_match_offset_ = best_match_offset;\n"
                   "  stack->best_match_line_ = best_match_line;\n"
                   "  stack->best_match_col_ = best_match_col;\n"
-                  "\n");
-  fprintf(outfp,  "      return _%sMATCH;\n", cc_PREFIX(cc));
+                  "\n"
+                  "  stack->input_index_ = input_index;\n"
+                  "  stack->input_offset_ = input_offset;\n"
+                  "  stack->input_line_ = input_line;\n"
+                  "  stack->input_col_ = input_col;\n");
+  fprintf(outfp,  "  return _%sMATCH;\n", cc_PREFIX(cc));
   fprintf(outfp,  "syntax_error:\n"
                   "  if (stack->match_buffer_size_) {\n"
                   "    stack->best_match_offset_ = stack->match_offset_ + 1;\n"
@@ -2100,8 +2129,8 @@ static int emit_lex_function(FILE *outfp, struct cinder_context *cc, struct prd_
                   "  }\n"
                   "  else {\n"
                   "    /* Append the single character causing the syntax error */\n"
-                  "    r = rxg_append_match_buffer(stack, input + stack->input_index_, 1);\n"
-                  "    if (r) return r;\n"
+                  "    r = %sappend_match_buffer(stack, input + stack->input_index_, 1);\n", cc_prefix(cc));
+  fprintf(outfp,  "    if (r) return r;\n"
                   "\n"
                   "    input_offset++;\n"
                   "    if (input[stack->input_index_] != '\\n') {\n"
@@ -2233,6 +2262,12 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
           fprintf(outfp, "              }\n");
         }
       }
+      if (pat->action_sequence_.num_tokens_) {
+        fprintf(outfp, "              {\n"
+          "                ");
+        emit_pattern_action_snippet(outfp, cc, pat);
+        fprintf(outfp, "              }\n");
+      }
     }
     else {
       /* Pattern matches no symbol */
@@ -2244,12 +2279,22 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
       }
       fprintf(outfp, ";\n"
                      "              stack->need_sym_ = 1; /* keep scanning */\n");
-    }
-    if (pat->action_sequence_.num_tokens_) {
-      fprintf(outfp, "              {\n"
-                     "                ");
-      emit_pattern_action_snippet(outfp, cc, pat);
-      fprintf(outfp, "              }\n");
+      if (pat->action_sequence_.num_tokens_) {
+        fprintf(outfp, "              {\n"
+                       "                ");
+        emit_pattern_action_snippet(outfp, cc, pat);
+        fprintf(outfp, "              }\n");
+      }
+      /* Assuming we still need a sym, we should deconstruct the common data. */
+      if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+        fprintf(outfp, "              if (stack->need_sym_) {\n"
+                       "                ");
+        if (emit_pattern_token_common_destructor_snippet(outfp, cc)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+          }
+        fprintf(outfp, "              }\n");
+      }
     }
     fprintf(outfp, "              break;\n");
   }
@@ -2314,7 +2359,12 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
   fprintf(outfp, "\n"
                  "          /* Fill in the sym from the tokenizer */\n");
   fprintf(outfp, "          stack->need_sym_ = 1;\n");
-  fprintf(outfp, "          stack->stack_[stack->pos_ - 1] = stack->stack_[0];\n");
+  if (cc->common_data_assigned_type_) {
+    fprintf(outfp, "          stack->stack_[stack->pos_ - 1].common_ = stack->stack_[0].common_;\n");
+  }
+  if (cc->have_typed_symbols_) {
+    fprintf(outfp, "          stack->stack_[stack->pos_ - 1].v_ = stack->stack_[0].v_;\n");
+  }
 
   fprintf(outfp, "          if (stack->report_error_) {\n"
                  "            /* We're shifting this sym following an error recovery on the same sym, report syntax error */\n"
@@ -4054,6 +4104,7 @@ int main(int argc, char **argv) {
     fprintf(outfp, "/* --------- START OF GENERATED CODE ------------ */\n");
 
     fprintf(outfp, "#include <stdlib.h> /* realloc(), free(), NULL, size_t */\n");
+    fprintf(outfp, "#include <string.h> /* memcpy() */\n");
 
     fprintf(outfp, "struct %ssym_data {\n", cc_prefix(&cc));
     fprintf(outfp, "  int state_;\n");
@@ -4485,9 +4536,10 @@ int main(int argc, char **argv) {
               goto cleanup_exit;
             }
             fprintf(outfp, "\n"
-                           "        }\n"
-                           "        break;\n");
+                           "        }\n");
+                           
           }
+          fprintf(outfp, "        break;\n");
         }
       }
       fprintf(outfp, "    } /* switch */\n");
@@ -4639,9 +4691,9 @@ int main(int argc, char **argv) {
               goto cleanup_exit;
             }
             fprintf(outfp, "\n"
-                           "        }\n"
-                           "        break;\n");
+                           "        }\n");
           }
+          fprintf(outfp, "        break;\n");
         }
       }
       fprintf(outfp, "    } /* switch */\n");
