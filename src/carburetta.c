@@ -922,7 +922,8 @@ static int process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, struct
     else if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
       snip = &cc->token_type_;
     }
-    else if (directive == PCD_COMMON_TYPE_DIRECTIVE) {
+    else /* (directive == PCD_COMMON_TYPE_DIRECTIVE) */ {
+      assert(directive == PCD_COMMON_TYPE_DIRECTIVE);
       snip = &cc->common_data_type_;
     }
     while (snip->num_tokens_ &&
