@@ -24,6 +24,8 @@
     <ClCompile Include="..\src\typestr.c" />
     <ClCompile Include="..\src\xlalr.c" />
     <ClCompile Include="..\src\xlts.c" />
+    <ClCompile Include="..\src\carburetta_context.c" />
+    <ClCompile Include="..\src\emit_c.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\chain.h" />
@@ -47,6 +49,8 @@
     <ClInclude Include="..\src\typestr.h" />
     <ClInclude Include="..\src\xlalr.h" />
     <ClInclude Include="..\src\xlts.h" />
+    <ClInclude Include="..\src\carburetta_context.h" />
+    <ClInclude Include="..\src\emit_c.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\prd_grammar.cnd" />
