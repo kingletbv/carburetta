@@ -56,3 +56,4 @@ dkms.conf
 Debug/
 x64/
 cinder.vcxproj.user
+/project/carburetta.vcxproj.user
