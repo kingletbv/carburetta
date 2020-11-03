@@ -1,5 +1,5 @@
-#ifndef CINDER_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
-#define CINDER_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
+#ifndef CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
+#define CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
 
 #include <stddef.h> /* size_t */
 
@@ -13,6 +13,7 @@ extern "C" {
 #define _RXG_FEED_ME 4
 #define _RXG_END_OF_INPUT 5
 #define _RXG_SYNTAX_ERROR 6
+#define _RXG_INTERNAL_ERROR 7
 
 #define RXG_CHAR 3
 #define RXG_IDENT 4
@@ -78,4 +79,4 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
 } /* extern "C" */
 #endif
 
-#endif /* CINDER_RXG_SRCREGEX_GRAMMAR_H_INCLUDED */
+#endif /* CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED */

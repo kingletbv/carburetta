@@ -2225,14 +2225,6 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   else {
     fprintf(outfp, "int %sscan(struct %sstack *stack, const char *input, size_t input_size, int is_final_input) {\n", cc_prefix(cc), cc_prefix(cc));
   }
-#if 0
-  fprintf(outfp, "#define _%sMATCH 1\n", cc_PREFIX(&cc));
-  fprintf(outfp, "#define _%sOVERFLOW 2\n", cc_PREFIX(&cc));
-  fprintf(outfp, "#define _%sNO_MEMORY 3\n", cc_PREFIX(&cc));
-  fprintf(outfp, "#define _%sFEED_ME 4\n", cc_PREFIX(&cc));
-  fprintf(outfp, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(&cc));
-  fprintf(outfp, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(&cc));
-#endif
 
   fprintf(outfp, "  for (;;) {\n");
   fprintf(outfp, "    if (stack->need_sym_) {\n");
@@ -2340,11 +2332,11 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   
   fprintf(outfp, "          break;\n");
   fprintf(outfp, "        case _%sOVERFLOW:\n", cc_PREFIX(cc));
-  fprintf(outfp, "          return -2;\n");
+  fprintf(outfp, "          return _%sOVERFLOW;\n", cc_PREFIX(cc));
   fprintf(outfp, "        case _%sNO_MEMORY:\n", cc_PREFIX(cc));
-  fprintf(outfp, "          return -2;\n");
+  fprintf(outfp, "          return _%sNO_MEMORY;\n", cc_PREFIX(cc));
   fprintf(outfp, "        case _%sFEED_ME:\n", cc_PREFIX(cc));
-  fprintf(outfp, "          return 1;\n");
+  fprintf(outfp, "          return _%sFEED_ME;\n", cc_PREFIX(cc));
   fprintf(outfp, "        case _%sEND_OF_INPUT:\n", cc_PREFIX(cc));
   fprintf(outfp, "          stack->current_sym_ = ");
   if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
@@ -2356,7 +2348,7 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   fprintf(outfp, "          if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
   fprintf(outfp, "          break;\n");
   fprintf(outfp, "        case _%sSYNTAX_ERROR:\n", cc_PREFIX(cc));
-  fprintf(outfp, "          return -1;\n");
+  fprintf(outfp, "          return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
   fprintf(outfp, "      } /* switch */\n");
   fprintf(outfp, "    } /* if (need_sym_) */\n");
   fprintf(outfp, "    else {\n");
@@ -2365,9 +2357,9 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
                  "        int action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   /* Shift logic */
   fprintf(outfp, "        if (action > 0) {\n");
-  fprintf(outfp, "          switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n"
-                 "            case -1: /* overflow */ {\n"
-                 "              ", cc_prefix(cc));
+  fprintf(outfp, "          switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n", cc_prefix(cc));
+  fprintf(outfp, "            case _%sOVERFLOW: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "              ");
   if (cc->on_internal_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
@@ -2375,12 +2367,12 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "            }\n"
-                 "            break;\n"
-                 "            case -2: /* out of memory */ {\n"
-                 "              ");
+                 "            break;\n");
+  fprintf(outfp, "            case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "              ");
   if (cc->on_alloc_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
@@ -2388,7 +2380,7 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "            }\n"
                  "            break;\n"
@@ -2416,7 +2408,7 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   }
   else {
     fprintf(outfp, "/* Syntax error */\n"
-                   "            return -1;\n");
+                   "            return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "          }\n"
                  "          else {\n"
@@ -2582,13 +2574,13 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   }
   else {
     fprintf(outfp, "/* Internal error: cannot shift an already reduced non-terminal */\n"
-                   "            return -2;\n");
+                   "            return _%sINTERNAL_ERROR;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "          }\n");
 
-  fprintf(outfp, "          switch (%spush_state(stack, action /* action for a \"goto\" shift is the ordinal */)) {\n"
-                 "            case -1: /* overflow */ {\n"
-                 "              ", cc_prefix(cc));
+  fprintf(outfp, "          switch (%spush_state(stack, action /* action for a \"goto\" shift is the ordinal */)) {\n", cc_prefix(cc));
+  fprintf(outfp, "            case _%sOVERFLOW: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "              ");
   if (cc->on_internal_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
@@ -2596,12 +2588,12 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "            }\n"
-                 "            break;\n"
-                 "            case -2: /* out of memory */ {\n"
-                 "              ");
+                 "            break;\n");
+  fprintf(outfp, "            case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "              ");
   if (cc->on_alloc_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
@@ -2609,7 +2601,7 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "            }\n"
                  "            break;\n"
@@ -2688,9 +2680,10 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
                  "                stack->pos_ = n + 1;\n");
 
   fprintf(outfp, "                /* Push the state of the error transition */\n"
-                 "                switch (%spush_state(stack, err_action /* action for a shift is the state */)) {\n"
-                 "                  case -1: /* overflow */ {\n"
-                 "                    ", cc_prefix(cc));
+                 "                switch (%spush_state(stack, err_action /* action for a shift is the state */)) {\n", cc_prefix(cc));
+  fprintf(outfp, "                  case _%sOVERFLOW: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "                    ");
+
   if (cc->on_internal_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
@@ -2698,12 +2691,13 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "                  }\n"
-                 "                  break;\n"
-                 "                  case -2: /* out of memory */ {\n"
-                 "                    ");
+                 "                  break;\n");
+  fprintf(outfp, "                  case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "                    ");
+
   if (cc->on_alloc_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
@@ -2711,7 +2705,7 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "                  }\n"
                  "                  break;\n"
@@ -2770,9 +2764,9 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
 
   /* Shift logic */
   fprintf(outfp, "      if (action > 0) {\n");
-  fprintf(outfp, "        switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n"
-                 "          case -1: /* overflow */ {\n"
-                 "            ", cc_prefix(cc));
+  fprintf(outfp, "        switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n", cc_prefix(cc));
+  fprintf(outfp, "          case _%sOVERFLOW: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "            ");
   if (cc->on_internal_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
@@ -2780,12 +2774,12 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "          }\n"
-                 "          break;\n"
-                 "          case -2: /* out of memory */ {\n"
-                 "            ");
+                 "          break;\n");
+  fprintf(outfp, "          case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "            ");
   if (cc->on_alloc_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
@@ -2793,7 +2787,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "          }\n"
                  "          break;\n"
@@ -2876,7 +2870,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   }
   else {
     fprintf(outfp, "/* Syntax error */\n"
-                   "          return -1;\n");
+                   "          return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "        }\n"
                  "        else {\n"
@@ -2889,7 +2883,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   }
   else {
     fprintf(outfp, "/* Next token */\n"
-                   "          return 1;\n");
+                   "          return _%sFEED_ME;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "        }\n");
   fprintf(outfp, "      } /* action > 0 */\n");
@@ -3043,13 +3037,13 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   }
   else {
     fprintf(outfp, "/* Internal error: cannot shift an already reduced non-terminal */\n"
-                   "          return -2;\n");
+                   "          return _%sINTERNAL_ERROR;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "        }\n");
 
-  fprintf(outfp, "        switch (%spush_state(stack, action /* action for a \"goto\" shift is the ordinal */)) {\n"
-                 "          case -1: /* overflow */ {\n"
-                 "            ", cc_prefix(cc));
+  fprintf(outfp, "        switch (%spush_state(stack, action /* action for a \"goto\" shift is the ordinal */)) {\n", cc_prefix(cc));
+  fprintf(outfp, "          case _%sOVERFLOW: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "            ");
   if (cc->on_internal_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
@@ -3057,12 +3051,12 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "          }\n"
-                 "          break;\n"
-                 "          case -2: /* out of memory */ {\n"
-                 "            ");
+                 "          break;\n");
+  fprintf(outfp, "          case _%sNO_MEMORY: /* out of memory */ {\n", cc_PREFIX(cc));
+  fprintf(outfp, "            ");
   if (cc->on_alloc_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
@@ -3070,7 +3064,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "          }\n"
                  "          break;\n"
@@ -3148,10 +3142,10 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   fprintf(outfp, "              } /* for */\n"
                  "              stack->pos_ = n + 1;\n");
 
-  fprintf(outfp, "              /* Push the state of the error transition */\n"
-                 "              switch (%spush_state(stack, err_action /* action for a shift is the state */)) {\n"
-                 "                case -1: /* overflow */ {\n"
-                 "                  ", cc_prefix(cc));
+  fprintf(outfp, "              /* Push the state of the error transition */\n");
+  fprintf(outfp, "              switch (%spush_state(stack, err_action /* action for a shift is the state */)) {\n", cc_prefix(cc));
+  fprintf(outfp, "                case _%sOVERFLOW: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "                  ");
   if (cc->on_internal_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
@@ -3159,12 +3153,12 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "                }\n"
-                 "                break;\n"
-                 "                case -2: /* out of memory */ {\n"
-                 "                  ");
+                 "                break;\n");
+  fprintf(outfp, "                case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
+  fprintf(outfp, "                  ");
   if (cc->on_alloc_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
@@ -3172,7 +3166,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
     }
   }
   else {
-    fprintf(outfp, "return -2;\n");
+    fprintf(outfp, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "                }\n"
                  "                break;\n"
@@ -3199,7 +3193,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   }
   else {
     fprintf(outfp, "/* Next token */\n"
-                   "        return 1;\n");
+                   "        return _%sFEED_ME;\n", cc_PREFIX(cc));
   }
   fprintf(outfp, "      }\n");
   fprintf(outfp, "    } /* stack->error_recovery_ */\n");
@@ -4382,6 +4376,7 @@ int main(int argc, char **argv) {
     fprintf(outfp, "#define _%sFEED_ME 4\n", cc_PREFIX(&cc));
     fprintf(outfp, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(&cc));
     fprintf(outfp, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sINTERNAL_ERROR 7\n", cc_PREFIX(&cc));
     fprintf(outfp, "\n");
 
     sym = cc.symtab_.terminals_;
@@ -4596,7 +4591,7 @@ int main(int argc, char **argv) {
       "      if (new_num_allocated <= stack->num_stack_allocated_) {\n");
     fprintf(outfp,
       "        /* Overflow in allocation */\n"
-      "        return -1;\n");
+      "        return _%sOVERFLOW;\n", cc_PREFIX(&cc));
     fprintf(outfp,
       "      }\n"
       "    }\n"
@@ -4607,7 +4602,7 @@ int main(int argc, char **argv) {
       "    if (new_num_allocated > (SIZE_MAX / sizeof(struct %ssym_data))) {\n", cc_prefix(&cc));
     fprintf(outfp,
       "      /* Overflow in allocation */\n"
-      "      return -1;\n");
+      "      return _%sOVERFLOW;\n", cc_PREFIX(&cc));
     fprintf(outfp,
       "    }\n"
       "\n"
@@ -4616,7 +4611,7 @@ int main(int argc, char **argv) {
       "    if (!p) {\n");
     fprintf(outfp,
       "      /* Out of memory */\n"
-      "      return -2;\n");
+      "        return _%sNO_MEMORY;\n", cc_PREFIX(&cc));
     fprintf(outfp,
       "    }\n"
       "    stack->stack_ = (struct %ssym_data *)p;\n", cc_prefix(&cc));
@@ -4742,11 +4737,11 @@ int main(int argc, char **argv) {
       "  stack->mute_error_turns_ = 0;\n");
 
     fprintf(outfp, "  switch (%spush_state(stack, 0)) {\n"
-                   "    case -1: /* overflow */ {\n", cc_prefix(&cc));
-    fprintf(outfp, "      return -2;\n");
+                   "    case _%sOVERFLOW:{\n", cc_prefix(&cc), cc_PREFIX(&cc));
+    fprintf(outfp, "      return _%sOVERFLOW;\n", cc_PREFIX(&cc));
     fprintf(outfp, "    }\n    break;\n"
-                   "    case -2: /* out of memory */ {\n");
-    fprintf(outfp, "      return -2;\n");
+                   "    case _%sNO_MEMORY: {\n", cc_PREFIX(&cc));
+    fprintf(outfp, "      return _%sNO_MEMORY;\n", cc_PREFIX(&cc));
     fprintf(outfp, "    }\n"
                    "    break;\n"
                    "  }\n");
@@ -4848,6 +4843,7 @@ int main(int argc, char **argv) {
     fprintf(outfp, "#define _%sFEED_ME 4\n", cc_PREFIX(&cc));
     fprintf(outfp, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(&cc));
     fprintf(outfp, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(&cc));
+    fprintf(outfp, "#define _%sINTERNAL_ERROR 7\n", cc_PREFIX(&cc));
     fprintf(outfp, "\n");
 
     sym = cc.symtab_.terminals_;

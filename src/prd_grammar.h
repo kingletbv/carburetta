@@ -1,5 +1,5 @@
-#ifndef CINDER_PRD_SRCPRD_GRAMMAR_H_INCLUDED
-#define CINDER_PRD_SRCPRD_GRAMMAR_H_INCLUDED
+#ifndef CARB_PRD_SRCPRD_GRAMMAR_H_INCLUDED
+#define CARB_PRD_SRCPRD_GRAMMAR_H_INCLUDED
 
 #include <stddef.h> /* size_t */
 
@@ -13,6 +13,7 @@ extern "C" {
 #define _PRD_FEED_ME 4
 #define _PRD_END_OF_INPUT 5
 #define _PRD_SYNTAX_ERROR 6
+#define _PRD_INTERNAL_ERROR 7
 
 #define PRD_IDENT 3
 #define PRD_COLON 4
@@ -44,4 +45,4 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 } /* extern "C" */
 #endif
 
-#endif /* CINDER_PRD_SRCPRD_GRAMMAR_H_INCLUDED */
+#endif /* CARB_PRD_SRCPRD_GRAMMAR_H_INCLUDED */

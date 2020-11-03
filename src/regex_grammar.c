@@ -94,9 +94,18 @@ struct rxg_sym_data {
 };
 static const size_t rxg_scan_table[] = {
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 7, 7, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 9, 7, 7, 7, 7,10, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+   7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 7, 7, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 9, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
-static const size_t rxg_scan_actions[] = { 0, 1 };
+static const size_t rxg_scan_actions[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
 static const int rxg_minimum_sym = 3;
 static const size_t rxg_num_columns = 38;
 static const size_t rxg_num_rows = 80;
@@ -374,7 +383,7 @@ static const int rxg_state_syms[] = {
  31
 };
 
-#ifndef CINDER_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
+#ifndef CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
 struct rxg_stack {
   int error_recovery_:1;
   int report_error_:1;
@@ -412,6 +421,7 @@ struct rxg_stack {
 #define _RXG_FEED_ME 4
 #define _RXG_END_OF_INPUT 5
 #define _RXG_SYNTAX_ERROR 6
+#define _RXG_INTERNAL_ERROR 7
 
 #define RXG_CHAR 3
 #define RXG_IDENT 4
@@ -451,7 +461,7 @@ struct rxg_stack {
 #define RXG_START_C_TOKENIZER 37
 #define RXG_END_C_TOKENIZER 38
 #define RXG_ACCEPT_WHITESPACE 39
-#endif /* CINDER_RXG_SRCREGEX_GRAMMAR_H_INCLUDED */
+#endif /* CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED */
 
 void rxg_stack_init(struct rxg_stack *stack) {
   stack->error_recovery_ = 0;
@@ -476,7 +486,7 @@ void rxg_stack_init(struct rxg_stack *stack) {
   stack->match_offset_ = 0;
   stack->match_line_ = 1;
   stack->match_col_ = 1;
-  stack->best_match_action_ = 1;
+  stack->best_match_action_ = 0;
   stack->best_match_size_ = 0;
   stack->best_match_offset_ = 0;
   stack->best_match_line_ = 1;
@@ -514,7 +524,7 @@ static int rxg_push_state(struct rxg_stack *stack, int state) {
       new_num_allocated = stack->num_stack_allocated_ * 2;
       if (new_num_allocated <= stack->num_stack_allocated_) {
         /* Overflow in allocation */
-        return -1;
+        return _RXG_OVERFLOW;
       }
     }
     else {
@@ -523,13 +533,13 @@ static int rxg_push_state(struct rxg_stack *stack, int state) {
 
     if (new_num_allocated > (SIZE_MAX / sizeof(struct rxg_sym_data))) {
       /* Overflow in allocation */
-      return -1;
+      return _RXG_OVERFLOW;
     }
 
     void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct rxg_sym_data));
     if (!p) {
       /* Out of memory */
-      return -2;
+        return _RXG_NO_MEMORY;
     }
     stack->stack_ = (struct rxg_sym_data *)p;
     stack->num_stack_allocated_ = new_num_allocated;
@@ -563,12 +573,12 @@ int rxg_stack_reset(struct rxg_stack *stack) {
   stack->current_sym_ = 0;
   stack->mute_error_turns_ = 0;
   switch (rxg_push_state(stack, 0)) {
-    case -1: /* overflow */ {
-      return -2;
+    case _RXG_OVERFLOW:{
+      return _RXG_OVERFLOW;
     }
     break;
-    case -2: /* out of memory */ {
-      return -2;
+    case _RXG_NO_MEMORY: {
+      return _RXG_NO_MEMORY;
     }
     break;
   }
@@ -584,7 +594,7 @@ int rxg_stack_reset(struct rxg_stack *stack) {
   stack->match_offset_ = 0;
   stack->match_line_ = 1;
   stack->match_col_ = 1;
-  stack->best_match_action_ = 1;
+  stack->best_match_action_ = 0;
   stack->best_match_size_ = 0;
   stack->best_match_offset_ = 0;
   stack->best_match_line_ = 1;
@@ -890,10 +900,15 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
              snippet_append_tkr(&(stack->stack_[0].common_), tkr);
           }
           switch (stack->best_match_action_) {
-            case 1: /*  */
+            case 1: /* /\*([^\*]|[\r\n]|(\*+([^\* //]|[\r\n])))*\* // */
               /* Pattern does not have a symbol */
               stack->current_sym_ = RXG_INPUT_END;
               stack->need_sym_ = 1; /* keep scanning */
+              {
+                
+  fprintf(stderr, "Imagine a sensible action here.\n");
+
+              }
               if (stack->need_sym_) {
                  snippet_cleanup(&(stack->stack_[0].common_));
               }
@@ -901,18 +916,18 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
           } /* switch */
           break;
         case _RXG_OVERFLOW:
-          return -2;
+          return _RXG_OVERFLOW;
         case _RXG_NO_MEMORY:
-          return -2;
+          return _RXG_NO_MEMORY;
         case _RXG_FEED_ME:
-          return 1;
+          return _RXG_FEED_ME;
         case _RXG_END_OF_INPUT:
           stack->current_sym_ = RXG_INPUT_END;
           stack->need_sym_ = 0;
           if (stack->mute_error_turns_) stack->mute_error_turns_--;
           break;
         case _RXG_SYNTAX_ERROR:
-          return -1;
+          return _RXG_SYNTAX_ERROR;
       } /* switch */
     } /* if (need_sym_) */
     else {
@@ -921,11 +936,11 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
         int action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - rxg_minimum_sym)];
         if (action > 0) {
           switch (rxg_push_state(stack, action /* action for a shift is the ordinal */)) {
-            case -1: /* overflow */ {
+            case _RXG_OVERFLOW: {
               re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
             }
             break;
-            case -2: /* out of memory */ {
+            case _RXG_NO_MEMORY: {
               re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
             }
             break;
@@ -1879,11 +1894,11 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
             re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
           }
           switch (rxg_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
-            case -1: /* overflow */ {
+            case _RXG_OVERFLOW: {
               re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
             }
             break;
-            case -2: /* out of memory */ {
+            case _RXG_NO_MEMORY: {
               re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
             }
             break;
@@ -1924,11 +1939,11 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 stack->pos_ = n + 1;
                 /* Push the state of the error transition */
                 switch (rxg_push_state(stack, err_action /* action for a shift is the state */)) {
-                  case -1: /* overflow */ {
+                  case _RXG_OVERFLOW: {
                     re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
                   }
                   break;
-                  case -2: /* out of memory */ {
+                  case _RXG_NO_MEMORY: {
                     re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
                   }
                   break;
@@ -1956,11 +1971,11 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
       int action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - rxg_minimum_sym)];
       if (action > 0) {
         switch (rxg_push_state(stack, action /* action for a shift is the ordinal */)) {
-          case -1: /* overflow */ {
+          case _RXG_OVERFLOW: {
             re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
           }
           break;
-          case -2: /* out of memory */ {
+          case _RXG_NO_MEMORY: {
             re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
           }
           break;
@@ -2927,11 +2942,11 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
           re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
         }
         switch (rxg_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
-          case -1: /* overflow */ {
+          case _RXG_OVERFLOW: {
             re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
           }
           break;
-          case -2: /* out of memory */ {
+          case _RXG_NO_MEMORY: /* out of memory */ {
             re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
           }
           break;
@@ -2972,11 +2987,11 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               stack->pos_ = n + 1;
               /* Push the state of the error transition */
               switch (rxg_push_state(stack, err_action /* action for a shift is the state */)) {
-                case -1: /* overflow */ {
+                case _RXG_OVERFLOW: {
                   re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
                 }
                 break;
-                case -2: /* out of memory */ {
+                case _RXG_NO_MEMORY: {
                   re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
                 }
                 break;

@@ -269,7 +269,7 @@ static const int prd_state_syms[] = {
  15
 };
 
-#ifndef CINDER_PRD_SRCPRD_GRAMMAR_H_INCLUDED
+#ifndef CARB_PRD_SRCPRD_GRAMMAR_H_INCLUDED
 struct prd_stack {
   int error_recovery_:1;
   int report_error_:1;
@@ -283,6 +283,7 @@ struct prd_stack {
 #define _PRD_FEED_ME 4
 #define _PRD_END_OF_INPUT 5
 #define _PRD_SYNTAX_ERROR 6
+#define _PRD_INTERNAL_ERROR 7
 
 #define PRD_IDENT 3
 #define PRD_COLON 4
@@ -306,7 +307,7 @@ struct prd_stack {
 #define PRD_END_C_TOKENIZER 21
 #define PRD_ACCEPT_WHITESPACE 22
 #define PRD_COMMON_ACTION 23
-#endif /* CINDER_PRD_SRCPRD_GRAMMAR_H_INCLUDED */
+#endif /* CARB_PRD_SRCPRD_GRAMMAR_H_INCLUDED */
 
 void prd_stack_init(struct prd_stack *stack) {
   stack->error_recovery_ = 0;
@@ -386,7 +387,7 @@ static int prd_push_state(struct prd_stack *stack, int state) {
       new_num_allocated = stack->num_stack_allocated_ * 2;
       if (new_num_allocated <= stack->num_stack_allocated_) {
         /* Overflow in allocation */
-        return -1;
+        return _PRD_OVERFLOW;
       }
     }
     else {
@@ -395,13 +396,13 @@ static int prd_push_state(struct prd_stack *stack, int state) {
 
     if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
       /* Overflow in allocation */
-      return -1;
+      return _PRD_OVERFLOW;
     }
 
     void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));
     if (!p) {
       /* Out of memory */
-      return -2;
+        return _PRD_NO_MEMORY;
     }
     stack->stack_ = (struct prd_sym_data *)p;
     stack->num_stack_allocated_ = new_num_allocated;
@@ -472,12 +473,12 @@ int prd_stack_reset(struct prd_stack *stack) {
   stack->report_error_ = 0;
   stack->mute_error_turns_ = 0;
   switch (prd_push_state(stack, 0)) {
-    case -1: /* overflow */ {
-      return -2;
+    case _PRD_OVERFLOW:{
+      return _PRD_OVERFLOW;
     }
     break;
-    case -2: /* out of memory */ {
-      return -2;
+    case _PRD_NO_MEMORY: {
+      return _PRD_NO_MEMORY;
     }
     break;
   }
@@ -491,11 +492,11 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       int action = prd_parse_table[prd_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - prd_minimum_sym)];
       if (action > 0) {
         switch (prd_push_state(stack, action /* action for a shift is the ordinal */)) {
-          case -1: /* overflow */ {
+          case _PRD_OVERFLOW: {
             re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
           }
           break;
-          case -2: /* out of memory */ {
+          case _PRD_NO_MEMORY: {
             re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
           }
           break;
@@ -1070,11 +1071,11 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
           re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
         }
         switch (prd_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
-          case -1: /* overflow */ {
+          case _PRD_OVERFLOW: {
             re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
           }
           break;
-          case -2: /* out of memory */ {
+          case _PRD_NO_MEMORY: /* out of memory */ {
             re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
           }
           break;
@@ -1163,11 +1164,11 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
               stack->pos_ = n + 1;
               /* Push the state of the error transition */
               switch (prd_push_state(stack, err_action /* action for a shift is the state */)) {
-                case -1: /* overflow */ {
+                case _PRD_OVERFLOW: {
                   re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
                 }
                 break;
-                case -2: /* out of memory */ {
+                case _PRD_NO_MEMORY: {
                   re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
                 }
                 break;
