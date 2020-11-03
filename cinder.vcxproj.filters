@@ -23,6 +23,7 @@
     <ClCompile Include="src\xlts.c" />
     <ClCompile Include="src\regex_grammar.c" />
     <ClCompile Include="src\tokens_generated_scanners.c" />
+    <ClCompile Include="src\prd_grammar.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\chain.h" />
@@ -45,6 +46,7 @@
     <ClInclude Include="src\xlalr.h" />
     <ClInclude Include="src\xlts.h" />
     <ClInclude Include="src\regex_grammar.h" />
+    <ClInclude Include="src\prd_grammar.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\prd_grammar.cnd" />
