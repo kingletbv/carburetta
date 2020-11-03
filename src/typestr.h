@@ -54,6 +54,7 @@ struct typestr {
 
   struct snippet constructor_snippet_;
   struct snippet destructor_snippet_;
+  struct snippet token_action_snippet_;
 };
 
 struct typestr_table {

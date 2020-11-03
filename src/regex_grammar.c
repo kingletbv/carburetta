@@ -85,7 +85,6 @@
 
 
 
-
 /* --------- START OF GENERATED CODE ------------ */
 #include <stdlib.h> /* realloc(), free(), NULL, size_t */
 #include <string.h> /* memcpy() */
@@ -886,6 +885,9 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
           if (stack->mute_error_turns_) stack->mute_error_turns_--;
           {
              snippet_init(&(stack->stack_[0].common_));
+          }
+          {
+             snippet_append_tkr(&(stack->stack_[0].common_), tkr);
           }
           switch (stack->best_match_action_) {
             case 1: /*  */
@@ -1964,14 +1966,19 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
           break;
         } /* switch */
 
-        /* Fill in the sym from the tokenizer */
         struct rxg_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
         {
            snippet_init(&(sym_data->common_));
         }
+        {
+           snippet_append_tkr(&(sym_data->common_), tkr);
+        }
         switch (sym) {
             {
                snippet_init(&(sym_data->common_));
+            }
+            {
+               snippet_append_tkr(&(sym_data->common_), tkr);
             }
             break;
         } /* switch */

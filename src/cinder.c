@@ -155,7 +155,6 @@ struct cinder_context {
   struct typestr *most_recent_typestr_;
   struct typestr *token_assigned_type_;
   struct typestr *common_data_assigned_type_;
-  struct snippet token_action_snippet_;
   struct xlts prefix_;
   char *prefix_uppercase_;
   struct xlts token_prefix_;
@@ -197,7 +196,6 @@ void cinder_context_init(struct cinder_context *cc) {
   cc->most_recent_typestr_ = NULL;
   cc->token_assigned_type_ = NULL;
   cc->common_data_assigned_type_ = NULL;
-  snippet_init(&cc->token_action_snippet_);
   xlts_init(&cc->prefix_);
   cc->prefix_uppercase_ = NULL;
   xlts_init(&cc->token_prefix_);
@@ -224,7 +222,6 @@ void cinder_context_cleanup(struct cinder_context *cc) {
   snippet_cleanup(&cc->common_data_type_);
   symbol_table_cleanup(&cc->symtab_);
   typestr_table_cleanup(&cc->tstab_);
-  snippet_cleanup(&cc->token_action_snippet_);
   xlts_cleanup(&cc->prefix_);
   if (cc->prefix_uppercase_) free(cc->prefix_uppercase_);
   xlts_cleanup(&cc->token_prefix_);
@@ -371,17 +368,20 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
             else if (!strcmp("constructor", tkr_str(tkr_tokens))) {
               directive = PCD_CONSTRUCTOR_DIRECTIVE;
               if (!cc->most_recent_typestr_) {
-                re_error_tkr(tkr_tokens, "%%constructor must follow %%token_type or %%nt_type directive");
+                re_error_tkr(tkr_tokens, "%%constructor must follow %%token_type or %%type directive");
               }
             }
             else if (!strcmp("destructor", tkr_str(tkr_tokens))) {
               directive = PCD_DESTRUCTOR_DIRECTIVE;
               if (!cc->most_recent_typestr_) {
-                re_error_tkr(tkr_tokens, "%%destructor must follow %%token_type or %%nt_type directive");
+                re_error_tkr(tkr_tokens, "%%destructor must follow %%token_type or %%type directive");
               }
             }
             else if (!strcmp("token_action", tkr_str(tkr_tokens))) {
               directive = PCD_TOKEN_ACTION_DIRECTIVE;
+              if (!cc->most_recent_typestr_) {
+                re_error_tkr(tkr_tokens, "%%constructor must follow %%token_type or %%type directive");
+              }
             }
             else if (!strcmp("prefix", tkr_str(tkr_tokens))) {
               directive = PCD_PREFIX_DIRECTIVE;
@@ -1000,8 +1000,8 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
   }
 
   if (directive == PCD_TOKEN_ACTION_DIRECTIVE) {
-    snippet_clear(&cc->token_action_snippet_);
-    r = snippet_append_snippet(&cc->token_action_snippet_, &dir_snippet);
+    snippet_clear(&cc->most_recent_typestr_->token_action_snippet_);
+    r = snippet_append_snippet(&cc->most_recent_typestr_->token_action_snippet_, &dir_snippet);
     if (r) goto cleanup_exit;
   }
 
@@ -1549,11 +1549,11 @@ static int emit_action_snippet(FILE *outfp, struct cinder_context *cc, struct pr
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_pattern_token_action_snippet(FILE *outfp, struct cinder_context *cc, struct snippet *code) {
+static int emit_pattern_token_action_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
-  se.code_ = code;
+  se.code_ = &ts->token_action_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
-  se.dest_typestr_ = cc->token_assigned_type_;
+  se.dest_typestr_ = ts;
   se.dest_fmt_ = "(stack->stack_[0].v_.uv%d_)";
   se.sym_type_ = SEST_NONE;
   se.common_type_ = SECT_NONE;
@@ -1565,11 +1565,11 @@ static int emit_pattern_token_action_snippet(FILE *outfp, struct cinder_context 
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_token_action_snippet(FILE *outfp, struct cinder_context *cc, struct snippet *code) {
+static int emit_token_action_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
-  se.code_ = code;
+  se.code_ = &ts->token_action_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
-  se.dest_typestr_ = cc->token_assigned_type_;
+  se.dest_typestr_ = ts;
   se.dest_fmt_ = "(sym_data->v_.uv%d_)";
   se.sym_type_ = SEST_NONE;
   se.common_type_ = SECT_NONE;
@@ -1665,6 +1665,38 @@ static int emit_pattern_token_common_constructor_snippet(FILE *outfp, struct cin
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "(stack->stack_[0].common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_token_common_action_snippet(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->token_action_snippet_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "(sym_data->common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(sym_data->common_)";
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDT_NONE;
+  se.text_type_ = SETT_NONE;
+  return emit_snippet_code_emission(outfp, cc, &se);
+}
+
+static int emit_pattern_token_common_action_snippet(FILE *outfp, struct cinder_context *cc) {
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->token_action_snippet_;
   se.dest_type_ = SEDT_FMT;
   se.dest_fmt_ = "(stack->stack_[0].common_)";
   se.sym_type_ = SEST_NONE;
@@ -2223,6 +2255,15 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
     }
     fprintf(outfp, "          }\n");
   }
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->token_action_snippet_.num_tokens_) {
+    fprintf(outfp, "          {\n"
+                   "            ");
+    if (emit_pattern_token_common_action_snippet(outfp, cc)) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    fprintf(outfp, "          }\n");
+  }
 
   fprintf(outfp, "          switch (stack->best_match_action_) {\n");
   size_t pat_idx;
@@ -2247,19 +2288,16 @@ static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd
         }
         fprintf(outfp, "              }\n");
       }
-      if (pat->term_.sym_->assigned_type_ == cc->token_assigned_type_) {
-        /* Emit token action snippet as the types are compatible. */
-        if (cc->token_action_snippet_.num_tokens_) {
-          fprintf(outfp, "              {\n"
-                         "                ");
+      if (pat->term_.sym_->assigned_type_ && pat->term_.sym_->assigned_type_->token_action_snippet_.num_tokens_) {
+        fprintf(outfp, "              {\n"
+                        "                ");
 
-          if (emit_pattern_token_action_snippet(outfp, cc, &cc->token_action_snippet_)) {
-            r = EXIT_FAILURE;
-            goto cleanup_exit;
-          }
-
-          fprintf(outfp, "              }\n");
+        if (emit_pattern_token_action_snippet(outfp, cc, pat->term_.sym_->assigned_type_)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
         }
+
+        fprintf(outfp, "              }\n");
       }
       if (pat->action_sequence_.num_tokens_) {
         fprintf(outfp, "              {\n"
@@ -2760,21 +2798,10 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
                  "          break;\n"
                  "        } /* switch */\n");
 
-  fprintf(outfp, "\n"
-                 "        /* Fill in the sym from the tokenizer */\n");
+  fprintf(outfp, "\n");
   int need_sym_data = 0;
-  if (cc->token_assigned_type_ && cc->token_assigned_type_->constructor_snippet_.num_tokens_) {
-    need_sym_data = 1;
-  }
-  if (cc->token_action_snippet_.num_tokens_) {
-    need_sym_data = 1;
-  }
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-    need_sym_data = 1;
-  }
-  if (need_sym_data) {
-    fprintf(outfp, "        struct %ssym_data *sym_data = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
-  }
+  fprintf(outfp, "        struct %ssym_data *sym_data = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
+
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
     fprintf(outfp, "        {\n"
                    "          ");
@@ -2784,6 +2811,16 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
     }
     fprintf(outfp, "        }\n");
   }
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->token_action_snippet_.num_tokens_) {
+    fprintf(outfp, "        {\n"
+                   "          ");
+    if (emit_token_common_action_snippet(outfp, cc)) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    fprintf(outfp, "        }\n");
+  }
+
   fprintf(outfp, "        switch (sym) {\n");
   size_t ts_idx;
   for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
@@ -2812,19 +2849,16 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
       }
       fprintf(outfp, "            }\n");
     }
-    if (ts == cc->token_assigned_type_) {
-      /* Token type matches generic token type, issue the token action if we have one. */
-      if (cc->token_action_snippet_.num_tokens_) {
-        fprintf(outfp, "            {\n"
-                       "              ");
+    if (ts->token_action_snippet_.num_tokens_) {
+      fprintf(outfp, "            {\n"
+                      "              ");
 
-        if (emit_token_action_snippet(outfp, cc, &cc->token_action_snippet_)) {
-          r = EXIT_FAILURE;
-          goto cleanup_exit;
-        }
-
-        fprintf(outfp, "            }\n");
+      if (emit_token_action_snippet(outfp, cc, ts)) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
       }
+
+      fprintf(outfp, "            }\n");
     }
     fprintf(outfp, "            break;\n");
   }

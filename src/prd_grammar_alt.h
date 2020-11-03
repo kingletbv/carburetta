@@ -7,6 +7,13 @@
 extern "C" {
 #endif
 
+#define _PRD_MATCH 1
+#define _PRD_OVERFLOW 2
+#define _PRD_NO_MEMORY 3
+#define _PRD_FEED_ME 4
+#define _PRD_END_OF_INPUT 5
+#define _PRD_SYNTAX_ERROR 6
+
 #define PRD_IDENT 3
 #define PRD_COLON 4
 #define PRD_EQUALS 5

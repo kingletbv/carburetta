@@ -91,7 +91,6 @@
 %common_type struct snippet
 %constructor snippet_init(&$);
 %destructor snippet_cleanup(&$);
-
 %token_action snippet_append_tkr(&$, tkr);
 
 %on_success        return PRD_SUCCESS;

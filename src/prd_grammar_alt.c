@@ -78,6 +78,7 @@
 
 /* --------- START OF GENERATED CODE ------------ */
 #include <stdlib.h> /* realloc(), free(), NULL, size_t */
+#include <string.h> /* memcpy() */
 struct prd_sym_data {
   int state_;
   union {
@@ -276,6 +277,13 @@ struct prd_stack {
   size_t pos_, num_stack_allocated_;
   struct prd_sym_data *stack_;
 };
+#define _PRD_MATCH 1
+#define _PRD_OVERFLOW 2
+#define _PRD_NO_MEMORY 3
+#define _PRD_FEED_ME 4
+#define _PRD_END_OF_INPUT 5
+#define _PRD_SYNTAX_ERROR 6
+
 #define PRD_IDENT 3
 #define PRD_COLON 4
 #define PRD_EQUALS 5
@@ -311,7 +319,7 @@ void prd_stack_init(struct prd_stack *stack) {
 
 void prd_stack_cleanup(struct prd_stack *stack) {
   size_t n;
-  for (n = 0; n < stack->pos_; ++n) {
+  for (n = 1; n < stack->pos_; ++n) {
     switch (stack->stack_[n].state_) {
     case 2: /* semicolon */
     case 3: /* semicolon */
@@ -403,7 +411,7 @@ static int prd_push_state(struct prd_stack *stack, int state) {
 }
 int prd_stack_reset(struct prd_stack *stack) {
   size_t n;
-  for (n = 0; n < stack->pos_; ++n) {
+  for (n = 1; n < stack->pos_; ++n) {
     switch (stack->stack_[n].state_) {
     case 2: /* semicolon */
     case 3: /* semicolon */
@@ -493,19 +501,33 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
           break;
         } /* switch */
 
-        /* Fill in the sym from the tokenizer */
         struct prd_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
-        {
-           (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = 0; \
+        switch (sym) {
+          case PRD_IDENT:
+          case PRD_COLON:
+          case PRD_EQUALS:
+          case PRD_SEMICOLON:
+          case PRD_TOKEN:
+          case PRD_PAR_OPEN:
+          case PRD_PAR_CLOSE:
+          case PRD_CUBRACE_OPEN:
+          case PRD_CUBRACE_CLOSE:
+          case PRD_DOLLAR:
+            {
+               (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = 0; \
              xlts_init(&(sym_data->v_.uv0_).text_);
-
-        }
-        {
-           (sym_data->v_.uv0_).match_ = tkr->best_match_action_; \
+            }
+            {
+               (sym_data->v_.uv0_).match_ = tkr->best_match_action_; \
               (sym_data->v_.uv0_).variant_ = tkr->best_match_variant_; \
 			  xlts_append(&(sym_data->v_.uv0_).text_, &tkr->xmatch_);
-
-        }
+            }
+            break;
+            {
+               prd_prod_init(&(sym_data->v_.uv1_));
+            }
+            break;
+        } /* switch */
         if (stack->report_error_) {
           /* We're shifting this sym following an error recovery on the same sym, report syntax error */
           stack->report_error_ = 0;
@@ -1157,18 +1179,8 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
           } /* if (err_action) (if the state at position 'n' can accept an error transition) */
         } while (n);
       }
-      if (stack->report_error_) {
-        stack->report_error_ = 0;
-        /* Syntax error */ \
-  if (sym != PRD_INPUT_END) {\
-    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
-  } \
-  else { \
-    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
-  } \
-  return PRD_SYNTAX_ERROR;
-      }
-      else {
+      if (stack->error_recovery_) {
+        /* Did not yet recover, discard current sym and get next */
         return PRD_NEXT;
       }
     } /* stack->error_recovery_ */
