@@ -63,9 +63,9 @@
 #include "prd_gram.h"
 #endif
 
-#ifndef PRD_GRAMMAR_ALT_H_INCLUDED
-#define PRD_GRAMMAR_ALT_H_INCLUDED
-#include "prd_grammar_alt.h"
+#ifndef PRD_GRAMMAR_H_INCLUDED
+#define PRD_GRAMMAR_H_INCLUDED
+#include "prd_grammar.h"
 #endif
 
 
@@ -269,7 +269,7 @@ static const int prd_state_syms[] = {
  15
 };
 
-#ifndef CINDER_PRD_SRCPRD_GRAMMAR_ALT_H_INCLUDED
+#ifndef CINDER_PRD_SRCPRD_GRAMMAR_H_INCLUDED
 struct prd_stack {
   int error_recovery_:1;
   int report_error_:1;
@@ -306,7 +306,7 @@ struct prd_stack {
 #define PRD_END_C_TOKENIZER 21
 #define PRD_ACCEPT_WHITESPACE 22
 #define PRD_COMMON_ACTION 23
-#endif /* CINDER_PRD_SRCPRD_GRAMMAR_ALT_H_INCLUDED */
+#endif /* CINDER_PRD_SRCPRD_GRAMMAR_H_INCLUDED */
 
 void prd_stack_init(struct prd_stack *stack) {
   stack->error_recovery_ = 0;

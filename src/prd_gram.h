@@ -48,7 +48,7 @@
 
 #ifndef PRD_GRAMMAR_H_INCLUDED
 #define PRD_GRAMMAR_H_INCLUDED
-#include "prd_grammar_alt.h"
+#include "prd_grammar.h"
 #endif
 
 #ifdef __cplusplus

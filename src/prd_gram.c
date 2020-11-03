@@ -13,7 +13,10 @@
  * limitations under the License.
  */
 
-#include "prd_grammar_alt.c"
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
 
 #ifndef REPORT_ERROR_H_INCLUDED
 #define REPORT_ERROR_H_INCLUDED
