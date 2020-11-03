@@ -274,7 +274,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     PCD_NT_DIRECTIVE,
     PCD_TOKEN_DIRECTIVE,
     PCD_TOKEN_TYPE_DIRECTIVE,
-    PCD_NT_TYPE_DIRECTIVE,
+    PCD_TYPE_DIRECTIVE,
     PCD_COMMON_TYPE_DIRECTIVE,
     PCD_CONSTRUCTOR_DIRECTIVE,
     PCD_DESTRUCTOR_DIRECTIVE,
@@ -359,7 +359,11 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
               snippet_clear(&cc->token_type_);
             }
             else if (!strcmp("nt_type", tkr_str(tkr_tokens))) {
-              directive = PCD_NT_TYPE_DIRECTIVE;
+              re_error_tkr(tkr_tokens, "%%nt_type is deprecated, please use %%type instead");
+              directive = PCD_TYPE_DIRECTIVE;
+            }
+            else if (!strcmp("type", tkr_str(tkr_tokens))) {
+              directive = PCD_TYPE_DIRECTIVE;
             }
             else if (!strcmp("common_type", tkr_str(tkr_tokens))) {
               directive = PCD_COMMON_TYPE_DIRECTIVE;
@@ -559,18 +563,13 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
               }
             }
           }
-          else if (directive == PCD_NT_TYPE_DIRECTIVE) {
+          else if (directive == PCD_TYPE_DIRECTIVE) {
             if (!ate_colon_seperator) {
               if (tkr_tokens->best_match_action_ != TOK_COLON) {
                 if (tkr_tokens->best_match_action_ == TOK_IDENT) {
                   struct symbol *sym = symbol_find(st, tkr_str(tkr_tokens));
                   if (!sym) {
-                    re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal", tkr_str(tkr_tokens));
-                    r = TKR_SYNTAX_ERROR;
-                    goto cleanup_exit;
-                  }
-                  else if (sym->st_ != SYM_NONTERMINAL) {
-                    re_error_tkr(tkr_tokens, "Error: \"%s\" is not a non-terminal but a token.", tkr_str(tkr_tokens));
+                    re_error_tkr(tkr_tokens, "Error: \"%s\" is not a symbol", tkr_str(tkr_tokens));
                     r = TKR_SYNTAX_ERROR;
                     goto cleanup_exit;
                   }
@@ -912,12 +911,12 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     }
   }
 
-  if ((directive == PCD_NT_TYPE_DIRECTIVE) ||
+  if ((directive == PCD_TYPE_DIRECTIVE) ||
       (directive == PCD_TOKEN_TYPE_DIRECTIVE) ||
       (directive == PCD_COMMON_TYPE_DIRECTIVE)) {
     /* Trim all whitespace off, pop any "$$" special identifiers at the tail end */
     struct snippet *snip;
-    if (directive == PCD_NT_TYPE_DIRECTIVE) {
+    if (directive == PCD_TYPE_DIRECTIVE) {
       snip = &dir_snippet;
     }
     else if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
@@ -946,7 +945,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
     }
   }
 
-  if (directive == PCD_NT_TYPE_DIRECTIVE) {
+  if (directive == PCD_TYPE_DIRECTIVE) {
     size_t n;
     int is_new;
     struct typestr *nt_ts = typestr_find_or_add(&cc->tstab_, &dir_snippet, &is_new);
@@ -2783,31 +2782,53 @@ static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct pr
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
-    fprintf(outfp, "\n"
-                   "        }\n");
+    fprintf(outfp, "        }\n");
   }
-  if (cc->token_assigned_type_ && cc->token_assigned_type_->constructor_snippet_.num_tokens_) {
-    fprintf(outfp, "        {\n"
-                   "          ");
-    if (emit_token_constructor_snippet(outfp, cc, cc->token_assigned_type_)) {
-      r = EXIT_FAILURE;
-      goto cleanup_exit;
-    }
-    fprintf(outfp, "\n"
-                   "        }\n");
-  }
-  if (cc->token_action_snippet_.num_tokens_) {
-    fprintf(outfp, "        {\n"
-                   "          ");
+  fprintf(outfp, "        switch (sym) {\n");
+  size_t ts_idx;
+  for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+    int found_matching_terms = 0;
+    struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+    struct symbol *term = cc->symtab_.terminals_;
+    if (term) {
+      do {
+        term = term->next_;
 
-    if (emit_token_action_snippet(outfp, cc, &cc->token_action_snippet_)) {
-      r = EXIT_FAILURE;
-      goto cleanup_exit;
-    }
+        if (term->assigned_type_ == ts) {
+          found_matching_terms = 1;
+          fprintf(outfp, "          case ");
+          print_sym_as_c_ident(outfp, cc, term);
+          fprintf(outfp, ":\n");
+        }
 
-    fprintf(outfp, "\n"
-                   "        }\n");
+      } while (term != cc->symtab_.terminals_);
+    }
+    if (ts->constructor_snippet_.num_tokens_) {
+      fprintf(outfp, "            {\n"
+                     "              ");
+      if (emit_token_constructor_snippet(outfp, cc, ts)) {
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+      fprintf(outfp, "            }\n");
+    }
+    if (ts == cc->token_assigned_type_) {
+      /* Token type matches generic token type, issue the token action if we have one. */
+      if (cc->token_action_snippet_.num_tokens_) {
+        fprintf(outfp, "            {\n"
+                       "              ");
+
+        if (emit_token_action_snippet(outfp, cc, &cc->token_action_snippet_)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+
+        fprintf(outfp, "            }\n");
+      }
+    }
+    fprintf(outfp, "            break;\n");
   }
+  fprintf(outfp, "        } /* switch */\n");
   fprintf(outfp, "        if (stack->report_error_) {\n"
                  "          /* We're shifting this sym following an error recovery on the same sym, report syntax error */\n"
                  "          stack->report_error_ = 0;\n"
@@ -3621,54 +3642,17 @@ int main(int argc, char **argv) {
 
   /* Assign types to all symbols */
   struct symbol *sym;
-  struct typestr *token_ts = NULL;
-  if (cc.token_type_.num_tokens_) {
-    int is_new;
-    token_ts = typestr_find_or_add(&cc.tstab_, &cc.token_type_, &is_new);
-    if (!token_ts) {
-      r = EXIT_FAILURE;
-      goto cleanup_exit;
-    }
-  }
 
+  /* Assign the token type to tokens that don't yet have a type assigned. */
   sym = cc.symtab_.terminals_;
   if (sym) {
     do {
       sym = sym->next_;
 
-      if (!sym->type_snippet_.num_tokens_) {
-        sym->assigned_type_ = token_ts;
-      }
-      else {
-        int is_new;
-        struct typestr *ts = typestr_find_or_add(&cc.tstab_, &sym->type_snippet_, &is_new);
-        if (!ts) {
-          r = EXIT_FAILURE;
-          goto cleanup_exit;
-        }
-        sym->assigned_type_ = ts;
+      if (!sym->assigned_type_) {
+        sym->assigned_type_ = cc.token_assigned_type_;
       }
     } while (sym != cc.symtab_.terminals_);
-  }
-  sym = cc.symtab_.non_terminals_;
-  if (sym) {
-    do {
-      sym = sym->next_;
-
-      if (!sym->type_snippet_.num_tokens_) {
-        sym->assigned_type_ = NULL;
-      }
-      else {
-        int is_new;
-        struct typestr *ts = typestr_find_or_add(&cc.tstab_, &sym->type_snippet_, &is_new);
-        if (!ts) {
-          r = EXIT_FAILURE;
-          goto cleanup_exit;
-        }
-        sym->assigned_type_ = ts;
-      }
-
-    } while (sym != cc.symtab_.non_terminals_);
   }
 
   /* Ensure we have error and end-of-input tokens */

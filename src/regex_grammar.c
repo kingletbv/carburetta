@@ -88,24 +88,16 @@
 
 /* --------- START OF GENERATED CODE ------------ */
 #include <stdlib.h> /* realloc(), free(), NULL, size_t */
+#include <string.h> /* memcpy() */
 struct rxg_sym_data {
   int state_;
   struct snippet common_;
 };
 static const size_t rxg_scan_table[] = {
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-   7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 7, 7, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 9, 7, 7, 7, 7,10, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-   7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 7, 7, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 9, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
-static const size_t rxg_scan_actions[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+static const size_t rxg_scan_actions[] = { 0, 1 };
 static const int rxg_minimum_sym = 3;
 static const size_t rxg_num_columns = 38;
 static const size_t rxg_num_rows = 80;
@@ -485,7 +477,7 @@ void rxg_stack_init(struct rxg_stack *stack) {
   stack->match_offset_ = 0;
   stack->match_line_ = 1;
   stack->match_col_ = 1;
-  stack->best_match_action_ = 0;
+  stack->best_match_action_ = 1;
   stack->best_match_size_ = 0;
   stack->best_match_offset_ = 0;
   stack->best_match_line_ = 1;
@@ -593,7 +585,7 @@ int rxg_stack_reset(struct rxg_stack *stack) {
   stack->match_offset_ = 0;
   stack->match_line_ = 1;
   stack->match_col_ = 1;
-  stack->best_match_action_ = 0;
+  stack->best_match_action_ = 1;
   stack->best_match_size_ = 0;
   stack->best_match_offset_ = 0;
   stack->best_match_line_ = 1;
@@ -722,6 +714,10 @@ int rxg_lex(struct rxg_stack *stack, const char *input, size_t input_size, int i
       stack->best_match_line_ = best_match_line;
       stack->best_match_col_ = best_match_col;
 
+      stack->input_index_ = input_index;
+      stack->input_offset_ = input_offset;
+      stack->input_line_ = input_line;
+      stack->input_col_ = input_col;
       return _RXG_MATCH;
     }
   }
@@ -767,6 +763,10 @@ int rxg_lex(struct rxg_stack *stack, const char *input, size_t input_size, int i
       stack->best_match_line_ = best_match_line;
       stack->best_match_col_ = best_match_col;
 
+      stack->input_index_ = input_index;
+      stack->input_offset_ = input_offset;
+      stack->input_line_ = input_line;
+      stack->input_col_ = input_col;
       return _RXG_MATCH;
     }
   }
@@ -828,7 +828,11 @@ int rxg_lex(struct rxg_stack *stack, const char *input, size_t input_size, int i
   stack->best_match_line_ = best_match_line;
   stack->best_match_col_ = best_match_col;
 
-      return _RXG_MATCH;
+  stack->input_index_ = input_index;
+  stack->input_offset_ = input_offset;
+  stack->input_line_ = input_line;
+  stack->input_col_ = input_col;
+  return _RXG_MATCH;
 syntax_error:
   if (stack->match_buffer_size_) {
     stack->best_match_offset_ = stack->match_offset_ + 1;
@@ -884,15 +888,10 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
              snippet_init(&(stack->stack_[0].common_));
           }
           switch (stack->best_match_action_) {
-            case 1: /* /\*([^\*]|[\r\n]|(\*+([^\* //]|[\r\n])))*\* // */
+            case 1: /*  */
               /* Pattern does not have a symbol */
               stack->current_sym_ = RXG_INPUT_END;
               stack->need_sym_ = 1; /* keep scanning */
-              {
-                
-  fprintf(stderr, "Imagine a sensible action here.\n");
-
-              }
               if (stack->need_sym_) {
                  snippet_cleanup(&(stack->stack_[0].common_));
               }
@@ -932,7 +931,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
 
           /* Fill in the sym from the tokenizer */
           stack->need_sym_ = 1;
-          stack->stack_[stack->pos_ - 1] = stack->stack_[0];
+          stack->stack_[stack->pos_ - 1].common_ = stack->stack_[0].common_;
           if (stack->report_error_) {
             /* We're shifting this sym following an error recovery on the same sym, report syntax error */
             stack->report_error_ = 0;
@@ -1969,12 +1968,13 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         struct rxg_sym_data *sym_data = stack->stack_ + stack->pos_ - 1;
         {
            snippet_init(&(sym_data->common_));
-
         }
-        {
-           snippet_append_tkr(&(sym_data->common_), tkr);
-
-        }
+        switch (sym) {
+            {
+               snippet_init(&(sym_data->common_));
+            }
+            break;
+        } /* switch */
         if (stack->report_error_) {
           /* We're shifting this sym following an error recovery on the same sym, report syntax error */
           stack->report_error_ = 0;
@@ -2989,287 +2989,6 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
   } /* for (;;) */
 }
 /* --------- END OF GENERATED CODE ------------ */
-#if 0
-#define RXG_MATCH 1
-#define RXG_OVERFLOW 2
-#define RXG_NO_MEMORY 3
-#define RXG_FEED_ME 4
-#define RXG_END_OF_INPUT 5
-#define RXG_SYNTAX_ERROR 6
-
-static int rxg_append_match_buffer(struct rxg_stack *stack, const char *s, size_t len) {
-  size_t size_needed = len;
-  size_needed += stack->match_buffer_size_;
-  if (size_needed < stack->match_buffer_size_) {
-    return RXG_OVERFLOW;
-  }
-  if (size_needed == SIZE_MAX) {
-    /* cannot fit null terminator */
-    return RXG_OVERFLOW;
-  }
-  size_needed++; /* null terminator */
-  if (size_needed < 128) {
-    size_needed = 128;
-  }
-  if (size_needed > stack->match_buffer_size_allocated_) {
-    /* intent of code: grow buffer size by powers of 2-1, unless our needs require more now. */
-    size_t size_to_allocate = stack->match_buffer_size_allocated_ * 2 + 1;
-    if (size_to_allocate <= stack->match_buffer_size_allocated_) {
-      return RXG_OVERFLOW;
-    }
-    if (size_to_allocate < size_needed) {
-      size_to_allocate = size_needed;
-    }
-    void *buf = realloc(stack->match_buffer_, size_to_allocate);
-    if (!buf) {
-      return RXG_NO_MEMORY;
-    }
-    stack->match_buffer_ = (char *)buf;
-    stack->match_buffer_size_allocated_ = size_to_allocate;
-  }
-
-  memcpy(stack->match_buffer_ + stack->match_buffer_size_, s, len);
-  stack->match_buffer_size_ += len;
-  stack->match_buffer_[stack->match_buffer_size_] = '\0';
-  return 0;
-}
-
-int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input) {
-  int r;
-  unsigned char c;
-  size_t scan_state = stack->scan_state_;
-  const size_t *transition_table = rxg_scan_table; /* replace with actual */
-  const size_t *actions = rxg_scan_actions;        /* replace with actual */
-  const size_t default_action = 0;                 /* replace with actual */
-  const size_t start_state = 1;                    /* replace with actual */
-  const size_t start_action = rxg_scan_actions[start_state];
-
-  size_t match_index = stack->match_index_;
-
-  size_t best_match_action = stack->best_match_action_;
-  size_t best_match_size = stack->best_match_size_;
-  size_t best_match_offset = stack->best_match_offset_;
-  int best_match_line = stack->best_match_line_;
-  int best_match_col = stack->best_match_col_;
-
-  size_t input_index = stack->input_index_;
-  size_t input_offset = stack->input_offset_;
-  int input_line = stack->input_line_;
-  int input_col = stack->input_col_;
-
-  /* Move any prior token out of the way */
-  if (stack->token_size_) {
-    stack->match_buffer_[stack->token_size_] = stack->terminator_repair_;
-
-    memcpy(stack->match_buffer_, stack->match_buffer_ + stack->token_size_, stack->match_buffer_size_ - stack->token_size_);
-    stack->match_buffer_size_ -= stack->token_size_;
-    stack->match_offset_ = stack->best_match_offset_;
-    stack->match_line_ = stack->best_match_line_;
-    stack->match_col_ = stack->best_match_col_;
-    
-    /* Reset scanner to get ready for next token */
-    stack->match_index_ = 0;
-    stack->best_match_action_ = best_match_action = start_action;
-    stack->best_match_size_ = best_match_size = 0;
-    stack->scan_state_ = scan_state = start_state;
-    stack->token_size_ = 0;
-    
-  }
-
-  size_t at_match_index_offset = stack->match_offset_;
-  int at_match_index_line = stack->match_line_;
-  int at_match_index_col = stack->match_col_;
-  assert(!match_index || (match_index == stack->match_buffer_size_));
-  while (match_index < stack->match_buffer_size_) {
-    c = (unsigned char)stack->match_buffer_[match_index];
-    scan_state = transition_table[256 * scan_state + c];
-    if (scan_state) {
-      at_match_index_offset++;
-      if (c != '\n') {
-        at_match_index_col++;
-      }
-      else {
-        at_match_index_col = 1;
-        at_match_index_line++;
-      }
-
-      size_t state_action = actions[scan_state];
-      if (state_action != default_action) /* replace with actual */ {
-        best_match_action = state_action;
-        best_match_size = match_index + 1;
-        best_match_offset = at_match_index_offset;
-        best_match_line = at_match_index_line;
-        best_match_col = at_match_index_col;
-      }
-      match_index++;
-    }
-    else {
-      /* error, or, end of token, depending on whether we have a match before */
-      if (best_match_action == default_action) {
-        goto syntax_error;
-      }
-
-      /* Ensure token match is null terminated */
-      stack->terminator_repair_ = stack->match_buffer_[best_match_size];
-      stack->match_buffer_[best_match_size] = '\0';
-      stack->token_size_ = best_match_size;
-      stack->best_match_action_ = best_match_action;
-      stack->best_match_size_ = best_match_size;
-      stack->best_match_offset_ = best_match_offset;
-      stack->best_match_line_ = best_match_line;
-      stack->best_match_col_ = best_match_col;
-
-      return RXG_MATCH;
-    }
-  }
-
-  while (input_index < input_size) {
-    c = (unsigned char)input[input_index];
-    scan_state = transition_table[256 * scan_state + c];
-    if (scan_state) {
-      input_offset++;
-      if (c != '\n') {
-        input_col++;
-      }
-      else {
-        input_col = 1;
-        input_line++;
-      }
-      size_t state_action = actions[scan_state];
-      if (state_action != default_action) /* replace with actual */ {
-        best_match_action = state_action;
-        best_match_size = stack->match_buffer_size_ + input_index - stack->input_index_ + 1;
-        best_match_col = input_col;
-        best_match_line = input_line;
-      }
-      input_index++;
-    }
-    else {
-      /* Append from stack->input_index_ to input_index, excluding input_index itself */
-      r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);
-      if (r) return r;
- 
-      if (best_match_action == default_action) {
-        goto syntax_error;
-      }
-
-      /* Ensure token match is null terminated, note that the size we just appended may
-       * (likely) be longer than the last section we matched. */
-      stack->terminator_repair_ = stack->match_buffer_[best_match_size];
-      stack->match_buffer_[best_match_size] = '\0';
-      stack->token_size_ = best_match_size;
-      stack->best_match_action_ = best_match_action;
-      stack->best_match_size_ = best_match_size;
-      stack->best_match_offset_ = best_match_offset;
-      stack->best_match_line_ = best_match_line;
-      stack->best_match_col_ = best_match_col;
-
-      return RXG_MATCH;
-    }
-  }
-
-  r = rxg_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);
-  if (r) return r;
-
-  if (!is_final_input) {
-    /* Need more input */
-    stack->scan_state_ = scan_state;
-    stack->token_size_ = 0; /* no match yet */
-    stack->input_index_ = 0;
-    stack->input_offset_ = input_offset;
-    stack->input_line_ = input_line;
-    stack->input_col_ = input_col;
-
-    stack->best_match_action_ = best_match_action;
-    stack->best_match_size_ = best_match_size;
-    stack->best_match_offset_ = best_match_offset;
-    stack->best_match_line_ = best_match_line;
-    stack->best_match_col_ = best_match_col;
-
-    stack->match_index_ = match_index;
-
-    return RXG_FEED_ME;
-  }
-
-  if (!stack->match_buffer_size_ && (stack->input_index_ == input_size)) {
-    /* Exhausted all input - leave stack in a state where we can
-     * immediately re-use it in its initial state */
-    stack->match_index_ = 0;
-    stack->best_match_action_ = best_match_action = start_action;
-    stack->best_match_size_ = best_match_size;
-    stack->best_match_offset_ = best_match_offset;
-    stack->best_match_line_ = best_match_line;
-    stack->best_match_col_ = best_match_col;
-    stack->scan_state_ = scan_state = start_state;
-
-    stack->token_size_ = 0;
-    stack->input_index_ = 0;
-    stack->input_offset_ = input_offset;
-    stack->input_line_ = input_line;
-    stack->input_col_ = input_col;
-
-    return RXG_END_OF_INPUT;
-  }
-
-  if (best_match_action == default_action) {
-    goto syntax_error;
-  }
-
-  /* Ensure token match is null terminated */
-  stack->terminator_repair_ = stack->match_buffer_[best_match_size];
-  stack->match_buffer_[best_match_size] = '\0';
-  stack->token_size_ = best_match_size;
-  stack->best_match_action_ = best_match_action;
-  stack->best_match_size_ = best_match_size;
-  stack->best_match_offset_ = best_match_offset;
-  stack->best_match_line_ = best_match_line;
-  stack->best_match_col_ = best_match_col;
-
-  return RXG_MATCH;
-syntax_error:
-  if (stack->match_buffer_size_) {
-    stack->best_match_offset_ = stack->match_offset_ + 1;
-    if (stack->match_buffer_[0] != '\n') {
-      stack->best_match_line_ = stack->match_line_;
-      stack->best_match_col_ = stack->match_col_ + 1;
-    }
-    else {
-      stack->best_match_line_ = stack->match_line_ + 1;
-      stack->best_match_col_ = 1;
-    }
-  }
-  else {
-    /* Append the single character causing the syntax error */
-    r = rxg_append_match_buffer(stack, input + stack->input_index_, 1);
-    if (r) return r;
-
-    input_offset++;
-    if (input[stack->input_index_] != '\n') {
-      input_col++;
-    }
-    else {
-      input_col = 1;
-      input_line++;
-    }
-    input_index = stack->input_index_ + 1;
-    stack->best_match_offset_ = input_offset;
-    stack->best_match_line_ = input_line;
-    stack->best_match_col_ = input_col;
-  }
-  
-  /* Reset scanner to get ready for next token */
-  stack->token_size_ = 1;
-  stack->terminator_repair_ = stack->match_buffer_[1];
-  stack->match_buffer_[1] = '\0';
-
-  stack->input_index_ = input_index;
-  stack->input_offset_ = input_offset;
-  stack->input_line_ = input_line;
-  stack->input_col_ = input_col;
-
-  return RXG_SYNTAX_ERROR;
-}
-#endif
 
 int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st) {
   int sym;
