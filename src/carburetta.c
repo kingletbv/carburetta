@@ -147,7 +147,7 @@ struct conflict_resolution {
   int over_prod_place_;
 };
 
-struct cinder_context {
+struct carburetta_context {
   struct snippet token_type_;
   struct snippet common_data_type_;
   struct symbol_table symtab_;
@@ -188,7 +188,7 @@ void conflict_resolution_cleanup(struct conflict_resolution *cr) {
   prd_prod_cleanup(&cr->over_prod_);
 }
 
-void cinder_context_init(struct cinder_context *cc) {
+void carburetta_context_init(struct carburetta_context *cc) {
   snippet_init(&cc->token_type_);
   snippet_init(&cc->common_data_type_);
   symbol_table_init(&cc->symtab_);
@@ -217,7 +217,7 @@ void cinder_context_init(struct cinder_context *cc) {
   cc->have_typed_symbols_ = 0;
 }
 
-void cinder_context_cleanup(struct cinder_context *cc) {
+void carburetta_context_cleanup(struct carburetta_context *cc) {
   snippet_cleanup(&cc->token_type_);
   snippet_cleanup(&cc->common_data_type_);
   symbol_table_cleanup(&cc->symtab_);
@@ -252,7 +252,7 @@ void cinder_context_cleanup(struct cinder_context *cc) {
   }
 }
 
-static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlts *directive_line_match, struct cinder_context *cc) {
+static int process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, struct xlts *directive_line_match, struct carburetta_context *cc) {
   int r;
   int ate_percent = 0;
   int ate_directive = 0;
@@ -333,7 +333,7 @@ static int process_cinder_directive(struct tkr_tokenizer *tkr_tokens, struct xlt
       else {
         if (!ate_percent) {
           if (tkr_tokens->best_match_variant_ == TOK_PERCENT) {
-            /* leading percent sign indicates cinder directive, eat it */
+            /* leading percent sign indicates carburetta directive, eat it */
             ate_percent = 1;
           }
           else {
@@ -1057,17 +1057,17 @@ cleanup_exit:
   return r;
 }
 
-static const char *cc_prefix(struct cinder_context *cc) {
+static const char *cc_prefix(struct carburetta_context *cc) {
   if (cc->prefix_.num_translated_) return cc->prefix_.translated_;
-  return "cinder_";
+  return "carburetta_";
 }
 
-static const char *cc_PREFIX(struct cinder_context *cc) {
+static const char *cc_PREFIX(struct carburetta_context *cc) {
   if (cc->prefix_uppercase_) return cc->prefix_uppercase_;
-  return "CINDER_";
+  return "CARB_";
 }
 
-static const char *cc_TOKEN_PREFIX(struct cinder_context *cc) {
+static const char *cc_TOKEN_PREFIX(struct carburetta_context *cc) {
   if (cc->token_prefix_uppercase_) return cc->token_prefix_uppercase_;
   return cc_PREFIX(cc);
 }
@@ -1258,7 +1258,7 @@ struct snippet_emission {
   const char *text_fmt_;
 };
 
-static int emit_dest(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_dest(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   switch (se->dest_type_) {
   case SEDT_NONE:
     re_error(&st->text_, "$$ cannot resolve to a symbol");
@@ -1294,7 +1294,7 @@ static int emit_dest(FILE *outfp, struct cinder_context *cc, struct snippet_emis
   return 0;
 }
 
-static int emit_sym_specific_data(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st, size_t sym_index) {
+static int emit_sym_specific_data(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st, size_t sym_index) {
   if (se->sym_type_ == SEST_NONE) {
     re_error(&st->text_, "No symbols to reference");
     return TKR_SYNTAX_ERROR;
@@ -1316,7 +1316,7 @@ static int emit_sym_specific_data(FILE *outfp, struct cinder_context *cc, struct
   return 0;
 }
 
-static int emit_dest_commondata(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_dest_commondata(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->common_dest_type_ == SECDT_NONE) {
     re_error(&st->text_, "$ cannot resolve to a symbol");
     return TKR_SYNTAX_ERROR;
@@ -1337,7 +1337,7 @@ static int emit_dest_commondata(FILE *outfp, struct cinder_context *cc, struct s
   return 0;
 }
 
-static int emit_len(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_len(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->len_type_ == SELT_NONE) {
     re_error(&st->text_, "%%len cannot resolve to a length");
     return TKR_SYNTAX_ERROR;
@@ -1350,7 +1350,7 @@ static int emit_len(FILE *outfp, struct cinder_context *cc, struct snippet_emiss
   return 0;
 }
 
-static int emit_discard(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_discard(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->discard_type_ == SEDIT_NONE) {
     re_error(&st->text_, "%%discard use is limited to common actions");
     return TKR_SYNTAX_ERROR;
@@ -1363,7 +1363,7 @@ static int emit_discard(FILE *outfp, struct cinder_context *cc, struct snippet_e
   return 0;
 }
 
-static int emit_text(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_text(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->text_type_ == SETT_NONE) {
     re_error(&st->text_, "%%text use is limited to pattern actions");
     return TKR_SYNTAX_ERROR;
@@ -1376,7 +1376,7 @@ static int emit_text(FILE *outfp, struct cinder_context *cc, struct snippet_emis
   return 0;
 }
 
-static int emit_common(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se, struct snippet_token *special_ident_token, size_t start_of_index, size_t end_of_index) {
+static int emit_common(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *special_ident_token, size_t start_of_index, size_t end_of_index) {
   if (se->common_type_ == SECT_NONE) {
     re_error(&special_ident_token->text_, "No symbols to reference");
     return TKR_SYNTAX_ERROR;
@@ -1401,7 +1401,7 @@ static int emit_common(FILE *outfp, struct cinder_context *cc, struct snippet_em
   return 0;
 }
 
-static int emit_snippet_code_emission(FILE *outfp, struct cinder_context *cc, struct snippet_emission *se) {
+static int emit_snippet_code_emission(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se) {
   int r;
   size_t col;
   for (col = 0; col < se->code_->num_tokens_; ++col) {
@@ -1510,7 +1510,7 @@ static int emit_snippet_code_emission(FILE *outfp, struct cinder_context *cc, st
   return 0;
 }
 
-static int emit_common_action_snippet(FILE *outfp, struct cinder_context *cc, struct prd_production *prd) {
+static int emit_common_action_snippet(FILE *outfp, struct carburetta_context *cc, struct prd_production *prd) {
   struct snippet_emission se = { 0 };
   se.code_ = &prd->common_action_sequence_;
   se.dest_type_ = SEDT_NONE;
@@ -1528,7 +1528,7 @@ static int emit_common_action_snippet(FILE *outfp, struct cinder_context *cc, st
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_action_snippet(FILE *outfp, struct cinder_context *cc, struct prd_production *prd) {
+static int emit_action_snippet(FILE *outfp, struct carburetta_context *cc, struct prd_production *prd) {
   struct snippet_emission se = { 0 };
   se.code_ = &prd->action_sequence_;
   se.dest_type_ = SEDT_FMT_DATATYPE_ORDINAL;
@@ -1549,7 +1549,7 @@ static int emit_action_snippet(FILE *outfp, struct cinder_context *cc, struct pr
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_pattern_token_action_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+static int emit_pattern_token_action_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->token_action_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -1565,7 +1565,7 @@ static int emit_pattern_token_action_snippet(FILE *outfp, struct cinder_context 
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_token_action_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+static int emit_token_action_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->token_action_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -1581,7 +1581,7 @@ static int emit_token_action_snippet(FILE *outfp, struct cinder_context *cc, str
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_constructor_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+static int emit_constructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
@@ -1597,7 +1597,7 @@ static int emit_constructor_snippet(FILE *outfp, struct cinder_context *cc, stru
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_dst_sym_constructor_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+static int emit_dst_sym_constructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -1613,7 +1613,7 @@ static int emit_dst_sym_constructor_snippet(FILE *outfp, struct cinder_context *
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_common_constructor_snippet(FILE *outfp, struct cinder_context *cc) {
+static int emit_common_constructor_snippet(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -1629,7 +1629,7 @@ static int emit_common_constructor_snippet(FILE *outfp, struct cinder_context *c
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_dst_common_constructor_snippet(FILE *outfp, struct cinder_context *cc) {
+static int emit_dst_common_constructor_snippet(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -1645,7 +1645,7 @@ static int emit_dst_common_constructor_snippet(FILE *outfp, struct cinder_contex
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_token_common_constructor_snippet(FILE *outfp, struct cinder_context *cc) {
+static int emit_token_common_constructor_snippet(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -1661,7 +1661,7 @@ static int emit_token_common_constructor_snippet(FILE *outfp, struct cinder_cont
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_pattern_token_common_constructor_snippet(FILE *outfp, struct cinder_context *cc) {
+static int emit_pattern_token_common_constructor_snippet(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -1677,7 +1677,7 @@ static int emit_pattern_token_common_constructor_snippet(FILE *outfp, struct cin
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_token_common_action_snippet(FILE *outfp, struct cinder_context *cc) {
+static int emit_token_common_action_snippet(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->token_action_snippet_;
@@ -1693,7 +1693,7 @@ static int emit_token_common_action_snippet(FILE *outfp, struct cinder_context *
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_pattern_token_common_action_snippet(FILE *outfp, struct cinder_context *cc) {
+static int emit_pattern_token_common_action_snippet(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->token_action_snippet_;
@@ -1709,7 +1709,7 @@ static int emit_pattern_token_common_action_snippet(FILE *outfp, struct cinder_c
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_token_constructor_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+static int emit_token_constructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -1725,7 +1725,7 @@ static int emit_token_constructor_snippet(FILE *outfp, struct cinder_context *cc
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_pattern_token_constructor_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+static int emit_pattern_token_constructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -1741,7 +1741,7 @@ static int emit_pattern_token_constructor_snippet(FILE *outfp, struct cinder_con
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_destructor_snippet(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+static int emit_destructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->destructor_snippet_;
   se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
@@ -1757,7 +1757,7 @@ static int emit_destructor_snippet(FILE *outfp, struct cinder_context *cc, struc
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->destructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -1773,7 +1773,7 @@ static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct cinder_conte
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_destructor_snippet_indexed_by_0(FILE *outfp, struct cinder_context *cc, struct typestr *ts) {
+static int emit_destructor_snippet_indexed_by_0(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->destructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -1789,7 +1789,7 @@ static int emit_destructor_snippet_indexed_by_0(FILE *outfp, struct cinder_conte
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_common_destructor_snippet(FILE *outfp, struct cinder_context *cc) {
+static int emit_common_destructor_snippet(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1805,7 +1805,7 @@ static int emit_common_destructor_snippet(FILE *outfp, struct cinder_context *cc
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_pattern_token_common_destructor_snippet(FILE *outfp, struct cinder_context *cc) {
+static int emit_pattern_token_common_destructor_snippet(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1821,7 +1821,7 @@ static int emit_pattern_token_common_destructor_snippet(FILE *outfp, struct cind
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct cinder_context *cc) {
+static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1837,7 +1837,7 @@ static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct cinde
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-static int emit_common_destructor_snippet_index_0(FILE *outfp, struct cinder_context *cc) {
+static int emit_common_destructor_snippet_index_0(FILE *outfp, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1854,7 +1854,7 @@ static int emit_common_destructor_snippet_index_0(FILE *outfp, struct cinder_con
 }
 
 
-static int emit_pattern_action_snippet(FILE *outfp, struct cinder_context *cc, struct prd_pattern *pat) {
+static int emit_pattern_action_snippet(FILE *outfp, struct carburetta_context *cc, struct prd_pattern *pat) {
   struct snippet_emission se = { 0 };
   struct typestr *ts = pat->term_.sym_ ? pat->term_.sym_->assigned_type_ : NULL;
   se.code_ = &pat->action_sequence_;
@@ -1879,7 +1879,7 @@ static int emit_pattern_action_snippet(FILE *outfp, struct cinder_context *cc, s
   return emit_snippet_code_emission(outfp, cc, &se);
 }
 
-int print_sym_as_c_ident(FILE *fp, struct cinder_context *cc, struct symbol *sym) {
+int print_sym_as_c_ident(FILE *fp, struct carburetta_context *cc, struct symbol *sym) {
   char *ident = malloc(1 + sym->def_.num_translated_);
   char *s = ident;
   const char *p;
@@ -1902,7 +1902,7 @@ int print_sym_as_c_ident(FILE *fp, struct cinder_context *cc, struct symbol *sym
   return 0;
 }
 
-static int emit_lex_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable) {
+static int emit_lex_function(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable) {
   /* Emit the scan function, it scans the input for regex matches without actually executing any actions */
   /* (we're obviously in need of a templating language..) */
   fprintf(outfp,  "static int %sappend_match_buffer(struct %sstack *stack, const char *s, size_t len) {\n", cc_prefix(cc), cc_prefix(cc));
@@ -2208,7 +2208,7 @@ static void print_regex_as_comment(FILE *outfp, const char *regex) {
   fwrite(" */", 1, 3, outfp);
 }
 
-static int emit_scan_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
+static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   int r;
 
   /* Emit the parse function */
@@ -2747,7 +2747,7 @@ cleanup_exit:
 }
 
 
-static int emit_parse_function(FILE *outfp, struct cinder_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
+static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   int r;
 
   /* Emit the parse function */
@@ -3211,10 +3211,10 @@ cleanup_exit:
 }
 
 void print_usage(void) {
-  fprintf(stderr, "Cinder parser generator (C) 2020 Kinglet B.V.\n"
-                  "https://firecrest.com/cinder\n"
+  fprintf(stderr, "Carburetta parser generator (C) 2020 Kinglet B.V.\n"
+                  "https://carburetta.com/\n"
                   "\n"
-                  "cinder <inputfile.cnd> [ --c [ <c_filename> [--h [h_filename] ] ] ]\n"
+                  "carburetta <inputfile.cnd> [ --c [ <c_filename> [--h [h_filename] ] ] ]\n"
                   "\n"
                   "<inputfile.cnd>\n"
                   "         the input file containing the grammar (mandatory)\n"
@@ -3364,8 +3364,8 @@ int main(int argc, char **argv) {
   struct tkr_tokenizer tkr_tokens;
   tok_init_tkr_tokenizer(&tkr_tokens);
 
-  struct cinder_context cc;
-  cinder_context_init(&cc);
+  struct carburetta_context cc;
+  carburetta_context_init(&cc);
 
   struct prd_stack prds;
   prd_stack_init(&prds);
@@ -3496,21 +3496,21 @@ int main(int argc, char **argv) {
             /* Preserve line continuations */
             append_part(&prologue, token_buf.num_original_, token_buf.original_);
             break;
-          case LD_CINDER_SCANNER_SECTION_DELIMETER:
+          case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
             where_are_we = default_mode = SCANNER;
             break;
-          case LD_CINDER_GRAMMAR_SECTION_DELIMETER:
+          case LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER:
             where_are_we = default_mode = GRAMMAR;
             break;
-          case LD_CINDER_SECTION_DELIMITER:
+          case LD_CARBURETTA_SECTION_DELIMITER:
             where_are_we = default_mode;
             break;
           case LD_REGULAR:
             /* Preserve line continuations */
             append_part(&prologue, token_buf.num_original_, token_buf.original_);
             break;
-          case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_tokens, &token_buf, &cc);
+          case LD_CARBURETTA_DIRECTIVE:
+            r = process_carburetta_directive(&tkr_tokens, &token_buf, &cc);
             if (r == TKR_INTERNAL_ERROR) {
               r = EXIT_FAILURE;
               goto cleanup_exit;
@@ -3527,17 +3527,17 @@ int main(int argc, char **argv) {
             re_error_tkr(&tkr_lines, "Error, preprocessor directives do not belong in grammar area");
             have_error = 1;
             break;
-          case LD_CINDER_GRAMMAR_SECTION_DELIMETER:
+          case LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER:
             re_error_tkr(&tkr_lines, "Error, already in grammar area");
             have_error = 1;
             break;
-          case LD_CINDER_SCANNER_SECTION_DELIMETER:
+          case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
             /* Finish up */
             r = process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, &prdg, &cc.symtab_);
 
             where_are_we = default_mode = SCANNER;
             break;
-          case LD_CINDER_SECTION_DELIMITER:
+          case LD_CARBURETTA_SECTION_DELIMITER:
             /* Finish up */
             r = process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, &prdg, &cc.symtab_);
 
@@ -3548,8 +3548,8 @@ int main(int argc, char **argv) {
             r = process_grammar_tokens(&tkr_tokens, &token_buf, 0, &prds, &prdg, &cc.symtab_);
             break;
           }
-          case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_tokens, &token_buf, &cc);
+          case LD_CARBURETTA_DIRECTIVE:
+            r = process_carburetta_directive(&tkr_tokens, &token_buf, &cc);
             if (r == TKR_INTERNAL_ERROR) {
               r = EXIT_FAILURE;
               goto cleanup_exit;
@@ -3566,17 +3566,17 @@ int main(int argc, char **argv) {
             re_error_tkr(&tkr_lines, "Error, preprocessor directives do not belong in scanner area");
             have_error = 1;
             break;
-          case LD_CINDER_SCANNER_SECTION_DELIMETER:
+          case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
             re_error_tkr(&tkr_lines, "Error, already in scanner area");
             have_error = 1;
             break;
-          case LD_CINDER_GRAMMAR_SECTION_DELIMETER:
+          case LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER:
             /* Finish up */
             r = process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, &prdg, &cc.symtab_);
 
             where_are_we = default_mode = GRAMMAR;
             break;
-          case LD_CINDER_SECTION_DELIMITER:
+          case LD_CARBURETTA_SECTION_DELIMITER:
             /* Finish up */
             r = process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, &prdg, &cc.symtab_);
 
@@ -3585,8 +3585,8 @@ int main(int argc, char **argv) {
           case LD_REGULAR:
             r = process_scanner_tokens(&tkr_tokens, &token_buf, 0, &rxgs, &prdg, &cc.symtab_);
             break;
-          case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_tokens, &token_buf, &cc);
+          case LD_CARBURETTA_DIRECTIVE:
+            r = process_carburetta_directive(&tkr_tokens, &token_buf, &cc);
             if (r == TKR_INTERNAL_ERROR) {
               r = EXIT_FAILURE;
               goto cleanup_exit;
@@ -3602,9 +3602,9 @@ int main(int argc, char **argv) {
           case LD_C_PREPROCESSOR:
             append_part(&epilogue, token_buf.num_original_, token_buf.original_);
             break;
-          case LD_CINDER_SCANNER_SECTION_DELIMETER:
-          case LD_CINDER_GRAMMAR_SECTION_DELIMETER:
-          case LD_CINDER_SECTION_DELIMITER:
+          case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
+          case LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER:
+          case LD_CARBURETTA_SECTION_DELIMITER:
             /* Going back to the grammar or scanner, append the epilogue we gathered to the prologue as it is
              * actually inline code. */
           {
@@ -3626,10 +3626,10 @@ int main(int argc, char **argv) {
               }
             }
           }
-          if (tkr_lines.best_match_variant_ == LD_CINDER_SCANNER_SECTION_DELIMETER) {
+          if (tkr_lines.best_match_variant_ == LD_CARBURETTA_SCANNER_SECTION_DELIMETER) {
             where_are_we = default_mode = SCANNER;
           }
-          else if (tkr_lines.best_match_variant_ == LD_CINDER_GRAMMAR_SECTION_DELIMETER) {
+          else if (tkr_lines.best_match_variant_ == LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER) {
             where_are_we = default_mode = GRAMMAR;
           }
           else {
@@ -3641,8 +3641,8 @@ int main(int argc, char **argv) {
             /* Preserve line continuations */
             append_part(&epilogue, token_buf.num_original_, token_buf.original_);
             break;
-          case LD_CINDER_DIRECTIVE:
-            r = process_cinder_directive(&tkr_tokens, &token_buf, &cc);
+          case LD_CARBURETTA_DIRECTIVE:
+            r = process_carburetta_directive(&tkr_tokens, &token_buf, &cc);
             if (r == TKR_INTERNAL_ERROR) {
               r = EXIT_FAILURE;
               goto cleanup_exit;
@@ -4080,19 +4080,19 @@ int main(int argc, char **argv) {
       /* First we develop the "include_guard" - this is used by the header file as the "#ifndef HEADER_INCLUDED"
        * header duplicate inclusion guard, and used by the C file to detect whether the header has been included
        * (and the declarations already made.) */
-      const char *cinder = "CINDER_";
-      size_t cinder_len = strlen(cinder);
+      const char *carburetta = "CARB_";
+      size_t carburetta_len = strlen(carburetta);
       size_t prefix_len = strlen(cc_PREFIX(&cc));
       size_t header_filename_len = strlen(h_output_filename);
       const char *included = "_INCLUDED";
       size_t included_len = strlen(included);
-      size_t include_guard_size = cinder_len + prefix_len + header_filename_len + included_len + 1;
+      size_t include_guard_size = carburetta_len + prefix_len + header_filename_len + included_len + 1;
       include_guard = (char *)malloc(include_guard_size);
       include_guard[0] = '\0';
-      strcat(include_guard, cinder);
+      strcat(include_guard, carburetta);
       strcat(include_guard, cc_PREFIX(&cc));
       size_t n;
-      char *p = include_guard + cinder_len + prefix_len;
+      char *p = include_guard + carburetta_len + prefix_len;
       for (n = 0; n < header_filename_len; ++n) {
         char c = h_output_filename[n];
         if ((c >= 'a') && (c <= 'z')) {
@@ -4959,7 +4959,7 @@ cleanup_exit:
 
   gt_grammar_table_cleanup(&gt);
 
-  cinder_context_cleanup(&cc);
+  carburetta_context_cleanup(&cc);
 
   prd_grammar_cleanup(&prdg);
 

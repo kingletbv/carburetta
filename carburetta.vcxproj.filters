@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="src\chain.c" />
-    <ClCompile Include="src\cinder.c" />
+    <ClCompile Include="src\carburetta.c" />
     <ClCompile Include="src\decomment.c" />
     <ClCompile Include="src\dfa.c" />
     <ClCompile Include="src\grammar_table.c" />

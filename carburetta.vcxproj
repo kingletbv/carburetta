@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\chain.c" />
-    <ClCompile Include="src\cinder.c" />
+    <ClCompile Include="src\carburetta.c" />
     <ClCompile Include="src\decomment.c" />
     <ClCompile Include="src\dfa.c" />
     <ClCompile Include="src\grammar_table.c" />
@@ -79,7 +79,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{BF90520E-4A1A-4AF7-B778-8041EFA5693D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>cinder</RootNamespace>
+    <RootNamespace>carburetta</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
