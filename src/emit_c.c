@@ -169,7 +169,7 @@ static int emit_dest(FILE *outfp, struct carburetta_context *cc, struct snippet_
     re_error(&st->text_, "$$ cannot resolve to a symbol");
     return TKR_SYNTAX_ERROR;
   case SEDT_FMT:
-    fprintf(outfp, se->dest_fmt_);
+    fputs(se->dest_fmt_, outfp);
     break;
   case SEDT_FMT_PREFIX:
     fprintf(outfp, se->dest_fmt_, cc_prefix(cc));
@@ -235,7 +235,7 @@ static int emit_dest_commondata(FILE *outfp, struct carburetta_context *cc, stru
     fprintf(outfp, se->common_dest_fmt_, cc_prefix(cc));
     break;
   case SECDT_FMT:
-    fprintf(outfp, se->common_dest_fmt_);
+    fputs(se->common_dest_fmt_, outfp);
     break;
   }
 
@@ -249,7 +249,7 @@ static int emit_len(FILE *outfp, struct carburetta_context *cc, struct snippet_e
   }
   switch (se->len_type_) {
   case SELT_FMT:
-    fprintf(outfp, se->len_fmt_);
+    fputs(se->len_fmt_, outfp);
     break;
   }
   return 0;
@@ -262,7 +262,7 @@ static int emit_discard(FILE *outfp, struct carburetta_context *cc, struct snipp
   }
   switch (se->discard_type_) {
   case SEDIT_FMT:
-    fprintf(outfp, se->discard_fmt_);
+    fputs(se->discard_fmt_, outfp);
     break;
   }
   return 0;
@@ -275,7 +275,7 @@ static int emit_text(FILE *outfp, struct carburetta_context *cc, struct snippet_
   }
   switch (se->text_type_) {
   case SETT_FMT:
-    fprintf(outfp, se->text_fmt_);
+    fputs(se->text_fmt_, outfp);
     break;
   }
   return 0;
@@ -295,14 +295,14 @@ static int emit_common(FILE *outfp, struct carburetta_context *cc, struct snippe
     fprintf(outfp, se->common_fmt_prefix_, cc_prefix(cc));
     break;
   case SECT_FMT:
-    fprintf(outfp, se->common_fmt_prefix_);
+    fputs(se->common_fmt_prefix_, outfp);
     break;
   }
   size_t n;
   for (n = start_of_index; n < end_of_index; ++n) {
     fprintf(outfp, "%s", se->code_->tokens_[n].text_.original_);
   }
-  fprintf(outfp, se->common_fmt_suffix_);
+  fputs(se->common_fmt_suffix_, outfp);
   return 0;
 }
 
