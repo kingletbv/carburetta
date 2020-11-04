@@ -38,61 +38,74 @@
 #include "emit_c.h"
 #endif
 
+enum dest_type {
+  SEDT_NONE,
+  SEDT_FMT,
+  SEDT_FMT_PREFIX,
+  SEDT_FMT_DATATYPE_ORDINAL,
+  SEDT_FMT_PREFIX_DATATYPE_ORDINAL,
+  SEDT_FMT_PREFIX_TYPESTR_ORDINAL,
+  SEDT_FMT_TYPESTR_ORDINAL
+};
+
+enum sym_type {
+  SEST_NONE,
+  SEST_FMT_INDEX_ORDINAL
+};
+
+enum common_type {
+  SECT_NONE,
+  SECT_FMT_PREFIX,
+  SECT_FMT
+};
+
+enum common_dest_type {
+  SECDT_NONE,
+  SECDT_FMT_PREFIX,
+  SECDT_FMT
+};
+
+enum len_type {
+  SELT_NONE,
+  SELT_FMT
+};
+
+enum discard_type {
+  SEDIT_NONE,
+  SEDIT_FMT
+};
+
+enum text_type {
+  SETT_NONE,
+  SETT_FMT
+};
 
 struct snippet_emission {
   struct snippet *code_;
 
-  enum dest_type {
-    SEDT_NONE,
-    SEDT_FMT,
-    SEDT_FMT_PREFIX,
-    SEDT_FMT_DATATYPE_ORDINAL,
-    SEDT_FMT_PREFIX_DATATYPE_ORDINAL,
-    SEDT_FMT_PREFIX_TYPESTR_ORDINAL,
-    SEDT_FMT_TYPESTR_ORDINAL
-  } dest_type_;
+  enum dest_type dest_type_;
   const char *dest_fmt_;
   struct prd_production_sym *dest_;
   struct typestr *dest_typestr_;
 
-  enum sym_type {
-    SEST_NONE,
-    SEST_FMT_INDEX_ORDINAL
-  } sym_type_;
+  enum sym_type sym_type_;
   const char *sym_fmt_;
   struct prd_production *prod_;
 
-  enum common_type {
-    SECT_NONE,
-    SECT_FMT_PREFIX,
-    SECT_FMT
-  } common_type_;
+  enum common_type common_type_;
   const char *common_fmt_prefix_;
   const char *common_fmt_suffix_;
 
-  enum common_dest_type {
-    SECDT_NONE,
-    SECDT_FMT_PREFIX,
-    SECDT_FMT
-  } common_dest_type_;
+  enum common_dest_type common_dest_type_;
   const char *common_dest_fmt_;
 
-  enum len_type {
-    SELT_NONE,
-    SELT_FMT
-  } len_type_;
+  enum len_type len_type_;
   const char *len_fmt_;
 
-  enum discard_type {
-    SEDIT_NONE,
-    SEDIT_FMT
-  } discard_type_;
+  enum discard_type discard_type_;
   const char *discard_fmt_;
 
-  enum text_type {
-    SETT_NONE,
-    SETT_FMT
-  } text_type_;
+  enum text_type text_type_;
   const char *text_fmt_;
 };
 
