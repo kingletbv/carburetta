@@ -1688,27 +1688,29 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
 
       } while (term != cc->symtab_.terminals_);
     }
-    if (ts->constructor_snippet_.num_tokens_) {
-      fprintf(outfp, "            {\n"
-                     "              ");
-      if (emit_token_constructor_snippet(outfp, cc, ts)) {
-        r = EXIT_FAILURE;
-        goto cleanup_exit;
+    if (found_matching_terms) {
+      if (ts->constructor_snippet_.num_tokens_) {
+        fprintf(outfp, "            {\n"
+                       "              ");
+        if (emit_token_constructor_snippet(outfp, cc, ts)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "            }\n");
       }
-      fprintf(outfp, "            }\n");
-    }
-    if (ts->token_action_snippet_.num_tokens_) {
-      fprintf(outfp, "            {\n"
-                      "              ");
+      if (ts->token_action_snippet_.num_tokens_) {
+        fprintf(outfp, "            {\n"
+                       "              ");
 
-      if (emit_token_action_snippet(outfp, cc, ts)) {
-        r = EXIT_FAILURE;
-        goto cleanup_exit;
+        if (emit_token_action_snippet(outfp, cc, ts)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+
+        fprintf(outfp, "            }\n");
       }
-
-      fprintf(outfp, "            }\n");
+      fprintf(outfp, "            break;\n");
     }
-    fprintf(outfp, "            break;\n");
   }
   fprintf(outfp, "        } /* switch */\n");
   fprintf(outfp, "        if (stack->report_error_) {\n"

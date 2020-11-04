@@ -1989,13 +1989,6 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
            snippet_append_tkr(&(sym_data->common_), tkr);
         }
         switch (sym) {
-            {
-               snippet_init(&(sym_data->common_));
-            }
-            {
-               snippet_append_tkr(&(sym_data->common_), tkr);
-            }
-            break;
         } /* switch */
         if (stack->report_error_) {
           /* We're shifting this sym following an error recovery on the same sym, report syntax error */
