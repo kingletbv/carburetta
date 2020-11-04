@@ -524,10 +524,6 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
 			  xlts_append(&(sym_data->v_.uv0_).text_, &tkr->xmatch_);
             }
             break;
-            {
-               prd_prod_init(&(sym_data->v_.uv1_));
-            }
-            break;
         } /* switch */
         if (stack->report_error_) {
           /* We're shifting this sym following an error recovery on the same sym, report syntax error */
