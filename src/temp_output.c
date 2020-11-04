@@ -130,7 +130,7 @@ char *to_derive_temp_name(const char *final_destination_name) {
     int val = (31 & (v >> (16 - 5 - (offset & 7))));
     random_str[n] = random_digits_5bit[val];
   }
-  char *s = malloc(1 + strlen(final_destination_name) + sizeof(random_str));
+  char *s = (char *)malloc(1 + strlen(final_destination_name) + sizeof(random_str));
   if (!s) return NULL;
   strcpy(s, final_destination_name);
   strcat(s, random_str);
