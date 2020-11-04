@@ -33,6 +33,11 @@
 #include <ctype.h>
 #endif
 
+#ifndef ERRNO_H_INCLUDED
+#define ERRNO_H_INCLUDED
+#include <errno.h>
+#endif
+
 #ifndef ASSERT_H_INCLUDED
 #define ASSERT_H_INCLUDED
 #include <assert.h>
