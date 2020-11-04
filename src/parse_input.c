@@ -1052,14 +1052,14 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
   r = prd_stack_reset(&prds);
   if (r) {
     re_error_nowhere("Internal error, failed to reset grammar parsing stack");
-    r = EXIT_FAILURE;
+    r = 1;
     goto cleanup_exit;
   }
 
   r = rxg_stack_reset(&rxgs);
   if (r) {
     re_error_nowhere("Internal error, failed to reset scanner parsing stack");
-    r = EXIT_FAILURE;
+    r = 1;
     goto cleanup_exit;
   }
 
@@ -1087,7 +1087,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
       xlts_reset(&token_buf);
       r = xlts_append(&token_buf, &line_assembly.mlc_buf_);
       if (r) {
-        r = EXIT_FAILURE;
+        r = 1;
         goto cleanup_exit;
       }
 
@@ -1107,7 +1107,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
 
       if ((r == TKR_END_OF_INPUT) || (r == TKR_FEED_ME)) {
         re_error_nowhere("%s(%d): Internal error: all lines are expected to match.", line_assembly.lc_tkr_.filename_, line_assembly.lc_tkr_.input_line_);
-        r = EXIT_FAILURE;
+        r = 1;
         goto cleanup_exit;
       }
       if (r == TKR_SYNTAX_ERROR) {
@@ -1148,7 +1148,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           case LD_CARBURETTA_DIRECTIVE:
             r = pi_process_carburetta_directive(&tkr_tokens, &token_buf, cc);
             if (r == TKR_INTERNAL_ERROR) {
-              r = EXIT_FAILURE;
+              r = 1;
               goto cleanup_exit;
             }
             else if (r) {
@@ -1187,7 +1187,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           case LD_CARBURETTA_DIRECTIVE:
             r = pi_process_carburetta_directive(&tkr_tokens, &token_buf, cc);
             if (r == TKR_INTERNAL_ERROR) {
-              r = EXIT_FAILURE;
+              r = 1;
               goto cleanup_exit;
             }
             else if (r) {
@@ -1224,7 +1224,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           case LD_CARBURETTA_DIRECTIVE:
             r = pi_process_carburetta_directive(&tkr_tokens, &token_buf, cc);
             if (r == TKR_INTERNAL_ERROR) {
-              r = EXIT_FAILURE;
+              r = 1;
               goto cleanup_exit;
             }
             else if (r) {
@@ -1280,7 +1280,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           case LD_CARBURETTA_DIRECTIVE:
             r = pi_process_carburetta_directive(&tkr_tokens, &token_buf, cc);
             if (r == TKR_INTERNAL_ERROR) {
-              r = EXIT_FAILURE;
+              r = 1;
               goto cleanup_exit;
             }
             else if (r) {
@@ -1295,7 +1295,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
       //r = tkr_tokenizer_input(&tkr_lines, token_buf.translated_, token_buf.num_translated_, 1);
       if ((r != TKR_END_OF_INPUT) && (r != TKR_INTERNAL_ERROR)) {
         re_error(&comment_free_line, "Internal error: lines from a single line are expected to match a single time");
-        r = EXIT_FAILURE;
+        r = 1;
         goto cleanup_exit;
       }
 
@@ -1306,7 +1306,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
 
   /* Finished parsing */
   if (prdg->have_errors_) {
-    r = EXIT_FAILURE;
+    r = 1;
     goto cleanup_exit;
   }
 
