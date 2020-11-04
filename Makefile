@@ -1,4 +1,4 @@
-CC = gcc
+CC=gcc
 
 OUT = build/linux
 SRC = src
@@ -12,10 +12,10 @@ all: $(OUT)/carburetta
 
 $(INTERMEDIATE)/%.o: $(SRC)/%.c
 	@mkdir -p $(@D)
-	${COMPILE.C} -o $@ $<
+	$(CC) -c -o $@ $<
 
 $(OUT)/carburetta: $(OBJECTS)
-	cc -o $(OUT)/carburetta $(OBJECTS)
+	$(CC) -o $(OUT)/carburetta $(OBJECTS)
 
 .PHONY: clean
 clean:
