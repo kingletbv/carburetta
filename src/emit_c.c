@@ -427,7 +427,7 @@ static int emit_common_action_snippet(FILE *outfp, struct carburetta_context *cc
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "((size_t)production_length)";
-  se.discard_type_ = SEDT_FMT;
+  se.discard_type_ = SEDIT_FMT;
   se.discard_fmt_ = "discard_action = 1;";
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
@@ -449,7 +449,7 @@ static int emit_action_snippet(FILE *outfp, struct carburetta_context *cc, struc
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "((size_t)production_length)";
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -465,7 +465,7 @@ static int emit_pattern_token_action_snippet(FILE *outfp, struct carburetta_cont
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -481,7 +481,7 @@ static int emit_token_action_snippet(FILE *outfp, struct carburetta_context *cc,
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -497,7 +497,7 @@ static int emit_constructor_snippet(FILE *outfp, struct carburetta_context *cc, 
   se.common_dest_type_ = SECDT_FMT_PREFIX;
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -513,7 +513,7 @@ static int emit_dst_sym_constructor_snippet(FILE *outfp, struct carburetta_conte
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -529,7 +529,7 @@ static int emit_common_constructor_snippet(FILE *outfp, struct carburetta_contex
   se.common_dest_type_ = SECDT_FMT_PREFIX;
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -545,7 +545,7 @@ static int emit_dst_common_constructor_snippet(FILE *outfp, struct carburetta_co
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(nonterminal_sym_data_reduced_to.common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -561,7 +561,7 @@ static int emit_token_common_constructor_snippet(FILE *outfp, struct carburetta_
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -577,7 +577,7 @@ static int emit_pattern_token_common_constructor_snippet(FILE *outfp, struct car
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -593,7 +593,7 @@ static int emit_token_common_action_snippet(FILE *outfp, struct carburetta_conte
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -609,7 +609,7 @@ static int emit_pattern_token_common_action_snippet(FILE *outfp, struct carburet
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -625,7 +625,7 @@ static int emit_token_constructor_snippet(FILE *outfp, struct carburetta_context
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(sym_data->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -641,7 +641,7 @@ static int emit_pattern_token_constructor_snippet(FILE *outfp, struct carburetta
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -657,7 +657,7 @@ static int emit_destructor_snippet(FILE *outfp, struct carburetta_context *cc, s
   se.common_dest_type_ = SECDT_FMT_PREFIX;
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -673,7 +673,7 @@ static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct carburetta_c
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -689,7 +689,7 @@ static int emit_destructor_snippet_indexed_by_0(FILE *outfp, struct carburetta_c
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -705,7 +705,7 @@ static int emit_common_destructor_snippet(FILE *outfp, struct carburetta_context
   se.common_dest_type_ = SECDT_FMT_PREFIX;
   se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -721,7 +721,7 @@ static int emit_pattern_token_common_destructor_snippet(FILE *outfp, struct carb
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -737,7 +737,7 @@ static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct carbu
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -753,7 +753,7 @@ static int emit_common_destructor_snippet_index_0(FILE *outfp, struct carburetta
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(outfp, cc, &se);
 }
@@ -778,7 +778,7 @@ static int emit_pattern_action_snippet(FILE *outfp, struct carburetta_context *c
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->token_size_)";
-  se.discard_type_ = SEDT_NONE;
+  se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_FMT;
   se.text_fmt_ = "(stack->match_buffer_)";
   return emit_snippet_code_emission(outfp, cc, &se);
