@@ -28,28 +28,45 @@
 #include <stdint.h>
 #endif
 
+#ifndef ERRNO_H_INCLUDED
+#define ERRNO_H_INCLUDED
+#include <errno.h>
+#endif
+
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
+#include <string.h>
+#endif
+
 #ifdef _WIN32
 #ifndef IO_H_INCLUDED
 #define IO_H_INCLUDED
 #include <io.h> /* _open_osfhandle */
 #endif
-
-#ifdef __linux__
-#ifndef SYS_STAT_H_INCLUDED
-#define SYS_STAT_H_INCLUDED
-#include <sys/stat.h>
-#endif
-#ifndef FCNTL_H_INCLUDED
-#define FCNTL_H_INCLUDED
-#include <fcntl.h>
-#endif
-#endif
-
 #ifndef WINDOWS_H_INCLUDED
 #define WINDOWS_H_INCLUDED
 #include <Windows.h>
 #endif
 #endif
+
+#ifdef __linux__
+#ifndef SYS_TYPES_H_INCLUDED
+#define SYS_TYPES_H_INCLUDED
+#include <sys/types.h>
+#endif
+#ifndef SYS_STAT_H_INCLUDED
+#define SYS_STAT_H_INCLUDED
+#include <sys/stat.h>
+#endif
+#ifndef UNISTD_H_INCLUDED
+#define UNISTD_H_INCLUDED
+#include <unistd.h>
+#endif
+#ifndef FCNTL_H_INCLUDED
+#define FCNTL_H_INCLUDED
+#include <fcntl.h>
+#endif
+#endif /* __linux__ */
 
 #ifndef TEMP_OUTPUT_H_INCLUDED
 #define TEMP_OUTPUT_H_INCLUDED
