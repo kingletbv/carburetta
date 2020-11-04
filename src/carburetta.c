@@ -396,8 +396,12 @@ int main(int argc, char **argv) {
   }
 
   /* Number all symbols */
-  int NT_END = 0, RULE_END = 1, GRAMMAR_END = 2;
-  int next_ordinal = 3;
+  int NT_END, RULE_END, GRAMMAR_END;
+  NT_END = 0;
+  RULE_END = 1;
+  GRAMMAR_END = 2;
+  int next_ordinal;
+  next_ordinal = 3;
   sym = cc.symtab_.terminals_;
   if (sym) {
     do {
@@ -410,7 +414,8 @@ int main(int argc, char **argv) {
   }
   cc.error_sym_->ordinal_ = next_ordinal++;
   cc.input_end_sym_->ordinal_ = next_ordinal++;
-  int INPUT_END = cc.input_end_sym_->ordinal_;
+  int INPUT_END;
+  INPUT_END = cc.input_end_sym_->ordinal_;
   sym = cc.symtab_.non_terminals_;
   if (sym) {
     do {
@@ -419,7 +424,8 @@ int main(int argc, char **argv) {
       sym->ordinal_ = next_ordinal++;
     } while (sym != cc.symtab_.non_terminals_);
   }
-  int SYNTHETIC_S = next_ordinal++;
+  int SYNTHETIC_S;
+  SYNTHETIC_S = next_ordinal++;
 
   /* Resolve all symbol references in the productions */
   size_t prod_idx;
@@ -698,7 +704,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  FILE *outfp = NULL;
+  FILE *outfp;
+  outfp = NULL;
 
   g_temp_output_filename_ = NULL;
   g_temp_output_file = NULL;
