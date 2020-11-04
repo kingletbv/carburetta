@@ -18,6 +18,11 @@
 #include <stdlib.h> /* malloc(), free() */
 #endif
 
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
+#include <stdint.h>
+#endif
+
 #ifndef STRING_H_INCLUDED
 #define STRING_H_INCLUDED
 #include <string.h> /* memset(), memcpy() */
