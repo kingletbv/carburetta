@@ -46,6 +46,8 @@
 #include "snippet.h"
 #endif
 
+struct prd_grammar; /* forward declare here as prd_grammar.h relies on prd_gram.h */
+
 #ifndef PRD_GRAMMAR_H_INCLUDED
 #define PRD_GRAMMAR_H_INCLUDED
 #include "prd_grammar.h"
