@@ -228,7 +228,7 @@ char *snippet_dup_xlt(const struct snippet *s) {
     }
   }
 
-  char *ds = malloc(xlt_size + 1);
+  char *ds = (char *)malloc(xlt_size + 1);
   if (!ds) {
     re_error_nowhere("Internal error, no memory");
     return NULL;
