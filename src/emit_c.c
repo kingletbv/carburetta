@@ -126,7 +126,7 @@ static const char *cc_TOKEN_PREFIX(struct carburetta_context *cc) {
 }
 
 static int print_sym_as_c_ident(FILE *fp, struct carburetta_context *cc, struct symbol *sym) {
-  char *ident = malloc(1 + sym->def_.num_translated_);
+  char *ident = (char *)malloc(1 + sym->def_.num_translated_);
   char *s = ident;
   const char *p;
   if (!ident) {
@@ -2383,7 +2383,7 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
     do {
       sym = sym->next_;
 
-      char *ident = malloc(1 + sym->def_.num_translated_);
+      char *ident = (char *)malloc(1 + sym->def_.num_translated_);
       char *s = ident;
       const char *p;
       if (!ident) {
@@ -2819,7 +2819,7 @@ int emit_h_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
     do {
       sym = sym->next_;
 
-      char *ident = malloc(1 + sym->def_.num_translated_);
+      char *ident = (char *)malloc(1 + sym->def_.num_translated_);
       char *s = ident;
       const char *p;
       if (!ident) {
