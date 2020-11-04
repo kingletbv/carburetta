@@ -26,6 +26,7 @@
     <ClCompile Include="..\src\xlts.c" />
     <ClCompile Include="..\src\carburetta_context.c" />
     <ClCompile Include="..\src\emit_c.c" />
+    <ClCompile Include="..\src\parse_input.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\chain.h" />
@@ -51,6 +52,7 @@
     <ClInclude Include="..\src\xlts.h" />
     <ClInclude Include="..\src\carburetta_context.h" />
     <ClInclude Include="..\src\emit_c.h" />
+    <ClInclude Include="..\src\parse_input.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\prd_grammar.cnd" />

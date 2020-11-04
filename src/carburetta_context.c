@@ -19,10 +19,17 @@
 #include <stdlib.h>
 #endif
 
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
+#include <string.h>
+#endif
+
 #ifndef CARBURETTA_CONTEXT_H_INCLUDED
 #define CARBURETTA_CONTEXT_H_INCLUDED
 #include "carburetta_context.h"
 #endif
+
+static void parts_free(struct part *parts);
 
 void carburetta_context_init(struct carburetta_context *cc) {
   snippet_init(&cc->token_type_);
@@ -54,6 +61,8 @@ void carburetta_context_init(struct carburetta_context *cc) {
   cc->h_output_filename_ = NULL;
   cc->c_output_filename_ = NULL;
   cc->include_guard_ = NULL;
+  cc->prologue_ = NULL;
+  cc->epilogue_ = NULL;
 }
 
 void carburetta_context_cleanup(struct carburetta_context *cc) {
@@ -92,6 +101,8 @@ void carburetta_context_cleanup(struct carburetta_context *cc) {
   if (cc->c_output_filename_) free(cc->c_output_filename_);
   if (cc->h_output_filename_) free(cc->h_output_filename_);
   if (cc->include_guard_) free(cc->include_guard_);
+  parts_free(cc->prologue_);
+  parts_free(cc->epilogue_);
 }
 
 void conflict_resolution_init(struct conflict_resolution *cr) {
@@ -104,4 +115,44 @@ void conflict_resolution_init(struct conflict_resolution *cr) {
 void conflict_resolution_cleanup(struct conflict_resolution *cr) {
   prd_prod_cleanup(&cr->prefer_prod_);
   prd_prod_cleanup(&cr->over_prod_);
+}
+
+static void parts_free(struct part *parts) {
+  struct part *p = parts;
+  struct part *next;
+  if (p) {
+    next = p->next_;
+    do {
+      p = next;
+      next = p->next_;
+
+      if (p->chars_) free(p->chars_);
+      free(p);
+
+    } while (p != parts);
+  }
+}
+
+struct part *parts_append(struct part **tailptr, size_t num_chars, char *chars) {
+  struct part *p = (struct part *)malloc(sizeof(struct part));
+  if (!p) return NULL;
+  p->chars_ = (char *)malloc(num_chars + 1);
+  if (!p->chars_) {
+    free(p);
+    return NULL;
+  }
+  memcpy(p->chars_, chars, num_chars);
+  p->chars_[num_chars] = '\0';
+  p->num_chars_ = num_chars;
+  if (*tailptr) {
+    p->next_ = (*tailptr)->next_;
+    (*tailptr)->next_ = p;
+    *tailptr = p;
+  }
+  else {
+    *tailptr = p;
+    p->next_ = p;
+  }
+
+  return p;
 }

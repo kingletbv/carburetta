@@ -54,6 +54,12 @@ struct conflict_resolution {
   int over_prod_place_;
 };
 
+struct part {
+  struct part *next_;
+  size_t num_chars_;
+  char *chars_;
+};
+
 struct carburetta_context {
   struct snippet token_type_;
   struct snippet common_data_type_;
@@ -84,6 +90,8 @@ struct carburetta_context {
   char *h_output_filename_;
   char *c_output_filename_;
   char *include_guard_;
+  struct part *prologue_;
+  struct part *epilogue_;
 };
 
 void carburetta_context_init(struct carburetta_context *cc);
@@ -91,6 +99,8 @@ void carburetta_context_cleanup(struct carburetta_context *cc);
 
 void conflict_resolution_init(struct conflict_resolution *cr);
 void conflict_resolution_cleanup(struct conflict_resolution *cr);
+
+struct part *parts_append(struct part **tailptr, size_t num_chars, char *chars);
 
 #ifdef __cplusplus
 } /* extern "C" */

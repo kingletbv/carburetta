@@ -2061,6 +2061,24 @@ cleanup_exit:
 
 int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable, struct lr_generator *lalr) {
   int r;
+
+  struct part *pt;
+  pt = cc->prologue_;
+  if (pt) {
+    do {
+      pt = pt->next_;
+
+      size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
+      if (written != pt->num_chars_) {
+        int err = errno;
+        re_error_nowhere("Failed to write to \"%s\": %s", cc->c_output_filename_, strerror(err));
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+
+    } while (pt != cc->prologue_);
+  }
+
   fprintf(outfp, "/* --------- START OF GENERATED CODE ------------ */\n");
 
   fprintf(outfp, "#include <stdlib.h> /* realloc(), free(), NULL, size_t */\n");
@@ -2732,6 +2750,23 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
   }
 
   fprintf(outfp, "/* --------- END OF GENERATED CODE ------------ */\n");
+
+  pt = cc->epilogue_;
+  if (pt) {
+    do {
+      pt = pt->next_;
+
+      size_t written = fwrite(pt->chars_, 1, pt->num_chars_, outfp);
+      if (written != pt->num_chars_) {
+        int err = errno;
+        re_error_nowhere("Failed to write to \"%s\": %s", cc->c_output_filename_, strerror(err));
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+
+    } while (pt != cc->epilogue_);
+  }
+
 
   r = 0;
 cleanup_exit:
