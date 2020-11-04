@@ -2210,14 +2210,16 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
     fprintf(outfp, " };\n");
   }
 
-  size_t num_columns = (size_t)(1 + lalr->max_sym_ - lalr->min_sym_);
+  size_t num_columns;
+  num_columns = (size_t)(1 + lalr->max_sym_ - lalr->min_sym_);
   fprintf(outfp, "static const int %sminimum_sym = %d;\n", cc_prefix(cc), lalr->min_sym_);
   fprintf(outfp, "static const size_t %snum_columns = %zu;\n", cc_prefix(cc), num_columns);
   fprintf(outfp, "static const size_t %snum_rows = %zu;\n", cc_prefix(cc), (size_t)lalr->nr_states_);
   fprintf(outfp, "static const size_t %snum_productions = %zu;\n", cc_prefix(cc), lalr->nr_productions_);
   fprintf(outfp, "static const int %sparse_table[] = {\n", cc_prefix(cc));
   size_t row, col;
-  char *column_widths = (char *)malloc(num_columns);
+  char *column_widths;
+  column_widths = (char *)malloc(num_columns);
   if (!column_widths) {
     re_error_nowhere("Error, no memory\n");
     r = EXIT_FAILURE;
@@ -2278,7 +2280,8 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
   /* For each state, what is the top-most symbol on the stack? */
   fprintf(outfp, "static const int %sstate_syms[] = {\n", cc_prefix(cc));
 
-  int *state_syms = NULL;
+  int *state_syms;
+  state_syms = NULL;
 
   state_syms = (int *)malloc(sizeof(int) * (size_t)lalr->nr_states_);
   if (!state_syms) {
