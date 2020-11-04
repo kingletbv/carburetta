@@ -81,7 +81,7 @@ int sc_scanner_compile(struct sc_scanner *sc, uintptr_t default_action, size_t n
   int result;
   size_t n;
   struct nfa cumulative_nfa;
-  size_t *final_rule_nfa_states = arealloc(NULL, num_rules, sizeof(size_t));
+  size_t *final_rule_nfa_states = (size_t *)arealloc(NULL, num_rules, sizeof(size_t));
   if (!final_rule_nfa_states) {
     return -1;
   }
