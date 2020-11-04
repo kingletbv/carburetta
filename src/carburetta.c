@@ -118,6 +118,33 @@
 #include "parse_input.h"
 #endif
 
+#ifndef TEMP_OUTPUT_H_INCLUDED
+#define TEMP_OUTPUT_H_INCLUDED
+#include "temp_output.h"
+#endif
+
+/* Following globals control the output file. If we fail execution (eg. user error in the input or an
+ * unforeseen problem internally) then we wish to retain whatever output was already there.
+ * Consequently, we write output to a temp file, and only rename it to the final file if execution
+ * completes successfully. An atexit() handler guards the case where we fail early, and deletes the
+ * created temp file.
+ */
+
+char *g_temp_output_filename_ = NULL;
+FILE *g_temp_output_file = NULL;
+
+void at_exit_delete_temp_output_handler(void) {
+  if (g_temp_output_file) {
+    fclose(g_temp_output_file);
+    g_temp_output_file = NULL;
+  }
+  if (g_temp_output_filename_) {
+    remove(g_temp_output_filename_);
+    free(g_temp_output_filename_);
+    g_temp_output_filename_ = NULL;
+  }
+}
+
 void print_usage(void) {
   fprintf(stderr, "Carburetta parser generator (C) 2020 Kinglet B.V.\n"
                   "https://carburetta.com/\n"
@@ -668,15 +695,22 @@ int main(int argc, char **argv) {
 
   FILE *outfp = NULL;
 
+  g_temp_output_filename_ = NULL;
+  g_temp_output_file = NULL;
+  
+  /* Set the exit handler to delete any temp file we have created.. This helps to cleanup in case of failure. */
+  atexit(at_exit_delete_temp_output_handler);
+
   if (generate_cfile) {
     if (cc.c_output_filename_) {
-      outfp = fopen(cc.c_output_filename_, "wb");
+      outfp = to_make_temp(cc.c_output_filename_, &g_temp_output_filename_);
       if (!outfp) {
         int err = errno;
         re_error_nowhere("Failed to open file \"%s\" for writing: %s", cc.c_output_filename_, strerror(err));
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
+      g_temp_output_file = outfp;
     }
     else {
       outfp = stdout;
@@ -732,18 +766,33 @@ int main(int argc, char **argv) {
 
     if (outfp != stdout) {
       fclose(outfp);
+      g_temp_output_file = NULL;
+
+      /* don't care if this fails, file likely does not exist. */
+      remove(cc.c_output_filename_);
+
+      if (rename(g_temp_output_filename_, cc.c_output_filename_)) {
+        int err = errno;
+        re_error_nowhere("Failed to complete output to file \"%s\": %s", cc.c_output_filename_, strerror(err));
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+
+      free(g_temp_output_filename_);
+      g_temp_output_filename_ = NULL;
     }
   } /* generate_cfile */
 
   if (generate_hfile) {
     if (cc.h_output_filename_) {
-      outfp = fopen(cc.h_output_filename_, "wb");
+      outfp = to_make_temp(cc.h_output_filename_, &g_temp_output_filename_);
       if (!outfp) {
         int err = errno;
         re_error_nowhere("Error, failed to open file \"%s\" for writing: %s", cc.h_output_filename_, strerror(err));
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
+      g_temp_output_file = outfp;
     }
     else {
       re_error_nowhere("Error, generating header file requires output filename");
@@ -756,6 +805,20 @@ int main(int argc, char **argv) {
 
     if (outfp != stdout) {
       fclose(outfp);
+      g_temp_output_file = NULL;
+
+      /* don't care if this fails, file likely does not exist. */
+      remove(cc.c_output_filename_);
+
+      if (rename(g_temp_output_filename_, cc.c_output_filename_)) {
+        int err = errno;
+        re_error_nowhere("Failed to complete output to file \"%s\": %s", cc.c_output_filename_, strerror(err));
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+
+      free(g_temp_output_filename_);
+      g_temp_output_filename_ = NULL;
     }
   }
 

@@ -39,6 +39,7 @@
     <ClCompile Include="..\src\scanner.c" />
     <ClCompile Include="..\src\snippet.c" />
     <ClCompile Include="..\src\symbol.c" />
+    <ClCompile Include="..\src\temp_output.c" />
     <ClCompile Include="..\src\tokenizer.c" />
     <ClCompile Include="..\src\tokens.c" />
     <ClCompile Include="..\src\tokens_generated_scanners.c">
@@ -71,6 +72,7 @@
     <ClInclude Include="..\src\scanner.h" />
     <ClInclude Include="..\src\snippet.h" />
     <ClInclude Include="..\src\symbol.h" />
+    <ClInclude Include="..\src\temp_output.h" />
     <ClInclude Include="..\src\tokenizer.h" />
     <ClInclude Include="..\src\tokens.h" />
     <ClInclude Include="..\src\typestr.h" />
