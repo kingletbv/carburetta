@@ -627,7 +627,7 @@ int main(int argc, char **argv) {
 
         msg_size++ /* '\0' */;
 
-        char *msg = malloc(msg_size);
+        char *msg = (char *)malloc(msg_size);
         if (!msg) {
           re_error_nowhere("Error, no memory");
           r = EXIT_FAILURE;
