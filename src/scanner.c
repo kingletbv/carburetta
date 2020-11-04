@@ -239,7 +239,7 @@ static void sc_dump_row(struct sc_scanner *sc, size_t state) {
     }
   }
   if (sc->actions[state].action != sc->default_action) {
-    printf(" ==> %"PRIxPTR"\n", sc->actions[state].action);
+    printf(" ==> %" PRIxPTR "\n", sc->actions[state].action);
   }
   else {
     printf("\n");
@@ -266,7 +266,7 @@ void sc_scanner_write_to_c_file(struct sc_scanner *sc, FILE *fp, const char *tra
   fprintf(fp, "};\n");
   fprintf(fp, "static struct sc_action %s[] = {\n", state_actions_id);
   for (n = 0; n < sc->num_states; ++n) {
-    fprintf(fp, "  {%"PRIuPTR",%"PRIuPTR"}%s", sc->actions[n].action, sc->actions[n].variant, n == (sc->num_states - 1) ? "\n" : ",\n");
+    fprintf(fp, "  {%" PRIuPTR ",%" PRIuPTR "}%s", sc->actions[n].action, sc->actions[n].variant, n == (sc->num_states - 1) ? "\n" : ",\n");
   }
   fprintf(fp, "};\n");
   fprintf(fp, "static struct sc_scanner %s = { %u, %u, %s, %s, %u };\n", scanner_id,
