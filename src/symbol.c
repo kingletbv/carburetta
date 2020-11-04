@@ -148,7 +148,7 @@ struct symbol *symbol_find_or_add(struct symbol_table *st, sym_type_t symtype, s
     } while (sym != last);
   }
 
-  sym = malloc(sizeof(struct symbol));
+  sym = (struct symbol *)malloc(sizeof(struct symbol));
   if (!sym) {
     return NULL;
   }
