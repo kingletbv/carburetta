@@ -46,10 +46,7 @@ extern "C" {
  *       easy. Consequently, use lalr.c if this reduction-time context sensitivity is not required.
  */
 
-typedef enum xlr_error_enum xlr_error_t;
-typedef enum xlr_action_type_enum xlr_action_type_t;
-
-enum xlr_error_enum {
+typedef enum xlr_error_enum {
   /* Everything went well, parser is available. */
   XLR_OK,
   /* The Grammar passed in is not LR(n) for any N */
@@ -62,9 +59,9 @@ enum xlr_error_enum {
   XLR_SYM_OVERLAP,
   /* Internal failure trying to backtrack items */
   XLR_ITEM_BACKTRACK_FAILED
-};
+} xlr_error_t;
 
-enum xlr_action_type_enum {
+typedef enum xlr_action_type_enum {
   /* Action is a shift, xlr_action::state points to the
    * next state. */
   XLR_SHIFT,
@@ -73,7 +70,7 @@ enum xlr_action_type_enum {
    * for the xlr_gen::productions table, pointing to the
    * production being reduced. */
   XLR_REDUCE
-};
+} xlr_action_type_t;
 
 struct xlr_gen {
   /* Special symbol constants.. */
