@@ -28,6 +28,11 @@
 #include <ctype.h>
 #endif
 
+#ifndef ERRNO_H_INCLUDED
+#define ERRNO_H_INCLUDED
+#include <errno.h>
+#endif
+
 #ifndef MUL_H_INCLUDED
 #define MUL_H_INCLUDED
 #include "mul.h"
