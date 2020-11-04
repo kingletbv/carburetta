@@ -808,11 +808,11 @@ int main(int argc, char **argv) {
       g_temp_output_file = NULL;
 
       /* don't care if this fails, file likely does not exist. */
-      remove(cc.c_output_filename_);
+      remove(cc.h_output_filename_);
 
-      if (rename(g_temp_output_filename_, cc.c_output_filename_)) {
+      if (rename(g_temp_output_filename_, cc.h_output_filename_)) {
         int err = errno;
-        re_error_nowhere("Failed to complete output to file \"%s\": %s", cc.c_output_filename_, strerror(err));
+        re_error_nowhere("Failed to complete output to file \"%s\": %s", cc.h_output_filename_, strerror(err));
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
