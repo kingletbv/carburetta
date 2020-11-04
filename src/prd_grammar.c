@@ -515,12 +515,12 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
           case PRD_CUBRACE_CLOSE:
           case PRD_DOLLAR:
             {
-               (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = 0; \
+               (sym_data->v_.uv0_).match_ = (sym_data->v_.uv0_).variant_ = (token_type_t)0; \
              xlts_init(&(sym_data->v_.uv0_).text_);
             }
             {
-               (sym_data->v_.uv0_).match_ = tkr->best_match_action_; \
-              (sym_data->v_.uv0_).variant_ = tkr->best_match_variant_; \
+               (sym_data->v_.uv0_).match_ = (token_type_t)tkr->best_match_action_; \
+              (sym_data->v_.uv0_).variant_ = (token_type_t)tkr->best_match_variant_; \
 			  xlts_append(&(sym_data->v_.uv0_).text_, &tkr->xmatch_);
             }
             break;

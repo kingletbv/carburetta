@@ -78,12 +78,12 @@
   token_type_t variant_; \
   struct xlts text_; \
 }
-%constructor $$.match_ = $$.variant_ = 0; \
+%constructor $$.match_ = $$.variant_ = (token_type_t)0; \
              xlts_init(&$$.text_);
 %destructor xlts_cleanup(&$$.text_);
 
-%token_action $$.match_ = tkr->best_match_action_; \
-              $$.variant_ = tkr->best_match_variant_; \
+%token_action $$.match_ = (token_type_t)tkr->best_match_action_; \
+              $$.variant_ = (token_type_t)tkr->best_match_variant_; \
 			  xlts_append(&$$.text_, &tkr->xmatch_);
 
 %nt_type rule production action-sequence stmt-action: struct prd_production
