@@ -88,6 +88,10 @@
 #include "carburetta_context.h"
 #endif
 
+#ifndef PARSE_INPUT_H_INCLUDED
+#define PARSE_INPUT_H_INCLUDED
+#include "parse_input.h"
+#endif
 
 static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, struct xlts *directive_line_match, struct carburetta_context *cc) {
   int r;
