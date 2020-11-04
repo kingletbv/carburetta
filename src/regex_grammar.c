@@ -63,14 +63,19 @@
 #include "report_error.h"
 #endif
 
-#ifndef REGEX_GRAMMAR_H_INCLUDED
-#define REGEX_GRAMMAR_H_INCLUDED
-#include "regex_grammar.h"
-#endif
-
 #ifndef PRD_GRAM_H_INCLUDED
 #define PRD_GRAM_H_INCLUDED
 #include "prd_gram.h"
+#endif
+
+#ifndef SYMBOL_H_INCLUDED
+#define SYMBOL_H_INCLUDED
+#include "symbol.h"
+#endif
+
+#ifndef REGEX_GRAMMAR_H_INCLUDED
+#define REGEX_GRAMMAR_H_INCLUDED
+#include "regex_grammar.h"
 #endif
 
 #ifndef SNIPPET_H_INCLUDED
