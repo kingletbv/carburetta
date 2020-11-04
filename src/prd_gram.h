@@ -114,6 +114,9 @@ struct prd_grammar {
   struct prd_pattern *patterns_;
 };
 
+struct prd_stack;
+struct rxg_stack;
+
 int prd_parse_tkr(struct prd_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
 int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, int end_of_input, struct symbol_table *st);
 
