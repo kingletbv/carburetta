@@ -100,7 +100,7 @@ void xlr_cleanup(struct xlr_gen *gen) {
   }
 }
 
-static int __cdecl xlr_compare_items(const void *iteml, const void *itemr) {
+static int xlr_compare_items(const void *iteml, const void *itemr) {
   const struct xlr_item *left_item = (struct xlr_item *)iteml;
   const struct xlr_item *right_item = (struct xlr_item *)itemr;
   if (left_item->production < right_item->production) {
