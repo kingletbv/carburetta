@@ -1070,13 +1070,15 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
     GRAMMAR,
     SCANNER,
     EPILOGUE
-  } where_are_we = PROLOGUE, default_mode = GRAMMAR;
-  
+  } where_are_we, default_mode;
+  where_are_we = PROLOGUE;
+  default_mode = GRAMMAR;
 
   size_t num_bytes_read;
   static char buf[2400];
 
-  int have_error = 0;
+  int have_error;
+  have_error = 0;
 
   do {
     num_bytes_read = fread(buf, sizeof(*buf), sizeof(buf) / sizeof(*buf), fp);
