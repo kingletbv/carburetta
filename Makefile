@@ -20,3 +20,11 @@ $(OUT)/carburetta: $(OBJECTS)
 .PHONY: clean
 clean:
 	@rm -rf $(OUT)
+
+.PHONY: install
+install: all
+	install $(OUT)/carburetta /usr/local/bin
+
+.PHONY: uninstall
+uninstall:
+	rm /usr/local/bin/carburetta
