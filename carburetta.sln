@@ -5,6 +5,13 @@ VisualStudioVersion = 15.0.28307.1022
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "carburetta", "project\carburetta.vcxproj", "{BF90520E-4A1A-4AF7-B778-8041EFA5693D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{1E0CBB6F-F825-47E0-92DE-5839AF5AC2FA}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "calc", "project\calc.vcxproj", "{8C4EE919-F6BC-4093-A768-C382254AC9C8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BF90520E-4A1A-4AF7-B778-8041EFA5693D} = {BF90520E-4A1A-4AF7-B778-8041EFA5693D}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,9 +28,20 @@ Global
 		{BF90520E-4A1A-4AF7-B778-8041EFA5693D}.Release|x64.Build.0 = Release|x64
 		{BF90520E-4A1A-4AF7-B778-8041EFA5693D}.Release|x86.ActiveCfg = Release|Win32
 		{BF90520E-4A1A-4AF7-B778-8041EFA5693D}.Release|x86.Build.0 = Release|Win32
+		{8C4EE919-F6BC-4093-A768-C382254AC9C8}.Debug|x64.ActiveCfg = Debug|x64
+		{8C4EE919-F6BC-4093-A768-C382254AC9C8}.Debug|x64.Build.0 = Debug|x64
+		{8C4EE919-F6BC-4093-A768-C382254AC9C8}.Debug|x86.ActiveCfg = Debug|Win32
+		{8C4EE919-F6BC-4093-A768-C382254AC9C8}.Debug|x86.Build.0 = Debug|Win32
+		{8C4EE919-F6BC-4093-A768-C382254AC9C8}.Release|x64.ActiveCfg = Release|x64
+		{8C4EE919-F6BC-4093-A768-C382254AC9C8}.Release|x64.Build.0 = Release|x64
+		{8C4EE919-F6BC-4093-A768-C382254AC9C8}.Release|x86.ActiveCfg = Release|Win32
+		{8C4EE919-F6BC-4093-A768-C382254AC9C8}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8C4EE919-F6BC-4093-A768-C382254AC9C8} = {1E0CBB6F-F825-47E0-92DE-5839AF5AC2FA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3C746FFD-845E-4E80-8865-50A8A96BF247}

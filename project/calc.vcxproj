@@ -19,75 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\carburetta.c" />
-    <ClCompile Include="..\src\carburetta_context.c" />
-    <ClCompile Include="..\src\chain.c" />
-    <ClCompile Include="..\src\decomment.c" />
-    <ClCompile Include="..\src\dfa.c" />
-    <ClCompile Include="..\src\emit_c.c" />
-    <ClCompile Include="..\src\grammar_table.c" />
-    <ClCompile Include="..\src\lalr.c" />
-    <ClCompile Include="..\src\line_assembly.c" />
-    <ClCompile Include="..\src\line_defs.c" />
-    <ClCompile Include="..\src\mul.c" />
-    <ClCompile Include="..\src\nfa.c" />
-    <ClCompile Include="..\src\parse_input.c" />
-    <ClCompile Include="..\src\prd_gram.c" />
-    <ClCompile Include="..\src\prd_grammar.c" />
-    <ClCompile Include="..\src\regex_grammar.c" />
-    <ClCompile Include="..\src\report_error.c" />
-    <ClCompile Include="..\src\scanner.c" />
-    <ClCompile Include="..\src\snippet.c" />
-    <ClCompile Include="..\src\symbol.c" />
-    <ClCompile Include="..\src\temp_output.c" />
-    <ClCompile Include="..\src\tokenizer.c" />
-    <ClCompile Include="..\src\tokens.c" />
-    <ClCompile Include="..\src\tokens_generated_scanners.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\src\typestr.c" />
-    <ClCompile Include="..\src\xlalr.c" />
-    <ClCompile Include="..\src\xlts.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\src\carburetta_context.h" />
-    <ClInclude Include="..\src\chain.h" />
-    <ClInclude Include="..\src\decomment.h" />
-    <ClInclude Include="..\src\dfa.h" />
-    <ClInclude Include="..\src\emit_c.h" />
-    <ClInclude Include="..\src\grammar_table.h" />
-    <ClInclude Include="..\src\lalr.h" />
-    <ClInclude Include="..\src\line_assembly.h" />
-    <ClInclude Include="..\src\line_defs.h" />
-    <ClInclude Include="..\src\mul.h" />
-    <ClInclude Include="..\src\nfa.h" />
-    <ClInclude Include="..\src\parse_input.h" />
-    <ClInclude Include="..\src\prd_gram.h" />
-    <ClInclude Include="..\src\prd_grammar.h" />
-    <ClInclude Include="..\src\regex_grammar.h" />
-    <ClInclude Include="..\src\report_error.h" />
-    <ClInclude Include="..\src\scanner.h" />
-    <ClInclude Include="..\src\snippet.h" />
-    <ClInclude Include="..\src\symbol.h" />
-    <ClInclude Include="..\src\temp_output.h" />
-    <ClInclude Include="..\src\tokenizer.h" />
-    <ClInclude Include="..\src\tokens.h" />
-    <ClInclude Include="..\src\typestr.h" />
-    <ClInclude Include="..\src\xlalr.h" />
-    <ClInclude Include="..\src\xlts.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\src\prd_grammar.crbt" />
-    <None Include="..\src\regex_grammar.crbt" />
+    <CustomBuild Include="..\samples\calc\calc.crbt">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\calc\obj\%(Filename).c --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\calc\obj\%(Filename).c --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\calc\obj\%(Filename).c --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\calc\obj\%(Filename).c --h</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\calc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\calc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\calc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\calc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
+    </CustomBuild>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{BF90520E-4A1A-4AF7-B778-8041EFA5693D}</ProjectGuid>
+    <ProjectGuid>{8C4EE919-F6BC-4093-A768-C382254AC9C8}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>carburetta</RootNamespace>
+    <RootNamespace>calc</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -135,26 +87,41 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)\build\Win_x86\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\build\Win_x86\$(Configuration)\obj\</IntDir>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)\build\Win_amd64\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\build\Win_amd64\$(Configuration)\obj\</IntDir>
+    <OutDir>$(SolutionDir)build\Win_amd64\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\Win_amd64\$(Configuration)\calc\obj\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)build\Win_x86\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\Win_x86\$(Configuration)\calc\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)\build\Win_x86\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\build\Win_x86\$(Configuration)\obj\</IntDir>
+    <OutDir>$(SolutionDir)build\Win_x86\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\Win_x86\$(Configuration)\calc\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)\build\Win_amd64\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\build\Win_amd64\$(Configuration)\obj\</IntDir>
+    <OutDir>$(SolutionDir)build\Win_amd64\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\Win_amd64\$(Configuration)\calc\obj\</IntDir>
   </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>
@@ -162,27 +129,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>helpers/</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>helpers/</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -198,10 +146,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>helpers/</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -219,10 +165,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>helpers/</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

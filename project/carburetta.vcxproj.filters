@@ -57,7 +57,7 @@
     <ClInclude Include="..\src\temp_output.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\src\prd_grammar.cnd" />
-    <None Include="..\src\regex_grammar.cnd" />
+    <None Include="..\src\prd_grammar.crbt" />
+    <None Include="..\src\regex_grammar.crbt" />
   </ItemGroup>
 </Project>
