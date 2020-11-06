@@ -52,19 +52,17 @@ value: INTEGER                  { $$ = $0; }
 %%
 
 int main(int argc, char **argv) {
-  struct calc_stack stack;
-  calc_stack_init(&stack);
-  
   int final_result;
   static char s[300];
 
   fprintf(stderr, "Enter an oxpression (-1 to terminate):\n");
 
+  struct calc_stack stack;
+  calc_stack_init(&stack);
   do {
     if (!fgets(s, sizeof(s), stdin)) {
       break;
     }
-    calc_stack_reset(&stack);
     calc_scan(&stack, s, strlen(s), 1, &final_result);
   } while (final_result != -1);
   calc_stack_cleanup(&stack);

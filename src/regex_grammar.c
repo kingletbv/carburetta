@@ -392,6 +392,7 @@ static const int rxg_state_syms[] = {
 struct rxg_stack {
   int error_recovery_:1;
   int report_error_:1;
+  int pending_reset_:1;
   int need_sym_:1;
   int current_sym_;
   int mute_error_turns_;
@@ -471,6 +472,7 @@ struct rxg_stack {
 void rxg_stack_init(struct rxg_stack *stack) {
   stack->error_recovery_ = 0;
   stack->report_error_ = 0;
+  stack->pending_reset_ = 1;
   stack->need_sym_ = 1;
   stack->current_sym_ = 0;
   stack->mute_error_turns_ = 0;
@@ -554,6 +556,7 @@ static int rxg_push_state(struct rxg_stack *stack, int state) {
 }
 int rxg_stack_reset(struct rxg_stack *stack) {
   size_t n;
+  stack->pending_reset_ = 0;
   for (n = 1; n < stack->pos_; ++n) {
     switch (stack->stack_[n].state_) {
     } /* switch */
@@ -824,7 +827,6 @@ int rxg_lex(struct rxg_stack *stack, const char *input, size_t input_size, int i
     stack->input_offset_ = input_offset;
     stack->input_line_ = input_line;
     stack->input_col_ = input_col;
-
     return _RXG_END_OF_INPUT;
   }
 
@@ -891,6 +893,11 @@ syntax_error:
   return _RXG_SYNTAX_ERROR;
 }
 int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value) {
+  if (stack->pending_reset_) {
+    int r;
+    r = rxg_stack_reset(stack);
+    if (r) return r;
+  }
   for (;;) {
     if (stack->need_sym_) {
       switch (rxg_lex(stack, input, input_size, is_final_input)) {
@@ -1970,6 +1977,11 @@ return PRD_NEXT;
   } /* for (;;) lexing loop */
 }
 int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value) {
+  if (stack->pending_reset_) {
+    int r;
+    r = rxg_stack_reset(stack);
+    if (r) return r;
+  }
   if (stack->mute_error_turns_) stack->mute_error_turns_--;
   for (;;) {
     if (!stack->error_recovery_) {

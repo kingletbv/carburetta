@@ -41,6 +41,7 @@ extern "C" {
 struct rxg_stack {
   int error_recovery_:1;
   int report_error_:1;
+  int pending_reset_:1;
   int need_sym_:1;
   int current_sym_;
   int mute_error_turns_;

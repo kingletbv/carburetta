@@ -273,6 +273,7 @@ static const int prd_state_syms[] = {
 struct prd_stack {
   int error_recovery_:1;
   int report_error_:1;
+  int pending_reset_:1;
   int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
   struct prd_sym_data *stack_;
@@ -312,6 +313,7 @@ struct prd_stack {
 void prd_stack_init(struct prd_stack *stack) {
   stack->error_recovery_ = 0;
   stack->report_error_ = 0;
+  stack->pending_reset_ = 1;
   stack->mute_error_turns_ = 0;
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
@@ -412,6 +414,7 @@ static int prd_push_state(struct prd_stack *stack, int state) {
 }
 int prd_stack_reset(struct prd_stack *stack) {
   size_t n;
+  stack->pending_reset_ = 0;
   for (n = 1; n < stack->pos_; ++n) {
     switch (stack->stack_[n].state_) {
     case 2: /* semicolon */
@@ -486,6 +489,11 @@ int prd_stack_reset(struct prd_stack *stack) {
 }
 
 int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st) {
+  if (stack->pending_reset_) {
+    int r;
+    r = prd_stack_reset(stack);
+    if (r) return r;
+  }
   if (stack->mute_error_turns_) stack->mute_error_turns_--;
   for (;;) {
     if (!stack->error_recovery_) {

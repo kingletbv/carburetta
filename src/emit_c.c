@@ -1009,8 +1009,7 @@ static int emit_lex_function(FILE *outfp, struct carburetta_context *cc, struct 
                   "    stack->input_index_ = 0;\n"
                   "    stack->input_offset_ = input_offset;\n"
                   "    stack->input_line_ = input_line;\n"
-                  "    stack->input_col_ = input_col;\n"
-                  "\n");
+                  "    stack->input_col_ = input_col;\n");
   fprintf(outfp,  "    return _%sEND_OF_INPUT;\n", cc_PREFIX(cc));
   fprintf(outfp,  "  }\n"
                   "\n"
@@ -1096,7 +1095,11 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   else {
     fprintf(outfp, "int %sscan(struct %sstack *stack, const char *input, size_t input_size, int is_final_input) {\n", cc_prefix(cc), cc_prefix(cc));
   }
-
+  fprintf(outfp, "  if (stack->pending_reset_) {\n"
+                 "    int r;\n"
+                 "    r = %sstack_reset(stack);\n"
+                 "    if (r) return r;\n"
+                 "  }\n", cc_prefix(cc));
   fprintf(outfp, "  for (;;) {\n");
   fprintf(outfp, "    if (stack->need_sym_) {\n");
   fprintf(outfp, "      switch (%slex(stack, input, input_size, is_final_input)) {\n", cc_prefix(cc));
@@ -1311,6 +1314,7 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   }
   else {
     fprintf(outfp, "/* Synth S production we're done */\n"
+                   "            stack->pending_reset_ = 1;\n"
                    "            return 0;\n");
   }
 
@@ -1628,6 +1632,11 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   else {
     fprintf(outfp, "int %sparse(struct %sstack *stack, int sym) {\n", cc_prefix(cc), cc_prefix(cc));
   }
+  fprintf(outfp, "  if (stack->pending_reset_) {\n"
+                 "    int r;\n"
+                 "    r = %sstack_reset(stack);\n"
+                 "    if (r) return r;\n"
+                 "  }\n", cc_prefix(cc));
   fprintf(outfp, "  if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
   fprintf(outfp, "  for (;;) {\n"
                  "    if (!stack->error_recovery_) {\n"
@@ -1776,6 +1785,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   }
   else {
     fprintf(outfp, "/* Synth S we're done */\n"
+                   "          stack->pending_reset_ = 1;\n"
                    "          return 0;\n");
   }
 
@@ -2326,6 +2336,7 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
   fprintf(outfp, "struct %sstack {\n", cc_prefix(cc));
   fprintf(outfp, "  int error_recovery_:1;\n");
   fprintf(outfp, "  int report_error_:1;\n");
+  fprintf(outfp, "  int pending_reset_:1;\n");
   if (prdg->num_patterns_) {
     fprintf(outfp, "  int need_sym_:1;\n"
                     "  int current_sym_;\n");
@@ -2421,7 +2432,8 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
     "void %sstack_init(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   fprintf(outfp,
     "  stack->error_recovery_ = 0;\n"
-    "  stack->report_error_ = 0;\n");
+    "  stack->report_error_ = 0;\n"
+    "  stack->pending_reset_ = 1;\n");
   if (prdg->num_patterns_) {
     fprintf(outfp, "  stack->need_sym_ = 1;\n"
                     "  stack->current_sym_ = 0;\n");
@@ -2613,6 +2625,7 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
     "int %sstack_reset(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   fprintf(outfp,
     "  size_t n;\n"
+    "  stack->pending_reset_ = 0;\n"
     "  for (n = 1; n < stack->pos_; ++n) {\n");
   fprintf(outfp,
     "    switch (stack->stack_[n].state_) {\n");
@@ -2852,6 +2865,7 @@ int emit_h_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
   fprintf(outfp, "struct %sstack {\n", cc_prefix(cc));
   fprintf(outfp, "  int error_recovery_:1;\n");
   fprintf(outfp, "  int report_error_:1;\n");
+  fprintf(outfp, "  int pending_reset_:1;\n");
   if (prdg->num_patterns_) {
     fprintf(outfp, "  int need_sym_:1;\n"
                     "  int current_sym_;\n");
