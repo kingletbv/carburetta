@@ -45,6 +45,8 @@ factor: PAR_OPEN expr PAR_CLOSE { $$ = $1; }
 
 value: INTEGER                  { $$ = $0; }
 
+value: error                    { $$ = 0; fprintf(stderr, "Syntax error: value expected;\n"); }
+
 %%
 
 int main(int argc, char **argv) {
@@ -59,10 +61,14 @@ int main(int argc, char **argv) {
     if (!fgets(s, sizeof(s), stdin)) {
       break;
     }
-    r = calc_scan(&stack, s, strlen(s), 1, &final_result);
+    while (_CALC_SYNTAX_ERROR == (r = calc_scan(&stack, s, strlen(s), 1, &final_result))) {
+      fprintf(stderr, "Syntax error!\n");
+    }
     if (r) {
-      fprintf(stderr, "Error!\n");
-      calc_stack_reset(&stack);
+      if (r != _CALC_SYNTAX_ERROR) {
+        fprintf(stderr, "Error!\n");
+        calc_stack_reset(&stack);
+      }
     }
   } while (final_result != -1);
   calc_stack_cleanup(&stack);

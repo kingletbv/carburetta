@@ -1270,33 +1270,16 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
     fprintf(outfp, "          stack->stack_[stack->pos_ - 1].v_ = stack->stack_[0].v_;\n");
   }
 
-  fprintf(outfp, "          if (stack->report_error_) {\n"
-                 "            /* We're shifting this sym following an error recovery on the same sym, report syntax error */\n"
-                 "            stack->report_error_ = 0;\n"
-                 "            ");
-  if (cc->on_syntax_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
-      fprintf(outfp, "%s", cc->on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    fprintf(outfp, "/* Syntax error */\n"
-                   "            return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
-  }
-  fprintf(outfp, "          }\n"
-                 "          else {\n"
-                 "            ");
   if (cc->on_next_token_snippet_.num_tokens_) {
+    fprintf(outfp, "          {\n"
+                   "            ");
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
       fprintf(outfp, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
     }
+    fprintf(outfp, "          }\n");
   }
-  else {
-    fprintf(outfp, "/* Fall through to fetch next token */\n");
-  }
-  fprintf(outfp, "          }\n");
+
   fprintf(outfp, "        } /* action > 0 */\n");
 
   fprintf(outfp, "        else if (action < 0) {\n"
@@ -1498,14 +1481,22 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   fprintf(outfp, "          if (n != stack->pos_) {\n"
                  "            /* Enter error-token recovery mode given that such a recovery is possible */\n");
   fprintf(outfp, "            stack->error_recovery_ = (n != stack->pos_);\n"
-                 "            stack->report_error_ = !stack->mute_error_turns_;\n"
-                 "            stack->mute_error_turns_ = 3;\n"
                  "          }\n"
-                 "          else {\n"
-                 "            /* Cannot recover, issue the error here */\n"
-                 "            if (!stack->mute_error_turns_) {\n"
-                 "              stack->mute_error_turns_ = 3;\n"
-                 "              ");
+                 "          else {\n");
+  fprintf(outfp, "            if (sym == ");
+  if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+  fprintf(outfp, ") {\n");
+  fprintf(outfp, "              /* Retain EOF but discard any other sym so we make progress */\n"
+                 "              stack->need_sym_ = 1;\n"
+                 "            }\n"
+                 "          }\n");
+  fprintf(outfp, "          /* Issue the error here */\n"
+                 "          if (!stack->mute_error_turns_) {\n"
+                 "            stack->mute_error_turns_ = 3;\n"
+                 "            ");
   if (cc->on_syntax_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
@@ -1514,11 +1505,19 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   }
   else {
     fprintf(outfp, "/* Syntax error */\n"
-                   "              return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
+                   "            return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
   }
-  fprintf(outfp, "            }\n"
-                 "            else {\n"
-                 "              stack->mute_error_turns_--;\n"
+  fprintf(outfp, "          }\n"
+                 "          else {\n"
+                 "            stack->mute_error_turns_--;\n"
+                 "            if (sym ==");
+  if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+  fprintf(outfp, ") {\n");
+  fprintf(outfp, "              /* EOF means we cannot shift to recover, and errors are muted, so return completion */\n"
+                 "              return 0;\n"
                  "            }\n"
                  "          }\n"
                  "        }\n");
@@ -1533,7 +1532,7 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   fprintf(outfp, "            int err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
   fprintf(outfp, "            if (err_action > 0) {\n");
   fprintf(outfp, "              /* Does the resulting state accept the current symbol? */\n"
-                 "              int err_sym_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                 "              int err_sym_action = %sparse_table[%snum_columns * err_action + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   fprintf(outfp, "              if (err_sym_action) {\n"
                  "                /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
@@ -1772,34 +1771,20 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
     }
   }
   fprintf(outfp, "        } /* switch */\n");
-  fprintf(outfp, "        if (stack->report_error_) {\n"
-                 "          /* We're shifting this sym following an error recovery on the same sym, report syntax error */\n"
-                 "          stack->report_error_ = 0;\n"
-                 "          ");
-  if (cc->on_syntax_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
-      fprintf(outfp, "%s", cc->on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    fprintf(outfp, "/* Syntax error */\n"
-                   "          return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
-  }
-  fprintf(outfp, "        }\n"
-                 "        else {\n"
-                 "          ");
+
   if (cc->on_next_token_snippet_.num_tokens_) {
+    fprintf(outfp, "        {\n"
+                   "          ");
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
       fprintf(outfp, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
     }
+    fprintf(outfp, "        }\n");
   }
   else {
-    fprintf(outfp, "/* Next token */\n"
-                   "          return _%sFEED_ME;\n", cc_PREFIX(cc));
+    fprintf(outfp, "        /* Next token */\n"
+                   "        return _%sFEED_ME;\n", cc_PREFIX(cc));
   }
-  fprintf(outfp, "        }\n");
   fprintf(outfp, "      } /* action > 0 */\n");
 
   fprintf(outfp, "      else if (action < 0) {\n"
@@ -2001,14 +1986,22 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   fprintf(outfp, "        if (n != stack->pos_) {\n"
                  "          /* Enter error-token recovery mode given that such a recovery is possible */\n");
   fprintf(outfp, "          stack->error_recovery_ = (n != stack->pos_);\n"
-                 "          stack->report_error_ = !stack->mute_error_turns_;\n"
-                 "          stack->mute_error_turns_ = 3;\n"
                  "        }\n"
-                 "        else {\n"
-                 "          /* Cannot recover, issue the error here */\n"
-                 "          if (!stack->mute_error_turns_) {\n"
-                 "            stack->mute_error_turns_ = 3;\n"
-                 "            ");
+                 "        else {\n");
+  fprintf(outfp, "          if (sym == ");
+  if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+  fprintf(outfp, ") {\n");
+  fprintf(outfp, "            /* Retain EOF but discard any other sym so we make progress */\n"
+                 "            stack->need_sym_ = 1;\n"
+                 "          }\n"
+                 "        }\n");
+  fprintf(outfp, "        /* Issue the error here */\n"
+                 "        if (!stack->mute_error_turns_) {\n"
+                 "          stack->mute_error_turns_ = 3;\n"
+                 "          ");
   if (cc->on_syntax_error_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
@@ -2017,14 +2010,23 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   }
   else {
     fprintf(outfp, "/* Syntax error */\n"
-                   "            return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
+                   "          return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
   }
-  fprintf(outfp, "          }\n"
-                 "          else {\n"
-                 "            stack->mute_error_turns_--;\n"
+  fprintf(outfp, "        }\n"
+                 "        else {\n"
+                 "          stack->mute_error_turns_--;\n"
+                 "          if (sym ==");
+  if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+  fprintf(outfp, ") {\n");
+  fprintf(outfp, "            /* EOF means we cannot shift to recover, and errors are muted, so return completion */\n"
+                 "            return 0;\n"
                  "          }\n"
                  "        }\n"
                  "      }\n");
+
   fprintf(outfp, "    } /* !stack->error_recovery_ */\n"
                  "    if (stack->error_recovery_) {\n");
   fprintf(outfp, "      size_t n;\n"
@@ -2036,7 +2038,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   fprintf(outfp, "          int err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
   fprintf(outfp, "          if (err_action > 0) {\n");
   fprintf(outfp, "            /* Does the resulting state accept the current symbol? */\n"
-                 "            int err_sym_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                 "            int err_sym_action = %sparse_table[%snum_columns * err_action + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   fprintf(outfp, "            if (err_sym_action) {\n"
                  "              /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
@@ -2399,7 +2401,6 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
 
   fprintf(outfp, "struct %sstack {\n", cc_prefix(cc));
   fprintf(outfp, "  int error_recovery_:1;\n");
-  fprintf(outfp, "  int report_error_:1;\n");
   fprintf(outfp, "  int pending_reset_:1;\n");
   if (prdg->num_patterns_) {
     fprintf(outfp, "  int need_sym_:1;\n"
@@ -2496,7 +2497,6 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
     "void %sstack_init(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   fprintf(outfp,
     "  stack->error_recovery_ = 0;\n"
-    "  stack->report_error_ = 0;\n"
     "  stack->pending_reset_ = 1;\n");
   if (prdg->num_patterns_) {
     fprintf(outfp, "  stack->need_sym_ = 1;\n"
@@ -2791,8 +2791,7 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
 
   fprintf(outfp,
     "  stack->pos_ = 0;\n"
-    "  stack->error_recovery_ = 0;\n"
-    "  stack->report_error_ = 0;\n");
+    "  stack->error_recovery_ = 0;\n");
   if (prdg->num_patterns_) {
     fprintf(outfp, "  stack->need_sym_ = 1;\n"
                     "  stack->current_sym_ = 0;\n");
@@ -2928,7 +2927,6 @@ int emit_h_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
 
   fprintf(outfp, "struct %sstack {\n", cc_prefix(cc));
   fprintf(outfp, "  int error_recovery_:1;\n");
-  fprintf(outfp, "  int report_error_:1;\n");
   fprintf(outfp, "  int pending_reset_:1;\n");
   if (prdg->num_patterns_) {
     fprintf(outfp, "  int need_sym_:1;\n"
