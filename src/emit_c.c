@@ -1485,10 +1485,42 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   fprintf(outfp, "          *sd = nonterminal_sym_data_reduced_to;\n"
                  "          sd->state_ = action;\n");
   fprintf(outfp, "        } /* action < 0 */\n"
-                 "        else /* action == 0 */ {\n"
-                 "          stack->error_recovery_ = 1;\n"
-                 "          stack->report_error_ = !stack->mute_error_turns_;\n"
-                 "          stack->mute_error_turns_ = 3;\n"
+                 "        else /* action == 0 */ {\n");
+  fprintf(outfp, "          /* check if we can recover using an error token. */\n"
+                 "          size_t n;\n"
+                 "          for (n = 0; n < stack->pos_; ++n) {\n");
+  fprintf(outfp, "            int err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
+  fprintf(outfp, "            if (err_action > 0) {\n"
+                 "              /* we can transition on the error token somewhere on the stack */\n"
+                 "              break;\n"
+                 "            }\n"
+                 "          }\n");
+  fprintf(outfp, "          if (n != stack->pos_) {\n"
+                 "            /* Enter error-token recovery mode given that such a recovery is possible */\n");
+  fprintf(outfp, "            stack->error_recovery_ = (n != stack->pos_);\n"
+                 "            stack->report_error_ = !stack->mute_error_turns_;\n"
+                 "            stack->mute_error_turns_ = 3;\n"
+                 "          }\n"
+                 "          else {\n"
+                 "            /* Cannot recover, issue the error here */\n"
+                 "            if (!stack->mute_error_turns_) {\n"
+                 "              stack->mute_error_turns_ = 3;\n"
+                 "              ");
+  if (cc->on_syntax_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc->on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "/* Syntax error */\n"
+                   "              return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
+  }
+  fprintf(outfp, "            }\n"
+                 "            else {\n"
+                 "              stack->mute_error_turns_--;\n"
+                 "            }\n"
+                 "          }\n"
                  "        }\n");
   fprintf(outfp, "      } /* !stack->error_recovery_ */\n"
                  "      if (stack->error_recovery_) {\n");
@@ -1956,10 +1988,42 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   fprintf(outfp, "        *sd = nonterminal_sym_data_reduced_to;\n"
                  "        sd->state_ = action;\n");
   fprintf(outfp, "      } /* action < 0 */\n"
-                 "      else /* action == 0 */ {\n"
-                 "        stack->error_recovery_ = 1;\n"
-                 "        stack->report_error_ = !stack->mute_error_turns_;\n"
-                 "        stack->mute_error_turns_ = 3;\n"
+                 "      else /* action == 0 */ {\n");
+  fprintf(outfp, "        /* check if we can recover using an error token. */\n"
+                 "        size_t n;\n"
+                 "        for (n = 0; n < stack->pos_; ++n) {\n");
+  fprintf(outfp, "          int err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
+  fprintf(outfp, "          if (err_action > 0) {\n"
+                 "            /* we can transition on the error token somewhere on the stack */\n"
+                 "            break;\n"
+                 "          }\n"
+                 "        }\n");
+  fprintf(outfp, "        if (n != stack->pos_) {\n"
+                 "          /* Enter error-token recovery mode given that such a recovery is possible */\n");
+  fprintf(outfp, "          stack->error_recovery_ = (n != stack->pos_);\n"
+                 "          stack->report_error_ = !stack->mute_error_turns_;\n"
+                 "          stack->mute_error_turns_ = 3;\n"
+                 "        }\n"
+                 "        else {\n"
+                 "          /* Cannot recover, issue the error here */\n"
+                 "          if (!stack->mute_error_turns_) {\n"
+                 "            stack->mute_error_turns_ = 3;\n"
+                 "            ");
+  if (cc->on_syntax_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc->on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "/* Syntax error */\n"
+                   "            return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
+  }
+  fprintf(outfp, "          }\n"
+                 "          else {\n"
+                 "            stack->mute_error_turns_--;\n"
+                 "          }\n"
+                 "        }\n"
                  "      }\n");
   fprintf(outfp, "    } /* !stack->error_recovery_ */\n"
                  "    if (stack->error_recovery_) {\n");

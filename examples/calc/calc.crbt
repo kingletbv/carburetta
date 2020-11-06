@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <stdint.h>
-#include <inttypes.h>
 
 %scanner%
 %prefix calc_
@@ -11,17 +9,14 @@ PLUS: \+;
 MINUS: \-;
 ASTERISK: \*;
 SLASH: /;
-TILDE: ~;
-BANG: !;
 PAR_OPEN: \(;
 PAR_CLOSE: \);
 INTEGER: [0-9]+ {
   $$ = atoi($text);
 }
 
-%token PLUS MINUS ASTERISK SLASH TILDE BANG PAR_OPEN PAR_CLOSE INTEGER
+%token PLUS MINUS ASTERISK SLASH PAR_OPEN PAR_CLOSE INTEGER
 %nt grammar expr term factor value
-
 
 %grammar%
 
@@ -31,7 +26,10 @@ INTEGER: [0-9]+ {
 %constructor $$ = 0;
 %params int *final_result
 
-grammar: expr { printf("Outcome: %d\n", $0); *final_result = $0; }
+grammar: expr { 
+  printf("Outcome: %d\n", $0); 
+  *final_result = $0;
+}
 
 expr: term                      { $$ = $0; }
 expr: expr PLUS term            { $$ = $0 + $2; }
@@ -42,8 +40,6 @@ term: term ASTERISK factor      { $$ = $0 * $2; }
 term: term SLASH factor         { $$ = $0 / $2; }
 
 factor: value                   { $$ = $0; }
-factor: TILDE factor            { $$ = ~$1; }
-factor: BANG factor             { $$ = !$1; }
 factor: MINUS factor            { $$ = -$1; }
 factor: PAR_OPEN expr PAR_CLOSE { $$ = $1; }
 
@@ -52,10 +48,10 @@ value: INTEGER                  { $$ = $0; }
 %%
 
 int main(int argc, char **argv) {
-  int final_result;
+  int final_result, r;
   static char s[300];
 
-  fprintf(stderr, "Enter an oxpression (-1 to terminate):\n");
+  fprintf(stderr, "Enter an expression (-1 to terminate):\n");
 
   struct calc_stack stack;
   calc_stack_init(&stack);
@@ -63,7 +59,11 @@ int main(int argc, char **argv) {
     if (!fgets(s, sizeof(s), stdin)) {
       break;
     }
-    calc_scan(&stack, s, strlen(s), 1, &final_result);
+    r = calc_scan(&stack, s, strlen(s), 1, &final_result);
+    if (r) {
+      fprintf(stderr, "Error!\n");
+      calc_stack_reset(&stack);
+    }
   } while (final_result != -1);
   calc_stack_cleanup(&stack);
 
