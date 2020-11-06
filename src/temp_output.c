@@ -174,7 +174,7 @@ FILE *to_make_temp(const char *final_destination_file, char **temp_filenamep) {
     }
 #endif
 #ifdef __linux__
-    int fd = open(temp_filename, O_CREAT|O_EXCL|O_RDWR);
+    int fd = open(temp_filename, O_CREAT|O_EXCL|O_RDWR, 0664);
     if (fd == -1) {
       if (attempt == last_attempt) {
         int err = errno;
