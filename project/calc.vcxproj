@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\samples\calc\calc.crbt">
+    <CustomBuild Include="..\examples\calc\calc.crbt">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\calc\obj\%(Filename).c --h</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\calc\obj\%(Filename).c --h</Command>
