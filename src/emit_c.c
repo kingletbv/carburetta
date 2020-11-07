@@ -2179,6 +2179,8 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
 
   fprintf(outfp, "#include <stdlib.h> /* realloc(), free(), NULL, size_t */\n");
   fprintf(outfp, "#include <string.h> /* memcpy() */\n");
+  fprintf(outfp, "#include <stddef.h> /* size_t */\n");
+  fprintf(outfp, "#include <stdint.h> /* SIZE_MAX */\n");
 
   fprintf(outfp, "struct %ssym_data {\n", cc_prefix(cc));
   fprintf(outfp, "  int state_;\n");
