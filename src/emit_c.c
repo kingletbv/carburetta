@@ -1483,7 +1483,7 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   fprintf(outfp, "            stack->error_recovery_ = (n != stack->pos_);\n"
                  "          }\n"
                  "          else {\n");
-  fprintf(outfp, "            if (sym == ");
+  fprintf(outfp, "            if (sym != ");
   if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
@@ -1510,7 +1510,7 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   fprintf(outfp, "          }\n"
                  "          else {\n"
                  "            stack->mute_error_turns_--;\n"
-                 "            if (sym ==");
+                 "            if (sym == ");
   if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
@@ -1988,7 +1988,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   fprintf(outfp, "          stack->error_recovery_ = (n != stack->pos_);\n"
                  "        }\n"
                  "        else {\n");
-  fprintf(outfp, "          if (sym == ");
+  fprintf(outfp, "          if (sym != ");
   if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
@@ -2015,7 +2015,7 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   fprintf(outfp, "        }\n"
                  "        else {\n"
                  "          stack->mute_error_turns_--;\n"
-                 "          if (sym ==");
+                 "          if (sym == ");
   if (print_sym_as_c_ident(outfp, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
