@@ -2436,6 +2436,117 @@ cleanup_exit:
   return r;
 }
 
+int emit_sym_data_struct(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "struct %ssym_data {\n", cc_prefix(cc));
+  ip_printf(ip, "  int state_;\n");
+  if (cc->common_data_assigned_type_) {
+    struct typestr *ts = cc->common_data_assigned_type_;
+    ip_printf(ip, "  ");
+    int found_placeholder = 0;
+    size_t tok_idx;
+    for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
+      struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
+      if (st->variant_ != TOK_SPECIAL_IDENT) {
+        ip_printf(ip, "%s%s", tok_idx ? " " : "", st->text_.translated_);
+      }
+      else {
+        found_placeholder = 1;
+        ip_printf(ip, " common_");
+      }
+    }
+    if (!found_placeholder) {
+      /* Placeholder is implied at the end */
+      ip_printf(ip, " common_");
+    }
+    ip_printf(ip, ";\n");
+  }
+  if (cc->have_typed_symbols_) {
+    ip_printf(ip, "  union {\n");
+    size_t ts_idx;
+    for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+      struct typestr *ts;
+      ts = cc->tstab_.typestrs_[ts_idx];
+      int found_placeholder = 0;
+
+      if (!ts->is_symbol_type_) {
+        /* Skip the common data type, as it is not part of the union but shared by all */
+        continue;
+      }
+
+      ip_printf(ip, "    ");
+      size_t tok_idx;
+      for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
+        struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
+        if (st->variant_ != TOK_SPECIAL_IDENT) {
+          ip_printf(ip, "%s%s", tok_idx ? " " : "", st->text_.translated_);
+        }
+        else {
+          found_placeholder = 1;
+          ip_printf(ip, " uv%d_", ts->ordinal_);
+        }
+      }
+      if (!found_placeholder) {
+        /* Placeholder is implied at the end */
+        ip_printf(ip, " uv%d_", ts->ordinal_);
+      }
+      ip_printf(ip, ";\n");
+    }
+    ip_printf(ip, "  } v_;\n");
+  }
+  ip_printf(ip, "};\n");
+  return 0;
+}
+
+int emit_return_code_defines(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "#define _%sMATCH 1\n", cc_PREFIX(cc));
+  ip_printf(ip, "#define _%sOVERFLOW 2\n", cc_PREFIX(cc));
+  ip_printf(ip, "#define _%sNO_MEMORY 3\n", cc_PREFIX(cc));
+  ip_printf(ip, "#define _%sFEED_ME 4\n", cc_PREFIX(cc));
+  ip_printf(ip, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(cc));
+  ip_printf(ip, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(cc));
+  ip_printf(ip, "#define _%sINTERNAL_ERROR 7\n", cc_PREFIX(cc));
+  return 0;
+}
+
+
+int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg) {
+  ip_printf(ip, "struct %sstack {\n", cc_prefix(cc));
+  ip_printf(ip, "  int error_recovery_:1;\n");
+  ip_printf(ip, "  int pending_reset_:1;\n");
+  if (prdg->num_patterns_) {
+    ip_printf(ip, "  int need_sym_:1;\n"
+                   "  int current_sym_;\n");
+  }
+  ip_printf(ip, "  int mute_error_turns_;\n");
+  ip_printf(ip, "  size_t pos_, num_stack_allocated_;\n");
+  ip_printf(ip, "  struct %ssym_data *stack_;\n", cc_prefix(cc));
+  if (prdg->num_patterns_) {
+    ip_printf(ip, "  size_t scan_state_;\n"
+                  "  size_t match_index_;\n"
+                  "  size_t best_match_action_;\n"
+                  "  size_t best_match_size_;\n"
+                  "  size_t input_index_;\n"
+                  "  size_t input_offset_;\n"
+                  "  size_t match_buffer_size_;\n"
+                  "  size_t match_buffer_size_allocated_;\n"
+                  "  /* offset, line and column at the start of match_buffer_ */\n"
+                  "  size_t match_offset_;\n"
+                  "  int match_line_;\n"
+                  "  int match_col_;\n"
+                  "  /* offset, line and column at the zero-termination (best_match_size_) of a match \n"
+                  "   * in match_buffer_ (the actual buffer may well be longer.) */\n"
+                  "  size_t best_match_offset_;\n"
+                  "  int best_match_line_;\n"
+                  "  int best_match_col_;\n"
+                  "  size_t token_size_;\n"
+                  "  char *match_buffer_;\n"
+                  "  char terminator_repair_;\n"
+                  "  int input_line_;\n"
+                  "  int input_col_;\n");
+  }
+  ip_printf(ip, "};\n");
+  return 0;
+}
 
 int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable, struct lr_generator *lalr) {
   struct indented_printer ip;
@@ -2461,63 +2572,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
   ip_printf(&ip, "#include <stddef.h> /* size_t */\n");
   ip_printf(&ip, "#include <stdint.h> /* SIZE_MAX */\n");
 
-  ip_printf(&ip, "struct %ssym_data {\n", cc_prefix(cc));
-  ip_printf(&ip, "  int state_;\n");
-  if (cc->common_data_assigned_type_) {
-    struct typestr *ts = cc->common_data_assigned_type_;
-    ip_printf(&ip, "  ");
-    int found_placeholder = 0;
-    size_t tok_idx;
-    for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
-      struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
-      if (st->variant_ != TOK_SPECIAL_IDENT) {
-        ip_printf(&ip, "%s%s", tok_idx ? " " : "", st->text_.translated_);
-      }
-      else {
-        found_placeholder = 1;
-        ip_printf(&ip, " common_");
-      }
-    }
-    if (!found_placeholder) {
-      /* Placeholder is implied at the end */
-      ip_printf(&ip, " common_");
-    }
-    ip_printf(&ip, ";\n");
-  }
-  if (cc->have_typed_symbols_) {
-    ip_printf(&ip, "  union {\n");
-    size_t ts_idx;
-    for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
-      struct typestr *ts;
-      ts = cc->tstab_.typestrs_[ts_idx];
-      int found_placeholder = 0;
-
-      if (!ts->is_symbol_type_) {
-        /* Skip the common data type, as it is not part of the union but shared by all */
-        continue;
-      }
-
-      ip_printf(&ip, "    ");
-      size_t tok_idx;
-      for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
-        struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
-        if (st->variant_ != TOK_SPECIAL_IDENT) {
-          ip_printf(&ip, "%s%s", tok_idx ? " " : "", st->text_.translated_);
-        }
-        else {
-          found_placeholder = 1;
-          ip_printf(&ip, " uv%d_", ts->ordinal_);
-        }
-      }
-      if (!found_placeholder) {
-        /* Placeholder is implied at the end */
-        ip_printf(&ip, " uv%d_", ts->ordinal_);
-      }
-      ip_printf(&ip, ";\n");
-    }
-    ip_printf(&ip, "  } v_;\n");
-  }
-  ip_printf(&ip, "};\n");
+  emit_sym_data_struct(&ip, cc);
 
   if (prdg->num_patterns_) {
     ip_printf(&ip, "static const size_t %sscan_table[] = {\n", cc_prefix(cc));
@@ -2684,50 +2739,9 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
     ip_printf(&ip, "\n#ifndef %s\n", cc->include_guard_);
   }
 
-  ip_printf(&ip, "struct %sstack {\n", cc_prefix(cc));
-  ip_printf(&ip, "  int error_recovery_:1;\n");
-  ip_printf(&ip, "  int pending_reset_:1;\n");
-  if (prdg->num_patterns_) {
-    ip_printf(&ip, "  int need_sym_:1;\n"
-                   "  int current_sym_;\n");
-  }
-  ip_printf(&ip, "  int mute_error_turns_;\n");
-  ip_printf(&ip, "  size_t pos_, num_stack_allocated_;\n");
-  ip_printf(&ip, "  struct %ssym_data *stack_;\n", cc_prefix(cc));
-  if (prdg->num_patterns_) {
-    ip_printf(&ip, 
-            "  size_t scan_state_;\n"
-            "  size_t match_index_;\n"
-            "  size_t best_match_action_;\n"
-            "  size_t best_match_size_;\n"
-            "  size_t input_index_;\n"
-            "  size_t input_offset_;\n"
-            "  size_t match_buffer_size_;\n"
-            "  size_t match_buffer_size_allocated_;\n"
-            "  /* offset, line and column at the start of match_buffer_ */\n"
-            "  size_t match_offset_;\n"
-            "  int match_line_;\n"
-            "  int match_col_;\n"
-            "  /* offset, line and column at the zero-termination (best_match_size_) of a match \n"
-            "  ** in match_buffer_ (the actual buffer may well be longer.) */\n"
-            "  size_t best_match_offset_;\n"
-            "  int best_match_line_;\n"
-            "  int best_match_col_;\n"
-            "  size_t token_size_;\n"
-            "  char *match_buffer_;\n"
-            "  char terminator_repair_;\n"
-            "  int input_line_;\n"
-            "  int input_col_;\n");
-  }
-  ip_printf(&ip, "};\n");
+  emit_stack_struct_decl(&ip, cc, prdg);
 
-  ip_printf(&ip, "#define _%sMATCH 1\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sOVERFLOW 2\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sNO_MEMORY 3\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sFEED_ME 4\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sINTERNAL_ERROR 7\n", cc_PREFIX(cc));
+  emit_return_code_defines(&ip, cc);
   ip_printf(&ip, "\n");
 
   struct symbol *sym;
@@ -3137,6 +3151,7 @@ cleanup_exit:
   return r;
 }
 
+
 int emit_h_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *prdg) {
   struct indented_printer ip;
   ip_init(&ip, outfp, cc->h_output_filename_);
@@ -3155,13 +3170,7 @@ int emit_h_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
                   "#endif\n"
                   "\n");
 
-  ip_printf(&ip, "#define _%sMATCH 1\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sOVERFLOW 2\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sNO_MEMORY 3\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sFEED_ME 4\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(cc));
-  ip_printf(&ip, "#define _%sINTERNAL_ERROR 7\n", cc_PREFIX(cc));
+  emit_return_code_defines(&ip, cc);
   ip_printf(&ip, "\n");
 
   sym = cc->symtab_.terminals_;
@@ -3191,41 +3200,8 @@ int emit_h_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
   }
   ip_printf(&ip, "\n");
 
-  ip_printf(&ip, "struct %sstack {\n", cc_prefix(cc));
-  ip_printf(&ip, "  int error_recovery_:1;\n");
-  ip_printf(&ip, "  int pending_reset_:1;\n");
-  if (prdg->num_patterns_) {
-    ip_printf(&ip, "  int need_sym_:1;\n"
-                    "  int current_sym_;\n");
-  }
-  ip_printf(&ip, "  int mute_error_turns_;\n");
-  ip_printf(&ip, "  size_t pos_, num_stack_allocated_;\n");
-  ip_printf(&ip, "  struct %ssym_data *stack_;\n", cc_prefix(cc));
-  if (prdg->num_patterns_) {
-    ip_printf(&ip, "  size_t scan_state_;\n"
-                   "  size_t match_index_;\n"
-                   "  size_t best_match_action_;\n"
-                   "  size_t best_match_size_;\n"
-                   "  size_t input_index_;\n"
-                   "  size_t input_offset_;\n"
-                   "  size_t match_buffer_size_;\n"
-                   "  size_t match_buffer_size_allocated_;\n"
-                   "  /* offset, line and column at the start of match_buffer_ */\n"
-                   "  size_t match_offset_;\n"
-                   "  int match_line_;\n"
-                   "  int match_col_;\n"
-                   "  /* offset, line and column at the zero-termination (best_match_size_) of a match \n"
-                   "   * in match_buffer_ (the actual buffer may well be longer.) */\n"
-                   "  size_t best_match_offset_;\n"
-                   "  int best_match_line_;\n"
-                   "  int best_match_col_;\n"
-                   "  size_t token_size_;\n"
-                   "  char *match_buffer_;\n"
-                   "  char terminator_repair_;\n"
-                   "  int input_line_;\n"
-                   "  int input_col_;\n");
-  }
-  ip_printf(&ip, "};\n");
+  emit_stack_struct_decl(&ip, cc, prdg);
+
   ip_printf(&ip, "\n");
   ip_printf(&ip, "void %sstack_init(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(&ip, "void %sstack_cleanup(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
