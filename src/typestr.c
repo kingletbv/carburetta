@@ -70,6 +70,7 @@ void typestr_table_cleanup(struct typestr_table *tt) {
 static void typestr_init(struct typestr *ts) {
   ts->hash_chain_ = NULL;
   ts->hash_ = 0;
+  ts->is_symbol_type_ = 0;
   snippet_init(&ts->typestr_snippet_);
   ts->ordinal_ = 0;
   snippet_init(&ts->constructor_snippet_);

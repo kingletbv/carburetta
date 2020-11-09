@@ -41,6 +41,10 @@ struct typestr {
   struct typestr *hash_chain_;
   uint64_t hash_;
 
+  /* Non-zero if this is a symbol type (a type associated with
+   * a particular set of symbols, but not all.) */
+  int is_symbol_type_:1;
+
   /* Sequence of tokens that make up the type description, may
    * contain a single "$" TOK_SPECIAL_IDENT to denote the position
    * at which the identifier would appear. If no "$" placeholder

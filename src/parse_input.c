@@ -804,6 +804,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
       sym->assigned_type_ = nt_ts;
     }
     cc->have_typed_symbols_ = 1;
+    nt_ts->is_symbol_type_ = 1;
   }
 
   if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
@@ -816,6 +817,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     cc->token_assigned_type_ = token_ts;
     cc->most_recent_typestr_ = token_ts;
     cc->have_typed_symbols_ = 1;
+    token_ts->is_symbol_type_ = 1;
   }
 
   if (directive == PCD_COMMON_TYPE_DIRECTIVE) {

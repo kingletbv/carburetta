@@ -2325,7 +2325,7 @@ int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
       ts = cc->tstab_.typestrs_[ts_idx];
       int found_placeholder = 0;
 
-      if (ts == cc->common_data_assigned_type_) {
+      if (!ts->is_symbol_type_) {
         /* Skip the common data type, as it is not part of the union but shared by all */
         continue;
       }
