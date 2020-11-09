@@ -1490,8 +1490,59 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
   }
   fprintf(outfp, ") {\n");
   fprintf(outfp, "              /* Retain EOF but discard any other sym so we make progress */\n"
-                 "              stack->need_sym_ = 1;\n"
-                 "            }\n"
+                 "              stack->need_sym_ = 1;\n");
+
+  fprintf(outfp, "              /* Deconstruct placeholder location for discarded symbol */\n");
+  fprintf(outfp, "              switch (stack->current_sym_) {\n");
+  size_t ts_idx;
+  for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+    struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+    struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+    size_t n;
+    int have_some = 0;
+    for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+      struct symbol *sym = the_syms[n];
+      if (sym) {
+        do {
+          if (sym->assigned_type_ == ts) {
+            have_some = 1;
+            fprintf(outfp, "                case %d:\n", sym->ordinal_);
+
+          }
+
+          sym = sym->next_;
+        } while (sym != the_syms[n]);
+      }
+    }
+    if (have_some) {
+      /* Execute destructors for typestr ts at stack->stack_[0] */
+      if (ts->destructor_snippet_.num_tokens_) {
+        fprintf(outfp, "                  {\n"
+                       "                    ");
+        if (emit_destructor_snippet_indexed_by_0(outfp, cc, ts)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "\n"
+                       "                  }\n");
+                           
+      }
+      fprintf(outfp, "                  break;\n");
+    }
+  }
+  fprintf(outfp, "              } /* switch */\n");
+
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+    fprintf(outfp, "              {\n"
+                   "                ");
+    if (emit_common_destructor_snippet_index_0(outfp, cc)) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    fprintf(outfp, "\n"
+                   "              }\n");
+  }
+  fprintf(outfp, "            }\n"
                  "          }\n");
   fprintf(outfp, "          /* Issue the error here */\n"
                  "          if (!stack->mute_error_turns_) {\n"
@@ -1636,6 +1687,56 @@ static int emit_scan_function(FILE *outfp, struct carburetta_context *cc, struct
       fprintf(outfp, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
     }
   }
+  fprintf(outfp, "          /* Deconstruct placeholder location for discarded symbol */\n");
+  fprintf(outfp, "          switch (stack->current_sym_) {\n");
+  for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+    struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+    struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+    size_t n;
+    int have_some = 0;
+    for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+      struct symbol *sym = the_syms[n];
+      if (sym) {
+        do {
+          if (sym->assigned_type_ == ts) {
+            have_some = 1;
+            fprintf(outfp, "            case %d:\n", sym->ordinal_);
+
+          }
+
+          sym = sym->next_;
+        } while (sym != the_syms[n]);
+      }
+    }
+    if (have_some) {
+      /* Execute destructors for typestr ts at stack->stack_[0] */
+      if (ts->destructor_snippet_.num_tokens_) {
+        fprintf(outfp, "              {\n"
+                       "                ");
+        if (emit_destructor_snippet_indexed_by_0(outfp, cc, ts)) {
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+        fprintf(outfp, "\n"
+                       "              }\n");
+                           
+      }
+      fprintf(outfp, "              break;\n");
+    }
+  }
+  fprintf(outfp, "          } /* switch */\n");
+
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+    fprintf(outfp, "          {\n"
+                   "            ");
+    if (emit_common_destructor_snippet_index_0(outfp, cc)) {
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+    fprintf(outfp, "\n"
+                   "          }\n");
+  }
+
   fprintf(outfp, "        }\n");
   fprintf(outfp, "      } /* stack->error_recovery_ */\n");
   fprintf(outfp, "    } /* for (;;) */\n");
@@ -1995,8 +2096,19 @@ static int emit_parse_function(FILE *outfp, struct carburetta_context *cc, struc
   }
   fprintf(outfp, ") {\n");
   fprintf(outfp, "            /* Retain EOF but discard any other sym so we make progress */\n"
-                 "            stack->need_sym_ = 1;\n"
-                 "          }\n"
+                 "            ");
+  if (cc->on_next_token_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
+      fprintf(outfp, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    fprintf(outfp, "/* Next token */\n"
+                   "            return _%sFEED_ME;\n", cc_PREFIX(cc));
+  }
+
+  fprintf(outfp, "          }\n"
                  "        }\n");
   fprintf(outfp, "        /* Issue the error here */\n"
                  "        if (!stack->mute_error_turns_) {\n"
