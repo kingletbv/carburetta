@@ -13,6 +13,10 @@
  * limitations under the License.
  */
 
+#ifndef _MSC_VER
+#define _GNU_SOURCE /* expose vasprintf() declaration in stdio.h */
+#endif
+
 #ifndef STDLIB_H_INCLUDED
 #define STDLIB_H_INCLUDED
 #include <stdlib.h>
