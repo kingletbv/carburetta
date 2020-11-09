@@ -230,11 +230,33 @@ void ip_vprintf(struct indented_printer *ip, const char *format, va_list args) {
     return ;
   }
   vsprintf(p, format, args);
-  ip_puts(ip, p);
+  ip_puts_no_indent(ip, p);
+  free(p);
+}
+void ip_vprintf_no_indent(struct indented_printer *ip, const char *format, va_list args) {
+  size_t len = _vscprintf(format, args);
+  char *p = (char *)malloc(len + 1);
+  if (!p) {
+    re_error_nowhere("Error, no memory");
+    ip->had_error_ = 1;
+    return ;
+  }
+  vsprintf(p, format, args);
+  ip_puts_no_indent(ip, p);
   free(p);
 }
 #else /* GCC/clang */
 void ip_vprintf(struct indented_printer *ip, const char *format, va_list args) {
+  char *p;
+  if (-1 == vasprintf(&p, format, args)) {
+    re_error_nowhere("Error, no memory");
+    ip->had_error_ = 1;
+    return ;
+  }
+  ip_puts(ip, p);
+  free(p);
+}
+void ip_vprintf_no_indent(struct indented_printer *ip, const char *format, va_list args) {
   char *p;
   if (-1 == vasprintf(&p, format, args)) {
     re_error_nowhere("Error, no memory");
@@ -253,6 +275,13 @@ void ip_printf(struct indented_printer *ip, const char *format, ...) {
   va_end(args);
 }
 
+void ip_printf_no_indent(struct indented_printer *ip, const char *format, ...) {
+  va_list args;
+  va_start(args, format);
+  ip_vprintf_no_indent(ip, format, args);
+  va_end(args);
+}
+
 const char *cc_prefix(struct carburetta_context *cc) {
   if (cc->prefix_.num_translated_) return cc->prefix_.translated_;
   return "carburetta_";
@@ -268,7 +297,7 @@ static const char *cc_TOKEN_PREFIX(struct carburetta_context *cc) {
   return cc_PREFIX(cc);
 }
 
-static int print_sym_as_c_ident(FILE *fp, struct carburetta_context *cc, struct symbol *sym) {
+static int print_sym_as_c_ident(struct indented_printer *ip, struct carburetta_context *cc, struct symbol *sym) {
   char *ident = (char *)malloc(1 + sym->def_.num_translated_);
   char *s = ident;
   const char *p;
@@ -284,65 +313,65 @@ static int print_sym_as_c_ident(FILE *fp, struct carburetta_context *cc, struct 
   }
   *s++ = '\0';
 
-  fprintf(fp, "%s%s", cc_TOKEN_PREFIX(cc), ident);
+  ip_printf(ip, "%s%s", cc_TOKEN_PREFIX(cc), ident);
 
   free(ident);
 
   return 0;
 }
 
-static void print_regex_as_comment(FILE *outfp, const char *regex) {
-  fwrite("/* ", 1, 3, outfp);
+static void print_regex_as_comment(struct indented_printer *ip, const char *regex) {
+  ip_puts_no_indent(ip, "/* ");
   while (*regex) {
     /* Make sure we don't accidentally close the comment */
     if ((regex[0] == '*') && (regex[1] == '/')) {
-      fwrite("* /", 1, 3, outfp);
+      ip_puts_no_indent(ip, "* /");
     }
     else {
-      fwrite(regex, 1, 1, outfp);
+      ip_write_no_indent(ip, regex, 1);
     }
     regex++;
   }
-  fwrite(" */", 1, 3, outfp);
+  ip_puts_no_indent(ip, " */");
 }
 
-static int emit_dest(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_dest(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   switch (se->dest_type_) {
   case SEDT_NONE:
     re_error(&st->text_, "$$ cannot resolve to a symbol");
     return TKR_SYNTAX_ERROR;
   case SEDT_FMT:
-    fputs(se->dest_fmt_, outfp);
+    ip_puts_no_indent(ip, se->dest_fmt_);
     break;
   case SEDT_FMT_PREFIX:
-    fprintf(outfp, se->dest_fmt_, cc_prefix(cc));
+    ip_printf_no_indent(ip, se->dest_fmt_, cc_prefix(cc));
     break;
   case SEDT_FMT_DATATYPE_ORDINAL:
     if (!se->dest_->sym_->assigned_type_) {
       re_error(&st->text_, "$$ cannot resolve to a data type for non-terminal %s", se->dest_->id_.translated_);
       return TKR_SYNTAX_ERROR;
     }
-    fprintf(outfp, se->dest_fmt_, se->dest_->sym_->assigned_type_->ordinal_);
+    ip_printf_no_indent(ip, se->dest_fmt_, se->dest_->sym_->assigned_type_->ordinal_);
     break;
   case SEDT_FMT_PREFIX_DATATYPE_ORDINAL:
     if (!se->dest_->sym_->assigned_type_) {
       re_error(&st->text_, "$$ cannot resolve to a data type for non-terminal %s", se->dest_->id_.translated_);
       return TKR_SYNTAX_ERROR;
     }
-    fprintf(outfp, se->dest_fmt_, cc_prefix(cc), se->dest_->sym_->assigned_type_->ordinal_);
+    ip_printf_no_indent(ip, se->dest_fmt_, cc_prefix(cc), se->dest_->sym_->assigned_type_->ordinal_);
     break;
   case SEDT_FMT_PREFIX_TYPESTR_ORDINAL:
-    fprintf(outfp, se->dest_fmt_, cc_prefix(cc), se->dest_typestr_->ordinal_);
+    ip_printf_no_indent(ip, se->dest_fmt_, cc_prefix(cc), se->dest_typestr_->ordinal_);
     break;
   case SEDT_FMT_TYPESTR_ORDINAL:
-    fprintf(outfp, se->dest_fmt_, se->dest_typestr_->ordinal_);
+    ip_printf_no_indent(ip, se->dest_fmt_, se->dest_typestr_->ordinal_);
     break;
   }
 
   return 0;
 }
 
-static int emit_sym_specific_data(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st, size_t sym_index) {
+static int emit_sym_specific_data(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st, size_t sym_index) {
   if (se->sym_type_ == SEST_NONE) {
     re_error(&st->text_, "No symbols to reference");
     return TKR_SYNTAX_ERROR;
@@ -358,13 +387,13 @@ static int emit_sym_specific_data(FILE *outfp, struct carburetta_context *cc, st
   }
   switch (se->sym_type_) {
   case SEST_FMT_INDEX_ORDINAL:
-    fprintf(outfp, se->sym_fmt_, sym_index, sym->assigned_type_->ordinal_);
+    ip_printf_no_indent(ip, se->sym_fmt_, sym_index, sym->assigned_type_->ordinal_);
     break;
   }
   return 0;
 }
 
-static int emit_dest_commondata(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_dest_commondata(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->common_dest_type_ == SECDT_NONE) {
     re_error(&st->text_, "$ cannot resolve to a symbol");
     return TKR_SYNTAX_ERROR;
@@ -375,56 +404,56 @@ static int emit_dest_commondata(FILE *outfp, struct carburetta_context *cc, stru
 
   switch (se->common_dest_type_) {
   case SECDT_FMT_PREFIX:
-    fprintf(outfp, se->common_dest_fmt_, cc_prefix(cc));
+    ip_printf_no_indent(ip, se->common_dest_fmt_, cc_prefix(cc));
     break;
   case SECDT_FMT:
-    fputs(se->common_dest_fmt_, outfp);
+    ip_puts_no_indent(ip, se->common_dest_fmt_);
     break;
   }
 
   return 0;
 }
 
-static int emit_len(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_len(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->len_type_ == SELT_NONE) {
     re_error(&st->text_, "%%len cannot resolve to a length");
     return TKR_SYNTAX_ERROR;
   }
   switch (se->len_type_) {
   case SELT_FMT:
-    fputs(se->len_fmt_, outfp);
+    ip_puts_no_indent(ip, se->len_fmt_);
     break;
   }
   return 0;
 }
 
-static int emit_discard(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_discard(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->discard_type_ == SEDIT_NONE) {
     re_error(&st->text_, "%%discard use is limited to common actions");
     return TKR_SYNTAX_ERROR;
   }
   switch (se->discard_type_) {
   case SEDIT_FMT:
-    fputs(se->discard_fmt_, outfp);
+    ip_puts_no_indent(ip, se->discard_fmt_);
     break;
   }
   return 0;
 }
 
-static int emit_text(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+static int emit_text(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->text_type_ == SETT_NONE) {
     re_error(&st->text_, "%%text use is limited to pattern actions");
     return TKR_SYNTAX_ERROR;
   }
   switch (se->text_type_) {
   case SETT_FMT:
-    fputs(se->text_fmt_, outfp);
+    ip_puts_no_indent(ip, se->text_fmt_);
     break;
   }
   return 0;
 }
 
-static int emit_common(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *special_ident_token, size_t start_of_index, size_t end_of_index) {
+static int emit_common(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *special_ident_token, size_t start_of_index, size_t end_of_index) {
   if (se->common_type_ == SECT_NONE) {
     re_error(&special_ident_token->text_, "No symbols to reference");
     return TKR_SYNTAX_ERROR;
@@ -435,28 +464,28 @@ static int emit_common(FILE *outfp, struct carburetta_context *cc, struct snippe
   }
   switch (se->common_type_) {
   case SECT_FMT_PREFIX:
-    fprintf(outfp, se->common_fmt_prefix_, cc_prefix(cc));
+    ip_printf_no_indent(ip, se->common_fmt_prefix_, cc_prefix(cc));
     break;
   case SECT_FMT:
-    fputs(se->common_fmt_prefix_, outfp);
+    ip_puts_no_indent(ip, se->common_fmt_prefix_);
     break;
   }
   size_t n;
   for (n = start_of_index; n < end_of_index; ++n) {
-    fprintf(outfp, "%s", se->code_->tokens_[n].text_.original_);
+    ip_printf_no_indent(ip, "%s", se->code_->tokens_[n].text_.original_);
   }
-  fputs(se->common_fmt_suffix_, outfp);
+  ip_puts_no_indent(ip, se->common_fmt_suffix_);
   return 0;
 }
 
-static int emit_snippet_code_emission(FILE *outfp, struct carburetta_context *cc, struct snippet_emission *se) {
+static int emit_snippet_code_emission(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se) {
   int r;
   size_t col;
   for (col = 0; col < se->code_->num_tokens_; ++col) {
     /* Print the original code, to preserve formatting and line continuations */
     if (se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
       /* Expansion of special destination sym identifier */
-      r = emit_dest(outfp, cc, se, se->code_->tokens_ + col);
+      r = emit_dest(ip, cc, se, se->code_->tokens_ + col);
       if (r) {
         return r;
       }
@@ -486,7 +515,7 @@ static int emit_snippet_code_emission(FILE *outfp, struct carburetta_context *cc
           re_error(&se->code_->tokens_[open_cubrace_at].text_, "Unmatched brace");
         }
         else {
-          r = emit_common(outfp, cc, se, se->code_->tokens_ + special_ident_at, index_starts_at, index_ends_at);
+          r = emit_common(ip, cc, se, se->code_->tokens_ + special_ident_at, index_starts_at, index_ends_at);
           if (r) {
             return r;
           }
@@ -494,26 +523,26 @@ static int emit_snippet_code_emission(FILE *outfp, struct carburetta_context *cc
       }
       else {
         /* Single $ with no { } following it refers to the destination symbol's common data */
-        r = emit_dest_commondata(outfp, cc, se, se->code_->tokens_ + col);
+        r = emit_dest_commondata(ip, cc, se, se->code_->tokens_ + col);
         if (r) {
           return r;
         }
       }
     }
     else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$len", se->code_->tokens_[col].text_.translated_)) {
-      r = emit_len(outfp, cc, se, se->code_->tokens_ + col);
+      r = emit_len(ip, cc, se, se->code_->tokens_ + col);
       if (r) {
         return r;
       }
     }
     else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$discard", se->code_->tokens_[col].text_.translated_)) {
-      r = emit_discard(outfp, cc, se, se->code_->tokens_ + col);
+      r = emit_discard(ip, cc, se, se->code_->tokens_ + col);
       if (r) {
         return r;
       }
     }
     else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$text", se->code_->tokens_[col].text_.translated_)) {
-      r = emit_text(outfp, cc, se, se->code_->tokens_ + col);
+      r = emit_text(ip, cc, se, se->code_->tokens_ + col);
       if (r) {
         return r;
       }
@@ -544,21 +573,21 @@ static int emit_snippet_code_emission(FILE *outfp, struct carburetta_context *cc
         re_error(&se->code_->tokens_[col].text_, "Symbol reference cannot resolve");
         return TKR_SYNTAX_ERROR;
       }
-      r = emit_sym_specific_data(outfp, cc, se, se->code_->tokens_ + col, special_index);
+      r = emit_sym_specific_data(ip, cc, se, se->code_->tokens_ + col, special_index);
       if (r) {
         return r;
       }
     }
     else {
-      fprintf(outfp, "%s", se->code_->tokens_[col].text_.original_);
+      ip_printf_no_indent(ip, "%s", se->code_->tokens_[col].text_.original_);
     }
   }
-  fprintf(outfp, "\n");
+  ip_printf_no_indent(ip, "\n");
 
   return 0;
 }
 
-static int emit_common_action_snippet(FILE *outfp, struct carburetta_context *cc, struct prd_production *prd) {
+static int emit_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_production *prd) {
   struct snippet_emission se = { 0 };
   se.code_ = &prd->common_action_sequence_;
   se.dest_type_ = SEDT_NONE;
@@ -573,10 +602,10 @@ static int emit_common_action_snippet(FILE *outfp, struct carburetta_context *cc
   se.discard_type_ = SEDIT_FMT;
   se.discard_fmt_ = "discard_action = 1;";
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_action_snippet(FILE *outfp, struct carburetta_context *cc, struct prd_production *prd) {
+static int emit_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_production *prd) {
   struct snippet_emission se = { 0 };
   se.code_ = &prd->action_sequence_;
   se.dest_type_ = SEDT_FMT_DATATYPE_ORDINAL;
@@ -594,10 +623,10 @@ static int emit_action_snippet(FILE *outfp, struct carburetta_context *cc, struc
   se.len_fmt_ = "((size_t)production_length)";
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_pattern_token_action_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_pattern_token_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->token_action_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -610,10 +639,10 @@ static int emit_pattern_token_action_snippet(FILE *outfp, struct carburetta_cont
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_token_action_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_token_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->token_action_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -626,10 +655,10 @@ static int emit_token_action_snippet(FILE *outfp, struct carburetta_context *cc,
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_constructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
@@ -642,10 +671,10 @@ static int emit_constructor_snippet(FILE *outfp, struct carburetta_context *cc, 
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_dst_sym_constructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_dst_sym_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -658,10 +687,10 @@ static int emit_dst_sym_constructor_snippet(FILE *outfp, struct carburetta_conte
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_common_constructor_snippet(FILE *outfp, struct carburetta_context *cc) {
+static int emit_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -674,10 +703,10 @@ static int emit_common_constructor_snippet(FILE *outfp, struct carburetta_contex
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_dst_common_constructor_snippet(FILE *outfp, struct carburetta_context *cc) {
+static int emit_dst_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -690,10 +719,10 @@ static int emit_dst_common_constructor_snippet(FILE *outfp, struct carburetta_co
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_token_common_constructor_snippet(FILE *outfp, struct carburetta_context *cc) {
+static int emit_token_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -706,10 +735,10 @@ static int emit_token_common_constructor_snippet(FILE *outfp, struct carburetta_
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_pattern_token_common_constructor_snippet(FILE *outfp, struct carburetta_context *cc) {
+static int emit_pattern_token_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -722,10 +751,10 @@ static int emit_pattern_token_common_constructor_snippet(FILE *outfp, struct car
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_token_common_action_snippet(FILE *outfp, struct carburetta_context *cc) {
+static int emit_token_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->token_action_snippet_;
@@ -738,10 +767,10 @@ static int emit_token_common_action_snippet(FILE *outfp, struct carburetta_conte
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_pattern_token_common_action_snippet(FILE *outfp, struct carburetta_context *cc) {
+static int emit_pattern_token_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->token_action_snippet_;
@@ -754,10 +783,10 @@ static int emit_pattern_token_common_action_snippet(FILE *outfp, struct carburet
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_token_constructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_token_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -770,10 +799,10 @@ static int emit_token_constructor_snippet(FILE *outfp, struct carburetta_context
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_pattern_token_constructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_pattern_token_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -786,10 +815,10 @@ static int emit_pattern_token_constructor_snippet(FILE *outfp, struct carburetta
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_destructor_snippet(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->destructor_snippet_;
   se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
@@ -802,10 +831,10 @@ static int emit_destructor_snippet(FILE *outfp, struct carburetta_context *cc, s
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_destructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->destructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -818,10 +847,10 @@ static int emit_destructor_snippet_indexed_by_n(FILE *outfp, struct carburetta_c
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_destructor_snippet_indexed_by_0(FILE *outfp, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_destructor_snippet_indexed_by_0(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   se.code_ = &ts->destructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
@@ -834,10 +863,10 @@ static int emit_destructor_snippet_indexed_by_0(FILE *outfp, struct carburetta_c
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_common_destructor_snippet(FILE *outfp, struct carburetta_context *cc) {
+static int emit_common_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -850,10 +879,10 @@ static int emit_common_destructor_snippet(FILE *outfp, struct carburetta_context
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_pattern_token_common_destructor_snippet(FILE *outfp, struct carburetta_context *cc) {
+static int emit_pattern_token_common_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -866,10 +895,10 @@ static int emit_pattern_token_common_destructor_snippet(FILE *outfp, struct carb
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct carburetta_context *cc) {
+static int emit_common_destructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -882,10 +911,10 @@ static int emit_common_destructor_snippet_indexed_by_n(FILE *outfp, struct carbu
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
-static int emit_common_destructor_snippet_index_0(FILE *outfp, struct carburetta_context *cc) {
+static int emit_common_destructor_snippet_index_0(struct indented_printer *ip, struct carburetta_context *cc) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -898,11 +927,11 @@ static int emit_common_destructor_snippet_index_0(FILE *outfp, struct carburetta
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
 
-static int emit_pattern_action_snippet(FILE *outfp, struct carburetta_context *cc, struct prd_pattern *pat) {
+static int emit_pattern_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_pattern *pat) {
   struct snippet_emission se = { 0 };
   struct typestr *ts = pat->term_.sym_ ? pat->term_.sym_->assigned_type_ : NULL;
   se.code_ = &pat->action_sequence_;
@@ -924,7 +953,7 @@ static int emit_pattern_action_snippet(FILE *outfp, struct carburetta_context *c
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_FMT;
   se.text_fmt_ = "(stack->match_buffer_)";
-  return emit_snippet_code_emission(outfp, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se);
 }
 
 static int emit_lex_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable) {
@@ -1243,7 +1272,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
   ip_printf(ip, "        case _%sMATCH:\n", cc_PREFIX(cc));
   ip_printf(ip, "          stack->need_sym_ = 0;\n");
   ip_printf(ip, "          stack->current_sym_ = ");
-  if (print_sym_as_c_ident(ip->outfp_, cc, cc->input_end_sym_)) {
+  if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -1253,7 +1282,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
     ip_printf(ip, "          {\n"
                   "            ");
-    if (emit_pattern_token_common_constructor_snippet(ip->outfp_, cc)) {
+    if (emit_pattern_token_common_constructor_snippet(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1262,7 +1291,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->token_action_snippet_.num_tokens_) {
     ip_printf(ip, "          {\n"
                   "            ");
-    if (emit_pattern_token_common_action_snippet(ip->outfp_, cc)) {
+    if (emit_pattern_token_common_action_snippet(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1274,11 +1303,11 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
   for (pat_idx = 0; pat_idx < prdg->num_patterns_; ++pat_idx) {
     struct prd_pattern *pat = prdg->patterns_ + pat_idx;
     ip_printf(ip, "            case %zu: ", pat_idx + 1);
-    print_regex_as_comment(ip->outfp_, pat->regex_);
+    print_regex_as_comment(ip, pat->regex_);
     ip_printf(ip, "\n");
     if (pat->term_.sym_) {
       ip_printf(ip, "              stack->current_sym_ = ");
-      if (print_sym_as_c_ident(ip->outfp_, cc, pat->term_.sym_)) {
+      if (print_sym_as_c_ident(ip, cc, pat->term_.sym_)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -1286,7 +1315,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
       if (pat->term_.sym_->assigned_type_ && pat->term_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
         ip_printf(ip, "              {\n"
                       "                ");
-        if (emit_pattern_token_constructor_snippet(ip->outfp_, cc, pat->term_.sym_->assigned_type_)) {
+        if (emit_pattern_token_constructor_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -1296,7 +1325,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
         ip_printf(ip, "              {\n"
                       "                ");
 
-        if (emit_pattern_token_action_snippet(ip->outfp_, cc, pat->term_.sym_->assigned_type_)) {
+        if (emit_pattern_token_action_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -1306,7 +1335,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
       if (pat->action_sequence_.num_tokens_) {
         ip_printf(ip, "              {\n"
                       "                ");
-        emit_pattern_action_snippet(ip->outfp_, cc, pat);
+        emit_pattern_action_snippet(ip, cc, pat);
         ip_printf(ip, "              }\n");
       }
     }
@@ -1314,7 +1343,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
       /* Pattern matches no symbol */
       ip_printf(ip, "              /* Pattern does not have a symbol */\n"
                     "              stack->current_sym_ = ");
-      if (print_sym_as_c_ident(ip->outfp_, cc, cc->input_end_sym_)) {
+      if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -1323,14 +1352,14 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
       if (pat->action_sequence_.num_tokens_) {
         ip_printf(ip, "              {\n"
                       "                ");
-        emit_pattern_action_snippet(ip->outfp_, cc, pat);
+        emit_pattern_action_snippet(ip, cc, pat);
         ip_printf(ip, "              }\n");
       }
       /* Assuming we still need a sym, we should deconstruct the common data. */
       if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
         ip_printf(ip, "              if (stack->need_sym_) {\n"
                       "                ");
-        if (emit_pattern_token_common_destructor_snippet(ip->outfp_, cc)) {
+        if (emit_pattern_token_common_destructor_snippet(ip, cc)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
           }
@@ -1350,7 +1379,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
   ip_printf(ip, "          return _%sFEED_ME;\n", cc_PREFIX(cc));
   ip_printf(ip, "        case _%sEND_OF_INPUT:\n", cc_PREFIX(cc));
   ip_printf(ip, "          stack->current_sym_ = ");
-  if (print_sym_as_c_ident(ip->outfp_, cc, cc->input_end_sym_)) {
+  if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -1467,7 +1496,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
     ip_printf(ip, "              case %d: {\n    ", (int)row + 1);
     /* Emit dst_sym_data constructor first */
     if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-      if (emit_dst_common_constructor_snippet(ip->outfp_, cc)) {
+      if (emit_dst_common_constructor_snippet(ip, cc)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -1477,7 +1506,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
                     "                ");
     }
     if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
-      if (emit_dst_sym_constructor_snippet(ip->outfp_, cc, pd->nt_.sym_->assigned_type_)) {
+      if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -1487,7 +1516,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
                     "                ");
     }
     if (pd->common_action_sequence_.num_tokens_) {
-      if (emit_common_action_snippet(ip->outfp_, cc, pd)) {
+      if (emit_common_action_snippet(ip, cc, pd)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -1497,7 +1526,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
                     "                ");
     }
 
-    if (emit_action_snippet(ip->outfp_, cc, pd)) {
+    if (emit_action_snippet(ip, cc, pd)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1532,7 +1561,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
       if (have_cases) {
         ip_printf(ip, "              {\n"
                        "                ");
-        if (emit_destructor_snippet(ip->outfp_, cc, ts)) {
+        if (emit_destructor_snippet(ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -1548,7 +1577,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
     ip_printf(ip, "          {\n"
                   "            ");
-    if (emit_common_destructor_snippet(ip->outfp_, cc)) {
+    if (emit_common_destructor_snippet(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1621,7 +1650,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
                 "          }\n"
                 "          else {\n");
   ip_printf(ip, "            if (sym != ");
-  if (print_sym_as_c_ident(ip->outfp_, cc, cc->input_end_sym_)) {
+  if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -1656,7 +1685,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
       if (ts->destructor_snippet_.num_tokens_) {
         ip_printf(ip, "                  {\n"
                       "                    ");
-        if (emit_destructor_snippet_indexed_by_0(ip->outfp_, cc, ts)) {
+        if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -1672,7 +1701,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
     ip_printf(ip, "              {\n"
                   "                ");
-    if (emit_common_destructor_snippet_index_0(ip->outfp_, cc)) {
+    if (emit_common_destructor_snippet_index_0(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1699,7 +1728,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
                 "          else {\n"
                 "            stack->mute_error_turns_--;\n"
                 "            if (sym == ");
-  if (print_sym_as_c_ident(ip->outfp_, cc, cc->input_end_sym_)) {
+  if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -1746,7 +1775,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
       if (have_cases) {
         ip_printf(ip, "                    {\n"
                       "                       ");
-        if (emit_destructor_snippet(ip->outfp_, cc, ts)) {
+        if (emit_destructor_snippet(ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -1762,7 +1791,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     ip_printf(ip, "                  {\n"
                   "                    ");
-    if (emit_common_destructor_snippet(ip->outfp_, cc)) {
+    if (emit_common_destructor_snippet(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1850,7 +1879,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
       if (ts->destructor_snippet_.num_tokens_) {
         ip_printf(ip, "              {\n"
                       "                ");
-        if (emit_destructor_snippet_indexed_by_0(ip->outfp_, cc, ts)) {
+        if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -1866,7 +1895,7 @@ static int emit_scan_function(struct indented_printer *ip, struct carburetta_con
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
     ip_printf(ip, "          {\n"
                   "            ");
-    if (emit_common_destructor_snippet_index_0(ip->outfp_, cc)) {
+    if (emit_common_destructor_snippet_index_0(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1949,7 +1978,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
     ip_printf(ip, "        {\n"
                    "          ");
-    if (emit_token_common_constructor_snippet(ip->outfp_, cc)) {
+    if (emit_token_common_constructor_snippet(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1958,7 +1987,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->token_action_snippet_.num_tokens_) {
     ip_printf(ip, "        {\n"
                    "          ");
-    if (emit_token_common_action_snippet(ip->outfp_, cc)) {
+    if (emit_token_common_action_snippet(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -1978,7 +2007,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
         if (term->assigned_type_ == ts) {
           found_matching_terms = 1;
           ip_printf(ip, "          case ");
-          print_sym_as_c_ident(ip->outfp_, cc, term);
+          print_sym_as_c_ident(ip, cc, term);
           ip_printf(ip, ":\n");
         }
 
@@ -1988,7 +2017,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
       if (ts->constructor_snippet_.num_tokens_) {
         ip_printf(ip, "            {\n"
                       "              ");
-        if (emit_token_constructor_snippet(ip->outfp_, cc, ts)) {
+        if (emit_token_constructor_snippet(ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -1998,7 +2027,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
         ip_printf(ip, "            {\n"
                       "              ");
 
-        if (emit_token_action_snippet(ip->outfp_, cc, ts)) {
+        if (emit_token_action_snippet(ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2035,7 +2064,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
   if (cc->on_success_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_success_snippet_.num_tokens_; ++token_idx) {
-      fprintf(ip->outfp_, "%s", cc->on_success_snippet_.tokens_[token_idx].text_.original_);
+      ip_printf(ip, "%s", cc->on_success_snippet_.tokens_[token_idx].text_.original_);
     }
   }
   else {
@@ -2073,7 +2102,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
     ip_printf(ip, "            case %d: {\n    ", (int)row + 1);
     /* Emit dst_sym_data constructor first */
     if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-      if (emit_dst_common_constructor_snippet(ip->outfp_, cc)) {
+      if (emit_dst_common_constructor_snippet(ip, cc)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2083,7 +2112,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
                     "              ");
     }
     if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
-      if (emit_dst_sym_constructor_snippet(ip->outfp_, cc, pd->nt_.sym_->assigned_type_)) {
+      if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2093,7 +2122,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
                     "              ");
     }
     if (pd->common_action_sequence_.num_tokens_) {
-      if (emit_common_action_snippet(ip->outfp_, cc, pd)) {
+      if (emit_common_action_snippet(ip, cc, pd)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2103,7 +2132,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
                     "              ");
     }
 
-    if (emit_action_snippet(ip->outfp_, cc, pd)) {
+    if (emit_action_snippet(ip, cc, pd)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2138,7 +2167,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
       if (have_cases) {
         ip_printf(ip, "            {\n"
                       "              ");
-        if (emit_destructor_snippet(ip->outfp_, cc, ts)) {
+        if (emit_destructor_snippet(ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2154,7 +2183,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
     ip_printf(ip, "        {\n"
                   "          ");
-    if (emit_common_destructor_snippet(ip->outfp_, cc)) {
+    if (emit_common_destructor_snippet(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2227,7 +2256,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
                 "        }\n"
                 "        else {\n");
   ip_printf(ip, "          if (sym != ");
-  if (print_sym_as_c_ident(ip->outfp_, cc, cc->input_end_sym_)) {
+  if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -2265,7 +2294,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
                 "        else {\n"
                 "          stack->mute_error_turns_--;\n"
                 "          if (sym == ");
-  if (print_sym_as_c_ident(ip->outfp_, cc, cc->input_end_sym_)) {
+  if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
@@ -2313,7 +2342,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
       if (have_cases) {
         ip_printf(ip, "                  {\n"
                       "                     ");
-        if (emit_destructor_snippet(ip->outfp_, cc, ts)) {
+        if (emit_destructor_snippet(ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2329,7 +2358,7 @@ static int emit_parse_function(struct indented_printer *ip, struct carburetta_co
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     ip_printf(ip, "                {\n"
                   "                  ");
-    if (emit_common_destructor_snippet(ip->outfp_, cc)) {
+    if (emit_common_destructor_snippet(ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2705,7 +2734,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
       sym = sym->next_;
 
       ip_printf(&ip, "#define ");
-      if (print_sym_as_c_ident(fp, cc, sym)) {
+      if (print_sym_as_c_ident(&ip, cc, sym)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2804,7 +2833,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
       if (have_cases) {
         ip_printf(&ip, "    {\n      ");
 
-        if (emit_destructor_snippet_indexed_by_n(fp, cc, ts)) {
+        if (emit_destructor_snippet_indexed_by_n(&ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2820,7 +2849,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
     ip_printf(&ip, "    {\n"
                    "      ");
-    if (emit_common_destructor_snippet_indexed_by_n(fp, cc)) {
+    if (emit_common_destructor_snippet_indexed_by_n(&ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2858,7 +2887,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
         if (ts->destructor_snippet_.num_tokens_) {
           ip_printf(&ip, "        {\n"
                          "          ");
-          if (emit_destructor_snippet_indexed_by_0(fp, cc, ts)) {
+          if (emit_destructor_snippet_indexed_by_0(&ip, cc, ts)) {
             r = EXIT_FAILURE;
             goto cleanup_exit;
           }
@@ -2874,7 +2903,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
     if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
       ip_printf(&ip, "    {\n"
                      "      ");
-      if (emit_common_destructor_snippet_index_0(fp, cc)) {
+      if (emit_common_destructor_snippet_index_0(&ip, cc)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -2945,7 +2974,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
       }
       if (have_cases) {
         ip_printf(&ip, "    {\n    ");
-        if (emit_destructor_snippet_indexed_by_n(fp, cc, ts)) {
+        if (emit_destructor_snippet_indexed_by_n(&ip, cc, ts)) {
           r = EXIT_FAILURE;
           goto cleanup_exit;
         }
@@ -2960,7 +2989,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
     ip_printf(&ip, "    {\n"
                     "      ");
-    if (emit_common_destructor_snippet_indexed_by_n(fp, cc)) {
+    if (emit_common_destructor_snippet_indexed_by_n(&ip, cc)) {
       r = EXIT_FAILURE;
       goto cleanup_exit;
     }
@@ -2999,7 +3028,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
         if (ts->destructor_snippet_.num_tokens_) {
           ip_printf(&ip, "        {\n"
                          "          ");
-          if (emit_destructor_snippet_indexed_by_0(fp, cc, ts)) {
+          if (emit_destructor_snippet_indexed_by_0(&ip, cc, ts)) {
             r = EXIT_FAILURE;
             goto cleanup_exit;
           }
@@ -3014,7 +3043,7 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
     if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
       ip_printf(&ip, "    {\n"
                      "      ");
-      if (emit_common_destructor_snippet_index_0(fp, cc)) {
+      if (emit_common_destructor_snippet_index_0(&ip, cc)) {
         r = EXIT_FAILURE;
         goto cleanup_exit;
       }
@@ -3099,33 +3128,37 @@ int emit_c_file(FILE *fp, struct carburetta_context *cc, struct prd_grammar *prd
   r = 0;
 cleanup_exit:
   if (state_syms) free(state_syms);
+  ip_cleanup(&ip);
 
   return r;
 }
 
 int emit_h_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *prdg) {
+  struct indented_printer ip;
+  ip_init(&ip, outfp, cc->h_output_filename_);
+
   int r;
   struct symbol *sym;
-  fprintf(outfp, "#ifndef %s\n"
+  ip_printf(&ip, "#ifndef %s\n"
                   "#define %s\n"
                   "\n", cc->include_guard_, cc->include_guard_);
 
-  fprintf(outfp, "#include <stddef.h> /* size_t */\n"
+  ip_printf(&ip, "#include <stddef.h> /* size_t */\n"
                   "\n");
 
-  fprintf(outfp, "#ifdef __cplusplus\n"
+  ip_printf(&ip, "#ifdef __cplusplus\n"
                   "extern \"C\" {\n"
                   "#endif\n"
                   "\n");
 
-  fprintf(outfp, "#define _%sMATCH 1\n", cc_PREFIX(cc));
-  fprintf(outfp, "#define _%sOVERFLOW 2\n", cc_PREFIX(cc));
-  fprintf(outfp, "#define _%sNO_MEMORY 3\n", cc_PREFIX(cc));
-  fprintf(outfp, "#define _%sFEED_ME 4\n", cc_PREFIX(cc));
-  fprintf(outfp, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(cc));
-  fprintf(outfp, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(cc));
-  fprintf(outfp, "#define _%sINTERNAL_ERROR 7\n", cc_PREFIX(cc));
-  fprintf(outfp, "\n");
+  ip_printf(&ip, "#define _%sMATCH 1\n", cc_PREFIX(cc));
+  ip_printf(&ip, "#define _%sOVERFLOW 2\n", cc_PREFIX(cc));
+  ip_printf(&ip, "#define _%sNO_MEMORY 3\n", cc_PREFIX(cc));
+  ip_printf(&ip, "#define _%sFEED_ME 4\n", cc_PREFIX(cc));
+  ip_printf(&ip, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(cc));
+  ip_printf(&ip, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(cc));
+  ip_printf(&ip, "#define _%sINTERNAL_ERROR 7\n", cc_PREFIX(cc));
+  ip_printf(&ip, "\n");
 
   sym = cc->symtab_.terminals_;
   if (sym) {
@@ -3148,75 +3181,75 @@ int emit_h_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *
       }
       *s++ = '\0';
 
-      fprintf(outfp, "#define %s%s %d\n", cc_TOKEN_PREFIX(cc), ident, sym->ordinal_);
+      ip_printf(&ip, "#define %s%s %d\n", cc_TOKEN_PREFIX(cc), ident, sym->ordinal_);
       free(ident);
     } while (sym != cc->symtab_.terminals_);
   }
-  fprintf(outfp, "\n");
+  ip_printf(&ip, "\n");
 
-  fprintf(outfp, "struct %sstack {\n", cc_prefix(cc));
-  fprintf(outfp, "  int error_recovery_:1;\n");
-  fprintf(outfp, "  int pending_reset_:1;\n");
+  ip_printf(&ip, "struct %sstack {\n", cc_prefix(cc));
+  ip_printf(&ip, "  int error_recovery_:1;\n");
+  ip_printf(&ip, "  int pending_reset_:1;\n");
   if (prdg->num_patterns_) {
-    fprintf(outfp, "  int need_sym_:1;\n"
+    ip_printf(&ip, "  int need_sym_:1;\n"
                     "  int current_sym_;\n");
   }
-  fprintf(outfp, "  int mute_error_turns_;\n");
-  fprintf(outfp, "  size_t pos_, num_stack_allocated_;\n");
-  fprintf(outfp, "  struct %ssym_data *stack_;\n", cc_prefix(cc));
+  ip_printf(&ip, "  int mute_error_turns_;\n");
+  ip_printf(&ip, "  size_t pos_, num_stack_allocated_;\n");
+  ip_printf(&ip, "  struct %ssym_data *stack_;\n", cc_prefix(cc));
   if (prdg->num_patterns_) {
-    fprintf(outfp, 
-            "  size_t scan_state_;\n"
-            "  size_t match_index_;\n"
-            "  size_t best_match_action_;\n"
-            "  size_t best_match_size_;\n"
-            "  size_t input_index_;\n"
-            "  size_t input_offset_;\n"
-            "  size_t match_buffer_size_;\n"
-            "  size_t match_buffer_size_allocated_;\n"
-            "  /* offset, line and column at the start of match_buffer_ */\n"
-            "  size_t match_offset_;\n"
-            "  int match_line_;\n"
-            "  int match_col_;\n"
-            "  /* offset, line and column at the zero-termination (best_match_size_) of a match \n"
-            "   * in match_buffer_ (the actual buffer may well be longer.) */\n"
-            "  size_t best_match_offset_;\n"
-            "  int best_match_line_;\n"
-            "  int best_match_col_;\n"
-            "  size_t token_size_;\n"
-            "  char *match_buffer_;\n"
-            "  char terminator_repair_;\n"
-            "  int input_line_;\n"
-            "  int input_col_;\n");
+    ip_printf(&ip, "  size_t scan_state_;\n"
+                   "  size_t match_index_;\n"
+                   "  size_t best_match_action_;\n"
+                   "  size_t best_match_size_;\n"
+                   "  size_t input_index_;\n"
+                   "  size_t input_offset_;\n"
+                   "  size_t match_buffer_size_;\n"
+                   "  size_t match_buffer_size_allocated_;\n"
+                   "  /* offset, line and column at the start of match_buffer_ */\n"
+                   "  size_t match_offset_;\n"
+                   "  int match_line_;\n"
+                   "  int match_col_;\n"
+                   "  /* offset, line and column at the zero-termination (best_match_size_) of a match \n"
+                   "   * in match_buffer_ (the actual buffer may well be longer.) */\n"
+                   "  size_t best_match_offset_;\n"
+                   "  int best_match_line_;\n"
+                   "  int best_match_col_;\n"
+                   "  size_t token_size_;\n"
+                   "  char *match_buffer_;\n"
+                   "  char terminator_repair_;\n"
+                   "  int input_line_;\n"
+                   "  int input_col_;\n");
   }
-  fprintf(outfp, "};\n");
-  fprintf(outfp, "\n");
-  fprintf(outfp, "void %sstack_init(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
-  fprintf(outfp, "void %sstack_cleanup(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
-  fprintf(outfp, "int %sstack_reset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(&ip, "};\n");
+  ip_printf(&ip, "\n");
+  ip_printf(&ip, "void %sstack_init(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(&ip, "void %sstack_cleanup(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(&ip, "int %sstack_reset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   if (cc->params_snippet_.num_tokens_) {
-    fprintf(outfp, "int %sparse(struct %sstack *stack, int sym, ", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(&ip, "int %sparse(struct %sstack *stack, int sym, ", cc_prefix(cc), cc_prefix(cc));
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->params_snippet_.num_tokens_; ++token_idx) {
-      fprintf(outfp, "%s", cc->params_snippet_.tokens_[token_idx].text_.original_);
+      ip_printf(&ip, "%s", cc->params_snippet_.tokens_[token_idx].text_.original_);
     }
-    fprintf(outfp, ");\n");
+    ip_printf(&ip, ");\n");
   }
   else {
-    fprintf(outfp,
-      "int %sparse(struct %sstack *stack, int sym);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(&ip, "int %sparse(struct %sstack *stack, int sym);\n", cc_prefix(cc), cc_prefix(cc));
   }
 
-  fprintf(outfp, "\n"
+  ip_printf(&ip, "\n"
                   "#ifdef __cplusplus\n"
                   "} /* extern \"C\" */\n"
                   "#endif\n");
 
-  fprintf(outfp, "\n"
+  ip_printf(&ip, "\n"
                   "#endif /* %s */\n", cc->include_guard_);
 
   r = 0;
 
 cleanup_exit:
+  ip_cleanup(&ip);
+
   return r;
 }
