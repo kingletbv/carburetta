@@ -80,8 +80,8 @@
     <ClInclude Include="..\src\xlts.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\src\prd_grammar.crbt" />
-    <None Include="..\src\regex_grammar.crbt" />
+    <None Include="..\src\prd_grammar.cbrt" />
+    <None Include="..\src\regex_grammar.cbrt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

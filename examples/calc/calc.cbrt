@@ -27,7 +27,7 @@ grammar: expr {
 expr: term                      { $$ = $0; }
 expr: expr PLUS term            { $$ = $0 + $2; }
 expr: expr MINUS term           { $$ = $0 - $2; }
-
+  
 term: factor                    { $$ = $0; }
 term: term ASTERISK factor      { $$ = $0 * $2; }
 term: term SLASH factor         { $$ = $0 / $2; }

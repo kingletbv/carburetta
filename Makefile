@@ -17,9 +17,9 @@ $(INTERMEDIATE)/%.o: $(SRC)/%.c
 $(OUT)/carburetta: $(OBJECTS)
 	$(CC) -o $(OUT)/carburetta $(OBJECTS)
 
-$(INTERMEDIATE)/calc/calc.c: $(OUT)/carburetta examples/calc/calc.crbt
+$(INTERMEDIATE)/calc/calc.c: $(OUT)/carburetta examples/calc/calc.cbrt
 	mkdir -p $(@D)
-	$(OUT)/carburetta examples/calc/calc.crbt --c $(INTERMEDIATE)/calc/calc.c
+	$(OUT)/carburetta examples/calc/calc.cbrt --c $(INTERMEDIATE)/calc/calc.c
 
 $(OUT)/calc: $(INTERMEDIATE)/calc/calc.c
 	$(CC) -o $(OUT)/calc $(INTERMEDIATE)/calc/calc.c
