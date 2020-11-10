@@ -1083,7 +1083,7 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "  stack->input_line_ = input_line;\n"
                  "  stack->input_col_ = input_col;\n"
                  "\n");
-  ip_printf(ip,  "  return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
+  ip_printf(ip,  "  return _%sLEXICAL_ERROR;\n", cc_PREFIX(cc));
   ip_printf(ip,  "}\n");
 }
 
@@ -1226,8 +1226,17 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "          stack->need_sym_ = 0;\n");
   ip_printf(ip, "          if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
   ip_printf(ip, "          break;\n");
-  ip_printf(ip, "        case _%sSYNTAX_ERROR:\n", cc_PREFIX(cc));
-  ip_printf(ip, "          return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
+  ip_printf(ip, "        case _%sLEXICAL_ERROR:\n", cc_PREFIX(cc));
+  if (cc->on_lexical_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_lexical_error_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_lexical_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    ip_printf(ip, "/* Syntax error */\n"
+                  "return _%sLEXICAL_ERROR;\n", cc_PREFIX(cc));
+  }
   ip_printf(ip, "      } /* switch */\n");
   ip_printf(ip, "    } /* if (need_sym_) */\n");
   ip_printf(ip, "    else {\n");
@@ -2334,8 +2343,9 @@ int emit_return_code_defines(struct indented_printer *ip, struct carburetta_cont
   ip_printf(ip, "#define _%sNO_MEMORY 3\n", cc_PREFIX(cc));
   ip_printf(ip, "#define _%sFEED_ME 4\n", cc_PREFIX(cc));
   ip_printf(ip, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(cc));
-  ip_printf(ip, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(cc));
-  ip_printf(ip, "#define _%sINTERNAL_ERROR 7\n", cc_PREFIX(cc));
+  ip_printf(ip, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(cc)); 
+  ip_printf(ip, "#define _%sLEXICAL_ERROR 7\n", cc_PREFIX(cc));
+  ip_printf(ip, "#define _%sINTERNAL_ERROR 8\n", cc_PREFIX(cc));
   return 0;
 }
 

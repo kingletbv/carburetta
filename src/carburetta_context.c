@@ -47,6 +47,7 @@ void carburetta_context_init(struct carburetta_context *cc) {
   snippet_init(&cc->locals_snippet_);
   snippet_init(&cc->on_success_snippet_);
   snippet_init(&cc->on_syntax_error_snippet_);
+  snippet_init(&cc->on_lexical_error_snippet_);
   snippet_init(&cc->on_alloc_error_snippet_);
   snippet_init(&cc->on_internal_error_snippet_);
   snippet_init(&cc->on_next_token_snippet_);
@@ -80,6 +81,7 @@ void carburetta_context_cleanup(struct carburetta_context *cc) {
   snippet_cleanup(&cc->locals_snippet_);
   snippet_cleanup(&cc->on_success_snippet_);
   snippet_cleanup(&cc->on_syntax_error_snippet_);
+  snippet_cleanup(&cc->on_lexical_error_snippet_);
   snippet_cleanup(&cc->on_alloc_error_snippet_);
   snippet_cleanup(&cc->on_internal_error_snippet_);
   snippet_cleanup(&cc->on_next_token_snippet_);

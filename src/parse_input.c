@@ -123,6 +123,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_LOCALS_DIRECTIVE,
     PCD_ON_SUCCESS_DIRECTIVE,
     PCD_ON_SYNTAX_ERROR_DIRECTIVE,
+    PCD_ON_LEXICAL_ERROR_DIRECTIVE,
     PCD_ON_ALLOC_ERROR_DIRECTIVE,
     PCD_ON_INTERNAL_ERROR_DIRECTIVE,
     PCD_ON_NEXT_TOKEN_DIRECTIVE,
@@ -156,6 +157,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             (directive == PCD_PARAMS_DIRECTIVE) ||
             (directive == PCD_LOCALS_DIRECTIVE) ||
             (directive == PCD_ON_SUCCESS_DIRECTIVE) ||
+            (directive == PCD_ON_LEXICAL_ERROR_DIRECTIVE) ||
             (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) ||
             (directive == PCD_ON_ALLOC_ERROR_DIRECTIVE) ||
             (directive == PCD_ON_INTERNAL_ERROR_DIRECTIVE) ||
@@ -241,6 +243,9 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             }
             else if (!strcmp("on_syntax_error", tkr_str(tkr_tokens))) {
               directive = PCD_ON_SYNTAX_ERROR_DIRECTIVE;
+            }
+            else if (!strcmp("on_lexical_error", tkr_str(tkr_tokens))) {
+              directive = PCD_ON_LEXICAL_ERROR_DIRECTIVE;
             }
             else if (!strcmp("on_alloc_error", tkr_str(tkr_tokens))) {
               directive = PCD_ON_ALLOC_ERROR_DIRECTIVE;
@@ -607,6 +612,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
                    (directive == PCD_LOCALS_DIRECTIVE) ||
                    (directive == PCD_ON_SUCCESS_DIRECTIVE) || 
                    (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) || 
+                   (directive == PCD_ON_LEXICAL_ERROR_DIRECTIVE) ||
                    (directive == PCD_ON_ALLOC_ERROR_DIRECTIVE) || 
                    (directive == PCD_ON_INTERNAL_ERROR_DIRECTIVE) || 
                    (directive == PCD_ON_NEXT_TOKEN_DIRECTIVE)) {
@@ -870,6 +876,12 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   if (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) {
     snippet_clear(&cc->on_syntax_error_snippet_);
     r = snippet_append_snippet(&cc->on_syntax_error_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_ON_LEXICAL_ERROR_DIRECTIVE) {
+    snippet_clear(&cc->on_syntax_error_snippet_);
+    r = snippet_append_snippet(&cc->on_lexical_error_snippet_, &dir_snippet);
     if (r) goto cleanup_exit;
   }
 

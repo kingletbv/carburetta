@@ -76,6 +76,7 @@ struct carburetta_context {
   struct snippet locals_snippet_;
   struct snippet on_success_snippet_;
   struct snippet on_syntax_error_snippet_;
+  struct snippet on_lexical_error_snippet_;
   struct snippet on_alloc_error_snippet_;
   struct snippet on_internal_error_snippet_;
   struct snippet on_next_token_snippet_;
