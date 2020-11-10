@@ -133,7 +133,7 @@ void ip_vprintf(struct indented_printer *ip, const char *format, va_list args) {
     return ;
   }
   vsprintf(p, format, args);
-  ip_puts_no_indent(ip, p);
+  ip_puts(ip, p);
   free(p);
 }
 void ip_vprintf_no_indent(struct indented_printer *ip, const char *format, va_list args) {
@@ -166,7 +166,7 @@ void ip_vprintf_no_indent(struct indented_printer *ip, const char *format, va_li
     ip->had_error_ = 1;
     return ;
   }
-  ip_puts(ip, p);
+  ip_puts_no_indent(ip, p);
   free(p);
 }
 #endif
