@@ -324,6 +324,12 @@ static int emit_common(struct indented_printer *ip, struct carburetta_context *c
 static int emit_snippet_code_emission(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se) {
   int r;
   size_t col;
+  if (!se->code_->num_tokens_) {
+    /* Nothing to emit */
+    return 0;
+  }
+  ip_printf(ip, "{\n");
+  ip_force_indent_print(ip);
   for (col = 0; col < se->code_->num_tokens_; ++col) {
     /* Print the original code, to preserve formatting and line continuations */
     if (se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_DST) {
@@ -426,12 +432,13 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
     }
   }
   ip_printf_no_indent(ip, "\n");
-
+  ip_printf(ip, "}\n");
   return 0;
 }
 
 static int emit_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_production *prd) {
   struct snippet_emission se = { 0 };
+  if (!prd) return 0;
   se.code_ = &prd->common_action_sequence_;
   se.dest_type_ = SEDT_NONE;
   se.sym_type_ = SEST_NONE;
@@ -450,6 +457,7 @@ static int emit_common_action_snippet(struct indented_printer *ip, struct carbur
 
 static int emit_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_production *prd) {
   struct snippet_emission se = { 0 };
+  if (!prd) return 0;
   se.code_ = &prd->action_sequence_;
   se.dest_type_ = SEDT_FMT_DATATYPE_ORDINAL;
   se.dest_fmt_ = "(nonterminal_sym_data_reduced_to.v_.uv%d_)";
@@ -471,6 +479,7 @@ static int emit_action_snippet(struct indented_printer *ip, struct carburetta_co
 
 static int emit_pattern_token_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
+  if (!ts) return 0;
   se.code_ = &ts->token_action_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
@@ -487,6 +496,7 @@ static int emit_pattern_token_action_snippet(struct indented_printer *ip, struct
 
 static int emit_token_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
+  if (!ts) return 0;
   se.code_ = &ts->token_action_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
@@ -503,6 +513,7 @@ static int emit_token_action_snippet(struct indented_printer *ip, struct carbure
 
 static int emit_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
+  if (!ts) return 0;
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
@@ -519,6 +530,7 @@ static int emit_constructor_snippet(struct indented_printer *ip, struct carburet
 
 static int emit_dst_sym_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
+  if (!ts) return 0;
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
@@ -631,6 +643,7 @@ static int emit_pattern_token_common_action_snippet(struct indented_printer *ip,
 
 static int emit_token_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
+  if (!ts) return 0;
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
@@ -647,6 +660,7 @@ static int emit_token_constructor_snippet(struct indented_printer *ip, struct ca
 
 static int emit_pattern_token_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
+  if (!ts) return 0;
   se.code_ = &ts->constructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
@@ -663,6 +677,7 @@ static int emit_pattern_token_constructor_snippet(struct indented_printer *ip, s
 
 static int emit_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
+  if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
   se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
@@ -679,6 +694,7 @@ static int emit_destructor_snippet(struct indented_printer *ip, struct carburett
 
 static int emit_destructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
+  if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
@@ -695,6 +711,7 @@ static int emit_destructor_snippet_indexed_by_n(struct indented_printer *ip, str
 
 static int emit_destructor_snippet_indexed_by_0(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
+  if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
   se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
@@ -776,6 +793,7 @@ static int emit_common_destructor_snippet_index_0(struct indented_printer *ip, s
 
 static int emit_pattern_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_pattern *pat) {
   struct snippet_emission se = { 0 };
+  if (!pat) return 0;
   struct typestr *ts = pat->term_.sym_ ? pat->term_.sym_->assigned_type_ : NULL;
   se.code_ = &pat->action_sequence_;
   if (ts) {
@@ -1118,23 +1136,14 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "; /* no sym specific type associated, changed when we successfully construct it below */\n");
   ip_printf(ip, "          if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
 
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-    ip_printf(ip, "          {\n"
-                  "            ");
-    if (emit_pattern_token_common_constructor_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "          }\n");
+  if (emit_pattern_token_common_constructor_snippet(ip, cc)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->token_action_snippet_.num_tokens_) {
-    ip_printf(ip, "          {\n"
-                  "            ");
-    if (emit_pattern_token_common_action_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "          }\n");
+
+  if (emit_pattern_token_common_action_snippet(ip, cc)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
 
   ip_printf(ip, "          switch (stack->best_match_action_) {\n");
@@ -1151,31 +1160,17 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
         goto cleanup_exit;
       }
       ip_printf(ip, ";\n");
-      if (pat->term_.sym_->assigned_type_ && pat->term_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
-        ip_printf(ip, "              {\n"
-                      "                ");
-        if (emit_pattern_token_constructor_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
-        ip_printf(ip, "              }\n");
+      if (emit_pattern_token_constructor_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
-      if (pat->term_.sym_->assigned_type_ && pat->term_.sym_->assigned_type_->token_action_snippet_.num_tokens_) {
-        ip_printf(ip, "              {\n"
-                      "                ");
-
-        if (emit_pattern_token_action_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
-
-        ip_printf(ip, "              }\n");
+      if (emit_pattern_token_action_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
-      if (pat->action_sequence_.num_tokens_) {
-        ip_printf(ip, "              {\n"
-                      "                ");
-        emit_pattern_action_snippet(ip, cc, pat);
-        ip_printf(ip, "              }\n");
+      if (emit_pattern_action_snippet(ip, cc, pat)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
     }
     else {
@@ -1188,11 +1183,9 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
       }
       ip_printf(ip, ";\n"
                     "              stack->need_sym_ = 1; /* keep scanning */\n");
-      if (pat->action_sequence_.num_tokens_) {
-        ip_printf(ip, "              {\n"
-                      "                ");
-        emit_pattern_action_snippet(ip, cc, pat);
-        ip_printf(ip, "              }\n");
+      if (emit_pattern_action_snippet(ip, cc, pat)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
       /* Assuming we still need a sym, we should deconstruct the common data. */
       if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
@@ -1343,40 +1336,32 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     ip_printf(ip, " */\n");
     ip_printf(ip, "              case %d: {\n    ", (int)row + 1);
     /* Emit dst_sym_data constructor first */
-    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-      if (emit_dst_common_constructor_snippet(ip, cc)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      ip_printf(ip, "\n"
-                    "              }\n"
-                    "              {\n"
-                    "                ");
+    if (emit_dst_common_constructor_snippet(ip, cc)) {
+      ip->had_error_ = 1;
+      goto cleanup_exit;
     }
-    if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
+
+    if (pd->nt_.sym_->assigned_type_) {
       if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_)) {
         ip->had_error_ = 1;
         goto cleanup_exit;
       }
-      ip_printf(ip, "\n"
-                    "              }\n"
-                    "              {\n"
-                    "                ");
     }
     if (pd->common_action_sequence_.num_tokens_) {
       if (emit_common_action_snippet(ip, cc, pd)) {
         ip->had_error_ = 1;
         goto cleanup_exit;
       }
-      ip_printf(ip, "\n"
-                    "              }\n"
-                    "              if (!discard_action) {\n"
-                    "                ");
+      ip_printf(ip, "              if (!discard_action) {\n");
     }
 
     if (emit_action_snippet(ip, cc, pd)) {
       ip->had_error_ = 1;
       goto cleanup_exit;
+    }
+
+    if (pd->common_action_sequence_.num_tokens_) {
+      ip_printf(ip, "              }\n");
     }
 
     ip_printf(ip, "              }\n"
@@ -1422,15 +1407,9 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   }
   /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
   ip_printf(ip, "            } /* switch */\n");
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-    ip_printf(ip, "          {\n"
-                  "            ");
-    if (emit_common_destructor_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "\n"
-                  "          }\n");
+  if (emit_common_destructor_snippet(ip, cc)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
 
   ip_printf(ip, "          } /* for */\n"
@@ -1530,16 +1509,9 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     }
     if (have_some) {
       /* Execute destructors for typestr ts at stack->stack_[0] */
-      if (ts->destructor_snippet_.num_tokens_) {
-        ip_printf(ip, "                  {\n"
-                      "                    ");
-        if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
-        ip_printf(ip, "\n"
-                      "                  }\n");
-                           
+      if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
       ip_printf(ip, "                  break;\n");
     }
@@ -1547,14 +1519,10 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "              } /* switch */\n");
 
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-    ip_printf(ip, "              {\n"
-                  "                ");
     if (emit_common_destructor_snippet_index_0(ip, cc)) {
       ip->had_error_ = 1;
       goto cleanup_exit;
     }
-    ip_printf(ip, "\n"
-                  "              }\n");
   }
   ip_printf(ip, "            }\n"
                 "          }\n");
@@ -1621,30 +1589,20 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
         }
       }
       if (have_cases) {
-        ip_printf(ip, "                    {\n"
-                      "                       ");
         if (emit_destructor_snippet(ip, cc, ts)) {
           ip->had_error_ = 1;
           goto cleanup_exit;
         }
 
         /* Close this compound block  */
-        ip_printf(ip, "\n"
-                      "                    }\n"
-                      "                    break;\n");
+        ip_printf(ip, "                    break;\n");
       }
     }
   }
   ip_printf(ip, "                  } /* switch */\n");
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-    ip_printf(ip, "                  {\n"
-                  "                    ");
-    if (emit_common_destructor_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "\n"
-                  "                  }\n");
+  if (emit_common_destructor_snippet(ip, cc)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
   /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
   ip_printf(ip, "                } /* for */\n"
@@ -1724,31 +1682,18 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     }
     if (have_some) {
       /* Execute destructors for typestr ts at stack->stack_[0] */
-      if (ts->destructor_snippet_.num_tokens_) {
-        ip_printf(ip, "              {\n"
-                      "                ");
-        if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
-        ip_printf(ip, "\n"
-                      "              }\n");
-                           
+      if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
       ip_printf(ip, "              break;\n");
     }
   }
   ip_printf(ip, "          } /* switch */\n");
 
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-    ip_printf(ip, "          {\n"
-                  "            ");
-    if (emit_common_destructor_snippet_index_0(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "\n"
-                  "          }\n");
+  if (emit_common_destructor_snippet_index_0(ip, cc)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
 
   ip_printf(ip, "        }\n");
@@ -1820,23 +1765,14 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   int need_sym_data = 0;
   ip_printf(ip, "        struct %ssym_data *sym_data = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
 
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-    ip_printf(ip, "        {\n"
-                   "          ");
-    if (emit_token_common_constructor_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "        }\n");
+  if (emit_token_common_constructor_snippet(ip, cc)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->token_action_snippet_.num_tokens_) {
-    ip_printf(ip, "        {\n"
-                   "          ");
-    if (emit_token_common_action_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "        }\n");
+
+  if (emit_token_common_action_snippet(ip, cc)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
 
   ip_printf(ip, "        switch (sym) {\n");
@@ -1859,25 +1795,14 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
       } while (term != cc->symtab_.terminals_);
     }
     if (found_matching_terms) {
-      if (ts->constructor_snippet_.num_tokens_) {
-        ip_printf(ip, "            {\n"
-                      "              ");
-        if (emit_token_constructor_snippet(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
-        ip_printf(ip, "            }\n");
+      if (emit_token_constructor_snippet(ip, cc, ts)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
-      if (ts->token_action_snippet_.num_tokens_) {
-        ip_printf(ip, "            {\n"
-                      "              ");
 
-        if (emit_token_action_snippet(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
-
-        ip_printf(ip, "            }\n");
+      if (emit_token_action_snippet(ip, cc, ts)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
       ip_printf(ip, "            break;\n");
     }
@@ -1946,34 +1871,23 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     ip_printf(ip, " */\n");
     ip_printf(ip, "            case %d: {\n    ", (int)row + 1);
     /* Emit dst_sym_data constructor first */
-    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-      if (emit_dst_common_constructor_snippet(ip, cc)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      ip_printf(ip, "\n"
-                    "            }\n"
-                    "            {\n"
-                    "              ");
+    if (emit_dst_common_constructor_snippet(ip, cc)) {
+      ip->had_error_ = 1;
+      goto cleanup_exit;
     }
-    if (pd->nt_.sym_->assigned_type_ && pd->nt_.sym_->assigned_type_->constructor_snippet_.num_tokens_) {
-      if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      ip_printf(ip, "\n"
-                    "            }\n"
-                    "            {\n"
-                    "              ");
+
+    if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_)) {
+      ip->had_error_ = 1;
+      goto cleanup_exit;
     }
+
+    if (emit_common_action_snippet(ip, cc, pd)) {
+      ip->had_error_ = 1;
+      goto cleanup_exit;
+    }
+      
     if (pd->common_action_sequence_.num_tokens_) {
-      if (emit_common_action_snippet(ip, cc, pd)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      ip_printf(ip, "\n"
-                    "            }\n"
-                    "            if (!discard_action) {\n"
+      ip_printf(ip, "            if (!discard_action) {\n"
                     "              ");
     }
 
@@ -1982,8 +1896,12 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
       goto cleanup_exit;
     }
 
-    ip_printf(ip, "            }\n"
-                  "            break;\n");
+    if (pd->common_action_sequence_.num_tokens_) {
+      ip_printf(ip, "            }\n");
+    }
+
+    ip_printf(ip, "            }\n");
+    ip_printf(ip, "            break;\n");
   }
   ip_printf(ip, "          } /* switch */\n");
   ip_printf(ip, "        } /* scope guard */\n");
@@ -2010,30 +1928,20 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
         }
       }
       if (have_cases) {
-        ip_printf(ip, "            {\n"
-                      "              ");
         if (emit_destructor_snippet(ip, cc, ts)) {
           ip->had_error_ = 1;
           goto cleanup_exit;
         }
 
-        ip_printf(ip, "\n"
-                      "            }\n"
-                      "            break;\n");
+        ip_printf(ip, "            break;\n");
       }
     }
   }
   /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
   ip_printf(ip, "          } /* switch */\n");
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
-    ip_printf(ip, "        {\n"
-                  "          ");
-    if (emit_common_destructor_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "\n"
-                  "        }\n");
+  if (emit_common_destructor_snippet(ip, cc)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
 
   ip_printf(ip, "        } /* for */\n"
@@ -2185,31 +2093,22 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
         }
       }
       if (have_cases) {
-        ip_printf(ip, "                  {\n"
-                      "                     ");
         if (emit_destructor_snippet(ip, cc, ts)) {
           ip->had_error_ = 1;
           goto cleanup_exit;
         }
 
-        /* Close this compound block  */
-        ip_printf(ip, "\n"
-                      "                  }\n"
-                      "                  break;\n");
+        ip_printf(ip, "                  break;\n");
       }
     }
   }
   ip_printf(ip, "                } /* switch */\n");
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-    ip_printf(ip, "                {\n"
-                  "                  ");
-    if (emit_common_destructor_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "\n"
-                  "                }\n");
+
+  if (emit_common_destructor_snippet(ip, cc)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
+
   /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
   ip_printf(ip, "              } /* for */\n"
                 "              stack->pos_ = n + 1;\n");
