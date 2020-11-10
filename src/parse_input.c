@@ -127,6 +127,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_ON_ALLOC_ERROR_DIRECTIVE,
     PCD_ON_INTERNAL_ERROR_DIRECTIVE,
     PCD_ON_NEXT_TOKEN_DIRECTIVE,
+    PCD_ON_FEED_ME_DIRECTIVE,
     PCD_END_TOKEN,
     PCD_ERROR_TOKEN,
     PCD_PREFER,
@@ -161,7 +162,8 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) ||
             (directive == PCD_ON_ALLOC_ERROR_DIRECTIVE) ||
             (directive == PCD_ON_INTERNAL_ERROR_DIRECTIVE) ||
-            (directive == PCD_ON_NEXT_TOKEN_DIRECTIVE)) {
+            (directive == PCD_ON_NEXT_TOKEN_DIRECTIVE) ||
+            (directive == PCD_ON_FEED_ME_DIRECTIVE)) {
           eat_whitespace = 0;
           /* Keep whitespace for all code directives */
         }
@@ -255,6 +257,9 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             }
             else if (!strcmp("on_next_token", tkr_str(tkr_tokens))) {
               directive = PCD_ON_NEXT_TOKEN_DIRECTIVE;
+            }
+            else if (!strcmp("on_feed_me", tkr_str(tkr_tokens))) {
+              directive = PCD_ON_FEED_ME_DIRECTIVE;
             }
             else if (!strcmp("end_token", tkr_str(tkr_tokens))) {
               directive = PCD_END_TOKEN;
@@ -615,7 +620,8 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
                    (directive == PCD_ON_LEXICAL_ERROR_DIRECTIVE) ||
                    (directive == PCD_ON_ALLOC_ERROR_DIRECTIVE) || 
                    (directive == PCD_ON_INTERNAL_ERROR_DIRECTIVE) || 
-                   (directive == PCD_ON_NEXT_TOKEN_DIRECTIVE)) {
+                   (directive == PCD_ON_NEXT_TOKEN_DIRECTIVE) ||
+                   (directive == PCD_ON_FEED_ME_DIRECTIVE)) {
             if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE_CHAR)) {
               r = snippet_append_tkr(&dir_snippet, tkr_tokens);
               if (r) {
@@ -900,6 +906,12 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   if (directive == PCD_ON_NEXT_TOKEN_DIRECTIVE) {
     snippet_clear(&cc->on_next_token_snippet_);
     r = snippet_append_snippet(&cc->on_next_token_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_ON_FEED_ME_DIRECTIVE) {
+    snippet_clear(&cc->on_feed_me_snippet_);
+    r = snippet_append_snippet(&cc->on_feed_me_snippet_, &dir_snippet);
     if (r) goto cleanup_exit;
   }
   

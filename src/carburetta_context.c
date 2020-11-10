@@ -51,6 +51,7 @@ void carburetta_context_init(struct carburetta_context *cc) {
   snippet_init(&cc->on_alloc_error_snippet_);
   snippet_init(&cc->on_internal_error_snippet_);
   snippet_init(&cc->on_next_token_snippet_);
+  snippet_init(&cc->on_feed_me_snippet_);
   cc->input_end_sym_ = NULL;
   cc->error_sym_ = NULL;
   prd_prod_init(&cc->prefer_prod_);
@@ -85,6 +86,7 @@ void carburetta_context_cleanup(struct carburetta_context *cc) {
   snippet_cleanup(&cc->on_alloc_error_snippet_);
   snippet_cleanup(&cc->on_internal_error_snippet_);
   snippet_cleanup(&cc->on_next_token_snippet_);
+  snippet_cleanup(&cc->on_feed_me_snippet_);
   prd_prod_cleanup(&cc->prefer_prod_);
   prd_prod_cleanup(&cc->over_prod_);
   struct conflict_resolution *cr, *next;

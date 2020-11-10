@@ -1218,6 +1218,22 @@ void emit_on_next(struct indented_printer *ip, struct carburetta_context *cc) {
   }
 }
 
+void emit_feed_me(struct indented_printer *ip, struct carburetta_context *cc) {
+  if (cc->on_feed_me_snippet_.num_tokens_) {
+    ip_printf(ip, "{\n");
+    ip_force_indent_print(ip);
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_feed_me_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_feed_me_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, "\n}\n");
+  }
+  else {
+    ip_printf(ip, "/* Need more input */\n"
+                  "return _%sFEED_ME;\n", cc_PREFIX(cc));
+  }
+}
+
 static void emit_scan_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   /* Emit the parse function */
   if (cc->params_snippet_.num_tokens_) {
@@ -1321,7 +1337,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "        case _%sNO_MEMORY:\n", cc_PREFIX(cc));
   emit_alloc_error(ip, cc);
   ip_printf(ip, "        case _%sFEED_ME:\n", cc_PREFIX(cc));
-  emit_on_next(ip, cc);
+  emit_feed_me(ip, cc);
   ip_printf(ip, "        case _%sEND_OF_INPUT:\n", cc_PREFIX(cc));
   ip_printf(ip, "          stack->current_sym_ = ");
   if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
