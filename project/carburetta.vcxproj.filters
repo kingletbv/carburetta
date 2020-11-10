@@ -28,6 +28,7 @@
     <ClCompile Include="..\src\emit_c.c" />
     <ClCompile Include="..\src\parse_input.c" />
     <ClCompile Include="..\src\temp_output.c" />
+    <ClCompile Include="..\src\indented_printer.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\chain.h" />
@@ -55,6 +56,7 @@
     <ClInclude Include="..\src\emit_c.h" />
     <ClInclude Include="..\src\parse_input.h" />
     <ClInclude Include="..\src\temp_output.h" />
+    <ClInclude Include="..\src\indented_printer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\prd_grammar.cbrt" />

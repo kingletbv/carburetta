@@ -128,6 +128,12 @@
 #include "temp_output.h"
 #endif
 
+#ifndef INDENTED_PRINTER_H_INCLUDED
+#define INDENTED_PRINTER_H_INCLUDED
+#include "indented_printer.h"
+#endif
+
+
 /* Following globals control the output file. If we fail execution (eg. user error in the input or an
  * unforeseen problem internally) then we wish to retain whatever output was already there.
  * Consequently, we write output to a temp file, and only rename it to the final file if execution
@@ -773,7 +779,17 @@ int main(int argc, char **argv) {
       cc.include_guard_ = NULL;
     }
 
-    r = emit_c_file(outfp, &cc, &prdg, &scantable, &lalr);
+    struct indented_printer ip;
+    ip_init(&ip, outfp, cc.c_output_filename_);
+
+    emit_c_file(&ip, &cc, &prdg, &scantable, &lalr);
+
+    if (ip.had_error_) {
+      ip_cleanup(&ip);
+      goto cleanup_exit;
+    }
+    ip_cleanup(&ip);
+
     if (r) goto cleanup_exit;
 
     if (outfp != stdout) {
@@ -812,8 +828,16 @@ int main(int argc, char **argv) {
       goto cleanup_exit;
     }
 
-    r = emit_h_file(outfp, &cc, &prdg);
-    if (r) goto cleanup_exit;
+    struct indented_printer ip;
+    ip_init(&ip, outfp, cc.c_output_filename_);
+
+    emit_h_file(&ip, &cc, &prdg);
+
+    if (ip.had_error_) {
+      ip_cleanup(&ip);
+      goto cleanup_exit;
+    }
+    ip_cleanup(&ip);
 
     if (outfp != stdout) {
       fclose(outfp);

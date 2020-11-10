@@ -26,6 +26,7 @@
     <ClCompile Include="..\src\dfa.c" />
     <ClCompile Include="..\src\emit_c.c" />
     <ClCompile Include="..\src\grammar_table.c" />
+    <ClCompile Include="..\src\indented_printer.c" />
     <ClCompile Include="..\src\lalr.c" />
     <ClCompile Include="..\src\line_assembly.c" />
     <ClCompile Include="..\src\line_defs.c" />
@@ -59,6 +60,7 @@
     <ClInclude Include="..\src\dfa.h" />
     <ClInclude Include="..\src\emit_c.h" />
     <ClInclude Include="..\src\grammar_table.h" />
+    <ClInclude Include="..\src\indented_printer.h" />
     <ClInclude Include="..\src\lalr.h" />
     <ClInclude Include="..\src\line_assembly.h" />
     <ClInclude Include="..\src\line_defs.h" />

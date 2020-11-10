@@ -41,6 +41,11 @@
 #include "carburetta_context.h"
 #endif
 
+#ifndef INDENTED_PRINTER_H_INCLUDED
+#define INDENTED_PRINTER_H_INCLUDED
+#include "indented_printer.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,8 +54,8 @@ const char *cc_prefix(struct carburetta_context *cc);
 const char *cc_PREFIX(struct carburetta_context *cc);
 static const char *cc_TOKEN_PREFIX(struct carburetta_context *cc);
 
-int emit_c_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable, struct lr_generator *lalr);
-int emit_h_file(FILE *outfp, struct carburetta_context *cc, struct prd_grammar *prdg);
+void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable, struct lr_generator *lalr);
+void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg);
 
 #ifdef __cplusplus
 } /* extern "C" */
