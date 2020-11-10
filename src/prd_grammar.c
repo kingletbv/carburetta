@@ -79,6 +79,8 @@
 /* --------- START OF GENERATED CODE ------------ */
 #include <stdlib.h> /* realloc(), free(), NULL, size_t */
 #include <string.h> /* memcpy() */
+#include <stddef.h> /* size_t */
+#include <stdint.h> /* SIZE_MAX */
 struct prd_sym_data {
   int state_;
   union {
@@ -272,7 +274,6 @@ static const int prd_state_syms[] = {
 #ifndef CARB_PRD_SRCPRD_GRAMMAR_H_INCLUDED
 struct prd_stack {
   int error_recovery_:1;
-  int report_error_:1;
   int pending_reset_:1;
   int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
@@ -312,7 +313,6 @@ struct prd_stack {
 
 void prd_stack_init(struct prd_stack *stack) {
   stack->error_recovery_ = 0;
-  stack->report_error_ = 0;
   stack->pending_reset_ = 1;
   stack->mute_error_turns_ = 0;
   stack->pos_ = 0;
@@ -412,6 +412,7 @@ static int prd_push_state(struct prd_stack *stack, int state) {
   stack->stack_[stack->pos_++].state_ = state;
   return 0;
 }
+
 int prd_stack_reset(struct prd_stack *stack) {
   size_t n;
   stack->pending_reset_ = 0;
@@ -473,7 +474,6 @@ int prd_stack_reset(struct prd_stack *stack) {
   }
   stack->pos_ = 0;
   stack->error_recovery_ = 0;
-  stack->report_error_ = 0;
   stack->mute_error_turns_ = 0;
   switch (prd_push_state(stack, 0)) {
     case _PRD_OVERFLOW:{
@@ -533,19 +533,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
             }
             break;
         } /* switch */
-        if (stack->report_error_) {
-          /* We're shifting this sym following an error recovery on the same sym, report syntax error */
-          stack->report_error_ = 0;
-          /* Syntax error */ \
-  if (sym != PRD_INPUT_END) {\
-    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
-  } \
-  else { \
-    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
-  } \
-  return PRD_SYNTAX_ERROR;
-        }
-        else {
+        {
           return PRD_NEXT;
         }
       } /* action > 0 */
@@ -1089,9 +1077,44 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
         sd->state_ = action;
       } /* action < 0 */
       else /* action == 0 */ {
-        stack->error_recovery_ = 1;
-        stack->report_error_ = !stack->mute_error_turns_;
-        stack->mute_error_turns_ = 3;
+        /* check if we can recover using an error token. */
+        size_t n;
+        for (n = 0; n < stack->pos_; ++n) {
+          int err_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (13 /* error token */ - prd_minimum_sym)];
+          if (err_action > 0) {
+            /* we can transition on the error token somewhere on the stack */
+            break;
+          }
+        }
+        if (n != stack->pos_) {
+          /* Enter error-token recovery mode given that such a recovery is possible */
+          stack->error_recovery_ = (n != stack->pos_);
+        }
+        else {
+          if (sym != PRD_INPUT_END) {
+            /* Retain EOF but discard any other sym so we make progress */
+            return PRD_NEXT;
+          }
+        }
+        /* Issue the error here */
+        if (!stack->mute_error_turns_) {
+          stack->mute_error_turns_ = 3;
+          /* Syntax error */ \
+  if (sym != PRD_INPUT_END) {\
+    re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+  } \
+  else { \
+    re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+  } \
+  return PRD_SYNTAX_ERROR;
+        }
+        else {
+          stack->mute_error_turns_--;
+          if (sym == PRD_INPUT_END) {
+            /* EOF means we cannot shift to recover, and errors are muted, so return completion */
+            return 0;
+          }
+        }
       }
     } /* !stack->error_recovery_ */
     if (stack->error_recovery_) {
@@ -1104,7 +1127,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
           int err_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (13 /* error token */ - prd_minimum_sym)];
           if (err_action > 0) {
             /* Does the resulting state accept the current symbol? */
-            int err_sym_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (sym - prd_minimum_sym)];
+            int err_sym_action = prd_parse_table[prd_num_columns * err_action + (sym - prd_minimum_sym)];
             if (err_sym_action) {
               /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */
               /* Free symdata for every symbol up to the state where we will shift the error token */

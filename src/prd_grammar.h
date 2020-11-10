@@ -30,7 +30,6 @@ extern "C" {
 
 struct prd_stack {
   int error_recovery_:1;
-  int report_error_:1;
   int pending_reset_:1;
   int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
