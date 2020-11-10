@@ -285,7 +285,8 @@ struct prd_stack {
 #define _PRD_FEED_ME 4
 #define _PRD_END_OF_INPUT 5
 #define _PRD_SYNTAX_ERROR 6
-#define _PRD_INTERNAL_ERROR 7
+#define _PRD_LEXICAL_ERROR 7
+#define _PRD_INTERNAL_ERROR 8
 
 #define PRD_IDENT 3
 #define PRD_COLON 4

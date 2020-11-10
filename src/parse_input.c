@@ -1084,13 +1084,14 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
   las_set_filename(&line_assembly, input_filename ? input_filename : "(stdin)");
 
   enum {
+    UNDEFINED,
     PROLOGUE,
     GRAMMAR,
     SCANNER,
     EPILOGUE
   } where_are_we, default_mode;
   where_are_we = PROLOGUE;
-  default_mode = GRAMMAR;
+  default_mode = UNDEFINED;
 
   size_t num_bytes_read;
   static char buf[2400];
@@ -1159,6 +1160,11 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
             where_are_we = default_mode = GRAMMAR;
             break;
           case LD_CARBURETTA_SECTION_DELIMITER:
+            if (default_mode == UNDEFINED) {
+              re_error_tkr(&tkr_lines, "Error, no section type to return to");
+              r = 1;
+              goto cleanup_exit;
+            }
             where_are_we = default_mode;
             break;
           case LD_REGULAR:

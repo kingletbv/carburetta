@@ -109,7 +109,7 @@
   } \
   return PRD_SYNTAX_ERROR;
 
-%%
+%grammar%
 
 grammar: { }
 grammar: grammar production {
