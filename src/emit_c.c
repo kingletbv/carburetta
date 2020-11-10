@@ -2215,6 +2215,9 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
 }
 
 void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable, struct lr_generator *lalr) {
+  int *state_syms;
+  state_syms = NULL;
+
   struct part *pt;
   pt = cc->prologue_;
   if (pt) {
@@ -2356,9 +2359,6 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
 
   /* For each state, what is the top-most symbol on the stack? */
   ip_printf(ip, "static const int %sstate_syms[] = {\n", cc_prefix(cc));
-
-  int *state_syms;
-  state_syms = NULL;
 
   state_syms = (int *)malloc(sizeof(int) * (size_t)lalr->nr_states_);
   if (!state_syms) {
