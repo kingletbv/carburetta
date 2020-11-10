@@ -1105,6 +1105,119 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
   ip_printf(ip,  "}\n");
 }
 
+#if 0
+ip_printf(ip, "#define _%sMATCH 1\n", cc_PREFIX(cc));
+ip_printf(ip, "#define _%sOVERFLOW 2\n", cc_PREFIX(cc));
+ip_printf(ip, "#define _%sNO_MEMORY 3\n", cc_PREFIX(cc));
+ip_printf(ip, "#define _%sFEED_ME 4\n", cc_PREFIX(cc));
+ip_printf(ip, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(cc));
+ip_printf(ip, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(cc)); 
+ip_printf(ip, "#define _%sLEXICAL_ERROR 7\n", cc_PREFIX(cc));
+ip_printf(ip, "#define _%sINTERNAL_ERROR 8\n", cc_PREFIX(cc));
+
+struct snippet on_success_snippet_;
+struct snippet on_syntax_error_snippet_;
+struct snippet on_lexical_error_snippet_;
+struct snippet on_alloc_error_snippet_;
+struct snippet on_internal_error_snippet_;
+struct snippet on_next_token_snippet_;
+
+#endif
+
+void emit_syntax_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  if (cc->on_syntax_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    ip_printf(ip, "{\n");
+    ip_force_indent_print(ip);
+    for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, "\n}\n");
+  }
+  else {
+    ip_printf(ip, "/* Syntax error */\n"
+                  "return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
+  }
+}
+
+void emit_lexical_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  if (cc->on_lexical_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    ip_printf(ip, "{\n");
+    ip_force_indent_print(ip);
+    for (token_idx = 0; token_idx < cc->on_lexical_error_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_lexical_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, "\n}\n");
+  }
+  else {
+    ip_printf(ip, "/* Lexical error */\n"
+                  "return _%sLEXICAL_ERROR;\n", cc_PREFIX(cc));
+  }
+}
+
+void emit_overflow_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  if (cc->on_internal_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    ip_printf(ip, "{\n");
+    ip_force_indent_print(ip);
+    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, "\n}\n");
+  }
+  else {
+    ip_printf(ip, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  }
+}
+
+void emit_alloc_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  if (cc->on_alloc_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    ip_printf(ip, "{\n");
+    ip_force_indent_print(ip);
+    for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_alloc_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, "\n}\n");
+  }
+  else {
+    ip_printf(ip, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
+  }
+}
+
+void emit_internal_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  if (cc->on_internal_error_snippet_.num_tokens_) {
+    size_t token_idx;
+    ip_printf(ip, "{\n");
+    ip_force_indent_print(ip);
+    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, "\n}\n");
+  }
+  else {
+    ip_printf(ip, "/* Internal error */\n"
+                  "return _%sINTERNAL_ERROR;\n", cc_PREFIX(cc));
+  }
+}
+
+void emit_on_next(struct indented_printer *ip, struct carburetta_context *cc) {
+  if (cc->on_next_token_snippet_.num_tokens_) {
+    ip_printf(ip, "{\n");
+    ip_force_indent_print(ip);
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, "\n}\n");
+  }
+  else {
+    ip_printf(ip, "/* Next token */\n"
+                  "return _%sFEED_ME;\n", cc_PREFIX(cc));
+  }
+}
+
 static void emit_scan_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   /* Emit the parse function */
   if (cc->params_snippet_.num_tokens_) {
@@ -1204,11 +1317,11 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   
   ip_printf(ip, "          break;\n");
   ip_printf(ip, "        case _%sOVERFLOW:\n", cc_PREFIX(cc));
-  ip_printf(ip, "          return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  emit_overflow_error(ip, cc);
   ip_printf(ip, "        case _%sNO_MEMORY:\n", cc_PREFIX(cc));
-  ip_printf(ip, "          return _%sNO_MEMORY;\n", cc_PREFIX(cc));
+  emit_alloc_error(ip, cc);
   ip_printf(ip, "        case _%sFEED_ME:\n", cc_PREFIX(cc));
-  ip_printf(ip, "          return _%sFEED_ME;\n", cc_PREFIX(cc));
+  emit_on_next(ip, cc);
   ip_printf(ip, "        case _%sEND_OF_INPUT:\n", cc_PREFIX(cc));
   ip_printf(ip, "          stack->current_sym_ = ");
   if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
@@ -1220,16 +1333,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "          if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
   ip_printf(ip, "          break;\n");
   ip_printf(ip, "        case _%sLEXICAL_ERROR:\n", cc_PREFIX(cc));
-  if (cc->on_lexical_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_lexical_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_lexical_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "/* Syntax error */\n"
-                  "return _%sLEXICAL_ERROR;\n", cc_PREFIX(cc));
-  }
+  emit_lexical_error(ip, cc);
   ip_printf(ip, "      } /* switch */\n");
   ip_printf(ip, "    } /* if (need_sym_) */\n");
   ip_printf(ip, "    else {\n");
@@ -1240,29 +1344,11 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "        if (action > 0) {\n");
   ip_printf(ip, "          switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n", cc_prefix(cc));
   ip_printf(ip, "            case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "              ");
-  if (cc->on_internal_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  }
+  emit_overflow_error(ip, cc);
   ip_printf(ip, "            }\n"
                 "            break;\n");
   ip_printf(ip, "            case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "              ");
-  if (cc->on_alloc_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_alloc_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
-  }
+  emit_alloc_error(ip, cc);
   ip_printf(ip, "            }\n"
                 "            break;\n"
                 "          } /* switch */\n");
@@ -1352,15 +1438,17 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
         ip->had_error_ = 1;
         goto cleanup_exit;
       }
+    }
+    int emit_discard = pd->common_action_sequence_.num_tokens_ && pd->action_sequence_.num_tokens_;
+    if (emit_discard) {
       ip_printf(ip, "              if (!discard_action) {\n");
     }
-
     if (emit_action_snippet(ip, cc, pd)) {
       ip->had_error_ = 1;
       goto cleanup_exit;
     }
 
-    if (pd->common_action_sequence_.num_tokens_) {
+    if (emit_discard) {
       ip_printf(ip, "              }\n");
     }
 
@@ -1415,45 +1503,18 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "          } /* for */\n"
                 "          stack->pos_ -= production_length;\n"
                 "          action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
-  ip_printf(ip, "          if (action <= 0) {\n"
-                "            ");
-  if (cc->on_internal_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "/* Internal error: cannot shift an already reduced non-terminal */\n"
-                  "            return _%sINTERNAL_ERROR;\n", cc_PREFIX(cc));
-  }
+  ip_printf(ip, "          if (action <= 0) {\n");
+  emit_internal_error(ip, cc);
   ip_printf(ip, "          }\n");
 
   ip_printf(ip, "          switch (%spush_state(stack, action /* action for a \"goto\" shift is the ordinal */)) {\n", cc_prefix(cc));
   ip_printf(ip, "            case _%sOVERFLOW: {\n", cc_PREFIX(cc));
   ip_printf(ip, "              ");
-  if (cc->on_internal_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  }
+  emit_overflow_error(ip, cc);
   ip_printf(ip, "            }\n"
                 "            break;\n");
   ip_printf(ip, "            case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "              ");
-  if (cc->on_alloc_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_alloc_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
-  }
+  emit_alloc_error(ip, cc);
   ip_printf(ip, "            }\n"
                 "            break;\n"
                 "          } /* switch */\n");
@@ -1530,16 +1591,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "          if (!stack->mute_error_turns_) {\n"
                 "            stack->mute_error_turns_ = 3;\n"
                 "            ");
-  if (cc->on_syntax_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "/* Syntax error */\n"
-                  "            return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
-  }
+  emit_syntax_error(ip, cc);
   ip_printf(ip, "          }\n"
                 "          else {\n"
                 "            stack->mute_error_turns_--;\n"
@@ -1611,31 +1663,11 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "                /* Push the state of the error transition */\n"
                 "                switch (%spush_state(stack, err_action /* action for a shift is the state */)) {\n", cc_prefix(cc));
   ip_printf(ip, "                  case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "                    ");
-
-  if (cc->on_internal_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  }
+  emit_overflow_error(ip, cc);
   ip_printf(ip, "                  }\n"
                 "                  break;\n");
   ip_printf(ip, "                  case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "                    ");
-
-  if (cc->on_alloc_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_alloc_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
-  }
+  emit_alloc_error(ip, cc);
   ip_printf(ip, "                  }\n"
                 "                  break;\n"
                 "                } /* switch */\n");
@@ -1734,29 +1766,11 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip, "      if (action > 0) {\n");
   ip_printf(ip, "        switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n", cc_prefix(cc));
   ip_printf(ip, "          case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "            ");
-  if (cc->on_internal_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  }
+  emit_overflow_error(ip, cc);
   ip_printf(ip, "          }\n"
                 "          break;\n");
   ip_printf(ip, "          case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "            ");
-  if (cc->on_alloc_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_alloc_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
-  }
+  emit_alloc_error(ip, cc);
   ip_printf(ip, "          }\n"
                 "          break;\n"
                 "        } /* switch */\n");
@@ -1809,19 +1823,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   }
   ip_printf(ip, "        } /* switch */\n");
 
-  if (cc->on_next_token_snippet_.num_tokens_) {
-    ip_printf(ip, "        {\n"
-                  "          ");
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
-    }
-    ip_printf(ip, "        }\n");
-  }
-  else {
-    ip_printf(ip, "        /* Next token */\n"
-                  "        return _%sFEED_ME;\n", cc_PREFIX(cc));
-  }
+  emit_on_next(ip, cc);
   ip_printf(ip, "      } /* action > 0 */\n");
 
   ip_printf(ip, "      else if (action < 0) {\n"
@@ -1949,43 +1951,16 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 "        action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "        if (action <= 0) {\n"
                 "          ");
-  if (cc->on_internal_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "/* Internal error: cannot shift an already reduced non-terminal */\n"
-                  "          return _%sINTERNAL_ERROR;\n", cc_PREFIX(cc));
-  }
+  emit_internal_error(ip, cc);
   ip_printf(ip, "        }\n");
 
   ip_printf(ip, "        switch (%spush_state(stack, action /* action for a \"goto\" shift is the ordinal */)) {\n", cc_prefix(cc));
   ip_printf(ip, "          case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "            ");
-  if (cc->on_internal_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  }
+  emit_overflow_error(ip, cc);
   ip_printf(ip, "          }\n"
                 "          break;\n");
   ip_printf(ip, "          case _%sNO_MEMORY: /* out of memory */ {\n", cc_PREFIX(cc));
-  ip_printf(ip, "            ");
-  if (cc->on_alloc_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_alloc_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
-  }
+  emit_alloc_error(ip, cc);
   ip_printf(ip, "          }\n"
                 "          break;\n"
                 "        } /* switch */\n");
@@ -2014,35 +1989,14 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     goto cleanup_exit;
   }
   ip_printf(ip, ") {\n");
-  ip_printf(ip, "            /* Retain EOF but discard any other sym so we make progress */\n"
-                 "            ");
-  if (cc->on_next_token_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "/* Next token */\n"
-                  "            return _%sFEED_ME;\n", cc_PREFIX(cc));
-  }
-
+  ip_printf(ip, "            /* Retain EOF but discard any other sym so we make progress */\n");
+  emit_on_next(ip, cc);
   ip_printf(ip, "          }\n"
                 "        }\n");
   ip_printf(ip, "        /* Issue the error here */\n"
                 "        if (!stack->mute_error_turns_) {\n"
-                "          stack->mute_error_turns_ = 3;\n"
-                "          ");
-  if (cc->on_syntax_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_syntax_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_syntax_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "/* Syntax error */\n"
-                  "          return _%sSYNTAX_ERROR;\n", cc_PREFIX(cc));
-  }
+                "          stack->mute_error_turns_ = 3;\n");
+  emit_syntax_error(ip, cc);
   ip_printf(ip, "        }\n"
                 "        else {\n"
                 "          stack->mute_error_turns_--;\n"
@@ -2116,29 +2070,11 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip, "              /* Push the state of the error transition */\n");
   ip_printf(ip, "              switch (%spush_state(stack, err_action /* action for a shift is the state */)) {\n", cc_prefix(cc));
   ip_printf(ip, "                case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "                  ");
-  if (cc->on_internal_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_internal_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_internal_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  }
+  emit_overflow_error(ip, cc);
   ip_printf(ip, "                }\n"
                  "                break;\n");
   ip_printf(ip, "                case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "                  ");
-  if (cc->on_alloc_error_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_alloc_error_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_alloc_error_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "return _%sNO_MEMORY;\n", cc_PREFIX(cc));
-  }
+  emit_alloc_error(ip, cc);
   ip_printf(ip, "                }\n"
                 "                break;\n"
                 "              } /* switch */\n");
@@ -2154,18 +2090,8 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 "      }\n");
 
   ip_printf(ip, "      if (stack->error_recovery_) {\n"
-                "        /* Did not yet recover, discard current sym and get next */\n"
-                "        ");
-  if (cc->on_next_token_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
-  else {
-    ip_printf(ip, "/* Next token */\n"
-                  "        return _%sFEED_ME;\n", cc_PREFIX(cc));
-  }
+                "        /* Did not yet recover, discard current sym and get next */\n");
+  emit_on_next(ip, cc);
   ip_printf(ip, "      }\n");
   ip_printf(ip, "    } /* stack->error_recovery_ */\n");
   ip_printf(ip, "  } /* for (;;) */\n");

@@ -510,11 +510,17 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       if (action > 0) {
         switch (prd_push_state(stack, action /* action for a shift is the ordinal */)) {
           case _PRD_OVERFLOW: {
-            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            {
+              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+              
+            }
           }
           break;
           case _PRD_NO_MEMORY: {
-            re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+            {
+              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+              
+            }
           }
           break;
         } /* switch */
@@ -544,6 +550,7 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
         } /* switch */
         {
           return PRD_NEXT;
+          
         }
       } /* action > 0 */
       else if (action < 0) {
@@ -1096,15 +1103,24 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
         stack->pos_ -= production_length;
         action = prd_parse_table[prd_num_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - prd_minimum_sym)];
         if (action <= 0) {
-          re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+          {
+            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            
+          }
         }
         switch (prd_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
           case _PRD_OVERFLOW: {
-            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            {
+              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+              
+            }
           }
           break;
           case _PRD_NO_MEMORY: /* out of memory */ {
-            re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+            {
+              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+              
+            }
           }
           break;
         } /* switch */
@@ -1129,20 +1145,26 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
         else {
           if (sym != PRD_INPUT_END) {
             /* Retain EOF but discard any other sym so we make progress */
-            return PRD_NEXT;
+            {
+              return PRD_NEXT;
+              
+            }
           }
         }
         /* Issue the error here */
         if (!stack->mute_error_turns_) {
           stack->mute_error_turns_ = 3;
-          /* Syntax error */ \
-          if (sym != PRD_INPUT_END) {\
-            re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
-            } \
-          else { \
-            re_error_tkr(tkr, "Syntax error: end of input not expected");   \
-            } \
-          return PRD_SYNTAX_ERROR;
+          {
+            /* Syntax error */ \
+            if (sym != PRD_INPUT_END) {\
+              re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+              } \
+            else { \
+              re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+              } \
+            return PRD_SYNTAX_ERROR;
+            
+          }
         }
         else {
           stack->mute_error_turns_--;
@@ -1226,11 +1248,17 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
               /* Push the state of the error transition */
               switch (prd_push_state(stack, err_action /* action for a shift is the state */)) {
                 case _PRD_OVERFLOW: {
-                  re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                  {
+                    re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                    
+                  }
                 }
                 break;
                 case _PRD_NO_MEMORY: {
-                  re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                  {
+                    re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                    
+                  }
                 }
                 break;
               } /* switch */
@@ -1243,7 +1271,10 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       if (stack->error_recovery_) {
         /* Did not yet recover, discard current sym and get next */
-        return PRD_NEXT;
+        {
+          return PRD_NEXT;
+          
+        }
       }
     } /* stack->error_recovery_ */
   } /* for (;;) */

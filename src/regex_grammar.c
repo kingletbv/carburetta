@@ -940,18 +940,27 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
         } /* switch */
         break;
         case _RXG_OVERFLOW:
-        return _RXG_OVERFLOW;
+        {
+          re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+          
+        }
         case _RXG_NO_MEMORY:
-        return _RXG_NO_MEMORY;
+        {
+          re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+          
+        }
         case _RXG_FEED_ME:
-        return _RXG_FEED_ME;
+        {
+          return PRD_NEXT;
+          
+        }
         case _RXG_END_OF_INPUT:
         stack->current_sym_ = RXG_INPUT_END;
         stack->need_sym_ = 0;
         if (stack->mute_error_turns_) stack->mute_error_turns_--;
         break;
         case _RXG_LEXICAL_ERROR:
-        /* Syntax error */
+        /* Lexical error */
         return _RXG_LEXICAL_ERROR;
       } /* switch */
     } /* if (need_sym_) */
@@ -962,11 +971,17 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
         if (action > 0) {
           switch (rxg_push_state(stack, action /* action for a shift is the ordinal */)) {
             case _RXG_OVERFLOW: {
-              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+              {
+                re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                
+              }
             }
             break;
             case _RXG_NO_MEMORY: {
-              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+              {
+                re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                
+              }
             }
             break;
           } /* switch */
@@ -1162,8 +1177,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* exp: exp BAR term */
@@ -1178,8 +1191,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1196,8 +1207,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* term: term elm */
@@ -1212,8 +1221,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1230,8 +1237,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* elm: sym ASTERISK */
@@ -1246,8 +1251,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1264,8 +1267,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* elm: sym QUESTION_MARK */
@@ -1280,8 +1281,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1298,8 +1297,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* sym: DOT */
@@ -1314,8 +1311,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1332,8 +1327,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* sym: DOLLAR */
@@ -1348,8 +1341,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1366,8 +1357,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* sym: SQ_OPEN range SQ_CLOSE */
@@ -1382,8 +1371,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1400,8 +1387,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* range: range range-elm */
@@ -1416,8 +1401,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1434,8 +1417,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* range-elm: CHAR */
@@ -1450,8 +1431,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1468,8 +1447,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: */
@@ -1484,8 +1461,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1502,8 +1477,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: action-sequence IDENT */
@@ -1518,8 +1491,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1536,8 +1507,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: action-sequence SEMICOLON */
@@ -1552,8 +1521,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1570,8 +1537,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: action-sequence SQ_CLOSE */
@@ -1586,8 +1551,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1604,8 +1567,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: action-sequence DOLLAR */
@@ -1620,8 +1581,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1638,8 +1597,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: action-sequence DASH */
@@ -1654,8 +1611,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1672,8 +1627,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: action-sequence ASTERISK */
@@ -1688,8 +1641,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1706,8 +1657,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: action-sequence QUESTION_MARK */
@@ -1722,8 +1671,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1740,8 +1687,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: action-sequence WHITESPACE */
@@ -1756,8 +1701,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1774,8 +1717,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
   }
 }
                 }
-                if (!discard_action) {
-                }
               }
               break;
               /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
@@ -1790,8 +1731,6 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
     snippet_append_snippet(&(nonterminal_sym_data_reduced_to.common_), &(sym_data[n].common_));
   }
 }
-                }
-                if (!discard_action) {
                 }
               }
               break;
@@ -1872,15 +1811,24 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
           stack->pos_ -= production_length;
           action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - rxg_minimum_sym)];
           if (action <= 0) {
-            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            {
+              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+              
+            }
           }
           switch (rxg_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
             case _RXG_OVERFLOW: {
-              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+              {
+                re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                
+              }
             }
             break;
             case _RXG_NO_MEMORY: {
-              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+              {
+                re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                
+              }
             }
             break;
           } /* switch */
@@ -1917,14 +1865,17 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
           /* Issue the error here */
           if (!stack->mute_error_turns_) {
             stack->mute_error_turns_ = 3;
-            /* Syntax error */ \
-            if (sym != PRD_INPUT_END) {\
-              re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
-              } \
-            else { \
-              re_error_tkr(tkr, "Syntax error: end of input not expected");   \
-              } \
-            return PRD_SYNTAX_ERROR;
+            {
+              /* Syntax error */ \
+              if (sym != PRD_INPUT_END) {\
+                re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+                } \
+              else { \
+                re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+                } \
+              return PRD_SYNTAX_ERROR;
+              
+            }
           }
           else {
             stack->mute_error_turns_--;
@@ -1961,11 +1912,17 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                 /* Push the state of the error transition */
                 switch (rxg_push_state(stack, err_action /* action for a shift is the state */)) {
                   case _RXG_OVERFLOW: {
-                    re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                    {
+                      re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                      
+                    }
                   }
                   break;
                   case _RXG_NO_MEMORY: {
-                    re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                    {
+                      re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                      
+                    }
                   }
                   break;
                 } /* switch */
@@ -2005,11 +1962,17 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
       if (action > 0) {
         switch (rxg_push_state(stack, action /* action for a shift is the ordinal */)) {
           case _RXG_OVERFLOW: {
-            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            {
+              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+              
+            }
           }
           break;
           case _RXG_NO_MEMORY: {
-            re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+            {
+              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+              
+            }
           }
           break;
         } /* switch */
@@ -2025,6 +1988,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         } /* switch */
         {
           return PRD_NEXT;
+          
         }
       } /* action > 0 */
       else if (action < 0) {
@@ -2921,15 +2885,24 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         stack->pos_ -= production_length;
         action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - rxg_minimum_sym)];
         if (action <= 0) {
-          re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+          {
+            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            
+          }
         }
         switch (rxg_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
           case _RXG_OVERFLOW: {
-            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            {
+              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+              
+            }
           }
           break;
           case _RXG_NO_MEMORY: /* out of memory */ {
-            re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+            {
+              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+              
+            }
           }
           break;
         } /* switch */
@@ -2954,20 +2927,26 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
         else {
           if (sym != RXG_INPUT_END) {
             /* Retain EOF but discard any other sym so we make progress */
-            return PRD_NEXT;
+            {
+              return PRD_NEXT;
+              
+            }
           }
         }
         /* Issue the error here */
         if (!stack->mute_error_turns_) {
           stack->mute_error_turns_ = 3;
-          /* Syntax error */ \
-          if (sym != PRD_INPUT_END) {\
-            re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
-            } \
-          else { \
-            re_error_tkr(tkr, "Syntax error: end of input not expected");   \
-            } \
-          return PRD_SYNTAX_ERROR;
+          {
+            /* Syntax error */ \
+            if (sym != PRD_INPUT_END) {\
+              re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
+              } \
+            else { \
+              re_error_tkr(tkr, "Syntax error: end of input not expected");   \
+              } \
+            return PRD_SYNTAX_ERROR;
+            
+          }
         }
         else {
           stack->mute_error_turns_--;
@@ -3004,11 +2983,17 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               /* Push the state of the error transition */
               switch (rxg_push_state(stack, err_action /* action for a shift is the state */)) {
                 case _RXG_OVERFLOW: {
-                  re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                  {
+                    re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+                    
+                  }
                 }
                 break;
                 case _RXG_NO_MEMORY: {
-                  re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                  {
+                    re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
+                    
+                  }
                 }
                 break;
               } /* switch */
@@ -3021,7 +3006,10 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
       }
       if (stack->error_recovery_) {
         /* Did not yet recover, discard current sym and get next */
-        return PRD_NEXT;
+        {
+          return PRD_NEXT;
+          
+        }
       }
     } /* stack->error_recovery_ */
   } /* for (;;) */
