@@ -206,6 +206,19 @@ int main(int argc, char **argv) {
   struct carburetta_context cc;
   carburetta_context_init(&cc);
 
+  struct prd_grammar prdg;
+  prd_grammar_init(&prdg);
+
+  struct grammar_table gt;
+  gt_grammar_table_init(&gt);
+
+  struct lr_generator lalr;
+  lr_init(&lalr);
+
+  struct sc_scanner scantable;
+  sc_scanner_init(&scantable);
+
+
   char **cpv = argv + 1;
   int cr = argc - 1;
   int expecting_inputfile = 1;
@@ -317,19 +330,6 @@ int main(int argc, char **argv) {
   else {
     fp = stdin;
   }
-
-  struct prd_grammar prdg;
-  prd_grammar_init(&prdg);
-
-  struct grammar_table gt;
-  gt_grammar_table_init(&gt);
-
-  struct lr_generator lalr;
-  lr_init(&lalr);
-
-  struct sc_scanner scantable;
-  sc_scanner_init(&scantable);
-
 
   r = pi_parse_input(fp, input_filename, &cc, &prdg);
   if (r) {
