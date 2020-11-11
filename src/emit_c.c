@@ -790,6 +790,24 @@ static int emit_common_destructor_snippet_index_0(struct indented_printer *ip, s
   return emit_snippet_code_emission(ip, cc, &se);
 }
 
+static int emit_pattern_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_pattern *pat) {
+  struct snippet_emission se = { 0 };
+  if (!pat) return 0;
+  se.code_ = &pat->common_action_sequence_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "(stack->stack_[0].common_)";
+  se.sym_type_ = SEST_NONE;
+  se.prod_ = NULL;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
+  se.len_type_ = SELT_FMT;
+  se.len_fmt_ = "(stack->token_size_)";
+  se.discard_type_ = SEDIT_NONE;
+  se.text_type_ = SETT_FMT;
+  se.text_fmt_ = "(stack->match_buffer_)";
+  return emit_snippet_code_emission(ip, cc, &se);
+}
 
 static int emit_pattern_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_pattern *pat) {
   struct snippet_emission se = { 0 };
@@ -1283,11 +1301,6 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     goto cleanup_exit;
   }
 
-  if (emit_pattern_token_common_action_snippet(ip, cc)) {
-    ip->had_error_ = 1;
-    goto cleanup_exit;
-  }
-
   ip_printf(ip, "          switch (stack->best_match_action_) {\n");
   size_t pat_idx;
   for (pat_idx = 0; pat_idx < prdg->num_patterns_; ++pat_idx) {
@@ -1306,7 +1319,15 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
         ip->had_error_ = 1;
         goto cleanup_exit;
       }
+      if (emit_pattern_token_common_action_snippet(ip, cc)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
       if (emit_pattern_token_action_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+      if (emit_pattern_common_action_snippet(ip, cc, pat)) {
         ip->had_error_ = 1;
         goto cleanup_exit;
       }

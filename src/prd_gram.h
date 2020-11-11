@@ -80,7 +80,7 @@ struct prd_production {
   size_t num_syms_allocated_;
   struct prd_production_sym *syms_;
 
-  /* Action sequence common with other productions */
+  /* Action sequence common with other productions (not patterns) */
   struct snippet common_action_sequence_;
 
   /* Action sequence that executes when the production matches */
@@ -94,6 +94,9 @@ struct prd_pattern {
   /* Pattern that produces the production */
   char *regex_;
 
+  /* Action sequence common with other patterns (not productions) */
+  struct snippet common_action_sequence_;
+
   /* Action sequence that executes when the pattern matches */
   struct snippet action_sequence_;
 };
@@ -104,6 +107,9 @@ struct prd_grammar {
 
   /* Attached to any production being added during parsing */
   struct snippet current_common_action_sequence_;
+
+  /* Attached to any pattern being added during parsing */
+  struct snippet current_common_pattern_action_sequence_;
 
   /* Productions making up the entire grammar */
   size_t num_productions_;

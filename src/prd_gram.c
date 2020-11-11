@@ -79,12 +79,14 @@ void prd_prod_cleanup(struct prd_production *ppd) {
 void prd_pattern_init(struct prd_pattern *pat) {
   prd_production_sym_init(&pat->term_);
   pat->regex_ = NULL;
+  snippet_init(&pat->common_action_sequence_);
   snippet_init(&pat->action_sequence_);
 }
 
 void prd_pattern_cleanup(struct prd_pattern *pat) {
   prd_production_sym_cleanup(&pat->term_);
   if (pat->regex_) free(pat->regex_);
+  snippet_cleanup(&pat->common_action_sequence_);
   snippet_cleanup(&pat->action_sequence_);
 }
 
@@ -92,6 +94,7 @@ void prd_grammar_init(struct prd_grammar *g) {
   g->have_errors_ = 0;
   g->accept_whitespace_ = 0;
   snippet_init(&g->current_common_action_sequence_);
+  snippet_init(&g->current_common_pattern_action_sequence_);
   g->num_productions_ = g->num_productions_allocated_ = 0;
   g->productions_ = NULL;
   g->num_patterns_ = g->num_patterns_allocated_ = 0;
@@ -102,6 +105,7 @@ void prd_grammar_cleanup(struct prd_grammar *g) {
   size_t n;
 
   snippet_cleanup(&g->current_common_action_sequence_);
+  snippet_cleanup(&g->current_common_pattern_action_sequence_);
   for (n = 0; n < g->num_productions_; ++n) {
     prd_prod_cleanup(g->productions_ + n);
   }

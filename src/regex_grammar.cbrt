@@ -141,6 +141,8 @@ pattern: IDENT start-regex COLON exp end-regex SEMICOLON {
   pat->regex_ = regex;
   r = snippet_append_to_xlts(&pat->term_.id_, &${0});
   if (r) return r;
+  r = snippet_append_snippet(&pat->common_action_sequence_, &g->current_common_pattern_action_sequence_);
+  if (r) return r;
 }
 
 pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE {
@@ -156,6 +158,8 @@ pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespa
   r = snippet_append_to_xlts(&pat->term_.id_, &${0});
   if (r) return r;
   r = snippet_append_snippet(&pat->action_sequence_, &${8});
+  if (r) return r;
+  r = snippet_append_snippet(&pat->common_action_sequence_, &g->current_common_pattern_action_sequence_);
   if (r) return r;
 }
 pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON {
@@ -176,6 +180,8 @@ pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end
   if (pat->action_sequence_.num_tokens_ && (pat->action_sequence_.tokens_[0].match_ == TOK_EQUALS)) {
     snippet_pop_first_token(&pat->action_sequence_);
   }
+  r = snippet_append_snippet(&pat->common_action_sequence_, &g->current_common_pattern_action_sequence_);
+  if (r) return r;
 }
 
 pattern: start-regex COLON exp end-regex SEMICOLON {
@@ -188,6 +194,8 @@ pattern: start-regex COLON exp end-regex SEMICOLON {
   pat = g->patterns_ + g->num_patterns_++;
   prd_pattern_init(pat);
   pat->regex_ = regex;
+  r = snippet_append_snippet(&pat->common_action_sequence_, &g->current_common_pattern_action_sequence_);
+  if (r) return r;
 }
 
 pattern: start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE {
@@ -201,6 +209,8 @@ pattern: start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR
   prd_pattern_init(pat);
   pat->regex_ = regex;
   r = snippet_append_snippet(&pat->action_sequence_, &${7});
+  if (r) return r;
+  r = snippet_append_snippet(&pat->common_action_sequence_, &g->current_common_pattern_action_sequence_);
   if (r) return r;
 }
 pattern: start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON {
@@ -219,8 +229,22 @@ pattern: start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tok
   if (pat->action_sequence_.num_tokens_ && (pat->action_sequence_.tokens_[0].match_ == TOK_EQUALS)) {
     snippet_pop_first_token(&pat->action_sequence_);
   }
+  r = snippet_append_snippet(&pat->common_action_sequence_, &g->current_common_pattern_action_sequence_);
+  if (r) return r;
 }
 
+pattern: DOLLAR COLON start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE {
+  /* Analogous to regular pattern actions, except we're moving it into the grammar's
+   * current common action sequence. */
+  snippet_clear(&g->current_common_pattern_action_sequence_);
+
+  /* If action-sequence is empty, then we'd like to preserve this empty-ness by making the common-action 
+   * empty as well. This allows generating code to discover that there is no common-action */
+  if (${5}.num_tokens_) {
+    r = snippet_append_snippet(&g->current_common_pattern_action_sequence_, &${5});
+    if (r) return r;
+  }
+}
 
 $: {
   size_t n;
@@ -394,6 +418,15 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
       break;
     }
     case TOK_WHITESPACE: sym = RXG_WHITESPACE; break;
+    case TOK_SPECIAL_IDENT_STR: 
+      if (!strcmp("$", tkr_str(tkr))) {
+        /* Single '$' is recognized as a dollar.. */
+        sym = RXG_DOLLAR;
+      }
+      else {
+        sym = RXG_TOKEN;
+      }
+      break;
     default: {
       sym = RXG_TOKEN;
     }
