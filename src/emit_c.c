@@ -1234,6 +1234,19 @@ void emit_feed_me(struct indented_printer *ip, struct carburetta_context *cc) {
   }
 }
 
+static void emit_push_state(struct indented_printer *ip, struct carburetta_context *cc, const char *action) {
+  ip_printf(ip, "switch (%spush_state(stack, %s)) {\n", cc_prefix(cc), action);
+  ip_printf(ip, "  case _%sOVERFLOW: {\n", cc_PREFIX(cc));
+  emit_overflow_error(ip, cc);
+  ip_printf(ip, "  }\n"
+                "  break;\n");
+  ip_printf(ip, "  case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
+  emit_alloc_error(ip, cc);
+  ip_printf(ip, "  }\n"
+                "  break;\n"
+                "} /* switch */\n");
+}
+
 static void emit_scan_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   /* Emit the parse function */
   if (cc->params_snippet_.num_tokens_) {
@@ -1358,17 +1371,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "        int action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   /* Shift logic */
   ip_printf(ip, "        if (action > 0) {\n");
-  ip_printf(ip, "          switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n", cc_prefix(cc));
-  ip_printf(ip, "            case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  emit_overflow_error(ip, cc);
-  ip_printf(ip, "            }\n"
-                "            break;\n");
-  ip_printf(ip, "            case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  emit_alloc_error(ip, cc);
-  ip_printf(ip, "            }\n"
-                "            break;\n"
-                "          } /* switch */\n");
-
+  emit_push_state(ip, cc, "action");
   ip_printf(ip, "\n"
                 "          /* Fill in the sym from the tokenizer */\n");
   ip_printf(ip, "          stack->need_sym_ = 1;\n");
@@ -1523,17 +1526,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   emit_internal_error(ip, cc);
   ip_printf(ip, "          }\n");
 
-  ip_printf(ip, "          switch (%spush_state(stack, action /* action for a \"goto\" shift is the ordinal */)) {\n", cc_prefix(cc));
-  ip_printf(ip, "            case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  ip_printf(ip, "              ");
-  emit_overflow_error(ip, cc);
-  ip_printf(ip, "            }\n"
-                "            break;\n");
-  ip_printf(ip, "            case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  emit_alloc_error(ip, cc);
-  ip_printf(ip, "            }\n"
-                "            break;\n"
-                "          } /* switch */\n");
+  emit_push_state(ip, cc, "action /* action for a \"goto\" shift is the ordinal */");
   ip_printf(ip, "          struct %ssym_data *sd = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
   ip_printf(ip, "          *sd = nonterminal_sym_data_reduced_to;\n"
                 "          sd->state_ = action;\n");
@@ -1675,19 +1668,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
   ip_printf(ip, "                } /* for */\n"
                 "                stack->pos_ = n + 1;\n");
-
-  ip_printf(ip, "                /* Push the state of the error transition */\n"
-                "                switch (%spush_state(stack, err_action /* action for a shift is the state */)) {\n", cc_prefix(cc));
-  ip_printf(ip, "                  case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  emit_overflow_error(ip, cc);
-  ip_printf(ip, "                  }\n"
-                "                  break;\n");
-  ip_printf(ip, "                  case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  emit_alloc_error(ip, cc);
-  ip_printf(ip, "                  }\n"
-                "                  break;\n"
-                "                } /* switch */\n");
-
+  emit_push_state(ip, cc, "err_sym_action");
   ip_printf(ip, "                stack->error_recovery_ = 0;\n");
   ip_printf(ip, "                /* Break out of do { .. } while loop, we've recovered */\n"
                 "                break;\n");
@@ -1780,16 +1761,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
 
   /* Shift logic */
   ip_printf(ip, "      if (action > 0) {\n");
-  ip_printf(ip, "        switch (%spush_state(stack, action /* action for a shift is the ordinal */)) {\n", cc_prefix(cc));
-  ip_printf(ip, "          case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  emit_overflow_error(ip, cc);
-  ip_printf(ip, "          }\n"
-                "          break;\n");
-  ip_printf(ip, "          case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  emit_alloc_error(ip, cc);
-  ip_printf(ip, "          }\n"
-                "          break;\n"
-                "        } /* switch */\n");
+  emit_push_state(ip, cc, "action");
 
   ip_printf(ip, "\n");
   int need_sym_data = 0;
@@ -1970,16 +1942,8 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   emit_internal_error(ip, cc);
   ip_printf(ip, "        }\n");
 
-  ip_printf(ip, "        switch (%spush_state(stack, action /* action for a \"goto\" shift is the ordinal */)) {\n", cc_prefix(cc));
-  ip_printf(ip, "          case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  emit_overflow_error(ip, cc);
-  ip_printf(ip, "          }\n"
-                "          break;\n");
-  ip_printf(ip, "          case _%sNO_MEMORY: /* out of memory */ {\n", cc_PREFIX(cc));
-  emit_alloc_error(ip, cc);
-  ip_printf(ip, "          }\n"
-                "          break;\n"
-                "        } /* switch */\n");
+  emit_push_state(ip, cc, "action /* action for a \"goto\" shift is the ordinal */");
+
   ip_printf(ip, "        struct %ssym_data *sd = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
   ip_printf(ip, "        *sd = nonterminal_sym_data_reduced_to;\n"
                 "        sd->state_ = action;\n");
@@ -2084,16 +2048,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 "              stack->pos_ = n + 1;\n");
 
   ip_printf(ip, "              /* Push the state of the error transition */\n");
-  ip_printf(ip, "              switch (%spush_state(stack, err_action /* action for a shift is the state */)) {\n", cc_prefix(cc));
-  ip_printf(ip, "                case _%sOVERFLOW: {\n", cc_PREFIX(cc));
-  emit_overflow_error(ip, cc);
-  ip_printf(ip, "                }\n"
-                 "                break;\n");
-  ip_printf(ip, "                case _%sNO_MEMORY: {\n", cc_PREFIX(cc));
-  emit_alloc_error(ip, cc);
-  ip_printf(ip, "                }\n"
-                "                break;\n"
-                "              } /* switch */\n");
+  emit_push_state(ip, cc, "err_sym_action");
 
   ip_printf(ip, "              stack->error_recovery_ = 0;\n");
   ip_printf(ip, "              /* Break out of do { .. } while loop, we've recovered */\n"

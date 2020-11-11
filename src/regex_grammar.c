@@ -950,10 +950,8 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
           
         }
         case _RXG_FEED_ME:
-        {
-          return PRD_NEXT;
-          
-        }
+        /* Need more input */
+        return _RXG_FEED_ME;
         case _RXG_END_OF_INPUT:
         stack->current_sym_ = RXG_INPUT_END;
         stack->need_sym_ = 0;
@@ -969,7 +967,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
       if (!stack->error_recovery_) {
         int action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - rxg_minimum_sym)];
         if (action > 0) {
-          switch (rxg_push_state(stack, action /* action for a shift is the ordinal */)) {
+          switch (rxg_push_state(stack, action)) {
             case _RXG_OVERFLOW: {
               {
                 re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
@@ -1909,8 +1907,7 @@ int rxg_scan(struct rxg_stack *stack, const char *input, size_t input_size, int 
                   }
                 } /* for */
                 stack->pos_ = n + 1;
-                /* Push the state of the error transition */
-                switch (rxg_push_state(stack, err_action /* action for a shift is the state */)) {
+                switch (rxg_push_state(stack, err_sym_action)) {
                   case _RXG_OVERFLOW: {
                     {
                       re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
@@ -1960,7 +1957,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
     if (!stack->error_recovery_) {
       int action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - rxg_minimum_sym)];
       if (action > 0) {
-        switch (rxg_push_state(stack, action /* action for a shift is the ordinal */)) {
+        switch (rxg_push_state(stack, action)) {
           case _RXG_OVERFLOW: {
             {
               re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
@@ -2898,7 +2895,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
             }
           }
           break;
-          case _RXG_NO_MEMORY: /* out of memory */ {
+          case _RXG_NO_MEMORY: {
             {
               re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
               
@@ -2981,7 +2978,7 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
               } /* for */
               stack->pos_ = n + 1;
               /* Push the state of the error transition */
-              switch (rxg_push_state(stack, err_action /* action for a shift is the state */)) {
+              switch (rxg_push_state(stack, err_sym_action)) {
                 case _RXG_OVERFLOW: {
                   {
                     re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
