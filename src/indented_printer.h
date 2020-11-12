@@ -15,6 +15,13 @@
 extern "C" {
 #endif
 
+struct ip_retained_output_bucket {
+  /* Size of struct allocation includes data in buf_ with null terminator (eg. buf_size_ + 1) */
+  struct ip_retained_output_bucket *next_;
+  size_t buf_size_;
+  char buf_[1];
+};
+
 struct indented_printer {
   FILE *outfp_;
   const char *filename_;
@@ -22,6 +29,8 @@ struct indented_printer {
   int indent_size_;
   int had_error_:1;
   int at_start_of_line_:1;
+  int retain_output_:1;
+  struct ip_retained_output_bucket *retained_output_; /* tail ptr */
 };
 
 void ip_init(struct indented_printer *ip, FILE *outfp, const char *filename);
@@ -35,6 +44,10 @@ void ip_vprintf_no_indent(struct indented_printer *ip, const char *format, va_li
 void ip_printf(struct indented_printer *ip, const char *format, ...);
 void ip_printf_no_indent(struct indented_printer *ip, const char *format, ...);
 
+void ip_free_retained_output_bucket_chain(struct ip_retained_output_bucket *robc);
+void ip_write_retained_output_bucket_chain(struct indented_printer *ip, struct ip_retained_output_bucket *robc);
+void ip_set_retained_output(struct indented_printer *ip, int enable);
+struct ip_retained_output_bucket *ip_extract_retained_output(struct indented_printer *ip);
 
 #ifdef __cplusplus
 } /* extern "C" */

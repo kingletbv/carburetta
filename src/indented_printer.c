@@ -39,15 +39,107 @@ void ip_init(struct indented_printer *ip, FILE *outfp, const char *filename) {
   ip->indent_size_ = 2;
   ip->had_error_ = 0;
   ip->at_start_of_line_ = 1;
+  ip->retain_output_ = 0;
+  ip->retained_output_ = NULL;
 }
 
 void ip_cleanup(struct indented_printer *ip) {
 }
 
-void ip_write_no_indent(struct indented_printer *ip, const char *s, size_t len) {
+void ip_free_retained_output_bucket_chain(struct ip_retained_output_bucket *robc) {
+  struct ip_retained_output_bucket *b;
+  b = robc;
+  if (b) {
+    struct ip_retained_output_bucket *next;
+    next = b->next_;
+    do {
+      b = next;
+      next = b->next_;
+      free(b);
+    } while (b != robc);
+  }
+}
+
+void ip_write_retained_output_bucket_chain(struct indented_printer *ip, struct ip_retained_output_bucket *robc) {
+  struct ip_retained_output_bucket *b;
+  b = robc;
+  if (b) {
+    do {
+      b = b->next_;
+
+      ip_write_no_indent(ip, b->buf_, b->buf_size_);
+
+    } while (b != robc);
+  }
+}
+
+void ip_set_retained_output(struct indented_printer *ip, int enable) {
+  ip->retain_output_ = !!enable;
+}
+
+struct ip_retained_output_bucket *ip_extract_retained_output(struct indented_printer *ip) {
+  struct ip_retained_output_bucket *rob = ip->retained_output_;
+  ip->retained_output_ = NULL;
+  return rob;
+}
+
+static struct ip_retained_output_bucket *ip_dst_alloc_bucket(struct indented_printer *ip, size_t num_bytes) {
+  struct ip_retained_output_bucket *b;
+  /* Allocate enough size for the bucket struct and its variable length buf_ member.
+   * Note that buf_ already has size 1, which corresponds to the size needed for the
+   * null terminator, plus num_bytes for the content = size of allocation. */
+  b = (struct ip_retained_output_bucket *)malloc(sizeof(struct ip_retained_output_bucket) + num_bytes);
+  if (!b) {
+    errno = ENOMEM;
+    return NULL;
+  }
+  if (ip->retained_output_) {
+    b->next_ = ip->retained_output_->next_;
+    ip->retained_output_->next_ = b;
+    ip->retained_output_ = b;
+  }
+  else {
+    b->next_ = b;
+    ip->retained_output_ = b;
+  }
+  b->buf_size_ = num_bytes;
+  return b;
+}
+
+static int ip_dst_write(struct indented_printer *ip, const void *bytes, size_t num_bytes) {
+  if (ip->retain_output_) {
+    struct ip_retained_output_bucket *b;
+    b = ip_dst_alloc_bucket(ip, num_bytes);
+    if (!b) return errno;
+    memcpy(b->buf_, bytes, num_bytes);
+    b->buf_[num_bytes] = '\0';
+    return 0;
+  }
   size_t count;
-  count = fwrite(s, 1, len, ip->outfp_);
-  if (count != len) {
+  count = fwrite(bytes, 1, num_bytes, ip->outfp_);
+  if (count != num_bytes) {
+    return errno;
+  }
+  return 0;
+}
+
+static int ip_dst_write_spaces(struct indented_printer *ip, int num_spaces) {
+  if (ip->retained_output_) {
+    struct ip_retained_output_bucket *b;
+    b = ip_dst_alloc_bucket(ip, num_spaces);
+    if (!b) return errno;
+    memset(b->buf_, ' ', num_spaces);
+    b->buf_[num_spaces] = '\0';
+    return 0;
+  }
+  if (0 > fprintf(ip->outfp_, "%*s", num_spaces, "")) {
+    int err = errno;
+  }
+  return 0;
+}
+
+void ip_write_no_indent(struct indented_printer *ip, const char *s, size_t len) {
+  if (ip_dst_write(ip, s, len)) {
     int err = errno;
     if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(errno));
     ip->had_error_ = 1;
@@ -82,7 +174,7 @@ void ip_puts(struct indented_printer *ip, const char *s) {
 
     if (ip->at_start_of_line_) {
       while (*s == ' ') s++;
-      if (0 > fprintf(ip->outfp_, "%*s", ip->indentation_, "")) {
+      if (ip_dst_write_spaces(ip, ip->indentation_)) {
         int err = errno;
         if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(errno));
         ip->had_error_ = 1;
@@ -95,7 +187,6 @@ void ip_puts(struct indented_printer *ip, const char *s) {
       ip->indentation_ += (opening_cubraces - closing_cubraces) * ip->indent_size_;
     }
 
-    size_t count;
     size_t len;
     if (*end_of_line == '\n') {
       /* include newline with end of line */
@@ -103,8 +194,7 @@ void ip_puts(struct indented_printer *ip, const char *s) {
       ip->at_start_of_line_ = 1; /* next text starts a new line */
     }
     len = end_of_line - s;
-    count = fwrite(s, 1, len, ip->outfp_);
-    if (count != len) {
+    if (ip_dst_write(ip, s, len)) {
       int err = errno;
       if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(errno));
       ip->had_error_ = 1;
@@ -115,7 +205,7 @@ void ip_puts(struct indented_printer *ip, const char *s) {
 }
 
 void ip_force_indent_print(struct indented_printer *ip) {
-  if (0 > fprintf(ip->outfp_, "%*s", ip->indentation_, "")) {
+  if (ip_dst_write_spaces(ip, ip->indentation_)) {
     int err = errno;
     if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(errno));
     ip->had_error_ = 1;
