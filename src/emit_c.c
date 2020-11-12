@@ -1283,6 +1283,9 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "    r = %sstack_reset(stack);\n"
                 "    if (r) return r;\n"
                 "  }\n", cc_prefix(cc));
+  
+  ip_set_retained_output(ip, 1);
+
   ip_printf(ip, "  for (;;) {\n");
   ip_printf(ip, "    if (stack->need_sym_) {\n");
   ip_printf(ip, "      switch (%slex(stack, input, input_size, is_final_input)) {\n", cc_prefix(cc));
@@ -1750,6 +1753,12 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "      } /* stack->error_recovery_ */\n");
   ip_printf(ip, "    } /* for (;;) */\n");
   ip_printf(ip, "  } /* for (;;) lexing loop */\n");
+
+  struct ip_retained_output_bucket *retained_output = ip_extract_retained_output(ip);
+  ip_set_retained_output(ip, 0);
+  ip_write_retained_output_bucket_chain(ip, retained_output);
+  ip_free_retained_output_bucket_chain(retained_output);
+
   ip_printf(ip, "}\n");
 
 cleanup_exit:
