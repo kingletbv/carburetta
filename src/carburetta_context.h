@@ -94,6 +94,7 @@ struct carburetta_context {
   char *include_guard_;
   struct part *prologue_;
   struct part *epilogue_;
+  int current_snippet_continuation_;
 };
 
 void carburetta_context_init(struct carburetta_context *cc);
