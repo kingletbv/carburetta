@@ -462,7 +462,7 @@ static int emit_common_action_snippet(struct indented_printer *ip, struct carbur
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->current_production_length_)";
   se.discard_type_ = SEDIT_FMT;
-  se.discard_fmt_ = "discard_action = 1;";
+  se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(ip, cc, &se);
 }
@@ -501,7 +501,8 @@ static int emit_pattern_token_action_snippet(struct indented_printer *ip, struct
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDIT_NONE;
+  se.discard_type_ = SEDIT_FMT;
+  se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(ip, cc, &se);
 }
@@ -648,7 +649,8 @@ static int emit_pattern_token_common_action_snippet(struct indented_printer *ip,
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDIT_NONE;
+  se.discard_type_ = SEDIT_FMT;
+  se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_NONE;
   return emit_snippet_code_emission(ip, cc, &se);
 }
@@ -815,7 +817,8 @@ static int emit_pattern_common_action_snippet(struct indented_printer *ip, struc
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->token_size_)";
-  se.discard_type_ = SEDIT_NONE;
+  se.discard_type_ = SEDIT_FMT;
+  se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_FMT;
   se.text_fmt_ = "(stack->match_buffer_)";
   return emit_snippet_code_emission(ip, cc, &se);
@@ -841,7 +844,8 @@ static int emit_pattern_action_snippet(struct indented_printer *ip, struct carbu
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->token_size_)";
-  se.discard_type_ = SEDIT_NONE;
+  se.discard_type_ = SEDIT_FMT;
+  se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_FMT;
   se.text_fmt_ = "(stack->match_buffer_)";
   return emit_snippet_code_emission(ip, cc, &se);
@@ -1300,10 +1304,12 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_set_retained_output(ip, 1);
 
   ip_printf(ip, "  for (;;) {\n");
+  ip_printf(ip, "    stack->continue_at_ = 0;\n");
   ip_printf(ip, "    if (stack->need_sym_) {\n");
   ip_printf(ip, "      switch (%slex(stack, input, input_size, is_final_input)) {\n", cc_prefix(cc));
   ip_printf(ip, "        case _%sMATCH:\n", cc_PREFIX(cc));
   ip_printf(ip, "          stack->need_sym_ = 0;\n");
+  ip_printf(ip, "          stack->discard_remaining_actions_ = 0;\n");
   ip_printf(ip, "          stack->current_sym_ = ");
   if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
     ip->had_error_ = 1;
@@ -1339,17 +1345,29 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
         ip->had_error_ = 1;
         goto cleanup_exit;
       }
-      if (emit_pattern_token_action_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
+      if (pat->term_.sym_->assigned_type_ &&  pat->term_.sym_->assigned_type_->token_action_snippet_.num_tokens_) {
+        ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
+        if (emit_pattern_token_action_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        ip_printf(ip, "              }\n");
       }
-      if (emit_pattern_common_action_snippet(ip, cc, pat)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
+      if (pat->common_action_sequence_.num_tokens_) {
+        ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
+        if (emit_pattern_common_action_snippet(ip, cc, pat)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        ip_printf(ip, "              }\n");
       }
-      if (emit_pattern_action_snippet(ip, cc, pat)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
+      if (pat->action_sequence_.num_tokens_) {
+        ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
+        if (emit_pattern_action_snippet(ip, cc, pat)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        ip_printf(ip, "              }\n");
       }
     }
     else {
@@ -1433,7 +1451,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
 
   ip_printf(ip, "        else if (action < 0) {\n"
                 "          int production = -action - 1;\n"
-                "          int discard_action = 0;\n"
+                "          stack->discard_remaining_actions_ = 0;\n"
                 "          stack->current_production_length_ = %sproduction_lengths[production];\n", cc_prefix(cc));
   ip_printf(ip, "          int nonterminal = %sproduction_syms[production];\n", cc_prefix(cc));
   ip_printf(ip, "          if (0 == production) {\n"
@@ -1502,7 +1520,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     }
     int emit_discard = pd->common_action_sequence_.num_tokens_ && pd->action_sequence_.num_tokens_;
     if (emit_discard) {
-      ip_printf(ip, "              if (!discard_action) {\n");
+      ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
     }
     if (emit_action_snippet(ip, cc, pd)) {
       ip->had_error_ = 1;
@@ -1772,8 +1790,8 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
 
   ip_printf(ip, "        }\n");
   ip_printf(ip, "      } /* stack->error_recovery_ */\n");
-  ip_printf(ip, "    } /* for (;;) */\n");
-  ip_printf(ip, "  } /* for (;;) lexing loop */\n");
+  ip_printf(ip, "    }\n");
+  ip_printf(ip, "  } /* for (;;) */\n");
 
   struct ip_retained_output_bucket *retained_output = ip_extract_retained_output(ip);
   ip_set_retained_output(ip, 0);
@@ -1873,7 +1891,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
 
   ip_printf(ip, "      else if (action < 0) {\n"
                 "        int production = -action - 1;\n"
-                "        int discard_action = 0;\n"
+                "        stack->discard_remaining_actions_ = 0;\n"
                 "        stack->current_production_length_ = %sproduction_lengths[production];\n", cc_prefix(cc));
   ip_printf(ip, "        int nonterminal = %sproduction_syms[production];\n", cc_prefix(cc));
   ip_printf(ip, "        if (0 == production) {\n"
@@ -1937,7 +1955,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     }
       
     if (pd->common_action_sequence_.num_tokens_) {
-      ip_printf(ip, "            if (!discard_action) {\n"
+      ip_printf(ip, "            if (!stack->discard_remaining_actions_) {\n"
                     "              ");
     }
 
@@ -2220,6 +2238,7 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
   ip_printf(ip, "struct %sstack {\n", cc_prefix(cc));
   ip_printf(ip, "  int error_recovery_:1;\n");
   ip_printf(ip, "  int pending_reset_:1;\n");
+  ip_printf(ip, "  int discard_remaining_actions_:1;\n");
   ip_printf(ip, "  int slot_1_has_sym_data_:1;\n"
                 "  int slot_1_has_common_data_:1;\n");
   if (prdg->num_patterns_) {
@@ -2505,7 +2524,8 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   /* Emit stack constructor, destructor and reset functions */
   ip_printf(ip, "void %sstack_init(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "  stack->error_recovery_ = 0;\n"
-                "  stack->pending_reset_ = 1;\n");
+                "  stack->pending_reset_ = 1;\n"
+                "  stack->discard_remaining_actions_ = 0;\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  stack->need_sym_ = 1;\n"
                   "  stack->current_sym_ = 0;\n");
@@ -2742,6 +2762,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "int %sstack_reset(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "  size_t n;\n"
                 "  stack->pending_reset_ = 0;\n"
+                "  stack->discard_remaining_actions_ = 0;\n"
                 "  for (n = 1; n < stack->pos_; ++n) {\n");
   ip_printf(ip, "    switch (stack->stack_[n].state_) {\n");
   for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
