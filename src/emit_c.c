@@ -1731,7 +1731,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
   ip_printf(ip, "                } /* for */\n"
                 "                stack->pos_ = n + 1;\n");
-  emit_push_state(ip, cc, "err_sym_action");
+  emit_push_state(ip, cc, "err_action");
   ip_printf(ip, "                stack->error_recovery_ = 0;\n");
   ip_printf(ip, "                /* Break out of do { .. } while loop, we've recovered */\n"
                 "                break;\n");
@@ -2128,7 +2128,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 "              stack->pos_ = n + 1;\n");
 
   ip_printf(ip, "              /* Push the state of the error transition */\n");
-  emit_push_state(ip, cc, "err_sym_action");
+  emit_push_state(ip, cc, "err_action");
 
   ip_printf(ip, "              stack->error_recovery_ = 0;\n");
   ip_printf(ip, "              /* Break out of do { .. } while loop, we've recovered */\n"
