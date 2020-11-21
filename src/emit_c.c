@@ -321,7 +321,7 @@ static int emit_common(struct indented_printer *ip, struct carburetta_context *c
   return 0;
 }
 
-static int emit_snippet_code_emission(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se) {
+static int emit_snippet_code_emission(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, int retry_on_exit) {
   int r;
   size_t col;
   if (!se->code_->num_tokens_) {
@@ -329,6 +329,9 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
     return 0;
   }
   ip_printf(ip, "stack->continue_at_ = %d;\n", cc->current_snippet_continuation_);
+  if (retry_on_exit) {
+    ip_printf(ip, "C%d:;\n", cc->current_snippet_continuation_++);
+  }
   ip_printf(ip, "{\n");
   ip_force_indent_print(ip);
   for (col = 0; col < se->code_->num_tokens_; ++col) {
@@ -434,7 +437,9 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
   }
   ip_printf_no_indent(ip, "\n");
   ip_printf(ip, "}\n");
-  ip_printf(ip, "C%d:;\n", cc->current_snippet_continuation_++);
+  if (!retry_on_exit) {
+    ip_printf(ip, "C%d:;\n", cc->current_snippet_continuation_++);
+  }
   return 0;
 }
 
@@ -464,7 +469,7 @@ static int emit_common_action_snippet(struct indented_printer *ip, struct carbur
   se.discard_type_ = SEDIT_FMT;
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_production *prd) {
@@ -486,7 +491,7 @@ static int emit_action_snippet(struct indented_printer *ip, struct carburetta_co
   se.len_fmt_ = "(current_production_length_)";
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_pattern_token_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
@@ -504,7 +509,7 @@ static int emit_pattern_token_action_snippet(struct indented_printer *ip, struct
   se.discard_type_ = SEDIT_FMT;
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_token_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
@@ -521,10 +526,10 @@ static int emit_token_action_snippet(struct indented_printer *ip, struct carbure
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
-static int emit_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->constructor_snippet_;
@@ -538,10 +543,10 @@ static int emit_constructor_snippet(struct indented_printer *ip, struct carburet
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
-static int emit_dst_sym_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_dst_sym_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->constructor_snippet_;
@@ -555,10 +560,10 @@ static int emit_dst_sym_constructor_snippet(struct indented_printer *ip, struct 
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
-static int emit_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
+static int emit_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -571,10 +576,10 @@ static int emit_common_constructor_snippet(struct indented_printer *ip, struct c
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
-static int emit_dst_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
+static int emit_dst_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -587,10 +592,10 @@ static int emit_dst_common_constructor_snippet(struct indented_printer *ip, stru
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
-static int emit_token_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
+static int emit_token_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -603,10 +608,10 @@ static int emit_token_common_constructor_snippet(struct indented_printer *ip, st
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
-static int emit_pattern_token_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
+static int emit_pattern_token_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
@@ -619,7 +624,7 @@ static int emit_pattern_token_common_constructor_snippet(struct indented_printer
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
 static int emit_token_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
@@ -635,7 +640,7 @@ static int emit_token_common_action_snippet(struct indented_printer *ip, struct 
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_pattern_token_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
@@ -652,10 +657,10 @@ static int emit_pattern_token_common_action_snippet(struct indented_printer *ip,
   se.discard_type_ = SEDIT_FMT;
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
-static int emit_token_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_token_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->constructor_snippet_;
@@ -669,10 +674,10 @@ static int emit_token_constructor_snippet(struct indented_printer *ip, struct ca
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
-static int emit_pattern_token_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+static int emit_pattern_token_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->constructor_snippet_;
@@ -686,7 +691,7 @@ static int emit_pattern_token_constructor_snippet(struct indented_printer *ip, s
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
 static int emit_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
@@ -703,7 +708,7 @@ static int emit_destructor_snippet(struct indented_printer *ip, struct carburett
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_destructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
@@ -720,7 +725,7 @@ static int emit_destructor_snippet_indexed_by_n(struct indented_printer *ip, str
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_destructor_snippet_indexed_by_0(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
@@ -737,7 +742,7 @@ static int emit_destructor_snippet_indexed_by_0(struct indented_printer *ip, str
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_common_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
@@ -753,7 +758,7 @@ static int emit_common_destructor_snippet(struct indented_printer *ip, struct ca
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_pattern_token_common_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
@@ -769,7 +774,7 @@ static int emit_pattern_token_common_destructor_snippet(struct indented_printer 
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_common_destructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc) {
@@ -785,7 +790,7 @@ static int emit_common_destructor_snippet_indexed_by_n(struct indented_printer *
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_common_destructor_snippet_index_0(struct indented_printer *ip, struct carburetta_context *cc) {
@@ -801,7 +806,7 @@ static int emit_common_destructor_snippet_index_0(struct indented_printer *ip, s
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_pattern_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_pattern *pat) {
@@ -821,7 +826,7 @@ static int emit_pattern_common_action_snippet(struct indented_printer *ip, struc
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_FMT;
   se.text_fmt_ = "(stack->match_buffer_)";
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static int emit_pattern_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_pattern *pat) {
@@ -848,7 +853,7 @@ static int emit_pattern_action_snippet(struct indented_printer *ip, struct carbu
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_FMT;
   se.text_fmt_ = "(stack->match_buffer_)";
-  return emit_snippet_code_emission(ip, cc, &se);
+  return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
 static void emit_lex_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable) {
@@ -1317,10 +1322,17 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   }
   ip_printf(ip, "; /* no sym specific type associated, changed when we successfully construct it below */\n");
   ip_printf(ip, "          if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
-
-  if (emit_pattern_token_common_constructor_snippet(ip, cc)) {
-    ip->had_error_ = 1;
-    goto cleanup_exit;
+  if (cc->common_data_assigned_type_) {
+    if (!cc->common_data_assigned_type_->is_raii_constructor_) {
+      ip_printf(ip, "          stack->slot_0_has_common_data_ = 1;\n");
+    }
+    if (emit_pattern_token_common_constructor_snippet(ip, cc, cc->common_data_assigned_type_->is_raii_constructor_)) {
+      ip->had_error_ = 1;
+      goto cleanup_exit;
+    }
+    if (cc->common_data_assigned_type_->is_raii_constructor_) {
+      ip_printf(ip, "          stack->slot_0_has_common_data_ = 1;\n");
+    }
   }
 
   ip_printf(ip, "          switch (stack->best_match_action_) {\n");
@@ -1337,9 +1349,15 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
         goto cleanup_exit;
       }
       ip_printf(ip, ";\n");
-      if (emit_pattern_token_constructor_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
+      if (pat->term_.sym_->assigned_type_ && !pat->term_.sym_->assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "              stack->slot_0_has_current_sym_data_ = 1;\n");
+      }
+      if (emit_pattern_token_constructor_snippet(ip, cc, pat->term_.sym_->assigned_type_, 0)) {
         ip->had_error_ = 1;
         goto cleanup_exit;
+      }
+      if (pat->term_.sym_->assigned_type_ && pat->term_.sym_->assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "              stack->slot_0_has_current_sym_data_ = 1;\n");
       }
       if (emit_pattern_token_common_action_snippet(ip, cc)) {
         ip->had_error_ = 1;
@@ -1495,21 +1513,33 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     }
     ip_printf(ip, " */\n");
     ip_printf(ip, "              case %d: {\n    ", (int)row + 1);
-    ip_printf(ip, "                stack->slot_1_has_common_data_ = 1;\n");
-    /* Emit dst_sym_data constructor first */
-    if (emit_dst_common_constructor_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
+    if (cc->common_data_assigned_type_) {
+      if (!cc->common_data_assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "                stack->slot_1_has_common_data_ = 1;\n");
+      }
+      /* Emit dst_sym_data constructor first */
+      if (emit_dst_common_constructor_snippet(ip, cc, cc->common_data_assigned_type_->is_raii_constructor_)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+      if (cc->common_data_assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "                stack->slot_1_has_common_data_ = 1;\n");
+      }
     }
 
     if (pd->nt_.sym_->assigned_type_) {
-      ip_printf(ip, "                stack->slot_1_has_sym_data_ = 1;\n");
+      if (!pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "                stack->slot_1_has_sym_data_ = 1;\n");
+      }
       ip_printf(ip, "                stack->slot_1_sym_ = ");
       print_sym_as_c_ident(ip, cc, pd->nt_.sym_);
       ip_printf(ip, ";\n");
-      if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_)) {
+      if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_, pd->nt_.sym_->assigned_type_->is_raii_constructor_)) {
         ip->had_error_ = 1;
         goto cleanup_exit;
+      }
+      if (pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "                stack->slot_1_has_sym_data_ = 1;\n");
       }
     }
     if (pd->common_action_sequence_.num_tokens_) {
@@ -1651,7 +1681,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   }
   ip_printf(ip, "              } /* switch */\n");
 
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     if (emit_common_destructor_snippet_index_0(ip, cc)) {
       ip->had_error_ = 1;
       goto cleanup_exit;
@@ -1842,7 +1872,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   int need_sym_data = 0;
   ip_printf(ip, "        stack->sym_data_ = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
 
-  if (emit_token_common_constructor_snippet(ip, cc)) {
+  if (emit_token_common_constructor_snippet(ip, cc, 0)) {
     ip->had_error_ = 1;
     goto cleanup_exit;
   }
@@ -1872,7 +1902,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
       } while (term != cc->symtab_.terminals_);
     }
     if (found_matching_terms) {
-      if (emit_token_constructor_snippet(ip, cc, ts)) {
+      if (emit_token_constructor_snippet(ip, cc, ts, 0)) {
         ip->had_error_ = 1;
         goto cleanup_exit;
       }
@@ -1935,18 +1965,36 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     }
     ip_printf(ip, " */\n");
     ip_printf(ip, "            case %d: {\n    ", (int)row + 1);
-    ip_printf(ip, "              stack->slot_1_has_common_data_ = 1;\n");
-    /* Emit dst_sym_data constructor first */
-    if (emit_dst_common_constructor_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
+    if (cc->common_data_assigned_type_) {
+      if (!cc->common_data_assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "              stack->slot_1_has_common_data_ = 1;\n");
+      }
+      /* Emit dst_sym_data constructor first */
+      if (emit_dst_common_constructor_snippet(ip, cc, cc->common_data_assigned_type_->is_raii_constructor_)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+      if (cc->common_data_assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "              stack->slot_1_has_common_data_ = 1;\n");
+      }
     }
 
-    if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_)) {
-      ip_printf(ip, "                stack->slot_1_has_sym_data_ = 1;\n");
-      ip_printf(ip, "                stack->slot_1_sym_ = ");
-      ip->had_error_ = 1;
-      goto cleanup_exit;
+    if (pd->nt_.sym_->assigned_type_) {
+      if (!pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "              stack->slot_1_has_sym_data_ = 1;\n");
+      }
+      ip_printf(ip, "              stack->slot_1_sym_ = ");
+      print_sym_as_c_ident(ip, cc, pd->nt_.sym_);
+      ip_printf(ip, ";\n");
+
+      if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_, pd->nt_.sym_->assigned_type_->is_raii_constructor_)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+
+      if (pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "              stack->slot_1_has_sym_data_ = 1;\n");
+      }
     }
 
     if (emit_common_action_snippet(ip, cc, pd)) {
@@ -2601,7 +2649,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
 
 
   ip_printf(ip, "    } /* switch */\n");
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     ip_printf(ip, "    {\n"
                   "      ");
     if (emit_common_destructor_snippet_indexed_by_n(ip, cc)) {
@@ -2654,7 +2702,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "    } /* switch */\n");
   ip_printf(ip, "  }\n");
 
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     ip_printf(ip, "  if (stack->slot_1_has_common_data_) {\n");
     if (emit_common_destructor_snippet_index_0(ip, cc)) {
       ip->had_error_ = 1;
@@ -2706,7 +2754,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     }
     ip_printf(ip, "    } /* switch */\n");
 
-    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
       ip_printf(ip, "  if (stack->slot_0_has_common_data_) {\n");
       if (emit_common_destructor_snippet_index_0(ip, cc)) {
         ip->had_error_ = 1;
@@ -2793,7 +2841,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     }
   }
   ip_printf(ip, "    } /* switch */\n");
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     ip_printf(ip, "    {\n"
                   "      ");
     if (emit_common_destructor_snippet_indexed_by_n(ip, cc)) {
@@ -2845,7 +2893,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "    } /* switch */\n");
   ip_printf(ip, "  }\n");
 
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     ip_printf(ip, "  if (stack->slot_1_has_common_data_) {\n");
     if (emit_common_destructor_snippet_index_0(ip, cc)) {
       ip->had_error_ = 1;
@@ -2899,7 +2947,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     }
     ip_printf(ip, "    } /* switch */\n");
 
-    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
       ip_printf(ip, "  if (stack->slot_0_has_common_data_) {\n");
       if (emit_common_destructor_snippet_index_0(ip, cc)) {
         ip->had_error_ = 1;

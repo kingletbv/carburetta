@@ -115,6 +115,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_TYPE_DIRECTIVE,
     PCD_COMMON_TYPE_DIRECTIVE,
     PCD_CONSTRUCTOR_DIRECTIVE,
+    PCD_RAII_CONSTRUCTOR_DIRECTIVE,
     PCD_DESTRUCTOR_DIRECTIVE,
     PCD_TOKEN_ACTION_DIRECTIVE,
     PCD_PREFIX_DIRECTIVE,
@@ -154,6 +155,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
       if (ate_directive) {
         if ((directive == PCD_TOKEN_ACTION_DIRECTIVE) ||
             (directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
+            (directive == PCD_RAII_CONSTRUCTOR_DIRECTIVE) ||
             (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
             (directive == PCD_PARAMS_DIRECTIVE) ||
             (directive == PCD_LOCALS_DIRECTIVE) ||
@@ -214,6 +216,12 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               directive = PCD_CONSTRUCTOR_DIRECTIVE;
               if (!cc->most_recent_typestr_) {
                 re_error_tkr(tkr_tokens, "%%constructor must follow %%token_type or %%type directive");
+              }
+            }
+            else if (!strcmp("raii_constructor", tkr_str(tkr_tokens))) {
+              directive = PCD_RAII_CONSTRUCTOR_DIRECTIVE;
+              if (!cc->most_recent_typestr_) {
+                re_error_tkr(tkr_tokens, "%%raii_constructor must follow %%token_type or %%type directive");
               }
             }
             else if (!strcmp("destructor", tkr_str(tkr_tokens))) {
@@ -516,25 +524,10 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               }
             }
           }
-          else if (directive == PCD_CONSTRUCTOR_DIRECTIVE) {
-            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
-              r = snippet_append_tkr(&dir_snippet, tkr_tokens);
-              if (r) {
-                r = TKR_INTERNAL_ERROR;
-                goto cleanup_exit;
-              }
-            }
-          }
-          else if (directive == PCD_DESTRUCTOR_DIRECTIVE) {
-            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
-              r = snippet_append_tkr(&dir_snippet, tkr_tokens);
-              if (r) {
-                r = TKR_INTERNAL_ERROR;
-                goto cleanup_exit;
-              }
-            }
-          }
-          else if (directive == PCD_TOKEN_ACTION_DIRECTIVE) {
+          else if ((directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
+                   (directive == PCD_RAII_CONSTRUCTOR_DIRECTIVE) ||
+                   (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
+                   (directive == PCD_TOKEN_ACTION_DIRECTIVE)) {
             if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
               r = snippet_append_tkr(&dir_snippet, tkr_tokens);
               if (r) {
@@ -789,6 +782,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   if ((directive == PCD_LOCALS_DIRECTIVE) ||
       (directive == PCD_PARAMS_DIRECTIVE) ||
       (directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
+      (directive == PCD_RAII_CONSTRUCTOR_DIRECTIVE) ||
       (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
       (directive == PCD_TOKEN_ACTION_DIRECTIVE)) {
     /* Trim simple whitespace off the tail end, preserve comments, remove newlines and spaces */
@@ -801,8 +795,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
 
   if (directive == PCD_TYPE_DIRECTIVE) {
     size_t n;
-    int is_new;
-    struct typestr *nt_ts = typestr_find_or_add(&cc->tstab_, &dir_snippet, &is_new);
+    struct typestr *nt_ts = typestr_add(&cc->tstab_, &dir_snippet);
     if (!nt_ts) {
       r = TKR_INTERNAL_ERROR;
       goto cleanup_exit;
@@ -820,8 +813,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   }
 
   if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
-    int is_new;
-    struct typestr *token_ts = typestr_find_or_add(&cc->tstab_, &cc->token_type_, &is_new);
+    struct typestr *token_ts = typestr_add(&cc->tstab_, &cc->token_type_);
     if (!token_ts) {
       r = TKR_INTERNAL_ERROR;
       goto cleanup_exit;
@@ -833,8 +825,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   }
 
   if (directive == PCD_COMMON_TYPE_DIRECTIVE) {
-    int is_new;
-    struct typestr *common_ts = typestr_find_or_add(&cc->tstab_, &cc->common_data_type_, &is_new);
+    struct typestr *common_ts = typestr_add(&cc->tstab_, &cc->common_data_type_);
     if (!common_ts) {
       r = TKR_INTERNAL_ERROR;
       goto cleanup_exit;
@@ -844,6 +835,14 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   }
 
   if (directive == PCD_CONSTRUCTOR_DIRECTIVE) {
+    cc->most_recent_typestr_->is_raii_constructor_ = 0;
+    snippet_clear(&cc->most_recent_typestr_->constructor_snippet_);
+    r = snippet_append_snippet(&cc->most_recent_typestr_->constructor_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
+  if (directive == PCD_RAII_CONSTRUCTOR_DIRECTIVE) {
+    cc->most_recent_typestr_->is_raii_constructor_ = 1;
     snippet_clear(&cc->most_recent_typestr_->constructor_snippet_);
     r = snippet_append_snippet(&cc->most_recent_typestr_->constructor_snippet_, &dir_snippet);
     if (r) goto cleanup_exit;

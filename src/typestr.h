@@ -38,12 +38,25 @@ extern "C" {
 #define TYPESTR_TABLE_SIZE 127
 
 struct typestr {
-  struct typestr *hash_chain_;
-  uint64_t hash_;
-
   /* Non-zero if this is a symbol type (a type associated with
    * a particular set of symbols, but not all.) */
   int is_symbol_type_:1;
+
+  /* If non-zero, the constructor will not be considered complete
+   * if the code snippet exits the parse or scan functions.
+   * RAII refers to Resource Acquisition Is Initialization and implies
+   * that during construction, an exception may be thrown. If an
+   * exception is thrown, any partial construction is unwound and
+   * the exception passes transparently through Carburetta's generated
+   * C-style code. Because the type is not constructed, it is important
+   * that the destructor is *only* called if construction completes
+   * normally (i.e. execution of the constructor completes to the end.)
+   * The counter example, is_raii_constructor_==0, handles the case
+   * where the caller is responsible for part of the construction. In
+   * such a scenario, returning out of the parse of scan function is
+   * a sign that the constructor completed, not failed, and any 
+   * subsequent cleanup must called the destructor. */
+  int is_raii_constructor_:1;
 
   /* Sequence of tokens that make up the type description, may
    * contain a single "$" TOK_SPECIAL_IDENT to denote the position
@@ -62,8 +75,6 @@ struct typestr {
 };
 
 struct typestr_table {
-  struct typestr *hash_table_[TYPESTR_TABLE_SIZE];
-
   /* Array of pointers for all typestrs, index of array corresponds to typestr ordinal. */
   size_t num_typestrs_;
   size_t num_typestrs_allocated_;
@@ -73,7 +84,7 @@ struct typestr_table {
 void typestr_table_init(struct typestr_table *tt);
 void typestr_table_cleanup(struct typestr_table *tt);
 
-struct typestr *typestr_find_or_add(struct typestr_table *tt, const struct snippet *typestr_snippet, int *is_new);
+struct typestr *typestr_add(struct typestr_table *tt, const struct snippet *typestr_snippet);
 
 #ifdef __cplusplus
 } /* extern "C" */
