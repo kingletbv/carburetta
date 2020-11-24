@@ -233,7 +233,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             else if (!strcmp("token_action", tkr_str(tkr_tokens))) {
               directive = PCD_TOKEN_ACTION_DIRECTIVE;
               if (!cc->most_recent_typestr_) {
-                re_error_tkr(tkr_tokens, "%%constructor must follow %%token_type or %%type directive");
+                re_error_tkr(tkr_tokens, "%%token_action must follow %%token_type or %%type directive");
               }
             }
             else if (!strcmp("prefix", tkr_str(tkr_tokens))) {

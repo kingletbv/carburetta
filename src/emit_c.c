@@ -1333,6 +1333,10 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     if (cc->common_data_assigned_type_->is_raii_constructor_) {
       ip_printf(ip, "          stack->slot_0_has_common_data_ = 1;\n");
     }
+    if (emit_pattern_token_common_action_snippet(ip, cc)) {
+      ip->had_error_ = 1;
+      goto cleanup_exit;
+    }
   }
 
   ip_printf(ip, "          switch (stack->best_match_action_) {\n");
@@ -1358,10 +1362,6 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
       }
       if (pat->term_.sym_->assigned_type_ && pat->term_.sym_->assigned_type_->is_raii_constructor_) {
         ip_printf(ip, "              stack->slot_0_has_current_sym_data_ = 1;\n");
-      }
-      if (emit_pattern_token_common_action_snippet(ip, cc)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
       }
       if (pat->term_.sym_->assigned_type_ &&  pat->term_.sym_->assigned_type_->token_action_snippet_.num_tokens_) {
         ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
@@ -3018,6 +3018,16 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "}\n"
                 "\n");
 
+  ip_printf(ip, "int %sstack_can_recover(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "  return !!stack->error_recovery_;\n");
+  ip_printf(ip, "}\n");
+  ip_printf(ip, "\n");
+  ip_printf(ip, "int %sstack_accepts(struct %sstack *stack, int sym) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "  if (!stack->pos_) return 0;\n");
+  ip_printf(ip, "  return 0 != %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - %sminimum_sym)];", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "}\n");
+  ip_printf(ip, "\n");
+
   if (prdg->num_patterns_) {
     emit_lex_function(ip, cc, prdg, scantable);
     ip_printf(ip, "\n");
@@ -3095,6 +3105,9 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "void %sstack_init(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "void %sstack_cleanup(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "int %sstack_reset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "int %sstack_can_recover(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "int %sstack_accepts(struct %sstack *stack, int sym);\n", cc_prefix(cc), cc_prefix(cc));
+
   if (cc->params_snippet_.num_tokens_) {
     ip_printf(ip, "int %sparse(struct %sstack *stack, int sym, ", cc_prefix(cc), cc_prefix(cc));
     size_t token_idx;
