@@ -95,6 +95,37 @@ enum text_type {
   SETT_FMT
 };
 
+enum line_type {
+  SELIT_NONE,
+  SELIT_FMT
+};
+
+enum col_type {
+  SECOT_NONE,
+  SECOT_FMT
+};
+
+enum offset_type {
+  SEOT_NONE,
+  SEOT_FMT
+};
+
+enum end_line_type {
+  SEELIT_NONE,
+  SEELIT_FMT
+};
+
+enum end_col_type {
+  SEECOT_NONE,
+  SEECOT_FMT
+};
+
+enum end_offset_type {
+  SEEOT_NONE,
+  SEEOT_FMT
+};
+
+
 struct snippet_emission {
   struct snippet *code_;
 
@@ -122,6 +153,24 @@ struct snippet_emission {
 
   enum text_type text_type_;
   const char *text_fmt_;
+
+  enum line_type line_type_;
+  const char *line_fmt_;
+
+  enum col_type col_type_;
+  const char *col_fmt_;
+
+  enum offset_type offset_type_;
+  const char *offset_fmt_;
+
+  enum end_line_type end_line_type_;
+  const char *end_line_fmt_;
+
+  enum end_col_type end_col_type_;
+  const char *end_col_fmt_;
+
+  enum end_offset_type end_offset_type_;
+  const char *end_offset_fmt_;
 };
 
 
@@ -259,7 +308,7 @@ static int emit_dest_commondata(struct indented_printer *ip, struct carburetta_c
 
 static int emit_len(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->len_type_ == SELT_NONE) {
-    re_error(&st->text_, "%%len cannot resolve to a length");
+    re_error(&st->text_, "$len cannot resolve to a length");
     return TKR_SYNTAX_ERROR;
   }
   switch (se->len_type_) {
@@ -272,7 +321,7 @@ static int emit_len(struct indented_printer *ip, struct carburetta_context *cc, 
 
 static int emit_discard(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->discard_type_ == SEDIT_NONE) {
-    re_error(&st->text_, "%%discard use is limited to common actions");
+    re_error(&st->text_, "$discard use is limited to common actions");
     return TKR_SYNTAX_ERROR;
   }
   switch (se->discard_type_) {
@@ -285,7 +334,7 @@ static int emit_discard(struct indented_printer *ip, struct carburetta_context *
 
 static int emit_text(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   if (se->text_type_ == SETT_NONE) {
-    re_error(&st->text_, "%%text use is limited to pattern actions");
+    re_error(&st->text_, "$text use is limited to pattern actions");
     return TKR_SYNTAX_ERROR;
   }
   switch (se->text_type_) {
@@ -295,6 +344,86 @@ static int emit_text(struct indented_printer *ip, struct carburetta_context *cc,
   }
   return 0;
 }
+
+static int emit_line(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->line_type_ == SELIT_NONE) {
+    re_error(&st->text_, "$line use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->line_type_) {
+  case SELIT_FMT:
+    ip_puts_no_indent(ip, se->line_fmt_);
+    break;
+  }
+  return 0;
+}
+
+static int emit_column(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->col_type_ == SECOT_NONE) {
+    re_error(&st->text_, "$column use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->col_type_) {
+  case SECOT_FMT:
+    ip_puts_no_indent(ip, se->col_fmt_);
+    break;
+  }
+  return 0;
+}
+
+static int emit_offset(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->offset_type_ == SEOT_NONE) {
+    re_error(&st->text_, "$offset use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->offset_type_) {
+  case SELIT_FMT:
+    ip_puts_no_indent(ip, se->offset_fmt_);
+    break;
+  }
+  return 0;
+}
+
+static int emit_endline(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->end_line_type_ == SEELIT_NONE) {
+    re_error(&st->text_, "$endline use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->end_line_type_) {
+  case SEELIT_FMT:
+    ip_puts_no_indent(ip, se->end_line_fmt_);
+    break;
+  }
+  return 0;
+}
+
+static int emit_endcolumn(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->end_col_type_ == SEECOT_NONE) {
+    re_error(&st->text_, "$endcolumn use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->end_col_type_) {
+  case SEECOT_FMT:
+    ip_puts_no_indent(ip, se->end_col_fmt_);
+    break;
+  }
+  return 0;
+}
+
+static int emit_endoffset(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
+  if (se->end_offset_type_ == SEEOT_NONE) {
+    re_error(&st->text_, "$endoffset use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
+  }
+  switch (se->end_offset_type_) {
+  case SELIT_FMT:
+    ip_puts_no_indent(ip, se->end_offset_fmt_);
+    break;
+  }
+  return 0;
+}
+
+
 
 static int emit_common(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *special_ident_token, size_t start_of_index, size_t end_of_index) {
   if (se->common_type_ == SECT_NONE) {
@@ -400,6 +529,42 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
         return r;
       }
     }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$line", se->code_->tokens_[col].text_.translated_)) {
+      r = emit_line(ip, cc, se, se->code_->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$column", se->code_->tokens_[col].text_.translated_)) {
+      r = emit_column(ip, cc, se, se->code_->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$offset", se->code_->tokens_[col].text_.translated_)) {
+      r = emit_offset(ip, cc, se, se->code_->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$endline", se->code_->tokens_[col].text_.translated_)) {
+      r = emit_endline(ip, cc, se, se->code_->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$endcolumn", se->code_->tokens_[col].text_.translated_)) {
+      r = emit_endcolumn(ip, cc, se, se->code_->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
+    else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && !strcmp("$endoffset", se->code_->tokens_[col].text_.translated_)) {
+      r = emit_endoffset(ip, cc, se, se->code_->tokens_ + col);
+      if (r) {
+        return r;
+      }
+    }
     else if (se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) {
       /* Expansion of another sym identifier */
       size_t n;
@@ -469,6 +634,12 @@ static int emit_common_action_snippet(struct indented_printer *ip, struct carbur
   se.discard_type_ = SEDIT_FMT;
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -491,6 +662,12 @@ static int emit_action_snippet(struct indented_printer *ip, struct carburetta_co
   se.len_fmt_ = "(current_production_length_)";
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -505,10 +682,24 @@ static int emit_pattern_token_action_snippet(struct indented_printer *ip, struct
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
-  se.len_type_ = SELT_NONE;
+  se.len_type_ = SELT_FMT;
+  se.len_fmt_ = "(stack->token_size_)";
   se.discard_type_ = SEDIT_FMT;
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
-  se.text_type_ = SETT_NONE;
+  se.text_type_ = SETT_FMT;
+  se.text_fmt_ = "(stack->match_buffer_)";
+  se.line_type_ = SELIT_FMT;
+  se.line_fmt_ = "(stack->match_line_)";
+  se.col_type_ = SECOT_FMT;
+  se.col_fmt_ = "(stack->match_col_)";
+  se.offset_type_ = SEOT_FMT;
+  se.offset_fmt_ = "(stack->match_offset_)";
+  se.end_line_type_ = SEELIT_FMT;
+  se.end_line_fmt_ = "(stack->best_match_line_)";
+  se.end_col_type_ = SEECOT_FMT;
+  se.end_col_fmt_ = "(stack->best_match_col_)";
+  se.end_offset_type_ = SEEOT_FMT;
+  se.end_offset_fmt_ = "(stack->best_match_offset_)";
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -526,6 +717,12 @@ static int emit_token_action_snippet(struct indented_printer *ip, struct carbure
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -543,6 +740,12 @@ static int emit_constructor_snippet(struct indented_printer *ip, struct carburet
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
@@ -560,6 +763,12 @@ static int emit_dst_sym_constructor_snippet(struct indented_printer *ip, struct 
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
@@ -576,6 +785,12 @@ static int emit_common_constructor_snippet(struct indented_printer *ip, struct c
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
@@ -592,6 +807,12 @@ static int emit_dst_common_constructor_snippet(struct indented_printer *ip, stru
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
@@ -608,6 +829,12 @@ static int emit_token_common_constructor_snippet(struct indented_printer *ip, st
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
@@ -621,9 +848,23 @@ static int emit_pattern_token_common_constructor_snippet(struct indented_printer
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
-  se.len_type_ = SELT_NONE;
+  se.len_type_ = SELT_FMT;
+  se.len_fmt_ = "(stack->token_size_)";
   se.discard_type_ = SEDIT_NONE;
-  se.text_type_ = SETT_NONE;
+  se.text_type_ = SETT_FMT;
+  se.text_fmt_ = "(stack->match_buffer_)";
+  se.line_type_ = SELIT_FMT;
+  se.line_fmt_ = "(stack->match_line_)";
+  se.col_type_ = SECOT_FMT;
+  se.col_fmt_ = "(stack->match_col_)";
+  se.offset_type_ = SEOT_FMT;
+  se.offset_fmt_ = "(stack->match_offset_)";
+  se.end_line_type_ = SEELIT_FMT;
+  se.end_line_fmt_ = "(stack->best_match_line_)";
+  se.end_col_type_ = SEECOT_FMT;
+  se.end_col_fmt_ = "(stack->best_match_col_)";
+  se.end_offset_type_ = SEEOT_FMT;
+  se.end_offset_fmt_ = "(stack->best_match_offset_)";
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
@@ -640,6 +881,12 @@ static int emit_token_common_action_snippet(struct indented_printer *ip, struct 
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -653,10 +900,24 @@ static int emit_pattern_token_common_action_snippet(struct indented_printer *ip,
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
-  se.len_type_ = SELT_NONE;
+  se.len_type_ = SELT_FMT;
+  se.len_fmt_ = "(stack->token_size_)";
   se.discard_type_ = SEDIT_FMT;
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
-  se.text_type_ = SETT_NONE;
+  se.text_type_ = SETT_FMT;
+  se.text_fmt_ = "(stack->match_buffer_)";
+  se.line_type_ = SELIT_FMT;
+  se.line_fmt_ = "(stack->match_line_)";
+  se.col_type_ = SECOT_FMT;
+  se.col_fmt_ = "(stack->match_col_)";
+  se.offset_type_ = SEOT_FMT;
+  se.offset_fmt_ = "(stack->match_offset_)";
+  se.end_line_type_ = SEELIT_FMT;
+  se.end_line_fmt_ = "(stack->best_match_line_)";
+  se.end_col_type_ = SEECOT_FMT;
+  se.end_col_fmt_ = "(stack->best_match_col_)";
+  se.end_offset_type_ = SEEOT_FMT;
+  se.end_offset_fmt_ = "(stack->best_match_offset_)";
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -674,6 +935,12 @@ static int emit_token_constructor_snippet(struct indented_printer *ip, struct ca
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
@@ -688,9 +955,23 @@ static int emit_pattern_token_constructor_snippet(struct indented_printer *ip, s
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
-  se.len_type_ = SELT_NONE;
+  se.len_type_ = SELT_FMT;
+  se.len_fmt_ = "(stack->token_size_)";
   se.discard_type_ = SEDIT_NONE;
-  se.text_type_ = SETT_NONE;
+  se.text_type_ = SETT_FMT;
+  se.text_fmt_ = "(stack->match_buffer_)";
+  se.line_type_ = SELIT_FMT;
+  se.line_fmt_ = "(stack->match_line_)";
+  se.col_type_ = SECOT_FMT;
+  se.col_fmt_ = "(stack->match_col_)";
+  se.offset_type_ = SEOT_FMT;
+  se.offset_fmt_ = "(stack->match_offset_)";
+  se.end_line_type_ = SEELIT_FMT;
+  se.end_line_fmt_ = "(stack->best_match_line_)";
+  se.end_col_type_ = SEECOT_FMT;
+  se.end_col_fmt_ = "(stack->best_match_col_)";
+  se.end_offset_type_ = SEEOT_FMT;
+  se.end_offset_fmt_ = "(stack->best_match_offset_)";
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
@@ -708,6 +989,12 @@ static int emit_destructor_snippet(struct indented_printer *ip, struct carburett
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -725,6 +1012,12 @@ static int emit_destructor_snippet_indexed_by_n(struct indented_printer *ip, str
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -742,6 +1035,12 @@ static int emit_destructor_snippet_indexed_by_0(struct indented_printer *ip, str
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -758,6 +1057,12 @@ static int emit_common_destructor_snippet(struct indented_printer *ip, struct ca
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -774,6 +1079,12 @@ static int emit_pattern_token_common_destructor_snippet(struct indented_printer 
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -790,6 +1101,12 @@ static int emit_common_destructor_snippet_indexed_by_n(struct indented_printer *
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -806,6 +1123,12 @@ static int emit_common_destructor_snippet_index_0(struct indented_printer *ip, s
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -826,6 +1149,18 @@ static int emit_pattern_common_action_snippet(struct indented_printer *ip, struc
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_FMT;
   se.text_fmt_ = "(stack->match_buffer_)";
+  se.line_type_ = SELIT_FMT;
+  se.line_fmt_ = "(stack->match_line_)";
+  se.col_type_ = SECOT_FMT;
+  se.col_fmt_ = "(stack->match_col_)";
+  se.offset_type_ = SEOT_FMT;
+  se.offset_fmt_ = "(stack->match_offset_)";
+  se.end_line_type_ = SEELIT_FMT;
+  se.end_line_fmt_ = "(stack->best_match_line_)";
+  se.end_col_type_ = SEECOT_FMT;
+  se.end_col_fmt_ = "(stack->best_match_col_)";
+  se.end_offset_type_ = SEEOT_FMT;
+  se.end_offset_fmt_ = "(stack->best_match_offset_)";
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -853,6 +1188,18 @@ static int emit_pattern_action_snippet(struct indented_printer *ip, struct carbu
   se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
   se.text_type_ = SETT_FMT;
   se.text_fmt_ = "(stack->match_buffer_)";
+  se.line_type_ = SELIT_FMT;
+  se.line_fmt_ = "(stack->match_line_)";
+  se.col_type_ = SECOT_FMT;
+  se.col_fmt_ = "(stack->match_col_)";
+  se.offset_type_ = SEOT_FMT;
+  se.offset_fmt_ = "(stack->match_offset_)";
+  se.end_line_type_ = SEELIT_FMT;
+  se.end_line_fmt_ = "(stack->best_match_line_)";
+  se.end_col_type_ = SEECOT_FMT;
+  se.end_col_fmt_ = "(stack->best_match_col_)";
+  se.end_offset_type_ = SEEOT_FMT;
+  se.end_offset_fmt_ = "(stack->best_match_offset_)";
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -1143,25 +1490,6 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
   ip_printf(ip,  "  return _%sLEXICAL_ERROR;\n", cc_PREFIX(cc));
   ip_printf(ip,  "}\n");
 }
-
-#if 0
-ip_printf(ip, "#define _%sMATCH 1\n", cc_PREFIX(cc));
-ip_printf(ip, "#define _%sOVERFLOW 2\n", cc_PREFIX(cc));
-ip_printf(ip, "#define _%sNO_MEMORY 3\n", cc_PREFIX(cc));
-ip_printf(ip, "#define _%sFEED_ME 4\n", cc_PREFIX(cc));
-ip_printf(ip, "#define _%sEND_OF_INPUT 5\n", cc_PREFIX(cc));
-ip_printf(ip, "#define _%sSYNTAX_ERROR 6\n", cc_PREFIX(cc)); 
-ip_printf(ip, "#define _%sLEXICAL_ERROR 7\n", cc_PREFIX(cc));
-ip_printf(ip, "#define _%sINTERNAL_ERROR 8\n", cc_PREFIX(cc));
-
-struct snippet on_success_snippet_;
-struct snippet on_syntax_error_snippet_;
-struct snippet on_lexical_error_snippet_;
-struct snippet on_alloc_error_snippet_;
-struct snippet on_internal_error_snippet_;
-struct snippet on_next_token_snippet_;
-
-#endif
 
 void emit_syntax_error(struct indented_printer *ip, struct carburetta_context *cc) {
   if (cc->on_syntax_error_snippet_.num_tokens_) {
