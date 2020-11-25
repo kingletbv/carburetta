@@ -2032,6 +2032,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   }
   ip_printf(ip, ") {\n");
   ip_printf(ip, "              /* EOF means we cannot shift to recover, and errors are muted, so return completion */\n"
+                "              stack->pending_reset_ = 1;\n"
                 "              return 0;\n"
                 "            }\n"
                 "          }\n"
@@ -2101,8 +2102,19 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "        }\n");
 
   ip_printf(ip, "        if (stack->error_recovery_) {\n"
-                "          /* Did not yet recover, discard current sym and get next */\n"
-                "          stack->need_sym_ = 1;\n");
+                "          /* Did not yet recover, discard current sym and get next */\n");
+  ip_printf(ip, "          if (stack->current_sym_ == ");
+  if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
+  }
+  ip_printf(ip, ") {\n");
+  ip_printf(ip, "            /* EOF means we cannot shift to recover, so return completion */\n"
+                "            stack->pending_reset_ = 1;\n"
+                "            return 0;\n"
+                "          }\n");
+
+  ip_printf(ip, "          stack->need_sym_ = 1;\n");
   if (cc->on_next_token_snippet_.num_tokens_) {
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
@@ -2443,6 +2455,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   }
   ip_printf(ip, ") {\n");
   ip_printf(ip, "            /* EOF means we cannot shift to recover, and errors are muted, so return completion */\n"
+                "            stack->pending_reset_ = 1;\n"
                 "            return 0;\n"
                 "          }\n"
                 "        }\n"
@@ -2518,6 +2531,16 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
 
   ip_printf(ip, "      if (stack->error_recovery_) {\n"
                 "        /* Did not yet recover, discard current sym and get next */\n");
+  ip_printf(ip, "          if (stack->current_sym_ == ");
+  if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
+  }
+  ip_printf(ip, ") {\n");
+  ip_printf(ip, "            /* EOF means we cannot shift to recover, so return completion */\n"
+                "            stack->pending_reset_ = 1;\n"
+                "            return 0;\n"
+                "          }\n");
   emit_on_next(ip, cc);
   ip_printf(ip, "      }\n");
   ip_printf(ip, "    } /* stack->error_recovery_ */\n");
