@@ -61,8 +61,12 @@ int main(int argc, char **argv) {
       r = EXIT_FAILURE;
       break;
     }
+    calc_set_input(&stack, s, strlen(s), 1);
     do {
-      r = calc_scan(&stack, s, strlen(s), 1, &value);
+      r = calc_scan(&stack, &value);
+      if (r == _CALC_SYNTAX_ERROR) {
+        fprintf(stderr, "Syntax error\n");
+      }
     } while (r == _CALC_SYNTAX_ERROR);
 
     if (r) {

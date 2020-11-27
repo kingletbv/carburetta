@@ -1206,46 +1206,56 @@ static int emit_pattern_action_snippet(struct indented_printer *ip, struct carbu
 static void emit_lex_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable) {
   /* Emit the scan function, it scans the input for regex matches without actually executing any actions */
   /* (we're obviously in need of a templating language..) */
-  ip_printf(ip,  "static int %sappend_match_buffer(struct %sstack *stack, const char *s, size_t len) {\n", cc_prefix(cc), cc_prefix(cc));
-  ip_printf(ip,  "  size_t size_needed = len;\n"
-                 "  size_needed += stack->match_buffer_size_;\n"
-                 "  if (size_needed < stack->match_buffer_size_) {\n");
-  ip_printf(ip,  "    return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  ip_printf(ip,  "  }\n"
-                 "  if (size_needed == SIZE_MAX) {\n"
-                 "    /* cannot fit null terminator */\n");
-  ip_printf(ip,  "    return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  ip_printf(ip,  "  }\n"
-                 "  size_needed++; /* null terminator */\n"
-                 "  if (size_needed < 128) {\n"
-                 "    size_needed = 128;\n"
-                 "  }\n"
-                 "  if (size_needed > stack->match_buffer_size_allocated_) {\n"
-                 "    /* intent of code: grow buffer size by powers of 2-1, unless our needs require more now. */\n"
-                 "    size_t size_to_allocate = stack->match_buffer_size_allocated_ * 2 + 1;\n"
-                 "    if (size_to_allocate <= stack->match_buffer_size_allocated_) {\n");
-  ip_printf(ip,  "      return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  ip_printf(ip,  "    }\n"
-                 "    if (size_to_allocate < size_needed) {\n"
-                 "      size_to_allocate = size_needed;\n"
-                 "    }\n"
-                 "    void *buf = realloc(stack->match_buffer_, size_to_allocate);\n"
-                 "    if (!buf) {\n");
-  ip_printf(ip,  "      return _%sOVERFLOW;\n", cc_PREFIX(cc));
-  ip_printf(ip,  "    }\n"
-                 "    stack->match_buffer_ = (char *)buf;\n"
-                 "    stack->match_buffer_size_allocated_ = size_to_allocate;\n"
-                 "  }\n"
-                 "\n"
-                 "  memcpy(stack->match_buffer_ + stack->match_buffer_size_, s, len);\n"
-                 "  stack->match_buffer_size_ += len;\n"
-                 "  stack->match_buffer_[stack->match_buffer_size_] = '\\0';\n"
-                 "  return 0;\n"
-                 "}\n"
-                 "\n");
-  ip_printf(ip,  "int %slex(struct %sstack *stack, const char *input, size_t input_size, int is_final_input) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "static int %sappend_match_buffer(struct %sstack *stack, const char *s, size_t len) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "  size_t size_needed = len;\n"
+                "  size_needed += stack->match_buffer_size_;\n"
+                "  if (size_needed < stack->match_buffer_size_) {\n");
+  ip_printf(ip, "    return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  ip_printf(ip, "  }\n"
+                "  if (size_needed == SIZE_MAX) {\n"
+                "    /* cannot fit null terminator */\n");
+  ip_printf(ip, "    return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  ip_printf(ip, "  }\n"
+                "  size_needed++; /* null terminator */\n"
+                "  if (size_needed < 128) {\n"
+                "    size_needed = 128;\n"
+                "  }\n"
+                "  if (size_needed > stack->match_buffer_size_allocated_) {\n"
+                "    /* intent of code: grow buffer size by powers of 2-1, unless our needs require more now. */\n"
+                "    size_t size_to_allocate = stack->match_buffer_size_allocated_ * 2 + 1;\n"
+                "    if (size_to_allocate <= stack->match_buffer_size_allocated_) {\n");
+  ip_printf(ip, "      return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  ip_printf(ip,"    }\n"
+                "    if (size_to_allocate < size_needed) {\n"
+                "      size_to_allocate = size_needed;\n"
+                "    }\n"
+                "    void *buf = realloc(stack->match_buffer_, size_to_allocate);\n"
+                "    if (!buf) {\n");
+  ip_printf(ip, "      return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  ip_printf(ip, "    }\n"
+                "    stack->match_buffer_ = (char *)buf;\n"
+                "    stack->match_buffer_size_allocated_ = size_to_allocate;\n"
+                "  }\n"
+                "\n"
+                "  memcpy(stack->match_buffer_ + stack->match_buffer_size_, s, len);\n"
+                "  stack->match_buffer_size_ += len;\n"
+                "  stack->match_buffer_[stack->match_buffer_size_] = '\\0';\n"
+                "  return 0;\n"
+                "}\n"
+                "\n");
+  ip_printf(ip, "void %sset_input(struct %sstack *stack, const char *input, size_t input_size, int is_final_input) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "  stack->input_ = input;\n"
+                "  stack->input_size_ = input_size;\n"
+                "  stack->is_final_input_ = is_final_input;\n"
+                "  stack->input_index_ = 0;\n");
+  ip_printf(ip, "}\n"
+                "\n");
+  ip_printf(ip,  "int %slex(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip,  "  int r;\n"
                  "  unsigned char c;\n"
+                 "  const char *input = stack->input_;\n"
+                 "  size_t input_size = stack->input_size_;\n"
+                 "  int is_final_input = !!stack->is_final_input_;\n"
                  "  size_t scan_state = stack->scan_state_;\n");
   ip_printf(ip,  "  const size_t *transition_table = %sscan_table;\n", cc_prefix(cc));
   ip_printf(ip,  "  const size_t *actions = %sscan_actions;\n", cc_prefix(cc));
@@ -1392,7 +1402,7 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "    /* Need more input */\n"
                  "    stack->scan_state_ = scan_state;\n"
                  "    stack->token_size_ = 0; /* no match yet */\n"
-                 "    stack->input_index_ = 0;\n"
+                 "    stack->input_index_ = input_index;\n"
                  "    stack->input_offset_ = input_offset;\n"
                  "    stack->input_line_ = input_line;\n"
                  "    stack->input_col_ = input_col;\n"
@@ -1618,7 +1628,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   /* Emit the parse function */
   cc->current_snippet_continuation_ = 1;
   if (cc->params_snippet_.num_tokens_) {
-    ip_printf(ip, "int %sscan(struct %sstack *stack, const char *input, size_t input_size, int is_final_input, ", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "int %sscan(struct %sstack *stack, ", cc_prefix(cc), cc_prefix(cc));
     size_t token_idx;
     for (token_idx = 0; token_idx < cc->params_snippet_.num_tokens_; ++token_idx) {
       ip_printf(ip, "%s", cc->params_snippet_.tokens_[token_idx].text_.original_);
@@ -1626,7 +1636,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     ip_printf(ip, ") {\n");
   }
   else {
-    ip_printf(ip, "int %sscan(struct %sstack *stack, const char *input, size_t input_size, int is_final_input) {\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "int %sscan(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   }
   ip_printf(ip, "  if (stack->pending_reset_) {\n"
                 "    int r;\n"
@@ -1639,7 +1649,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "  for (;;) {\n");
   ip_printf(ip, "    stack->continue_at_ = 0;\n");
   ip_printf(ip, "    if (stack->need_sym_) {\n");
-  ip_printf(ip, "      switch (%slex(stack, input, input_size, is_final_input)) {\n", cc_prefix(cc));
+  ip_printf(ip, "      switch (%slex(stack)) {\n", cc_prefix(cc));
   ip_printf(ip, "        case _%sMATCH:\n", cc_PREFIX(cc));
   ip_printf(ip, "          stack->need_sym_ = 0;\n");
   ip_printf(ip, "          stack->discard_remaining_actions_ = 0;\n");
@@ -2632,7 +2642,6 @@ int emit_return_code_defines(struct indented_printer *ip, struct carburetta_cont
   return 0;
 }
 
-
 int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg) {
   ip_printf(ip, "struct %sstack {\n", cc_prefix(cc));
   ip_printf(ip, "  int error_recovery_:1;\n");
@@ -2642,9 +2651,12 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
                 "  int slot_1_has_common_data_:1;\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  int need_sym_:1;\n"
+                  "  int is_final_input_:1;\n"
                   "  int slot_0_has_current_sym_data_:1;\n"
                   "  int slot_0_has_common_data_:1;\n"
-                  "  int current_sym_;\n");
+                  "  int current_sym_;\n"
+                  "  size_t input_size_;\n"
+                  "  const char *input_;\n");
   }
   ip_printf(ip, "  int slot_1_sym_;\n");
 
@@ -2928,6 +2940,10 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   if (prdg->num_patterns_) {
     ip_printf(ip, "  stack->need_sym_ = 1;\n"
                   "  stack->current_sym_ = 0;\n");
+
+    ip_printf(ip, "  stack->input_ = NULL;\n"
+                  "  stack->input_size_ = 0;\n"
+                  "  stack->is_final_input_ = 0;\n");
   }
   ip_printf(ip, "  stack->slot_1_has_sym_data_ = stack->slot_1_has_common_data_ = 0;\n"
                 "  stack->slot_1_sym_ = 0;\n");
@@ -3347,8 +3363,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
 
   if (prdg->num_patterns_) {
     ip_printf(ip, "  stack->scan_state_ = %zu;\n", scantable->start_state);
-    ip_printf(ip, "  stack->input_index_ = 0;\n"
-                  "  stack->input_offset_ = 0;\n"
+    ip_printf(ip, "  stack->input_offset_ = 0;\n"
                   "  stack->input_line_ = 1;\n"
                   "  stack->input_col_ = 1;\n"
                   "  stack->match_index_ = 0;\n"
@@ -3458,6 +3473,21 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "int %sstack_reset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "int %sstack_can_recover(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "int %sstack_accepts(struct %sstack *stack, int sym);\n", cc_prefix(cc), cc_prefix(cc));
+  if (prdg->num_patterns_) {
+    ip_printf(ip, "void %sset_input(struct %sstack *stack, const char *input, size_t input_size, int is_final_input);\n", cc_prefix(cc), cc_prefix(cc));
+
+    if (cc->params_snippet_.num_tokens_) {
+      ip_printf(ip, "int %sscan(struct %sstack *stack, ", cc_prefix(cc), cc_prefix(cc));
+      size_t token_idx;
+      for (token_idx = 0; token_idx < cc->params_snippet_.num_tokens_; ++token_idx) {
+        ip_printf(ip, "%s", cc->params_snippet_.tokens_[token_idx].text_.original_);
+      }
+      ip_printf(ip, ");\n");
+    }
+    else {
+      ip_printf(ip, "int %sscanstruct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    }
+  }
 
   if (cc->params_snippet_.num_tokens_) {
     ip_printf(ip, "int %sparse(struct %sstack *stack, int sym, ", cc_prefix(cc), cc_prefix(cc));
