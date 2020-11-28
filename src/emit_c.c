@@ -1250,6 +1250,65 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                 "  stack->input_index_ = 0;\n");
   ip_printf(ip, "}\n"
                 "\n");
+
+  ip_printf(ip,  "void %sset_location(struct %sstack *stack, int line, int col, size_t offset) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip,  "  if (stack->token_size_) {\n");
+  ip_printf(ip,  "    /* Parsing of next token not in progress, set end location of this token as\n");
+  ip_printf(ip,  "    ** it will be the start of the next token. */\n");
+  ip_printf(ip,  "    stack->input_line_ = stack->input_line_ - stack->best_match_line_ + line;\n");
+  ip_printf(ip,  "    stack->input_col_ = stack->input_col_ - stack->best_match_col_ + col;\n");
+  ip_printf(ip,  "    stack->input_offset_ = stack->input_offset_ - stack->best_match_offset_ + offset;\n");
+  ip_printf(ip,  "\n");
+  ip_printf(ip,  "    stack->best_match_line_ = line;\n");
+  ip_printf(ip,  "    stack->best_match_col_ = col;\n");
+  ip_printf(ip,  "    stack->best_match_offset_ = offset;\n");
+  ip_printf(ip,  "    return;\n");
+  ip_printf(ip,  "  }\n");
+  ip_printf(ip,  "  /* Parsing of token in progress, dynamically move the start of the token, as\n");
+  ip_printf(ip,  "  ** well as the relative current partial end of the token, to the desired location. */\n");
+  ip_printf(ip,  "  stack->input_line_ = stack->input_line_ - stack->match_line_ + line;\n");
+  ip_printf(ip,  "  stack->input_col_ = stack->input_col_ - stack->match_col_ + col;\n");
+  ip_printf(ip,  "  stack->input_offset_ = stack->input_offset_ - stack->match_offset_ + offset;\n");
+  ip_printf(ip,  "\n");
+  ip_printf(ip,  "  stack->best_match_line_ = stack->best_match_line_ - stack->match_line_ + line;\n");
+  ip_printf(ip,  "  stack->best_match_col_ = stack->best_match_col_ - stack->match_col_ + col;\n");
+  ip_printf(ip,  "  stack->best_match_offset_ = stack->best_match_offset_ - stack->match_offset_ + offset;\n");
+  ip_printf(ip,  "  stack->match_line_ = line;\n");
+  ip_printf(ip,  "  stack->match_col_ = col;\n");
+  ip_printf(ip,  "  stack->match_offset_ = offset;\n");
+  ip_printf(ip, "}\n"
+                "\n");
+
+  ip_printf(ip, "int %sline(struct %sstack *stack) {\n"
+                "  return stack->match_line_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "int %scolumn(struct %sstack *stack) {\n"
+                "  return stack->match_col_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "size_t %soffset(struct %sstack *stack) {\n"
+                "  return stack->match_offset_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "int %sendline(struct %sstack *stack) {\n"
+                "  return stack->best_match_line_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "int %sendcolumn(struct %sstack *stack) {\n"
+                "  return stack->best_match_col_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "size_t %sendoffset(struct %sstack *stack) {\n"
+                "  return stack->best_match_offset_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
   ip_printf(ip,  "int %slex(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip,  "  int r;\n"
                  "  unsigned char c;\n"
@@ -3487,6 +3546,16 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
     else {
       ip_printf(ip, "int %sscanstruct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
     }
+
+    ip_printf(ip, "void %sset_location(struct %sstack *stack, int line, int col, size_t offset);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "int %sline(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "int %scolumn(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "size_t %soffset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "int %sendline(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "int %sendcolumn(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "size_t %sendoffset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "int %slex(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+
   }
 
   if (cc->params_snippet_.num_tokens_) {
