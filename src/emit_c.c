@@ -671,38 +671,6 @@ static int emit_action_snippet(struct indented_printer *ip, struct carburetta_co
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
-static int emit_pattern_token_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
-  struct snippet_emission se = { 0 };
-  if (!ts) return 0;
-  se.code_ = &ts->token_action_snippet_;
-  se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
-  se.dest_typestr_ = ts;
-  se.dest_fmt_ = "(stack->stack_[0].v_.uv%d_)";
-  se.sym_type_ = SEST_NONE;
-  se.common_type_ = SECT_NONE;
-  se.common_dest_type_ = SECDT_FMT;
-  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
-  se.len_type_ = SELT_FMT;
-  se.len_fmt_ = "(stack->token_size_)";
-  se.discard_type_ = SEDIT_FMT;
-  se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
-  se.text_type_ = SETT_FMT;
-  se.text_fmt_ = "(stack->match_buffer_)";
-  se.line_type_ = SELIT_FMT;
-  se.line_fmt_ = "(stack->match_line_)";
-  se.col_type_ = SECOT_FMT;
-  se.col_fmt_ = "(stack->match_col_)";
-  se.offset_type_ = SEOT_FMT;
-  se.offset_fmt_ = "(stack->match_offset_)";
-  se.end_line_type_ = SEELIT_FMT;
-  se.end_line_fmt_ = "(stack->best_match_line_)";
-  se.end_col_type_ = SEECOT_FMT;
-  se.end_col_fmt_ = "(stack->best_match_col_)";
-  se.end_offset_type_ = SEEOT_FMT;
-  se.end_offset_fmt_ = "(stack->best_match_offset_)";
-  return emit_snippet_code_emission(ip, cc, &se, 0);
-}
-
 static int emit_token_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
@@ -887,37 +855,6 @@ static int emit_token_common_action_snippet(struct indented_printer *ip, struct 
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
-}
-
-static int emit_pattern_token_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
-  struct snippet_emission se = { 0 };
-  if (!cc->common_data_assigned_type_) return 0;
-  se.code_ = &cc->common_data_assigned_type_->token_action_snippet_;
-  se.dest_type_ = SEDT_FMT;
-  se.dest_fmt_ = "(stack->stack_[0].common_)";
-  se.sym_type_ = SEST_NONE;
-  se.common_type_ = SECT_NONE;
-  se.common_dest_type_ = SECDT_FMT;
-  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
-  se.len_type_ = SELT_FMT;
-  se.len_fmt_ = "(stack->token_size_)";
-  se.discard_type_ = SEDIT_FMT;
-  se.discard_fmt_ = "stack->discard_remaining_actions_ = 1;";
-  se.text_type_ = SETT_FMT;
-  se.text_fmt_ = "(stack->match_buffer_)";
-  se.line_type_ = SELIT_FMT;
-  se.line_fmt_ = "(stack->match_line_)";
-  se.col_type_ = SECOT_FMT;
-  se.col_fmt_ = "(stack->match_col_)";
-  se.offset_type_ = SEOT_FMT;
-  se.offset_fmt_ = "(stack->match_offset_)";
-  se.end_line_type_ = SEELIT_FMT;
-  se.end_line_fmt_ = "(stack->best_match_line_)";
-  se.end_col_type_ = SEECOT_FMT;
-  se.end_col_fmt_ = "(stack->best_match_col_)";
-  se.end_offset_type_ = SEEOT_FMT;
-  se.end_offset_fmt_ = "(stack->best_match_offset_)";
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -1730,10 +1667,6 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     if (cc->common_data_assigned_type_->is_raii_constructor_) {
       ip_printf(ip, "          stack->slot_0_has_common_data_ = 1;\n");
     }
-    if (emit_pattern_token_common_action_snippet(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
   }
 
   ip_printf(ip, "          switch (stack->best_match_action_) {\n");
@@ -1759,14 +1692,6 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
       }
       if (pat->term_.sym_->assigned_type_ && pat->term_.sym_->assigned_type_->is_raii_constructor_) {
         ip_printf(ip, "              stack->slot_0_has_current_sym_data_ = 1;\n");
-      }
-      if (pat->term_.sym_->assigned_type_ &&  pat->term_.sym_->assigned_type_->token_action_snippet_.num_tokens_) {
-        ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
-        if (emit_pattern_token_action_snippet(ip, cc, pat->term_.sym_->assigned_type_)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
-        ip_printf(ip, "              }\n");
       }
       if (pat->common_action_sequence_.num_tokens_) {
         ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
