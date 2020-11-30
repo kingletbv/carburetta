@@ -2930,9 +2930,6 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   }
   ip_printf(ip, "};\n");
 
-  /* For each state, what is the top-most symbol on the stack? */
-  ip_printf(ip, "static const int %sstate_syms[] = {\n", cc_prefix(cc));
-
   state_syms = (int *)malloc(sizeof(int) * (size_t)lalr->nr_states_);
   if (!state_syms) {
     re_error_nowhere("Error, no memory");
@@ -2963,11 +2960,6 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
       }
     }
   }
-  for (row = 0; row < lalr->nr_states_; ++row) {
-    ip_printf(ip, " %d%s\n", state_syms[row], (row == lalr->nr_states_ - 1) ? "" : ",");
-  }
-  ip_printf(ip, "};\n");
-
 
   if (cc->include_guard_) {
     ip_printf(ip, "\n#ifndef %s\n", cc->include_guard_);
