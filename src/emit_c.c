@@ -1846,7 +1846,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "          int production = -action - 1;\n"
                 "          stack->discard_remaining_actions_ = 0;\n"
                 "          stack->current_production_length_ = %sproduction_lengths[production];\n", cc_prefix(cc));
-  ip_printf(ip, "          int nonterminal = %sproduction_syms[production];\n", cc_prefix(cc));
+  ip_printf(ip, "          stack->current_production_nonterminal_ = %sproduction_syms[production];\n", cc_prefix(cc));
   ip_printf(ip, "          if (0 == production) {\n"
                 "            stack->pending_reset_ = 1;\n"
                 "            ");
@@ -1986,7 +1986,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
 
   ip_printf(ip, "          } /* for */\n"
                 "          stack->pos_ -= stack->current_production_length_;\n"
-                "          action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                "          action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (stack->current_production_nonterminal_ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "          if (action <= 0) {\n");
   emit_internal_error(ip, cc);
   ip_printf(ip, "          }\n");
@@ -2346,7 +2346,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 "        int production = -action - 1;\n"
                 "        stack->discard_remaining_actions_ = 0;\n"
                 "        stack->current_production_length_ = %sproduction_lengths[production];\n", cc_prefix(cc));
-  ip_printf(ip, "        int nonterminal = %sproduction_syms[production];\n", cc_prefix(cc));
+  ip_printf(ip, "        stack->current_production_nonterminal_ = %sproduction_syms[production];\n", cc_prefix(cc));
   ip_printf(ip, "        if (0 == production) {\n"
                 "          stack->pending_reset_ = 1;\n");
   if (cc->on_finish_snippet_.num_tokens_) {
@@ -2484,7 +2484,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
 
   ip_printf(ip, "        } /* for */\n"
                 "        stack->pos_ -= stack->current_production_length_;\n"
-                "        action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (nonterminal - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                "        action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (stack->current_production_nonterminal_ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "        if (action <= 0) {\n"
                 "          ");
   emit_internal_error(ip, cc);
@@ -2758,7 +2758,8 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
   ip_printf(ip, "  size_t pos_, num_stack_allocated_;\n");
   ip_printf(ip, "  struct %ssym_data *stack_;\n", cc_prefix(cc));
   ip_printf(ip, "  struct %ssym_data *sym_data_;\n", cc_prefix(cc));
-  ip_printf(ip, "  size_t current_production_length_;\n", cc_prefix(cc));
+  ip_printf(ip, "  size_t current_production_length_;\n");
+  ip_printf(ip, "  int current_production_nonterminal_;\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  size_t scan_state_;\n"
                   "  size_t match_index_;\n"
@@ -3039,7 +3040,8 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "  stack->num_stack_allocated_ = 0;\n"
                 "  stack->stack_ = NULL;\n"
                 "  stack->sym_data_ = NULL;\n"
-                "  stack->current_production_length_ = 0;\n");
+                "  stack->current_production_length_ = 0;\n"
+                "  stack->current_production_nonterminal_ = 0;\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  stack->slot_0_has_current_sym_data_ = stack->slot_0_has_common_data_ = 0;\n");
     ip_printf(ip, "  stack->scan_state_ = %zu;\n", scantable->start_state);
@@ -3422,7 +3424,8 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   }
 
   ip_printf(ip, "  stack->sym_data_ = NULL;\n"
-                "  stack->current_production_length_ = 0;\n");
+                "  stack->current_production_length_ = 0;\n"
+                "  stack->current_production_nonterminal_ = 0;\n");
   ip_printf(ip, "  stack->pos_ = 0;\n"
                 "  stack->error_recovery_ = 0;\n");
   if (prdg->num_patterns_) {
