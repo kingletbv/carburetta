@@ -122,7 +122,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_TOKEN_PREFIX_DIRECTIVE,
     PCD_PARAMS_DIRECTIVE,
     PCD_LOCALS_DIRECTIVE,
-    PCD_ON_SUCCESS_DIRECTIVE,
+    PCD_ON_FINISH_DIRECTIVE,
     PCD_ON_SYNTAX_ERROR_DIRECTIVE,
     PCD_ON_LEXICAL_ERROR_DIRECTIVE,
     PCD_ON_ALLOC_ERROR_DIRECTIVE,
@@ -159,7 +159,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
             (directive == PCD_PARAMS_DIRECTIVE) ||
             (directive == PCD_LOCALS_DIRECTIVE) ||
-            (directive == PCD_ON_SUCCESS_DIRECTIVE) ||
+            (directive == PCD_ON_FINISH_DIRECTIVE) ||
             (directive == PCD_ON_LEXICAL_ERROR_DIRECTIVE) ||
             (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) ||
             (directive == PCD_ON_ALLOC_ERROR_DIRECTIVE) ||
@@ -248,8 +248,8 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             else if (!strcmp("locals", tkr_str(tkr_tokens))) {
               directive = PCD_LOCALS_DIRECTIVE;
             }
-            else if (!strcmp("on_success", tkr_str(tkr_tokens))) {
-              directive = PCD_ON_SUCCESS_DIRECTIVE;
+            else if (!strcmp("on_finish", tkr_str(tkr_tokens))) {
+              directive = PCD_ON_FINISH_DIRECTIVE;
             }
             else if (!strcmp("on_syntax_error", tkr_str(tkr_tokens))) {
               directive = PCD_ON_SYNTAX_ERROR_DIRECTIVE;
@@ -608,7 +608,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
           }
           else if ((directive == PCD_PARAMS_DIRECTIVE) || 
                    (directive == PCD_LOCALS_DIRECTIVE) ||
-                   (directive == PCD_ON_SUCCESS_DIRECTIVE) || 
+                   (directive == PCD_ON_FINISH_DIRECTIVE) || 
                    (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) || 
                    (directive == PCD_ON_LEXICAL_ERROR_DIRECTIVE) ||
                    (directive == PCD_ON_ALLOC_ERROR_DIRECTIVE) || 
@@ -872,9 +872,9 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     if (r) goto cleanup_exit;
   }
 
-  if (directive == PCD_ON_SUCCESS_DIRECTIVE) {
-    snippet_clear(&cc->on_success_snippet_);
-    r = snippet_append_snippet(&cc->on_success_snippet_, &dir_snippet);
+  if (directive == PCD_ON_FINISH_DIRECTIVE) {
+    snippet_clear(&cc->on_finish_snippet_);
+    r = snippet_append_snippet(&cc->on_finish_snippet_, &dir_snippet);
     if (r) goto cleanup_exit;
   }
 

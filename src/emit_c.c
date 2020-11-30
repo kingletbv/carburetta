@@ -1848,16 +1848,16 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "          stack->current_production_length_ = %sproduction_lengths[production];\n", cc_prefix(cc));
   ip_printf(ip, "          int nonterminal = %sproduction_syms[production];\n", cc_prefix(cc));
   ip_printf(ip, "          if (0 == production) {\n"
-                 "            ");
-  if (cc->on_success_snippet_.num_tokens_) {
+                "            stack->pending_reset_ = 1;\n"
+                "            ");
+  if (cc->on_finish_snippet_.num_tokens_) {
     size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_success_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_success_snippet_.tokens_[token_idx].text_.original_);
+    for (token_idx = 0; token_idx < cc->on_finish_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_finish_snippet_.tokens_[token_idx].text_.original_);
     }
   }
   else {
     ip_printf(ip, "/* Synth S production we're done */\n"
-                  "            stack->pending_reset_ = 1;\n"
                   "            return 0;\n");
   }
 
@@ -2081,9 +2081,18 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   }
   ip_printf(ip, ") {\n");
   ip_printf(ip, "              /* EOF means we cannot shift to recover, and errors are muted, so return completion */\n"
-                "              stack->pending_reset_ = 1;\n"
-                "              return 0;\n"
-                "            }\n"
+                "              stack->pending_reset_ = 1;\n");
+  if (cc->on_finish_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_finish_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_finish_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    ip_printf(ip, "            return 0;\n");
+  }
+
+  ip_printf(ip, "            }\n"
                 "          }\n"
                 "        }\n");
   ip_printf(ip, "      } /* !stack->error_recovery_ */\n"
@@ -2159,9 +2168,18 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   }
   ip_printf(ip, ") {\n");
   ip_printf(ip, "            /* EOF means we cannot shift to recover, so return completion */\n"
-                "            stack->pending_reset_ = 1;\n"
-                "            return 0;\n"
-                "          }\n");
+                "            stack->pending_reset_ = 1;\n");
+  if (cc->on_finish_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_finish_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_finish_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    ip_printf(ip, "            return 0;\n");
+  }
+
+  ip_printf(ip, "          }\n");
 
   ip_printf(ip, "          stack->need_sym_ = 1;\n");
   if (cc->on_next_token_snippet_.num_tokens_) {
@@ -2330,16 +2348,15 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 "        stack->current_production_length_ = %sproduction_lengths[production];\n", cc_prefix(cc));
   ip_printf(ip, "        int nonterminal = %sproduction_syms[production];\n", cc_prefix(cc));
   ip_printf(ip, "        if (0 == production) {\n"
-                "          ");
-  if (cc->on_success_snippet_.num_tokens_) {
+                "          stack->pending_reset_ = 1;\n");
+  if (cc->on_finish_snippet_.num_tokens_) {
     size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_success_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_success_snippet_.tokens_[token_idx].text_.original_);
+    for (token_idx = 0; token_idx < cc->on_finish_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_finish_snippet_.tokens_[token_idx].text_.original_);
     }
   }
   else {
     ip_printf(ip, "/* Synth S we're done */\n"
-                  "          stack->pending_reset_ = 1;\n"
                   "          return 0;\n");
   }
 
@@ -2522,9 +2539,18 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   }
   ip_printf(ip, ") {\n");
   ip_printf(ip, "            /* EOF means we cannot shift to recover, and errors are muted, so return completion */\n"
-                "            stack->pending_reset_ = 1;\n"
-                "            return 0;\n"
-                "          }\n"
+                "            stack->pending_reset_ = 1;\n");
+  if (cc->on_finish_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_finish_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_finish_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    ip_printf(ip, "            return 0;\n");
+  }
+
+  ip_printf(ip, "          }\n"
                 "        }\n"
                 "      }\n");
 
@@ -2605,9 +2631,17 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   }
   ip_printf(ip, ") {\n");
   ip_printf(ip, "            /* EOF means we cannot shift to recover, so return completion */\n"
-                "            stack->pending_reset_ = 1;\n"
-                "            return 0;\n"
-                "          }\n");
+                "            stack->pending_reset_ = 1;\n");
+  if (cc->on_finish_snippet_.num_tokens_) {
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->on_finish_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->on_finish_snippet_.tokens_[token_idx].text_.original_);
+    }
+  }
+  else {
+    ip_printf(ip, "            return 0;\n");
+  }
+  ip_printf(ip, "          }\n");
   emit_on_next(ip, cc);
   ip_printf(ip, "      }\n");
   ip_printf(ip, "    } /* stack->error_recovery_ */\n");

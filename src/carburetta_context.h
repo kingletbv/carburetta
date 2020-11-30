@@ -74,7 +74,7 @@ struct carburetta_context {
   char *token_prefix_uppercase_;
   struct snippet params_snippet_;
   struct snippet locals_snippet_;
-  struct snippet on_success_snippet_;
+  struct snippet on_finish_snippet_;
   struct snippet on_syntax_error_snippet_;
   struct snippet on_lexical_error_snippet_;
   struct snippet on_alloc_error_snippet_;
