@@ -95,6 +95,7 @@ struct carburetta_context {
   struct part *prologue_;
   struct part *epilogue_;
   int current_snippet_continuation_;
+  int continuation_enabled_:1;
 };
 
 void carburetta_context_init(struct carburetta_context *cc);
