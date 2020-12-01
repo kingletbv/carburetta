@@ -1265,6 +1265,16 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
   ip_printf(ip, "}\n"
                 "\n");
 
+  ip_printf(ip, "const char *%stext(struct %sstack *stack) {\n"
+                "  return stack->match_buffer_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "size_t %slen(struct %sstack *stack) {\n"
+                "  return stack->token_size_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
   ip_printf(ip, "int %sline(struct %sstack *stack) {\n"
                 "  return stack->match_line_;\n"
                 "}\n"
@@ -2722,6 +2732,7 @@ int emit_sym_data_struct(struct indented_printer *ip, struct carburetta_context 
 }
 
 int emit_return_code_defines(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "#define _%sFINISH 0\n", cc_PREFIX(cc));
   ip_printf(ip, "#define _%sMATCH 1\n", cc_PREFIX(cc));
   ip_printf(ip, "#define _%sOVERFLOW 2\n", cc_PREFIX(cc));
   ip_printf(ip, "#define _%sNO_MEMORY 3\n", cc_PREFIX(cc));
@@ -3587,6 +3598,9 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
     }
 
     ip_printf(ip, "void %sset_location(struct %sstack *stack, int line, int col, size_t offset);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "const char *%stext(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "size_t %slen(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+
     ip_printf(ip, "int %sline(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
     ip_printf(ip, "int %scolumn(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
     ip_printf(ip, "size_t %soffset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
