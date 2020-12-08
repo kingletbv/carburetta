@@ -1217,7 +1217,7 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                 "    }\n"
                 "    void *buf = realloc(stack->match_buffer_, size_to_allocate);\n"
                 "    if (!buf) {\n");
-  ip_printf(ip, "      return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  ip_printf(ip, "      return _%sNO_MEMORY;\n", cc_PREFIX(cc));
   ip_printf(ip, "    }\n"
                 "    stack->match_buffer_ = (char *)buf;\n"
                 "    stack->match_buffer_size_allocated_ = size_to_allocate;\n"
@@ -1867,8 +1867,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     }
   }
   else {
-    ip_printf(ip, "/* Synth S production we're done */\n"
-                  "            return 0;\n");
+    ip_printf(ip, "return _%sFINISH;\n", cc_PREFIX(cc));
   }
 
   ip_printf(ip, "          }\n"
@@ -2099,7 +2098,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     }
   }
   else {
-    ip_printf(ip, "            return 0;\n");
+    ip_printf(ip, "return _%sFINISH;\n", cc_PREFIX(cc));
   }
 
   ip_printf(ip, "            }\n"
@@ -2186,7 +2185,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     }
   }
   else {
-    ip_printf(ip, "            return 0;\n");
+    ip_printf(ip, "return _%sFINISH;\n", cc_PREFIX(cc));
   }
 
   ip_printf(ip, "          }\n");
@@ -2367,7 +2366,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   }
   else {
     ip_printf(ip, "/* Synth S we're done */\n"
-                  "          return 0;\n");
+                  "return _%sFINISH;\n", cc_PREFIX(cc));
   }
 
   ip_printf(ip, "        }\n"
@@ -2557,7 +2556,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     }
   }
   else {
-    ip_printf(ip, "            return 0;\n");
+    ip_printf(ip, "return _%sFINISH;\n", cc_PREFIX(cc));
   }
 
   ip_printf(ip, "          }\n"
@@ -2649,7 +2648,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     }
   }
   else {
-    ip_printf(ip, "            return 0;\n");
+    ip_printf(ip, "return _%sFINISH;\n", cc_PREFIX(cc));
   }
   ip_printf(ip, "          }\n");
   emit_on_next(ip, cc);
