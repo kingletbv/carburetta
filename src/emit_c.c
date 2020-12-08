@@ -2633,7 +2633,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
 
   ip_printf(ip, "      if (stack->error_recovery_) {\n"
                 "        /* Did not yet recover, discard current sym and get next */\n");
-  ip_printf(ip, "          if (stack->current_sym_ == ");
+  ip_printf(ip, "          if (sym == ");
   if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
     ip->had_error_ = 1;
     goto cleanup_exit;

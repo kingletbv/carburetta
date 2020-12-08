@@ -15,6 +15,10 @@ INTEGER: [0-9]+ { $$ = atoi($text); }
 
 %type grammar expr term factor value INTEGER: int
 %constructor $$ = 0;
+%destructor /* destructing */ $$ = 0;
+
+%common_type int
+%destructor /* destructing common */ $$ = 0;
 
 %params int *final_result
 
@@ -26,7 +30,7 @@ grammar: expr {
 expr: term                      { $$ = $0; }
 expr: expr PLUS term            { $$ = $0 + $2; }
 expr: expr MINUS term           { $$ = $0 - $2; }
-  
+
 term: factor                    { $$ = $0; }
 term: term ASTERISK factor      { $$ = $0 * $2; }
 term: term SLASH factor         { $$ = $0 / $2; }
@@ -50,7 +54,7 @@ value: error                    { $$ = 0; report_error("Syntax error: value expe
 int main(int argc, char **argv) {
   int value, r;
   static char s[300];
-
+  
   fprintf(stderr, "Enter an expression (-1 to exit):\n");
 
   struct calc_stack stack;
