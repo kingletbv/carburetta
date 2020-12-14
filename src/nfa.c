@@ -514,6 +514,7 @@ static int scan_token(struct nfa_parse_context *ctx, char *c) {
           return 0;
         }
         esc = (esc << 3) | (inc - '0');
+        pop(ctx); inc = peek(ctx);
       }
       *c = esc;
       return SYM_CHAR;
