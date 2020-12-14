@@ -3551,6 +3551,21 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
     do {
       sym = sym->next_;
 
+      ip_printf(ip, "#define ");
+      if (print_sym_as_c_ident(ip, cc, sym)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+      ip_printf(ip, " %d\n", sym->ordinal_);
+
+    } while (sym != cc->symtab_.terminals_);
+  }
+  ip_printf(ip, "\n");
+  sym = cc->symtab_.non_terminals_;
+  if (sym) {
+    do {
+      sym = sym->next_;
+
       char *ident = (char *)malloc(1 + sym->def_.num_translated_);
       char *s = ident;
       const char *p;
@@ -3567,10 +3582,13 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
       }
       *s++ = '\0';
 
-      ip_printf(ip, "#define %s%s %d\n", cc_TOKEN_PREFIX(cc), ident, sym->ordinal_);
+      ip_printf(ip, "#define %s%s %d\n", cc_PREFIX(cc), ident, sym->ordinal_);
       free(ident);
-    } while (sym != cc->symtab_.terminals_);
+    } while (sym != cc->symtab_.non_terminals_);
   }
+
+
+
   ip_printf(ip, "\n");
 
   emit_stack_struct_decl(ip, cc, prdg);
