@@ -38,6 +38,11 @@
 #include <errno.h>
 #endif
 
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
+#include <assert.h>
+#endif
+
 #ifndef MUL_H_INCLUDED
 #define MUL_H_INCLUDED
 #include "mul.h"
@@ -2798,7 +2803,7 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
   return 0;
 }
 
-void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable, struct lr_generator *lalr) {
+void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable, struct rex_scanner *rex, struct lr_generator *lalr) {
   int *state_syms;
   state_syms = NULL;
 
@@ -2871,6 +2876,138 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
       ip_printf(ip, "%s%zu", col ? ", " : "", (size_t)scantable->actions[col].action);
     }
     ip_printf(ip, " };\n");
+  }
+
+  if (prdg->num_patterns_) {
+    ip_printf(ip, "static const size_t %sscan_table_rex[] = {\n", cc_prefix(cc));
+    size_t col;
+    char column_widths[256] = {0};
+    struct rex_dfa_node *dn = rex->dfa_.nodes_;
+    if (dn) {
+      do {
+        dn = dn->chain_;
+
+        col = 0;
+
+        struct rex_dfa_trans *dt = dn->outbound_;
+        if (dt) {
+          do {
+            dt = dt->from_peer_;
+
+            if (!dt->is_anchor_) {
+              while (col < dt->symbol_start_) {
+                /* No transition encodes 0 action, width 2 */
+                if (column_widths[col] < 2) {
+                  column_widths[col] = 2;
+                }
+                col++;
+              }
+              uint32_t input_sym;
+              for (input_sym = dt->symbol_start_; input_sym < dt->symbol_end_; ++input_sym) {
+                assert(col == input_sym);
+                int width_needed = 1;
+                if (input_sym < 100) {
+                  width_needed = 2;
+                }
+                else if (input_sym < 1000) {
+                  width_needed = 3;
+                }
+                else if (input_sym < 10000) {
+                  width_needed = 4;
+                }
+                else {
+                  width_needed = 5;
+                }
+                if (width_needed > column_widths[col]) {
+                  column_widths[col] = width_needed;
+                }
+                col++;
+              }
+            }
+
+          } while (dt != dn->outbound_);
+        }
+
+        while (col < 256) {
+          /* No transition encodes 0 action, width 2 */
+          if (column_widths[col] < 2) {
+            column_widths[col] = 2;
+          }
+          col++;
+        }
+
+      } while (dn != rex->dfa_.nodes_);
+    }
+
+    /* Emit dummy "State 0" row */
+    ip_force_indent_print(ip);
+    for (col = 0; col < 256; ++col) {
+      ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], 0);
+    }
+    if (dn) {
+      ip_printf(ip, ",\n");
+    }
+    else {
+      ip_printf(ip, "\n");
+    }
+
+    if (dn) {
+      do {
+        dn = dn->chain_;
+
+        col = 0;
+
+        ip_force_indent_print(ip);
+
+        struct rex_dfa_trans *dt = dn->outbound_;
+        if (dt) {
+          do {
+            dt = dt->from_peer_;
+
+            if (!dt->is_anchor_) {
+              while (col < dt->symbol_start_) {
+                ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], 0);
+                col++;
+              }
+
+              uint32_t input_sym;
+              for (input_sym = dt->symbol_start_; input_sym < dt->symbol_end_; ++input_sym) {
+                assert(col == input_sym);
+                ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], dt->to_->ordinal_);
+                col++;
+              }
+            }
+          } while (dt != dn->outbound_);
+        }
+
+        while (col < 256) {
+          ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], 0);
+          col++;
+        }
+
+        if (dn != rex->dfa_.nodes_) {
+          ip_printf(ip, ",\n");
+        }
+        else {
+          ip_printf(ip, "\n");
+        }
+      } while (dn != rex->dfa_.nodes_);
+    }
+
+    ip_printf(ip, "};\n");
+
+    ip_printf(ip, "static const size_t %sscan_actions_rex[] = { ", cc_prefix(cc));
+    ip_printf(ip, "0"); /* dummy state 0 action */
+    if (dn) {
+      do {
+        dn = dn->chain_;
+
+        ip_printf(ip, ", %zu", (size_t)dn->pattern_matched_ ? dn->pattern_matched_->action_ : 0);
+
+      } while (dn != rex->dfa_.nodes_);
+    }
+    ip_printf(ip, " };\n");
+
   }
 
   size_t num_columns;

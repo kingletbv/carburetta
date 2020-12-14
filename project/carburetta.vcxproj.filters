@@ -29,6 +29,8 @@
     <ClCompile Include="..\src\parse_input.c" />
     <ClCompile Include="..\src\temp_output.c" />
     <ClCompile Include="..\src\indented_printer.c" />
+    <ClCompile Include="..\src\rex.c" />
+    <ClCompile Include="..\src\rex_parse.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\chain.h" />
@@ -57,9 +59,12 @@
     <ClInclude Include="..\src\parse_input.h" />
     <ClInclude Include="..\src\temp_output.h" />
     <ClInclude Include="..\src\indented_printer.h" />
+    <ClInclude Include="..\src\rex.h" />
+    <ClInclude Include="..\src\rex_parse.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\prd_grammar.cbrt" />
     <None Include="..\src\regex_grammar.cbrt" />
+    <None Include="..\src\rex_parse.cbrt" />
   </ItemGroup>
 </Project>

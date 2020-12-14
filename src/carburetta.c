@@ -48,6 +48,11 @@
 #include "report_error.h"
 #endif
 
+#ifndef REX_H_INCLUDED
+#define REX_H_INCLUDED
+#include "rex.h"
+#endif
+
 #ifndef SCANNER_H_INCLUDED
 #define SCANNER_H_INCLUDED
 #include "scanner.h"
@@ -218,6 +223,8 @@ int main(int argc, char **argv) {
   struct sc_scanner scantable;
   sc_scanner_init(&scantable);
 
+  struct rex_scanner rex;
+  rex_init(&rex);
 
   char **cpv = argv + 1;
   int cr = argc - 1;
@@ -710,6 +717,66 @@ int main(int argc, char **argv) {
     }
   }
 
+  if (prdg.num_patterns_) {
+    size_t n;
+    struct rex_mode *mode;
+    r = rex_add_mode(&rex, &mode);
+    if (r) {
+      switch (r) {
+      case _REX_NO_MEMORY:
+        re_error_nowhere("Error, no memory");
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      default:
+        /* All errors here are internal */
+        re_error_nowhere("Internal error");
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+    }
+    for (n = 0; n < prdg.num_patterns_; ++n) {
+      struct prd_pattern *prd_pat = prdg.patterns_ + n;
+      struct rex_pattern *pat;
+      r = rex_add_pattern(&rex, prd_pat->regex_, n + 1, &pat);
+      if (!r) r = rex_add_pattern_to_mode(mode, pat);
+      if (r) {
+        /* Failure occurred, report */
+        switch (r) {
+        case _REX_NO_MEMORY:
+          re_error_nowhere("Error, no memory");
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        case _REX_SYNTAX_ERROR:
+        case _REX_LEXICAL_ERROR:
+          /* The regex should already be validated to be
+           * a correct regular expression (otherwise */
+          re_error_nowhere("Internal error, inconsistent syntex");
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        default:
+          /* All errors here are internal */
+          re_error_nowhere("Internal error");
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+      }
+    }
+    r = rex_realize_modes(&rex);
+    if (r) {
+      switch (r) {
+      case _REX_NO_MEMORY:
+        re_error_nowhere("Error, no memory");
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      default:
+        /* All errors here are internal */
+        re_error_nowhere("Internal error");
+        r = EXIT_FAILURE;
+        goto cleanup_exit;
+      }
+    }
+  }
+
   FILE *outfp;
   outfp = NULL;
 
@@ -782,7 +849,7 @@ int main(int argc, char **argv) {
     struct indented_printer ip;
     ip_init(&ip, outfp, cc.c_output_filename_);
 
-    emit_c_file(&ip, &cc, &prdg, &scantable, &lalr);
+    emit_c_file(&ip, &cc, &prdg, &scantable, &rex, &lalr);
 
     if (ip.had_error_) {
       ip_cleanup(&ip);
@@ -862,6 +929,8 @@ int main(int argc, char **argv) {
   r = EXIT_SUCCESS;
 cleanup_exit:
   lr_cleanup(&lalr);
+
+  rex_cleanup(&rex);
 
   sc_scanner_cleanup(&scantable);
 

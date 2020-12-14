@@ -37,6 +37,8 @@
     <ClCompile Include="..\src\prd_grammar.c" />
     <ClCompile Include="..\src\regex_grammar.c" />
     <ClCompile Include="..\src\report_error.c" />
+    <ClCompile Include="..\src\rex.c" />
+    <ClCompile Include="..\src\rex_parse.c" />
     <ClCompile Include="..\src\scanner.c" />
     <ClCompile Include="..\src\snippet.c" />
     <ClCompile Include="..\src\symbol.c" />
@@ -71,6 +73,8 @@
     <ClInclude Include="..\src\prd_grammar.h" />
     <ClInclude Include="..\src\regex_grammar.h" />
     <ClInclude Include="..\src\report_error.h" />
+    <ClInclude Include="..\src\rex.h" />
+    <ClInclude Include="..\src\rex_parse.h" />
     <ClInclude Include="..\src\scanner.h" />
     <ClInclude Include="..\src\snippet.h" />
     <ClInclude Include="..\src\symbol.h" />
@@ -84,6 +88,7 @@
   <ItemGroup>
     <None Include="..\src\prd_grammar.cbrt" />
     <None Include="..\src\regex_grammar.cbrt" />
+    <None Include="..\src\rex_parse.cbrt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
