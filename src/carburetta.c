@@ -53,11 +53,6 @@
 #include "rex.h"
 #endif
 
-#ifndef SCANNER_H_INCLUDED
-#define SCANNER_H_INCLUDED
-#include "scanner.h"
-#endif
-
 #ifndef TOKENIZER_H_INCLUDED
 #define TOKENIZER_H_INCLUDED
 #include "tokenizer.h"
@@ -219,9 +214,6 @@ int main(int argc, char **argv) {
 
   struct lr_generator lalr;
   lr_init(&lalr);
-
-  struct sc_scanner scantable;
-  sc_scanner_init(&scantable);
 
   struct rex_scanner rex;
   rex_init(&rex);
@@ -681,43 +673,6 @@ int main(int argc, char **argv) {
   }
 
   if (prdg.num_patterns_) {
-    /* Build DFA scantable */
-    struct sc_scan_rule *scanner_rules = NULL;
-    if (prdg.num_patterns_ > (SIZE_MAX / sizeof(struct sc_scan_rule))) {
-      re_error_nowhere("Internal error, overflow");
-      r = EXIT_FAILURE;
-      goto cleanup_exit;
-    }
-    scanner_rules = (struct sc_scan_rule *)malloc(sizeof(struct sc_scan_rule) * prdg.num_patterns_);
-    if (!scanner_rules) {
-      re_error_nowhere("Internal error, no memory");
-      r = EXIT_FAILURE;
-      goto cleanup_exit;
-    }
-    size_t n;
-    for (n = 0; n < prdg.num_patterns_; ++n) {
-      struct prd_pattern *pat = prdg.patterns_ + n;
-      struct sc_scan_rule *sr = scanner_rules + n;
-      /* Set the action to the index of the pattern, set the variant to the ordinal of the symbol..
-       * .. if we have such a symbol.
-       * This is mostly for debugging, resolution of the symbol occurs on a per-action basis. */
-      sr->regexp = pat->regex_;
-      sr->action.action = n + 1;
-      sr->action.variant = pat->term_.sym_ ? pat->term_.sym_->ordinal_ : 0;
-    }
-    r = sc_scanner_compile(&scantable, 0, prdg.num_patterns_, scanner_rules);
-    free(scanner_rules);
-    if (r) {
-      /* If this fails, it means the grammar we used for parsing the regular expression
-       * in regex_grammar.cnd mismatched the grammar used in nfa.c for *actually* parsing
-       * the regular expression and constructing an NFA out of it. */
-      fprintf(stderr, "Internal error, failed to compile pattern scantable (%d)\n", r);
-      r = EXIT_FAILURE;
-      goto cleanup_exit;
-    }
-  }
-
-  if (prdg.num_patterns_) {
     size_t n;
     struct rex_mode *mode;
     r = rex_add_mode(&rex, &mode);
@@ -849,7 +804,7 @@ int main(int argc, char **argv) {
     struct indented_printer ip;
     ip_init(&ip, outfp, cc.c_output_filename_);
 
-    emit_c_file(&ip, &cc, &prdg, &scantable, &rex, &lalr);
+    emit_c_file(&ip, &cc, &prdg, &rex, &lalr);
 
     if (ip.had_error_) {
       ip_cleanup(&ip);
@@ -931,8 +886,6 @@ cleanup_exit:
   lr_cleanup(&lalr);
 
   rex_cleanup(&rex);
-
-  sc_scanner_cleanup(&scantable);
 
   gt_grammar_table_cleanup(&gt);
 

@@ -1194,7 +1194,7 @@ static int emit_pattern_action_snippet(struct indented_printer *ip, struct carbu
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
-static void emit_lex_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable) {
+static void emit_lex_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg) {
   /* Emit the scan function, it scans the input for regex matches without actually executing any actions */
   /* (we're obviously in need of a templating language..) */
   ip_printf(ip, "static int %sappend_match_buffer(struct %sstack *stack, const char *s, size_t len) {\n", cc_prefix(cc), cc_prefix(cc));
@@ -1317,11 +1317,18 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "  size_t input_size = stack->input_size_;\n"
                  "  int is_final_input = !!stack->is_final_input_;\n"
                  "  size_t scan_state = stack->scan_state_;\n");
+#if 0
   ip_printf(ip,  "  const size_t *transition_table = %sscan_table;\n", cc_prefix(cc));
   ip_printf(ip,  "  const size_t *actions = %sscan_actions;\n", cc_prefix(cc));
-  ip_printf(ip,  "  const size_t default_action = %zu;\n", scantable->default_action);
-  ip_printf(ip,  "  const size_t start_state = %zu;\n", scantable->start_state);
-  ip_printf(ip,  "  const size_t start_action = %sscan_actions[start_state];\n", cc_prefix(cc));
+  ip_printf(ip,  "  const size_t row_size = 256;\n");
+#else
+  ip_printf(ip,  "  const size_t *transition_table = %sscan_table_rex;\n", cc_prefix(cc));
+  ip_printf(ip,  "  const size_t *actions = %sscan_actions_rex;\n", cc_prefix(cc));
+  ip_printf(ip,  "  const size_t row_size = 260;\n");
+#endif
+  ip_printf(ip,  "  const size_t default_action = %zu;\n", 0);
+  ip_printf(ip,  "  const size_t start_state = %zu;\n", 1);
+  ip_printf(ip,  "  const size_t start_action = 0;\n", cc_prefix(cc));
   ip_printf(ip,  "\n"
                  "  size_t match_index = stack->match_index_;\n"
                  "\n"
@@ -1359,6 +1366,28 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "  int at_match_index_line = stack->match_line_;\n"
                  "  int at_match_index_col = stack->match_col_;\n"
                  "  while (match_index < stack->match_buffer_size_) {\n"
+                 "    c = (unsigned char)stack->match_buffer_[match_index];\n"
+                 "    for (;;) {\n"
+                 "      /* Check for start of input */\n"
+                 /* 256 + REX_ANCHOR_START_OF_INPUT */
+                 "      if ((transition_table[row_size * scan_state + 256] != scan_state) && (!at_match_index_offset)) {\n"
+                 "        scan_state = transition_table[row_size * scan_state + 256];\n"
+                 "      }\n"
+                 "      /* Check for start of line */\n"
+                 /* 256 + REX_ANCHOR_START_OF_LINE */
+                 "      else if ((transition_table[row_size * scan_state + 257] != scan_state) && (at_match_index_col == 1)) {\n"
+                 "        scan_state = transition_table[row_size * scan_state + 257];\n"
+                 "      }\n"
+                 "      /* Check for end of line */\n"
+                 /* 256 + REX_ANCHOR_END_OF_LINE */
+                 "      else if ((transition_table[row_size * scan_state + 258] != scan_state) && ('\\n' == c)) {\n"
+                 "        scan_state = transition_table[row_size * scan_state + 258];\n"
+                 "      }\n"
+                 "      /* (No need to check for end of input; we have at least 1 character ahead) */\n"
+                 "      else {\n"
+                 "        break;\n"
+                 "      }\n"
+                 "    }\n"
                  "    size_t state_action = actions[scan_state];\n"
                  "    if (state_action != default_action) /* replace with actual */ {\n"
                  "      best_match_action = state_action;\n"
@@ -1367,8 +1396,7 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "      best_match_line = at_match_index_line;\n"
                  "      best_match_col = at_match_index_col;\n"
                  "    }\n"
-                 "    c = (unsigned char)stack->match_buffer_[match_index];\n"
-                 "    scan_state = transition_table[256 * scan_state + c];\n"
+                 "    scan_state = transition_table[row_size * scan_state + c];\n"
                  "    if (scan_state) {\n"
                  "      at_match_index_offset++;\n"
                  "      if (c != '\\n') {\n"
@@ -1407,15 +1435,37 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "  }\n"
                  "\n"
                  "  while (input_index < input_size) {\n"
+                 "    c = (unsigned char)input[input_index];\n"
+                 "    for (;;) {\n"
+                 "      /* Check for start of input */\n"
+                 /* 256 + REX_ANCHOR_START_OF_INPUT */
+                 "      if ((transition_table[row_size * scan_state + 256] != scan_state) && (!input_offset)) {\n"
+                 "        scan_state = transition_table[row_size * scan_state + 256];\n"
+                 "      }\n"
+                 "      /* Check for start of line */\n"
+                 /* 256 + REX_ANCHOR_START_OF_LINE */
+                 "      else if ((transition_table[row_size * scan_state + 257] != scan_state) && (input_col == 1)) {\n"
+                 "        scan_state = transition_table[row_size * scan_state + 257];\n"
+                 "      }\n"
+                 "      /* Check for end of line */\n"
+                 /* 256 + REX_ANCHOR_END_OF_LINE */
+                 "      else if ((transition_table[row_size * scan_state + 258] != scan_state) && ('\\n' == c)) {\n"
+                 "        scan_state = transition_table[row_size * scan_state + 258];\n"
+                 "      }\n"
+                 "      /* (No need to check for end of input; we have at least 1 character ahead) */\n"
+                 "      else {\n"
+                 "        break;\n"
+                 "      }\n"
+                 "    }\n"
                  "    size_t state_action = actions[scan_state];\n"
                  "    if (state_action != default_action) /* replace with actual */ {\n"
                  "      best_match_action = state_action;\n"
                  "      best_match_size = stack->match_buffer_size_ + input_index - stack->input_index_;\n"
+                 "      best_match_offset = input_offset;\n"
                  "      best_match_col = input_col;\n"
                  "      best_match_line = input_line;\n"
                  "    }\n"
-                 "    c = (unsigned char)input[input_index];\n"
-                 "    scan_state = transition_table[256 * scan_state + c];\n"
+                 "    scan_state = transition_table[row_size * scan_state + c];\n"
                  "    if (scan_state) {\n"
                  "      input_offset++;\n"
                  "      if (c != '\\n') {\n"
@@ -1477,10 +1527,37 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "\n");
   ip_printf(ip,  "    return _%sFEED_ME;\n", cc_PREFIX(cc));
   ip_printf(ip,  "  }\n"
+                 "  for (;;) {\n"
+                 "    /* Check for start of input */\n"
+                 /* 256 + REX_ANCHOR_START_OF_INPUT */
+                 "    if ((transition_table[row_size * scan_state + 256] != scan_state) && (!input_offset)) {\n"
+                 "      scan_state = transition_table[row_size * scan_state + 256];\n"
+                 "    }\n"
+                 "    /* Check for start of line */\n"
+                 /* 256 + REX_ANCHOR_START_OF_LINE */
+                 "    else if ((transition_table[row_size * scan_state + 257] != scan_state) && (input_col == 1)) {\n"
+                 "      scan_state = transition_table[row_size * scan_state + 257];\n"
+                 "    }\n"
+                 "    /* Check for end of line (always true at end of input) */\n"
+                 /* 256 + REX_ANCHOR_END_OF_LINE */
+                 "    else if (transition_table[row_size * scan_state + 258] != scan_state) {\n"
+                 "      scan_state = transition_table[row_size * scan_state + 258];\n"
+                 "    }\n"
+                 "    /* Check for end of input (always true) */\n"
+                 /* 256 + REX_ANCHOR_END_OF_INPUT */
+                 "    else if (transition_table[row_size * scan_state + 259] != scan_state) {\n"
+                 "      scan_state = transition_table[row_size * scan_state + 259];\n"
+                 "    }\n"
+                 "    /* (No need to check for end of input; we have at least 1 character ahead) */\n"
+                 "    else {\n"
+                 "      break;\n"
+                 "    }\n"
+                 "  }\n"
                  "  size_t state_action = actions[scan_state];\n"
                  "  if (state_action != default_action) /* replace with actual */ {\n"
                  "    best_match_action = state_action;\n"
                  "    best_match_size = stack->match_buffer_size_;\n"
+                 "    best_match_offset = input_offset;\n"
                  "    best_match_col = input_col;\n"
                  "    best_match_line = input_line;\n"
                  "  }\n"
@@ -1569,6 +1646,7 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
 }
 
 void emit_syntax_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "stack->continue_at_ = 0;\n");
   if (cc->on_syntax_error_snippet_.num_tokens_) {
     size_t token_idx;
     ip_printf(ip, "{\n");
@@ -1585,6 +1663,7 @@ void emit_syntax_error(struct indented_printer *ip, struct carburetta_context *c
 }
 
 void emit_lexical_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "stack->continue_at_ = 0;\n");
   if (cc->on_lexical_error_snippet_.num_tokens_) {
     size_t token_idx;
     ip_printf(ip, "{\n");
@@ -1601,6 +1680,7 @@ void emit_lexical_error(struct indented_printer *ip, struct carburetta_context *
 }
 
 void emit_overflow_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "stack->continue_at_ = 0;\n");
   if (cc->on_internal_error_snippet_.num_tokens_) {
     size_t token_idx;
     ip_printf(ip, "{\n");
@@ -1616,6 +1696,7 @@ void emit_overflow_error(struct indented_printer *ip, struct carburetta_context 
 }
 
 void emit_alloc_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "stack->continue_at_ = 0;\n");
   if (cc->on_alloc_error_snippet_.num_tokens_) {
     size_t token_idx;
     ip_printf(ip, "{\n");
@@ -1631,6 +1712,7 @@ void emit_alloc_error(struct indented_printer *ip, struct carburetta_context *cc
 }
 
 void emit_internal_error(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "stack->continue_at_ = 0;\n");
   if (cc->on_internal_error_snippet_.num_tokens_) {
     size_t token_idx;
     ip_printf(ip, "{\n");
@@ -1647,6 +1729,7 @@ void emit_internal_error(struct indented_printer *ip, struct carburetta_context 
 }
 
 void emit_on_next(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "stack->continue_at_ = 0;\n");
   if (cc->on_next_token_snippet_.num_tokens_) {
     ip_printf(ip, "{\n");
     ip_force_indent_print(ip);
@@ -1663,6 +1746,7 @@ void emit_on_next(struct indented_printer *ip, struct carburetta_context *cc) {
 }
 
 void emit_feed_me(struct indented_printer *ip, struct carburetta_context *cc) {
+  ip_printf(ip, "stack->continue_at_ = 0;\n");
   if (cc->on_feed_me_snippet_.num_tokens_) {
     ip_printf(ip, "{\n");
     ip_force_indent_print(ip);
@@ -2810,7 +2894,7 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
   return 0;
 }
 
-void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable, struct rex_scanner *rex, struct lr_generator *lalr) {
+void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct rex_scanner *rex, struct lr_generator *lalr) {
   int *state_syms;
   state_syms = NULL;
 
@@ -2835,60 +2919,9 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   emit_sym_data_struct(ip, cc);
 
   if (prdg->num_patterns_) {
-    ip_printf(ip, "static const size_t %sscan_table[] = {\n", cc_prefix(cc));
-    size_t row, col;
-    char column_widths[256] = {0};
-
-    for (col = 0; col < 256; ++col) {
-      column_widths[col] = 1;
-      for (row = 0; row < scantable->num_states; ++row) {
-        size_t v = scantable->transition_table[row * 256 + col];
-
-        int width_needed = 1;
-        if (v < 100) {
-          width_needed = 2;
-        }
-        else if (v < 1000) {
-          width_needed = 3;
-        }
-        else if (v < 10000) {
-          width_needed = 4;
-        }
-        else {
-          width_needed = 5;
-        }
-        if (width_needed > column_widths[col]) {
-          column_widths[col] = width_needed;
-        }
-      }
-    }
-
-    for (row = 0; row < scantable->num_states; ++row) {
-      for (col = 0; col < 256; ++col) {
-        if (!col) {
-          ip_force_indent_print(ip);
-        }
-        ip_printf(ip, "%s%*zu", col ? "," : "", column_widths[col], scantable->transition_table[256 * row + col]);
-      }
-      if (row != (scantable->num_states - 1)) {
-        ip_printf(ip, ",\n");
-      }
-      else {
-        ip_printf(ip, "\n");
-      }
-    }
-    ip_printf(ip, "};\n");
-    ip_printf(ip, "static const size_t %sscan_actions[] = { ", cc_prefix(cc));
-    for (col = 0; col < scantable->num_states; ++col) {
-      ip_printf(ip, "%s%zu", col ? ", " : "", (size_t)scantable->actions[col].action);
-    }
-    ip_printf(ip, " };\n");
-  }
-
-  if (prdg->num_patterns_) {
     ip_printf(ip, "static const size_t %sscan_table_rex[] = {\n", cc_prefix(cc));
     size_t col;
-    char column_widths[256] = {0};
+    char column_widths[256 + 4] = {0};
     struct rex_dfa_node *dn = rex->dfa_.nodes_;
     if (dn) {
       do {
@@ -2910,21 +2943,22 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 col++;
               }
               uint32_t input_sym;
+              int dst_ordinal = dt->to_->ordinal_;
+              int width_needed = 1;
+              if (dst_ordinal < 100) {
+                width_needed = 2;
+              }
+              else if (dst_ordinal < 1000) {
+                width_needed = 3;
+              }
+              else if (dst_ordinal < 10000) {
+                width_needed = 4;
+              }
+              else {
+                width_needed = 5;
+              }
               for (input_sym = dt->symbol_start_; input_sym < dt->symbol_end_; ++input_sym) {
                 assert(col == input_sym);
-                int width_needed = 1;
-                if (input_sym < 100) {
-                  width_needed = 2;
-                }
-                else if (input_sym < 1000) {
-                  width_needed = 3;
-                }
-                else if (input_sym < 10000) {
-                  width_needed = 4;
-                }
-                else {
-                  width_needed = 5;
-                }
                 if (width_needed > column_widths[col]) {
                   column_widths[col] = width_needed;
                 }
@@ -2943,12 +2977,84 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
           col++;
         }
 
+        dt = dn->outbound_;
+        if (dt) {
+          do {
+            dt = dt->from_peer_;
+
+            if (dt->is_anchor_) {
+              while (col < (dt->symbol_start_ + 256)) {
+                /* No transition encodes same state, width depends on max state ordinal. */
+                int width_needed = 1;
+                if (rex->dfa_.next_dfa_node_ordinal_ < 100) {
+                  width_needed = 2;
+                }
+                else if (rex->dfa_.next_dfa_node_ordinal_ < 1000) {
+                  width_needed = 3;
+                }
+                else if (rex->dfa_.next_dfa_node_ordinal_ < 10000) {
+                  width_needed = 4;
+                }
+                else {
+                  width_needed = 5;
+                }
+                if (width_needed > column_widths[col]) {
+                  column_widths[col] = width_needed;
+                }
+                col++;
+              }
+
+              int width_needed = 1;
+              int dst_ordinal = dt->to_->ordinal_;
+              if (dst_ordinal < 100) {
+                width_needed = 2;
+              }
+              else if (dst_ordinal < 1000) {
+                width_needed = 3;
+              }
+              else if (dst_ordinal < 10000) {
+                width_needed = 4;
+              }
+              else {
+                width_needed = 5;
+              }
+              if (width_needed > column_widths[col]) {
+                column_widths[col] = width_needed;
+              }
+              col++;
+            }
+
+          } while (dt != dn->outbound_);
+        }
+
+        while (col < (256 + 4)) {
+          /* No transition encodes 0 action, width 2 */
+          /* No transition encodes same state, width depends on max state ordinal. */
+          int width_needed = 1;
+          if (rex->dfa_.next_dfa_node_ordinal_ < 100) {
+            width_needed = 2;
+          }
+          else if (rex->dfa_.next_dfa_node_ordinal_ < 1000) {
+            width_needed = 3;
+          }
+          else if (rex->dfa_.next_dfa_node_ordinal_ < 10000) {
+            width_needed = 4;
+          }
+          else {
+            width_needed = 5;
+          }
+          if (width_needed > column_widths[col]) {
+            column_widths[col] = width_needed;
+          }
+          col++;
+        }
+
       } while (dn != rex->dfa_.nodes_);
     }
 
     /* Emit dummy "State 0" row */
     ip_force_indent_print(ip);
-    for (col = 0; col < 256; ++col) {
+    for (col = 0; col < 256 + 4; ++col) {
       ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], 0);
     }
     if (dn) {
@@ -2985,10 +3091,31 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
               }
             }
           } while (dt != dn->outbound_);
+
+          while (col < 256) {
+            ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], 0);
+            col++;
+          }
+
+          do {
+            dt = dt->from_peer_;
+
+            if (dt->is_anchor_) {
+              while (col < (256 + dt->symbol_start_)) {
+                /* Aim towards own state, not an invalid transition, just one that has no effect */
+                ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], dn->ordinal_);
+                col++;
+              }
+
+              /* (Anchor transitions, unlike symbols, are never ranges..) */
+              ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], dt->to_->ordinal_);
+              col++;
+            }
+          } while (dt != dn->outbound_);
         }
 
-        while (col < 256) {
-          ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], 0);
+        while (col < (256 + 4)) {
+          ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], dn->ordinal_);
           col++;
         }
 
@@ -3198,7 +3325,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "  stack->current_production_nonterminal_ = 0;\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  stack->slot_0_has_current_sym_data_ = stack->slot_0_has_common_data_ = 0;\n");
-    ip_printf(ip, "  stack->scan_state_ = %zu;\n", scantable->start_state);
+    ip_printf(ip, "  stack->scan_state_ = %zu;\n", 1);
     ip_printf(ip, "  stack->input_index_ = 0;\n"
                   "  stack->input_offset_ = 0;\n"
                   "  stack->input_line_ = 1;\n"
@@ -3212,7 +3339,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                   "  stack->match_offset_ = 0;\n"
                   "  stack->match_line_ = 1;\n"
                   "  stack->match_col_ = 1;\n");
-    ip_printf(ip, "  stack->best_match_action_ = %zu;\n", (size_t)scantable->actions[scantable->start_state].action);
+    ip_printf(ip, "  stack->best_match_action_ = %zu;\n", 0);
     ip_printf(ip, "  stack->best_match_size_ = 0;\n"
                   "  stack->best_match_offset_ = 0;\n"
                   "  stack->best_match_line_ = 1;\n"
@@ -3612,7 +3739,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "  }\n");
 
   if (prdg->num_patterns_) {
-    ip_printf(ip, "  stack->scan_state_ = %zu;\n", scantable->start_state);
+    ip_printf(ip, "  stack->scan_state_ = %zu;\n", 1);
     ip_printf(ip, "  stack->input_offset_ = 0;\n"
                   "  stack->input_line_ = 1;\n"
                   "  stack->input_col_ = 1;\n"
@@ -3623,7 +3750,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                   "  stack->match_offset_ = 0;\n"
                   "  stack->match_line_ = 1;\n"
                   "  stack->match_col_ = 1;\n");
-    ip_printf(ip, "  stack->best_match_action_ = %zu;\n", (size_t)scantable->actions[scantable->start_state].action);
+    ip_printf(ip, "  stack->best_match_action_ = %zu;\n", 0);
     ip_printf(ip, "  stack->best_match_size_ = 0;\n"
                   "  stack->best_match_offset_ = 0;\n"
                   "  stack->best_match_line_ = 1;\n"
@@ -3647,7 +3774,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   cc->continuation_enabled_ = 1;
 
   if (prdg->num_patterns_) {
-    emit_lex_function(ip, cc, prdg, scantable);
+    emit_lex_function(ip, cc, prdg);
     ip_printf(ip, "\n");
     emit_scan_function(ip, cc, prdg, lalr, state_syms);
     ip_printf(ip, "\n");

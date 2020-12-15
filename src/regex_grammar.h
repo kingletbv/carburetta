@@ -7,6 +7,7 @@
 extern "C" {
   #endif
   
+  #define _RXG_FINISH 0
   #define _RXG_MATCH 1
   #define _RXG_OVERFLOW 2
   #define _RXG_NO_MEMORY 3
@@ -39,14 +40,45 @@ extern "C" {
   #define RXG_ERROR 23
   #define RXG_INPUT_END 24
   
+  #define RXG_EXP 25
+  #define RXG_TERM 26
+  #define RXG_ELM 27
+  #define RXG_SYM 28
+  #define RXG_RANGE 29
+  #define RXG_RANGE_ELM 30
+  #define RXG_GRAMMAR 31
+  #define RXG_PATTERN 32
+  #define RXG_ACTION_SEQUENCE 33
+  #define RXG_STMT_ACTION 34
+  #define RXG_START_REGEX 35
+  #define RXG_END_REGEX 36
+  #define RXG_START_C_TOKENIZER 37
+  #define RXG_END_C_TOKENIZER 38
+  #define RXG_ACCEPT_WHITESPACE 39
+  
   struct rxg_stack {
     int error_recovery_:1;
     int pending_reset_:1;
+    int discard_remaining_actions_:1;
+    int slot_1_has_sym_data_:1;
+    int slot_1_has_common_data_:1;
+    int top_of_stack_has_sym_data_:1;
+    int top_of_stack_has_common_data_:1;
     int need_sym_:1;
+    int is_final_input_:1;
+    int slot_0_has_current_sym_data_:1;
+    int slot_0_has_common_data_:1;
     int current_sym_;
+    size_t input_size_;
+    const char *input_;
+    int slot_1_sym_;
+    int continue_at_;
     int mute_error_turns_;
     size_t pos_, num_stack_allocated_;
     struct rxg_sym_data *stack_;
+    struct rxg_sym_data *sym_data_;
+    size_t current_production_length_;
+    int current_production_nonterminal_;
     size_t scan_state_;
     size_t match_index_;
     size_t best_match_action_;
@@ -74,6 +106,20 @@ extern "C" {
   void rxg_stack_init(struct rxg_stack *stack);
   void rxg_stack_cleanup(struct rxg_stack *stack);
   int rxg_stack_reset(struct rxg_stack *stack);
+  int rxg_stack_can_recover(struct rxg_stack *stack);
+  int rxg_stack_accepts(struct rxg_stack *stack, int sym);
+  void rxg_set_input(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input);
+  int rxg_scan(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value);
+  void rxg_set_location(struct rxg_stack *stack, int line, int col, size_t offset);
+  const char *rxg_text(struct rxg_stack *stack);
+  size_t rxg_len(struct rxg_stack *stack);
+  int rxg_line(struct rxg_stack *stack);
+  int rxg_column(struct rxg_stack *stack);
+  size_t rxg_offset(struct rxg_stack *stack);
+  int rxg_endline(struct rxg_stack *stack);
+  int rxg_endcolumn(struct rxg_stack *stack);
+  size_t rxg_endoffset(struct rxg_stack *stack);
+  int rxg_lex(struct rxg_stack *stack);
   int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value);
   
   #ifdef __cplusplus

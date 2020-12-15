@@ -98,7 +98,7 @@
 %destructor snippet_cleanup(&$);
 %token_action snippet_append_tkr(&$, tkr);
 
-%on_success        return PRD_SUCCESS;
+%on_finish         return PRD_SUCCESS;
 %on_syntax_error   re_error_tkr(tkr, "Syntax error"); return PRD_SYNTAX_ERROR;
 %on_alloc_error    re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
 %on_internal_error re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;

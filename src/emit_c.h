@@ -59,7 +59,7 @@ const char *cc_prefix(struct carburetta_context *cc);
 const char *cc_PREFIX(struct carburetta_context *cc);
 static const char *cc_TOKEN_PREFIX(struct carburetta_context *cc);
 
-void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct sc_scanner *scantable, struct rex_scanner *rex, struct lr_generator *lalr);
+void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct rex_scanner *rex, struct lr_generator *lalr);
 void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg);
 
 #ifdef __cplusplus
