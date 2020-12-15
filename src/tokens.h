@@ -126,7 +126,9 @@ xz(TOK_ESC_HEX2) \
 xz(TOK_ESC_OCT1) \
 xz(TOK_ESC_OCT2) \
 xz(TOK_ESC_OCT3) \
-xz(TOK_ESC_INVALID_ESCAPE)
+xz(TOK_ESC_INVALID_ESCAPE) \
+xz(TOK_ESC_START_OF_INPUT_ESC) \
+xz(TOK_ESC_END_OF_INPUT_ESC)
 
 
 #define ENUM_SCANNER_PRODUCTION_DEFS \
@@ -235,6 +237,8 @@ xy("\\\\x[0-9a-fA-F][0-9a-fA-F]", TOK_ESC_HEX2, TOK_CHAR) \
 xy("\\\\[0-7]", TOK_ESC_OCT1, TOK_CHAR) \
 xy("\\\\[0-7][0-7]", TOK_ESC_OCT2, TOK_CHAR) \
 xy("\\\\[0-7][0-7][0-7]", TOK_ESC_OCT3, TOK_CHAR) \
+xx("\\\\A", TOK_ESC_START_OF_INPUT_ESC) \
+xx("\\\\Z", TOK_ESC_END_OF_INPUT_ESC) \
 xy("\\\\.", TOK_ESC_INVALID_ESCAPE, TOK_CHAR) \
 xy("[ \\x9\\xb\\xc\\xd\\r\\n]+", TOK_WHITESPACE_CHAR, TOK_WHITESPACE) \
 xx("[\\x20-\\x7e]", TOK_CHAR)

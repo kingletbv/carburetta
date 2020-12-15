@@ -89,6 +89,7 @@
         struct prd_pattern *pat;
 
 %token CHAR IDENT PAR_OPEN PAR_CLOSE CUR_OPEN CUR_CLOSE COLON SEMICOLON SQ_OPEN SQ_CLOSE DOT DOLLAR CARET DASH BAR ASTERISK PLUS QUESTION_MARK TOKEN WHITESPACE
+%token START_OF_INPUT_ESC END_OF_INPUT_ESC
 %nt exp term elm sym range range-elm
 
 %nt grammar pattern action-sequence stmt-action start-regex end-regex start-c-tokenizer end-c-tokenizer accept-whitespace
@@ -267,6 +268,8 @@ sym: CHAR;
 sym: DOT;
 sym: CARET;
 sym: DOLLAR;
+sym: START_OF_INPUT_ESC;
+sym: END_OF_INPUT_ESC;
 sym: PAR_OPEN exp PAR_CLOSE;
 sym: SQ_OPEN range SQ_CLOSE;
 sym: SQ_OPEN CARET range SQ_CLOSE;
@@ -427,6 +430,8 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
         sym = RXG_TOKEN;
       }
       break;
+    case TOK_ESC_START_OF_INPUT_ESC: sym = RXG_START_OF_INPUT_ESC; break;
+    case TOK_ESC_END_OF_INPUT_ESC: sym = RXG_END_OF_INPUT_ESC; break;
     default: {
       sym = RXG_TOKEN;
     }

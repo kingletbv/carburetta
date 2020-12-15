@@ -34,7 +34,7 @@
 #endif
 
 /* Uncommenting this will dynamically generate the scan tables and write these into files (see tok_init()). */
-/* #define GENERATE_AND_DUMP_SCANNER_TABLES  */
+/* #define GENERATE_AND_DUMP_SCANNER_TABLES */
 
 #ifdef GENERATE_AND_DUMP_SCANNER_TABLES 
 static const struct sc_scan_rule g_scanner_rules_[] = {
