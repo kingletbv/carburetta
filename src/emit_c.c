@@ -3091,12 +3091,14 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
               }
             }
           } while (dt != dn->outbound_);
+        }
+        
+        while (col < 256) {
+          ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], 0);
+          col++;
+        }
 
-          while (col < 256) {
-            ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], 0);
-            col++;
-          }
-
+        if (dt) {
           do {
             dt = dt->from_peer_;
 
