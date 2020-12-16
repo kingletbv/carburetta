@@ -162,3 +162,19 @@ struct mode *mode_find_or_add(struct mode_table *mt, struct xlts *id, int *is_ne
   return m;
 }
 
+struct mode *mode_find(struct mode_table *mt, const char *id) {
+  int idx = mode_hash(id);
+  struct mode *m, *last;
+  m = last = mt->mode_table_[idx];
+  if (m) {
+    do {
+      m = m->hash_chain_;
+
+      if (!mode_cmp(m->def_.translated_, id)) {
+        return m;
+      }
+    } while (m != last);
+  }
+
+  return NULL; /* not found */
+}

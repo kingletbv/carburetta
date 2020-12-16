@@ -133,7 +133,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_ERROR_TOKEN,
     PCD_PREFER,
     PCD_OVER,
-    PCD_MODES
+    PCD_MODE
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
@@ -291,8 +291,8 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               r = TKR_INTERNAL_ERROR;
               goto cleanup_exit;
             }
-            else if (!strcmp("modes", tkr_str(tkr_tokens))) {
-              directive = PCD_MODES;
+            else if (!strcmp("mode", tkr_str(tkr_tokens))) {
+              directive = PCD_MODE;
             }
             else {
               re_error_tkr(tkr_tokens, "Syntax error invalid directive \"%%%s\"", tkr_str(tkr_tokens));
@@ -349,7 +349,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               goto cleanup_exit;
             }
           }
-          else if (directive == PCD_MODES) {
+          else if (directive == PCD_MODE) {
             if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
               int is_new = -1;
               struct mode *md = mode_find_or_add(&cc->modetab_, &tkr_tokens->xmatch_, &is_new);

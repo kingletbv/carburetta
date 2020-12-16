@@ -99,6 +99,14 @@ struct prd_pattern {
 
   /* Action sequence that executes when the pattern matches */
   struct snippet action_sequence_;
+
+  /* Pattern as processed by regular expression system.
+   * (Not owned by prd_pattern.) */
+  struct rex_pattern *pat_;
+
+  /* If non-zero, the prd_pattern was touched by a mode or mode-group,
+   * and should not be implicitly included in the default mode. */
+  int touched_by_mode_:1;
 };
 
 struct prd_mode {

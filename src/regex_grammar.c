@@ -1649,6 +1649,7 @@ for (;;) {
       r = prd_mode_group_check_mode_reserve(mg, &m->name_);
       if (r) return r;
       struct prd_mode *mgm = mg->modes_ + mg->num_modes_++;
+      prd_mode_init(mgm);
       xlts_append(&mgm->id_, &m->name_);
     } while (m != (stack->sym_data_[0].v_.uv2_).modes_);
   }
@@ -1680,6 +1681,7 @@ for (;;) {
       r = prd_mode_group_check_mode_reserve(mg, &m->name_);
       if (r) return r;
       struct prd_mode *mgm = mg->modes_ + mg->num_modes_++;
+      prd_mode_init(mgm);
       xlts_append(&mgm->id_, &m->name_);
     } while (m != (stack->sym_data_[0].v_.uv2_).modes_);
   }
@@ -3503,6 +3505,7 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
       r = prd_mode_group_check_mode_reserve(mg, &m->name_);
       if (r) return r;
       struct prd_mode *mgm = mg->modes_ + mg->num_modes_++;
+      prd_mode_init(mgm);
       xlts_append(&mgm->id_, &m->name_);
     } while (m != (stack->sym_data_[0].v_.uv2_).modes_);
   }
@@ -3534,6 +3537,7 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
       r = prd_mode_group_check_mode_reserve(mg, &m->name_);
       if (r) return r;
       struct prd_mode *mgm = mg->modes_ + mg->num_modes_++;
+      prd_mode_init(mgm);
       xlts_append(&mgm->id_, &m->name_);
     } while (m != (stack->sym_data_[0].v_.uv2_).modes_);
   }

@@ -227,6 +227,7 @@ mode-group: mode CUR_OPEN              CUR_CLOSE /* mode with no patterns, curio
       r = prd_mode_group_check_mode_reserve(mg, &m->name_);
       if (r) return r;
       struct prd_mode *mgm = mg->modes_ + mg->num_modes_++;
+      prd_mode_init(mgm);
       xlts_append(&mgm->id_, &m->name_);
     } while (m != $0.modes_);
   }
@@ -244,6 +245,7 @@ mode-group: mode CUR_OPEN pattern-list CUR_CLOSE {
       r = prd_mode_group_check_mode_reserve(mg, &m->name_);
       if (r) return r;
       struct prd_mode *mgm = mg->modes_ + mg->num_modes_++;
+      prd_mode_init(mgm);
       xlts_append(&mgm->id_, &m->name_);
     } while (m != $0.modes_);
   }

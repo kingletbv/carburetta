@@ -1357,7 +1357,7 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "    stack->match_index_ = 0;\n"
                  "    stack->best_match_action_ = best_match_action = start_action;\n"
                  "    stack->best_match_size_ = best_match_size = 0;\n"
-                 "    stack->scan_state_ = scan_state = start_state;\n"
+                 "    stack->scan_state_ = scan_state = stack->current_mode_start_state_;\n"
                  "    stack->token_size_ = 0;\n"
                  "    \n"
                  "  }\n"
@@ -1571,7 +1571,7 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "    stack->best_match_offset_ = best_match_offset;\n"
                  "    stack->best_match_line_ = best_match_line;\n"
                  "    stack->best_match_col_ = best_match_col;\n"
-                 "    stack->scan_state_ = scan_state = start_state;\n"
+                 "    stack->scan_state_ = scan_state = stack->current_mode_start_state_;\n"
                  "\n"
                  "    stack->token_size_ = 0;\n"
                  "    stack->input_index_ = 0;\n"
@@ -2868,6 +2868,7 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
   ip_printf(ip, "  int current_production_nonterminal_;\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  size_t scan_state_;\n"
+                  "  size_t current_mode_start_state_;\n"
                   "  size_t match_index_;\n"
                   "  size_t best_match_action_;\n"
                   "  size_t best_match_size_;\n"
@@ -3296,7 +3297,34 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
       free(ident);
     } while (sym != cc->symtab_.non_terminals_);
   }
+  ip_printf(ip, "\n");
+  struct mode *m;
+  m = cc->modetab_.modes_;
+  if (m) {
+    do {
+      m = m->next_;
 
+      char *ident = (char *)malloc(1 + m->def_.num_translated_);
+      char *s = ident;
+      const char *p;
+      if (!ident) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+      /* Transform into C identifier */
+      for (p = m->def_.translated_; p < (m->def_.translated_ + m->def_.num_translated_); ++p) {
+        int c = *p;
+        if ((c >= 'a') && (c <= 'z')) c = c - 'a' + 'A';
+        if (c == '-') c = '_';
+        *s++ = c;
+      }
+      *s++ = '\0';
+
+      ip_printf(ip, "#define M_%s%s %d\n", cc_PREFIX(cc), ident, m->rex_mode_->dfa_node_->ordinal_);
+      free(ident);
+    } while (m != cc->modetab_.modes_);
+  }
+  ip_printf(ip, "\n");
   if (cc->include_guard_) {
     ip_printf(ip, "#endif /* %s */\n\n", cc->include_guard_);
   }
@@ -3327,7 +3355,8 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "  stack->current_production_nonterminal_ = 0;\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  stack->slot_0_has_current_sym_data_ = stack->slot_0_has_common_data_ = 0;\n");
-    ip_printf(ip, "  stack->scan_state_ = %zu;\n", 1);
+    ip_printf(ip, "  stack->current_mode_start_state_ = M_%sDEFAULT;\n", cc_PREFIX(cc));
+    ip_printf(ip, "  stack->scan_state_ = stack->current_mode_start_state_;\n");
     ip_printf(ip, "  stack->input_index_ = 0;\n"
                   "  stack->input_offset_ = 0;\n"
                   "  stack->input_line_ = 1;\n"
@@ -3741,7 +3770,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "  }\n");
 
   if (prdg->num_patterns_) {
-    ip_printf(ip, "  stack->scan_state_ = %zu;\n", 1);
+    ip_printf(ip, "  stack->scan_state_ = stack->current_mode_start_state_;\n");
     ip_printf(ip, "  stack->input_offset_ = 0;\n"
                   "  stack->input_line_ = 1;\n"
                   "  stack->input_col_ = 1;\n"
@@ -3776,6 +3805,12 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   cc->continuation_enabled_ = 1;
 
   if (prdg->num_patterns_) {
+    ip_printf(ip, "void %sset_mode(struct %sstack *stack, int mode) {\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "  if (stack->current_mode_start_state_ == stack->scan_state_) {\n");
+    ip_printf(ip, "    stack->scan_state_ = mode;\n");
+    ip_printf(ip, "  }\n");
+    ip_printf(ip, "  stack->current_mode_start_state_ = mode;\n");
+    ip_printf(ip, "}\n");
     emit_lex_function(ip, cc, prdg);
     ip_printf(ip, "\n");
     emit_scan_function(ip, cc, prdg, lalr, state_syms);
@@ -3860,7 +3895,34 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
     } while (sym != cc->symtab_.non_terminals_);
   }
 
+  ip_printf(ip, "\n");
 
+  struct mode *m;
+  m = cc->modetab_.modes_;
+  if (m) {
+    do {
+      m = m->next_;
+
+      char *ident = (char *)malloc(1 + m->def_.num_translated_);
+      char *s = ident;
+      const char *p;
+      if (!ident) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+      /* Transform into C identifier */
+      for (p = m->def_.translated_; p < (m->def_.translated_ + m->def_.num_translated_); ++p) {
+        int c = *p;
+        if ((c >= 'a') && (c <= 'z')) c = c - 'a' + 'A';
+        if (c == '-') c = '_';
+        *s++ = c;
+      }
+      *s++ = '\0';
+
+      ip_printf(ip, "#define M_%s%s %d\n", cc_PREFIX(cc), ident, m->rex_mode_->dfa_node_->ordinal_);
+      free(ident);
+    } while (m != cc->modetab_.modes_);
+  }
 
   ip_printf(ip, "\n");
 
@@ -3873,6 +3935,7 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "int %sstack_can_recover(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "int %sstack_accepts(struct %sstack *stack, int sym);\n", cc_prefix(cc), cc_prefix(cc));
   if (prdg->num_patterns_) {
+    ip_printf(ip, "void %sset_mode(struct %sstack *stack, int mode);", cc_prefix(cc), cc_prefix(cc));
     ip_printf(ip, "void %sset_input(struct %sstack *stack, const char *input, size_t input_size, int is_final_input);\n", cc_prefix(cc), cc_prefix(cc));
 
     if (cc->params_snippet_.num_tokens_) {

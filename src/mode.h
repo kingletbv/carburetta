@@ -55,6 +55,7 @@ void mode_init(struct mode *m);
 void mode_cleanup(struct mode *m);
 
 struct mode *mode_find_or_add(struct mode_table *mt, struct xlts *id, int *is_new);
+struct mode *mode_find(struct mode_table *mt, const char *id);
 
 #ifdef __cplusplus
 } /* extern "C" */

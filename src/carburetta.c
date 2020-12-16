@@ -689,29 +689,53 @@ int main(int argc, char **argv) {
     r = EXIT_FAILURE;
     goto cleanup_exit;
   }
+  /* Make sure that the "default" mode gets the first rex_mode allocation is
+   * this has consequences for the order of the states in the final table */
+  r = rex_add_mode(&rex, &default_mode->rex_mode_);
+  if (r) {
+    switch (r) {
+    case _REX_NO_MEMORY:
+      re_error_nowhere("Error, no memory");
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    default:
+      /* All errors here are internal */
+      re_error_nowhere("Internal error");
+      r = EXIT_FAILURE;
+      goto cleanup_exit;
+    }
+  }
+
+  struct mode *m;
+  m = cc.modetab_.modes_;
+  if (m) {
+    do {
+      m = m->next_;
+
+      if (!m->rex_mode_) {
+        r = rex_add_mode(&rex, &m->rex_mode_);
+        if (r) {
+          switch (r) {
+          case _REX_NO_MEMORY:
+            re_error_nowhere("Error, no memory");
+            r = EXIT_FAILURE;
+            goto cleanup_exit;
+          default:
+            /* All errors here are internal */
+            re_error_nowhere("Internal error");
+            r = EXIT_FAILURE;
+            goto cleanup_exit;
+          }
+        }
+      }
+    } while (m != cc.modetab_.modes_);
+  }
 
   if (prdg.num_patterns_) {
     size_t n;
-    struct rex_mode *mode;
-    r = rex_add_mode(&rex, &mode);
-    if (r) {
-      switch (r) {
-      case _REX_NO_MEMORY:
-        re_error_nowhere("Error, no memory");
-        r = EXIT_FAILURE;
-        goto cleanup_exit;
-      default:
-        /* All errors here are internal */
-        re_error_nowhere("Internal error");
-        r = EXIT_FAILURE;
-        goto cleanup_exit;
-      }
-    }
     for (n = 0; n < prdg.num_patterns_; ++n) {
       struct prd_pattern *prd_pat = prdg.patterns_ + n;
-      struct rex_pattern *pat;
-      r = rex_add_pattern(&rex, prd_pat->regex_, n + 1, &pat);
-      if (!r) r = rex_add_pattern_to_mode(mode, pat);
+      r = rex_add_pattern(&rex, prd_pat->regex_, n + 1, &prd_pat->pat_);
       if (r) {
         /* Failure occurred, report */
         switch (r) {
@@ -722,7 +746,7 @@ int main(int argc, char **argv) {
         case _REX_SYNTAX_ERROR:
         case _REX_LEXICAL_ERROR:
           /* The regex should already be validated to be
-           * a correct regular expression (otherwise */
+          * a correct regular expression (otherwise */
           re_error_nowhere("Internal error, inconsistent syntex");
           r = EXIT_FAILURE;
           goto cleanup_exit;
@@ -734,6 +758,70 @@ int main(int argc, char **argv) {
         }
       }
     }
+  }
+
+  size_t mode_group_idx;
+  int have_error = 0;
+  for (mode_group_idx = 0; mode_group_idx < prdg.num_mode_groups_; ++mode_group_idx) {
+    struct prd_mode_group *mg = prdg.mode_groups_ + mode_group_idx;
+    size_t mode_group_mode_idx;
+    for (mode_group_mode_idx = 0; mode_group_mode_idx < mg->num_modes_; ++mode_group_mode_idx) {
+      struct prd_mode *md = mg->modes_ + mode_group_mode_idx;
+      struct mode *m = mode_find(&cc.modetab_, md->id_.translated_);
+      if (!m) {
+        re_error(&md->id_, "Error, mode \"%s\" not declared using %%mode", md->id_.translated_);
+        have_error = 1;
+      }
+      else {
+        size_t n;
+        for (n = mg->pattern_start_index_; n < mg->pattern_end_index_; ++n) {
+          struct prd_pattern *prd_pat = prdg.patterns_ + n;
+          r = rex_add_pattern_to_mode(m->rex_mode_, prd_pat->pat_);
+          prd_pat->touched_by_mode_ = 1;
+          if (r) {
+            switch (r) {
+            case _REX_NO_MEMORY:
+              re_error_nowhere("Error, no memory");
+              r = EXIT_FAILURE;
+              goto cleanup_exit;
+            default:
+              /* All errors here are internal */
+              re_error_nowhere("Internal error");
+              r = EXIT_FAILURE;
+              goto cleanup_exit;
+            }
+          }
+        }
+      }
+    }
+  }
+  if (have_error) {
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+  /* Add any untouched patterns to the default mode */
+  size_t pattern_index;
+  for (pattern_index = 0; pattern_index < prdg.num_patterns_; ++pattern_index) {
+    struct prd_pattern *pat = prdg.patterns_ + pattern_index;
+    if (!pat->touched_by_mode_) {
+      r = rex_add_pattern_to_mode(default_mode->rex_mode_, pat->pat_);
+      if (r) {
+        switch (r) {
+        case _REX_NO_MEMORY:
+          re_error_nowhere("Error, no memory");
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        default:
+          /* All errors here are internal */
+          re_error_nowhere("Internal error");
+          r = EXIT_FAILURE;
+          goto cleanup_exit;
+        }
+      }
+    }
+  }
+
+  if (prdg.num_patterns_) {
     r = rex_realize_modes(&rex);
     if (r) {
       switch (r) {

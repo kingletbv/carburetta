@@ -81,6 +81,8 @@ void prd_pattern_init(struct prd_pattern *pat) {
   pat->regex_ = NULL;
   snippet_init(&pat->common_action_sequence_);
   snippet_init(&pat->action_sequence_);
+  pat->pat_ = NULL;
+  pat->touched_by_mode_ = 0;
 }
 
 void prd_pattern_cleanup(struct prd_pattern *pat) {
