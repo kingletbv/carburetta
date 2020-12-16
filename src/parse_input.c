@@ -132,7 +132,8 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_END_TOKEN,
     PCD_ERROR_TOKEN,
     PCD_PREFER,
-    PCD_OVER
+    PCD_OVER,
+    PCD_MODES
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
@@ -290,8 +291,11 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               r = TKR_INTERNAL_ERROR;
               goto cleanup_exit;
             }
+            else if (!strcmp("modes", tkr_str(tkr_tokens))) {
+              directive = PCD_MODES;
+            }
             else {
-              re_error_tkr(tkr_tokens, "Syntax error invalid directive");
+              re_error_tkr(tkr_tokens, "Syntax error invalid directive \"%%%s\"", tkr_str(tkr_tokens));
               r = TKR_SYNTAX_ERROR;
               goto cleanup_exit;
             }
@@ -337,6 +341,25 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               }
               if (!is_new) {
                 re_error_tkr(tkr_tokens, "Token \"%s\" already declared at line %d", tkr_str(tkr_tokens), xlts_line(&sym->def_));
+              }
+            }
+            else {
+              re_error_tkr(tkr_tokens, "Syntax error identifier expected");
+              r = TKR_SYNTAX_ERROR;
+              goto cleanup_exit;
+            }
+          }
+          else if (directive == PCD_MODES) {
+            if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
+              int is_new = -1;
+              struct mode *md = mode_find_or_add(&cc->modetab_, &tkr_tokens->xmatch_, &is_new);
+              if (!md) {
+                re_error_tkr(tkr_tokens, "Error, no memory");
+                r = TKR_INTERNAL_ERROR;
+                goto cleanup_exit;
+              }
+              if (!is_new) {
+                re_error_tkr(tkr_tokens, "Mode \"%s\" was already declared at line %d", tkr_str(tkr_tokens), xlts_line(&md->def_));
               }
             }
             else {
@@ -1342,7 +1365,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
   } while (num_bytes_read);
 
   /* Finished parsing */
-  if (prdg->have_errors_) {
+  if (prdg->have_errors_ || have_error) {
     r = 1;
     goto cleanup_exit;
   }

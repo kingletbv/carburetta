@@ -101,6 +101,22 @@ struct prd_pattern {
   struct snippet action_sequence_;
 };
 
+struct prd_mode {
+  /* Token of the (unresolved) identifier of the mode in the mode group */
+  struct xlts id_;
+};
+
+struct prd_mode_group {
+  /* The modes that apply to the group */
+  size_t num_modes_;
+  size_t num_modes_allocated_;
+  struct prd_mode *modes_;
+
+  /* The patterns this mode group includes */
+  size_t pattern_start_index_;
+  size_t pattern_end_index_;
+};
+
 struct prd_grammar {
   int have_errors_ : 1; /* if non-zero, errors were issued and compilation failed */
   int accept_whitespace_ : 1; /* if non-zero, whitespace is passed on to the grammar as PRD_TOKEN */
@@ -120,6 +136,11 @@ struct prd_grammar {
   size_t num_patterns_;
   size_t num_patterns_allocated_;
   struct prd_pattern *patterns_;
+
+  /* Mode groups which some of the patterns may be a part of */
+  size_t num_mode_groups_;
+  size_t num_mode_groups_allocated_;
+  struct prd_mode_group *mode_groups_;
 };
 
 struct prd_stack;
@@ -137,11 +158,16 @@ void prd_pattern_init(struct prd_pattern *pat);
 void prd_pattern_cleanup(struct prd_pattern *pat);
 void prd_grammar_init(struct prd_grammar *g);
 void prd_grammar_cleanup(struct prd_grammar *g);
+void prd_mode_group_init(struct prd_mode_group *mg);
+void prd_mode_group_cleanup(struct prd_mode_group *mg);
+void prd_mode_init(struct prd_mode *m);
+void prd_mode_cleanup(struct prd_mode *m);
 void prd_prod_swap(struct prd_production *a, struct prd_production *b);
 int prd_grammar_check_production_reserve(struct prd_grammar *g);
 int prd_grammar_check_pattern_reserve(struct prd_grammar *g);
+int prd_grammar_check_mode_group_reserve(struct prd_grammar *g);
 int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *loc);
-
+int prd_mode_group_check_mode_reserve(struct prd_mode_group *mg, struct xlts *loc);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -39,24 +39,31 @@ extern "C" {
   #define RXG_WHITESPACE 22
   #define RXG_START_OF_INPUT_ESC 23
   #define RXG_END_OF_INPUT_ESC 24
-  #define RXG_ERROR 25
-  #define RXG_INPUT_END 26
+  #define RXG_LESS_THAN 25
+  #define RXG_GREATER_THAN 26
+  #define RXG_COMMA 27
+  #define RXG_ERROR 28
+  #define RXG_INPUT_END 29
   
-  #define RXG_EXP 27
-  #define RXG_TERM 28
-  #define RXG_ELM 29
-  #define RXG_SYM 30
-  #define RXG_RANGE 31
-  #define RXG_RANGE_ELM 32
-  #define RXG_GRAMMAR 33
-  #define RXG_PATTERN 34
-  #define RXG_ACTION_SEQUENCE 35
-  #define RXG_STMT_ACTION 36
-  #define RXG_START_REGEX 37
-  #define RXG_END_REGEX 38
-  #define RXG_START_C_TOKENIZER 39
-  #define RXG_END_C_TOKENIZER 40
-  #define RXG_ACCEPT_WHITESPACE 41
+  #define RXG_EXP 30
+  #define RXG_TERM 31
+  #define RXG_ELM 32
+  #define RXG_SYM 33
+  #define RXG_RANGE 34
+  #define RXG_RANGE_ELM 35
+  #define RXG_GRAMMAR 36
+  #define RXG_PATTERN 37
+  #define RXG_ACTION_SEQUENCE 38
+  #define RXG_STMT_ACTION 39
+  #define RXG_START_REGEX 40
+  #define RXG_END_REGEX 41
+  #define RXG_START_C_TOKENIZER 42
+  #define RXG_END_C_TOKENIZER 43
+  #define RXG_ACCEPT_WHITESPACE 44
+  #define RXG_MODE 45
+  #define RXG_MODE_LIST 46
+  #define RXG_MODE_GROUP 47
+  #define RXG_PATTERN_LIST 48
   
   struct rxg_stack {
     int error_recovery_:1;

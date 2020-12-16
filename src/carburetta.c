@@ -672,6 +672,24 @@ int main(int argc, char **argv) {
     goto cleanup_exit;
   }
 
+  struct mode *default_mode;
+  struct xlts default_keyword;
+  xlts_init(&default_keyword);
+  xlts_append_xlat(&default_keyword, strlen("default"), "default");
+  int is_default_new = -1;
+  default_mode = mode_find_or_add(&cc.modetab_, &default_keyword, &is_default_new);
+  xlts_cleanup(&default_keyword);
+  if (!default_mode) {
+    re_error_nowhere("Error, no memory");
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+  if (!is_default_new) {
+    re_error(&default_mode->def_, "Error, \"default\" mode is implicit and should not be explicitly declared");
+    r = EXIT_FAILURE;
+    goto cleanup_exit;
+  }
+
   if (prdg.num_patterns_) {
     size_t n;
     struct rex_mode *mode;

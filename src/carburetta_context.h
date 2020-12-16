@@ -21,6 +21,11 @@
 #include "symbol.h"
 #endif
 
+#ifndef MODE_H_INCLUDED
+#define MODE_H_INCLUDED
+#include "mode.h"
+#endif
+
 #ifndef TYPESTR_H_INCLUDED
 #define TYPESTR_H_INCLUDED
 #include "typestr.h"
@@ -64,6 +69,7 @@ struct carburetta_context {
   struct snippet token_type_;
   struct snippet common_data_type_;
   struct symbol_table symtab_;
+  struct mode_table modetab_;
   struct typestr_table tstab_;
   struct typestr *most_recent_typestr_;
   struct typestr *token_assigned_type_;

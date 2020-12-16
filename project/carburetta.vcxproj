@@ -30,6 +30,7 @@
     <ClCompile Include="..\src\lalr.c" />
     <ClCompile Include="..\src\line_assembly.c" />
     <ClCompile Include="..\src\line_defs.c" />
+    <ClCompile Include="..\src\mode.c" />
     <ClCompile Include="..\src\mul.c" />
     <ClCompile Include="..\src\nfa.c" />
     <ClCompile Include="..\src\parse_input.c" />
@@ -66,6 +67,7 @@
     <ClInclude Include="..\src\lalr.h" />
     <ClInclude Include="..\src\line_assembly.h" />
     <ClInclude Include="..\src\line_defs.h" />
+    <ClInclude Include="..\src\mode.h" />
     <ClInclude Include="..\src\mul.h" />
     <ClInclude Include="..\src\nfa.h" />
     <ClInclude Include="..\src\parse_input.h" />

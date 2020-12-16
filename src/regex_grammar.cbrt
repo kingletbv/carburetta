@@ -89,10 +89,14 @@
         struct prd_pattern *pat;
 
 %token CHAR IDENT PAR_OPEN PAR_CLOSE CUR_OPEN CUR_CLOSE COLON SEMICOLON SQ_OPEN SQ_CLOSE DOT DOLLAR CARET DASH BAR ASTERISK PLUS QUESTION_MARK TOKEN WHITESPACE
-%token START_OF_INPUT_ESC END_OF_INPUT_ESC
+%token START_OF_INPUT_ESC END_OF_INPUT_ESC LESS_THAN GREATER_THAN COMMA
 %nt exp term elm sym range range-elm
 
 %nt grammar pattern action-sequence stmt-action start-regex end-regex start-c-tokenizer end-c-tokenizer accept-whitespace
+
+/* pattern type holds the index of the pattern in g->patterns_ */
+%type pattern: size_t
+%constructor $$ = SIZE_MAX;
 
 %common_type struct snippet
 %constructor snippet_init(&$);
@@ -119,6 +123,7 @@
 : /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
   fprintf(stderr, "Imagine a sensible action here.\n");
 }
+
 //comment: x {
 //}
 
@@ -127,8 +132,130 @@
 
 %grammar%
 
+%%
+struct regex_mode_node {
+  struct regex_mode_node *chain_;
+  struct xlts name_;
+};
+
+struct regex_mode_list {
+  struct regex_mode_node *modes_;
+};
+
+void regex_mode_list_init(struct regex_mode_list *rml) {
+  if (!rml) return;
+  rml->modes_ = NULL;
+}
+
+void regex_mode_list_cleanup(struct regex_mode_list *rml) {
+  struct regex_mode_node *m = rml->modes_;
+  struct regex_mode_node *next;
+  if (m) {
+    next = m->chain_;
+    do {
+      m = next;
+      next = m->chain_;
+
+      xlts_cleanup(&m->name_);
+
+      free(m);
+    } while (m != rml->modes_);
+    rml->modes_ = NULL;
+  }
+}
+
+int regex_mode_list_append_mode(struct regex_mode_list *rml, const struct snippet *mode_name) {
+  struct regex_mode_node *m = (struct regex_mode_node *)malloc(sizeof(struct regex_mode_node));
+  if (!m) {
+    return PRD_INTERNAL_ERROR;
+  }
+  xlts_init(&m->name_);
+  int r;
+  r = snippet_append_to_xlts(&m->name_, mode_name);
+  if (r) return PRD_INTERNAL_ERROR;
+  if (rml->modes_) {
+    m->chain_ = rml->modes_->chain_;
+    rml->modes_->chain_ = m;
+  }
+  else {
+    m->chain_ = m;
+  }
+  rml->modes_ = m;
+
+  return PRD_SUCCESS;
+}
+
+void regex_mode_list_move(struct regex_mode_list *dst, struct regex_mode_list *src) {
+  regex_mode_list_cleanup(dst);
+  dst->modes_ = src->modes_;
+  src->modes_ = NULL;
+}
+
+%%
+
 grammar: ;
 grammar: grammar pattern;
+grammar: grammar mode pattern;
+grammar: grammar mode-group;
+
+%nt mode mode-list mode-group pattern_list
+
+%type mode mode-list: struct regex_mode_list
+%constructor regex_mode_list_init(&$$);
+%destructor regex_mode_list_cleanup(&$$);
+
+mode: LESS_THAN mode-list GREATER_THAN { regex_mode_list_move(&$$, &$1); }
+
+mode-list: IDENT {
+  regex_mode_list_append_mode(&$$, &${0});
+}
+mode-list: mode-list COMMA IDENT  {
+  regex_mode_list_move(&$$, &$0);
+  regex_mode_list_append_mode(&$$, &${2});
+}
+
+mode-group: mode CUR_OPEN              CUR_CLOSE /* mode with no patterns, curious, but permitted. */ {
+  r = prd_grammar_check_mode_group_reserve(g);
+  if (r) return r;
+  struct prd_mode_group *mg = g->mode_groups_ + g->num_mode_groups_++;
+  prd_mode_group_init(mg);
+  struct regex_mode_node *m = $0.modes_;
+  if (m) {
+    do {
+      m = m->chain_;
+
+      r = prd_mode_group_check_mode_reserve(mg, &m->name_);
+      if (r) return r;
+      struct prd_mode *mgm = mg->modes_ + mg->num_modes_++;
+      xlts_append(&mgm->id_, &m->name_);
+    } while (m != $0.modes_);
+  }
+}
+mode-group: mode CUR_OPEN pattern-list CUR_CLOSE {
+  r = prd_grammar_check_mode_group_reserve(g);
+  if (r) return r;
+  struct prd_mode_group *mg = g->mode_groups_ + g->num_mode_groups_++;
+  prd_mode_group_init(mg);
+  struct regex_mode_node *m = $0.modes_;
+  if (m) {
+    do {
+      m = m->chain_;
+
+      r = prd_mode_group_check_mode_reserve(mg, &m->name_);
+      if (r) return r;
+      struct prd_mode *mgm = mg->modes_ + mg->num_modes_++;
+      xlts_append(&mgm->id_, &m->name_);
+    } while (m != $0.modes_);
+  }
+  mg->pattern_start_index_ = $2.start_;
+  mg->pattern_end_index_ = $2.end_;
+}
+
+/* Consecutive patterns get consecutive numbers; a pattern-list is therefore always a range */
+%type pattern-list: struct { size_t start_, end_; }
+pattern-list: pattern { $$.start_ = $0; $$.end_ = $0 + 1; }
+pattern-list: pattern-list pattern { $$ = $0; $$.end_ = $1 + 1; }
+
 
 pattern: IDENT start-regex COLON exp end-regex SEMICOLON {
   r = prd_grammar_check_pattern_reserve(g);
@@ -137,6 +264,7 @@ pattern: IDENT start-regex COLON exp end-regex SEMICOLON {
   if (!regex) {
     return PRD_INTERNAL_ERROR;
   }
+  $$ = g->num_patterns_;
   pat = g->patterns_ + g->num_patterns_++;
   prd_pattern_init(pat);
   pat->regex_ = regex;
@@ -153,6 +281,7 @@ pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespa
   if (!regex) {
     return PRD_INTERNAL_ERROR;
   }
+  $$ = g->num_patterns_;
   pat = g->patterns_ + g->num_patterns_++;
   prd_pattern_init(pat);
   pat->regex_ = regex;
@@ -170,6 +299,7 @@ pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end
   if (!regex) {
     return PRD_INTERNAL_ERROR;
   }
+  $$ = g->num_patterns_;
   pat = g->patterns_ + g->num_patterns_++;
   prd_pattern_init(pat);
   pat->regex_ = regex;
@@ -192,6 +322,7 @@ pattern: start-regex COLON exp end-regex SEMICOLON {
   if (!regex) {
     return PRD_INTERNAL_ERROR;
   }
+  $$ = g->num_patterns_;
   pat = g->patterns_ + g->num_patterns_++;
   prd_pattern_init(pat);
   pat->regex_ = regex;
@@ -206,6 +337,7 @@ pattern: start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR
   if (!regex) {
     return PRD_INTERNAL_ERROR;
   }
+  $$ = g->num_patterns_;
   pat = g->patterns_ + g->num_patterns_++;
   prd_pattern_init(pat);
   pat->regex_ = regex;
@@ -221,6 +353,7 @@ pattern: start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tok
   if (!regex) {
     return PRD_INTERNAL_ERROR;
   }
+  $$ = g->num_patterns_;
   pat = g->patterns_ + g->num_patterns_++;
   prd_pattern_init(pat);
   pat->regex_ = regex;
@@ -288,6 +421,9 @@ action-sequence: action-sequence SEMICOLON;
 action-sequence: action-sequence SQ_OPEN;
 action-sequence: action-sequence SQ_CLOSE;
 action-sequence: action-sequence DOT;
+action-sequence: action-sequence COMMA;
+action-sequence: action-sequence LESS_THAN;
+action-sequence: action-sequence GREATER_THAN;
 action-sequence: action-sequence DOLLAR;
 action-sequence: action-sequence CARET;
 action-sequence: action-sequence DASH;
@@ -432,6 +568,9 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
       break;
     case TOK_ESC_START_OF_INPUT_ESC: sym = RXG_START_OF_INPUT_ESC; break;
     case TOK_ESC_END_OF_INPUT_ESC: sym = RXG_END_OF_INPUT_ESC; break;
+    case TOK_LT: sym = RXG_LESS_THAN; break;
+    case TOK_GT: sym = RXG_GREATER_THAN; break;
+    case TOK_COMMA: sym = RXG_COMMA; break;
     default: {
       sym = RXG_TOKEN;
     }

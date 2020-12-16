@@ -96,6 +96,7 @@ void symbol_cleanup(struct symbol *sym) {
   xlts_cleanup(&sym->def_);
 }
 
+/* Follows same logic as in mode.c */
 static uint8_t sym_standardize_char(uint8_t c) {
   if (c == '-') c = '_';
   if ((c >= 'a') && (c <= 'z')) c = c + 'A' - 'a';

@@ -35,6 +35,7 @@ void carburetta_context_init(struct carburetta_context *cc) {
   snippet_init(&cc->token_type_);
   snippet_init(&cc->common_data_type_);
   symbol_table_init(&cc->symtab_);
+  mode_table_init(&cc->modetab_);
   typestr_table_init(&cc->tstab_);
   cc->most_recent_typestr_ = NULL;
   cc->token_assigned_type_ = NULL;
@@ -73,6 +74,7 @@ void carburetta_context_cleanup(struct carburetta_context *cc) {
   snippet_cleanup(&cc->token_type_);
   snippet_cleanup(&cc->common_data_type_);
   symbol_table_cleanup(&cc->symtab_);
+  mode_table_cleanup(&cc->modetab_);
   typestr_table_cleanup(&cc->tstab_);
   xlts_cleanup(&cc->prefix_);
   if (cc->prefix_uppercase_) free(cc->prefix_uppercase_);

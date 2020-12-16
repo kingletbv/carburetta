@@ -99,6 +99,8 @@ void prd_grammar_init(struct prd_grammar *g) {
   g->productions_ = NULL;
   g->num_patterns_ = g->num_patterns_allocated_ = 0;
   g->patterns_ = NULL;
+  g->num_mode_groups_ = g->num_mode_groups_allocated_ = 0;
+  g->mode_groups_ = NULL;
 }
 
 void prd_grammar_cleanup(struct prd_grammar *g) {
@@ -114,6 +116,31 @@ void prd_grammar_cleanup(struct prd_grammar *g) {
     prd_pattern_cleanup(g->patterns_ + n);
   }
   if (g->patterns_) free(g->patterns_);
+  for (n = 0; n < g->num_mode_groups_; ++n) {
+    prd_mode_group_cleanup(g->mode_groups_ + n);
+  }
+  if (g->mode_groups_) free(g->mode_groups_);
+}
+
+void prd_mode_init(struct prd_mode *m) {
+  xlts_init(&m->id_);
+}
+
+void prd_mode_cleanup(struct prd_mode *m) {
+  xlts_cleanup(&m->id_);
+}
+
+void prd_mode_group_init(struct prd_mode_group *mg) {
+  mg->num_modes_ = mg->num_modes_allocated_ = 0;
+  mg->modes_ = NULL;
+  mg->pattern_start_index_ = mg->pattern_end_index_ = 0;
+}
+
+void prd_mode_group_cleanup(struct prd_mode_group *mg) {
+  size_t n;
+  for (n = 0; n < mg->num_modes_; ++n) {
+    prd_mode_cleanup(mg->modes_ + n);
+  }
 }
 
 void prd_prod_swap(struct prd_production *a, struct prd_production *b) {
@@ -172,6 +199,30 @@ int prd_grammar_check_pattern_reserve(struct prd_grammar *g) {
   return 0;
 }
 
+int prd_grammar_check_mode_group_reserve(struct prd_grammar *g) {
+  if (g->num_mode_groups_ == g->num_mode_groups_allocated_) {
+    size_t new_num = g->num_mode_groups_allocated_ * 2 + 1;
+    if (new_num < 7) new_num = 7;
+    if (new_num <= g->num_mode_groups_allocated_) {
+      re_error_nowhere("Internal error, overflow on allocation");
+      return PRD_INTERNAL_ERROR;
+    }
+    if (new_num > (SIZE_MAX / sizeof(struct prd_mode_group))) {
+      re_error_nowhere("Internal error, overflow on allocation");
+      return PRD_INTERNAL_ERROR;
+    }
+    size_t size_to_alloc = new_num * sizeof(struct prd_mode_group);
+    void *p = realloc(g->mode_groups_, size_to_alloc);
+    if (!p) {
+      re_error_nowhere("Internal error, no memory");
+      return PRD_INTERNAL_ERROR;
+    }
+    g->mode_groups_ = (struct prd_mode_group *)p;
+    g->num_mode_groups_allocated_ = new_num;
+  }
+  return 0;
+}
+
 int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *loc) {
   if (pd->num_syms_ == pd->num_syms_allocated_) {
     size_t new_num = pd->num_syms_allocated_ * 2 + 1;
@@ -192,6 +243,29 @@ int prd_prod_check_sym_reserve(struct prd_production *pd, struct xlts *loc) {
     }
     pd->syms_ = (struct prd_production_sym *)p;
     pd->num_syms_allocated_ = new_num;
+  }
+  return 0;
+}
+
+int prd_mode_group_check_mode_reserve(struct prd_mode_group *mg, struct xlts *loc) {
+  if (mg->num_modes_ == mg->num_modes_allocated_) {
+    size_t new_num = mg->num_modes_allocated_ * 2 + 1;
+    if (new_num <= mg->num_modes_allocated_) {
+      re_error(loc, "Internal error, overflow on allocation");
+      return PRD_INTERNAL_ERROR;
+    }
+    if (new_num > (SIZE_MAX / sizeof(struct prd_mode))) {
+      re_error(loc, "Internal error, overflow on allocation");
+      return PRD_INTERNAL_ERROR;
+    }
+    size_t size_to_alloc = new_num * sizeof(struct prd_mode);
+    void *p = realloc(mg->modes_, size_to_alloc);
+    if (!p) {
+      re_error(loc, "Internal error, no memory");
+      return PRD_INTERNAL_ERROR;
+    }
+    mg->modes_ = (struct prd_mode *)p;
+    mg->num_modes_allocated_ = new_num;
   }
   return 0;
 }
