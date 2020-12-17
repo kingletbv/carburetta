@@ -195,8 +195,27 @@ void regex_mode_list_move(struct regex_mode_list *dst, struct regex_mode_list *s
 
 grammar: ;
 grammar: grammar pattern;
-grammar: grammar mode pattern;
 grammar: grammar mode-group;
+grammar: grammar mode pattern {
+  r = prd_grammar_check_mode_group_reserve(g);
+  if (r) return r;
+  struct prd_mode_group *mg = g->mode_groups_ + g->num_mode_groups_++;
+  prd_mode_group_init(mg);
+  struct regex_mode_node *m = $1.modes_;
+  if (m) {
+    do {
+      m = m->chain_;
+
+      r = prd_mode_group_check_mode_reserve(mg, &m->name_);
+      if (r) return r;
+      struct prd_mode *mgm = mg->modes_ + mg->num_modes_++;
+      prd_mode_init(mgm);
+      xlts_append(&mgm->id_, &m->name_);
+    } while (m != $1.modes_);
+  }
+  mg->pattern_start_index_ = $2;
+  mg->pattern_end_index_ = $2 + 1;
+}
 
 %nt mode mode-list mode-group pattern_list
 

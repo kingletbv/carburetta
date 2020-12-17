@@ -1,5 +1,5 @@
-#ifndef CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
-#define CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
+#ifndef CARB_RXG_CCARBURETTASRCREGEX_GRAMMAR_H_INCLUDED
+#define CARB_RXG_CCARBURETTASRCREGEX_GRAMMAR_H_INCLUDED
 
 #include <stddef.h> /* size_t */
 
@@ -65,6 +65,8 @@ extern "C" {
   #define RXG_MODE_GROUP 47
   #define RXG_PATTERN_LIST 48
   
+  #define M_RXG_DEFAULT 1
+  
   struct rxg_stack {
     int error_recovery_:1;
     int pending_reset_:1;
@@ -89,6 +91,7 @@ extern "C" {
     size_t current_production_length_;
     int current_production_nonterminal_;
     size_t scan_state_;
+    size_t current_mode_start_state_;
     size_t match_index_;
     size_t best_match_action_;
     size_t best_match_size_;
@@ -117,7 +120,7 @@ extern "C" {
   int rxg_stack_reset(struct rxg_stack *stack);
   int rxg_stack_can_recover(struct rxg_stack *stack);
   int rxg_stack_accepts(struct rxg_stack *stack, int sym);
-  void rxg_set_input(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input);
+  void rxg_set_mode(struct rxg_stack *stack, int mode);void rxg_set_input(struct rxg_stack *stack, const char *input, size_t input_size, int is_final_input);
   int rxg_scan(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value);
   void rxg_set_location(struct rxg_stack *stack, int line, int col, size_t offset);
   const char *rxg_text(struct rxg_stack *stack);
@@ -135,4 +138,4 @@ extern "C" {
 } /* extern "C" */
 #endif
 
-#endif /* CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED */
+#endif /* CARB_RXG_CCARBURETTASRCREGEX_GRAMMAR_H_INCLUDED */
