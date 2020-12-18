@@ -213,8 +213,11 @@ grammar: grammar mode pattern {
       xlts_append(&mgm->id_, &m->name_);
     } while (m != $1.modes_);
   }
-  mg->pattern_start_index_ = $2;
-  mg->pattern_end_index_ = $2 + 1;
+  if ($2 != SIZE_MAX) {
+    /* Not a common action (which looks like a pattern but is only an action attribute.) */
+    mg->pattern_start_index_ = $2;
+    mg->pattern_end_index_ = $2 + 1;
+  }
 }
 
 %nt mode mode-list mode-group pattern_list
@@ -274,8 +277,28 @@ mode-group: mode CUR_OPEN pattern-list CUR_CLOSE {
 
 /* Consecutive patterns get consecutive numbers; a pattern-list is therefore always a range */
 %type pattern-list: struct { size_t start_, end_; }
-pattern-list: pattern { $$.start_ = $0; $$.end_ = $0 + 1; }
-pattern-list: pattern-list pattern { $$ = $0; $$.end_ = $1 + 1; }
+%constructor $$.start_ = $$.end_ = SIZE_MAX;
+pattern-list: pattern { 
+  if ($0 != SIZE_MAX) {
+    $$.start_ = $0; 
+    $$.end_ = $0 + 1;
+  }
+}
+pattern-list: pattern-list pattern { 
+  if ($1 != SIZE_MAX) {
+    if ($0.start_ != $0.end_) {
+      $$ = $0;
+      $$.end_ = $1 + 1;
+    }
+    else {
+      $0.start_ = $1;
+      $0.end_ = $1 + 1;
+    }
+  }
+  else {
+    $$ = $0;
+  }
+}
 
 
 pattern: IDENT start-regex COLON exp end-regex SEMICOLON {
