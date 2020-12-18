@@ -979,6 +979,8 @@ int rex_realize_modes(struct rex_scanner *rex) {
             } while (nt != nn->outbound_);
           }
         }
+
+        base_nfa_index += 64;
       }
 
       /* From range start_at to range end_at (exclusive) is the next range of symbols whose
