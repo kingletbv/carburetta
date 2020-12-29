@@ -1007,10 +1007,10 @@ for (;;) {
           case 7: /* \^ */
           stack->current_sym_ = REX_CARET;
           break;
-          case 8: /* \134A */
+          case 8: /* \\A */
           stack->current_sym_ = REX_START_OF_INPUT_ESC;
           break;
-          case 9: /* \134Z */
+          case 9: /* \\Z */
           stack->current_sym_ = REX_END_OF_INPUT_ESC;
           break;
           case 10: /* \- */
@@ -1040,7 +1040,7 @@ for (;;) {
           case 18: /* \; */
           stack->current_sym_ = REX_SEMICOLON;
           break;
-          case 19: /* \134a */
+          case 19: /* \\a */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1051,7 +1051,7 @@ for (;;) {
             C1:;
           }
           break;
-          case 20: /* \134b */
+          case 20: /* \\b */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1062,7 +1062,7 @@ for (;;) {
             C2:;
           }
           break;
-          case 21: /* \134f */
+          case 21: /* \\f */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1073,7 +1073,7 @@ for (;;) {
             C3:;
           }
           break;
-          case 22: /* \134n */
+          case 22: /* \\n */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1084,7 +1084,7 @@ for (;;) {
             C4:;
           }
           break;
-          case 23: /* \134r */
+          case 23: /* \\r */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1095,7 +1095,7 @@ for (;;) {
             C5:;
           }
           break;
-          case 24: /* \134t */
+          case 24: /* \\t */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1106,7 +1106,7 @@ for (;;) {
             C6:;
           }
           break;
-          case 25: /* \134v */
+          case 25: /* \\v */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1117,7 +1117,7 @@ for (;;) {
             C7:;
           }
           break;
-          case 26: /* \134[\{\}\[\]\(\)\,\.\^\$\*\|\?\+\:\;\-\'\"\ \134] */
+          case 26: /* \\[\{\}\[\]\(\)\,\.\^\$\*\|\?\+\:\;\-\'\"\ \\] */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1128,7 +1128,7 @@ for (;;) {
             C8:;
           }
           break;
-          case 27: /* \134x[0-9a-fA-F] */
+          case 27: /* \\x[0-9a-fA-F] */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1139,7 +1139,7 @@ for (;;) {
             C9:;
           }
           break;
-          case 28: /* \134x[0-9a-fA-F][0-9a-fA-F] */
+          case 28: /* \\x[0-9a-fA-F][0-9a-fA-F] */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1150,7 +1150,7 @@ for (;;) {
             C10:;
           }
           break;
-          case 29: /* \134[0-7] */
+          case 29: /* \\[0-7] */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1161,7 +1161,7 @@ for (;;) {
             C11:;
           }
           break;
-          case 30: /* \134[0-7][0-7] */
+          case 30: /* \\[0-7][0-7] */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
@@ -1172,7 +1172,7 @@ for (;;) {
             C12:;
           }
           break;
-          case 31: /* \134[0-7][0-7][0-7] */
+          case 31: /* \\[0-7][0-7][0-7] */
           stack->current_sym_ = REX_CHAR;
           stack->slot_0_has_current_sym_data_ = 1;
           if (!stack->discard_remaining_actions_) {
