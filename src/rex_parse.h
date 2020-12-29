@@ -1,5 +1,5 @@
-#ifndef CARB_REX_CREXBUILDWIN_X86DEBUGREXOBJREX_PARSE_H_INCLUDED
-#define CARB_REX_CREXBUILDWIN_X86DEBUGREXOBJREX_PARSE_H_INCLUDED
+#ifndef CARB_REX_CARBURETTASRCREX_PARSE_H_INCLUDED
+#define CARB_REX_CARBURETTASRCREX_PARSE_H_INCLUDED
 
 #include <stddef.h> /* size_t */
 
@@ -48,6 +48,8 @@ extern "C" {
   #define REX_RANGE 30
   #define REX_RANGE_ELM 31
   
+  #define M_REX_DEFAULT 1
+  
   struct rex_stack {
     int error_recovery_:1;
     int pending_reset_:1;
@@ -72,6 +74,7 @@ extern "C" {
     size_t current_production_length_;
     int current_production_nonterminal_;
     size_t scan_state_;
+    size_t current_mode_start_state_;
     size_t match_index_;
     size_t best_match_action_;
     size_t best_match_size_;
@@ -100,7 +103,7 @@ extern "C" {
   int rex_stack_reset(struct rex_stack *stack);
   int rex_stack_can_recover(struct rex_stack *stack);
   int rex_stack_accepts(struct rex_stack *stack, int sym);
-  void rex_set_input(struct rex_stack *stack, const char *input, size_t input_size, int is_final_input);
+  void rex_set_mode(struct rex_stack *stack, int mode);void rex_set_input(struct rex_stack *stack, const char *input, size_t input_size, int is_final_input);
   int rex_scan(struct rex_stack *stack, struct rex_nfa *nfa, size_t *pstart, size_t *pend);
   void rex_set_location(struct rex_stack *stack, int line, int col, size_t offset);
   const char *rex_text(struct rex_stack *stack);
@@ -118,4 +121,4 @@ extern "C" {
 } /* extern "C" */
 #endif
 
-#endif /* CARB_REX_CREXBUILDWIN_X86DEBUGREXOBJREX_PARSE_H_INCLUDED */
+#endif /* CARB_REX_CARBURETTASRCREX_PARSE_H_INCLUDED */
