@@ -35,8 +35,8 @@ SQBRACE_CLOSE: \];
 DOT: \.;
 DOLLAR: \$; /* end of line */
 CARET: \^;  /* start of line */
-START_OF_INPUT_ESC: \\A; /* start of input */
-END_OF_INPUT_ESC: \\Z; /* end of input */
+START_OF_INPUT_ESC: \134A; /* start of input */
+END_OF_INPUT_ESC: \134Z; /* end of input */
 DASH: \-;
 BAR: \|;
 ASTERISK: \*;
@@ -46,14 +46,14 @@ CUBRACE_OPEN: \{;
 CUBRACE_CLOSE: \};
 RESERVED_REGEX_CHAR: \, | \:;
 SEMICOLON: \;;
-CHAR: \\a { $$ = '\a'; }
-CHAR: \\b { $$ = '\b'; }
-CHAR: \\f { $$ = '\f'; }
-CHAR: \\n { $$ = '\n'; }
-CHAR: \\r { $$ = '\r'; }
-CHAR: \\t { $$ = '\t'; }
-CHAR: \\v { $$ = '\v'; }
-CHAR: \\[\{\}\[\]\(\)\,\.\^\$\*\|\?\+\:\;\-\'\"\ ] { $$ = (uint32_t)$text[1]; }
+CHAR: \134a { $$ = '\a'; }
+CHAR: \134b { $$ = '\b'; }
+CHAR: \134f { $$ = '\f'; }
+CHAR: \134n { $$ = '\n'; }
+CHAR: \134r { $$ = '\r'; }
+CHAR: \134t { $$ = '\t'; }
+CHAR: \134v { $$ = '\v'; }
+CHAR: \134[\{\}\[\]\(\)\,\.\^\$\*\|\?\+\:\;\-\'\"\ \134] { $$ = (uint32_t)$text[1]; }
 
 %%
 static uint32_t hex_to_int(const char *txt, size_t len) {
@@ -73,8 +73,8 @@ static uint32_t hex_to_int(const char *txt, size_t len) {
   return val;
 }
 %%
-CHAR: \\x[0-9a-fA-F] { $$ = hex_to_int($text + 1, 1); }
-CHAR: \\x[0-9a-fA-F][0-9a-fA-F] { $$ = hex_to_int($text + 1, 2); }
+CHAR: \134x[0-9a-fA-F] { $$ = hex_to_int($text + 2, 1); }
+CHAR: \134x[0-9a-fA-F][0-9a-fA-F] { $$ = hex_to_int($text + 2, 2); }
 
 %%
 static uint32_t oct_to_int(const char *txt, size_t len) {
@@ -86,9 +86,9 @@ static uint32_t oct_to_int(const char *txt, size_t len) {
   return val;
 }
 %%
-CHAR: \\[0-7] { $$ = oct_to_int($text + 1, 1); }
-CHAR: \\[0-7][0-7] { $$ = oct_to_int($text + 1, 2); }
-CHAR: \\[0-7][0-7][0-7] { $$ = oct_to_int($text + 1, 3); }
+CHAR: \134[0-7] { $$ = oct_to_int($text + 1, 1); }
+CHAR: \134[0-7][0-7] { $$ = oct_to_int($text + 1, 2); }
+CHAR: \134[0-7][0-7][0-7] { $$ = oct_to_int($text + 1, 3); }
 
 WHITESPACE: [\ \x9\xb\xc\xd\r\n]+;
 CHAR: [\x20-\x7e] { $$ = $text[0]; }
