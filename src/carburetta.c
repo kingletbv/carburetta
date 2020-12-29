@@ -747,7 +747,7 @@ int main(int argc, char **argv) {
         case _REX_LEXICAL_ERROR:
           /* The regex should already be validated to be
           * a correct regular expression (otherwise */
-          re_error_nowhere("Internal error, inconsistent syntex");
+          re_error_nowhere("Internal error, inconsistent syntax");
           r = EXIT_FAILURE;
           goto cleanup_exit;
         default:
