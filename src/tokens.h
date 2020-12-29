@@ -97,8 +97,8 @@ xz(TOK_FLOAT_LIT) \
 xy("([0-9]+\\.)|([0-9]*\\.[0-9]+)" "([eE][\\+\\-]?[0-9]+)?" "[flFL]?", TOK_FRACTIONAL_FLOAT_LIT, TOK_FLOAT_LIT) \
 xy("[0-9]+"                         "[eE][\\+\\-]?[0-9]+"   "[flFL]?", TOK_WHOLE_FLOAT_LIT, TOK_FLOAT_LIT) \
 \
-xx("L?\"(\\\\.|[^\"])*\"", TOK_STRING_LIT) \
-xx("L?\'(\\\\.|[^\'])*\'", TOK_CHAR_LIT) \
+xx("L?\"(\\\\.|[^\"\\\\])*\"", TOK_STRING_LIT) \
+xx("L?\'(\\\\.|[^\'\\\\])*\'", TOK_CHAR_LIT) \
 \
 xx("[a-zA-Z_][0-9a-zA-Z_]*", TOK_IDENT) \
 xz(TOK_SPECIAL_IDENT) \
@@ -190,8 +190,8 @@ xz(TOK_FLOAT_LIT) \
 xy("([0-9]+\\.)|([0-9]*\\.[0-9]+)" "([eE][\\+\\-]?[0-9]+)?" "[flFL]?", TOK_FRACTIONAL_FLOAT_LIT, TOK_FLOAT_LIT) \
 xy("[0-9]+"                         "[eE][\\+\\-]?[0-9]+"   "[flFL]?", TOK_WHOLE_FLOAT_LIT, TOK_FLOAT_LIT) \
 \
-xx("L?\"(\\\\.|[^\"])*\"", TOK_STRING_LIT) \
-xx("L?\'(\\\\.|[^\'])*\'", TOK_CHAR_LIT) \
+xx("L?\"(\\\\.|[^\"\\\\])*\"", TOK_STRING_LIT) \
+xx("L?\'(\\\\.|[^\'\\\\])*\'", TOK_CHAR_LIT) \
 \
 xx("[a-zA-Z_][0-9a-zA-Z_]*", TOK_IDENT) \
 xx("[a-zA-Z_\\-][0-9a-zA-Z_\\-]*", TOK_IDENT) /* identifier with - characters allowed */ \
