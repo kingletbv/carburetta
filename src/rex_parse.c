@@ -1055,7 +1055,7 @@ for (;;) {
           if (!stack->discard_remaining_actions_) {
             stack->continue_at_ = 9;
             {
-               (stack->stack_[0].v_.uv1_) = hex_to_int((stack->match_buffer_) + 1, 1); 
+               (stack->stack_[0].v_.uv1_) = hex_to_int((stack->match_buffer_) + 2, 1); 
             }
             C9:;
           }
@@ -1066,7 +1066,7 @@ for (;;) {
           if (!stack->discard_remaining_actions_) {
             stack->continue_at_ = 10;
             {
-               (stack->stack_[0].v_.uv1_) = hex_to_int((stack->match_buffer_) + 1, 2); 
+               (stack->stack_[0].v_.uv1_) = hex_to_int((stack->match_buffer_) + 2, 2); 
             }
             C10:;
           }
