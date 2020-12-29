@@ -466,13 +466,13 @@ int tkr_tokenizer_inputs(struct tkr_tokenizer *tkr, const char *input, size_t in
       base = offs;
     }
   }
-  match_index = tkr->xmatch_.num_translated_;
   if (offs != base) {
     r = xlts_append_equal(&tkr->xmatch_, tkr->filename_, base_line, base_col, base_offset, offs - base, input + base);
     if (r) {
       return TKR_INTERNAL_ERROR;
     }
   }
+  match_index = tkr->xmatch_.num_translated_;
 
   if (!is_final_input) {
     /* Need more input */
