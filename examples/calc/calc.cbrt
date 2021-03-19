@@ -4,12 +4,26 @@
 %scanner%
 %prefix calc_
 
+%mode flapdrol
+
+<flapdrol> { 
+INTEGER: F { $$ = 666; fprintf(stderr, "Flapdrol!\n"); calc_set_mode(stack, M_CALC_DEFAULT); }
+}
+//INTEGER: F { $$ = 666; fprintf(stderr, "Flapdrol!\n"); calc_set_mode(stack, M_CALC_DEFAULT); }
+INTEGER: [0-9]+ { $$ = atoi($text); fprintf(stderr, "%s\n", $text);calc_set_mode(stack, M_CALC_DEFAULT); }
+
 : [\ \n]+; /* skip spaces and newlines */
-PLUS: \+; MINUS: \-; ASTERISK: \*; SLASH: /; PAR_OPEN: \(; PAR_CLOSE: \);
-INTEGER: [0-9]+ { $$ = atoi($text); }
+PLUS: \+; 
+MINUS: \-;
+ASTERISK: \*;
+SLASH: /; 
+PAR_OPEN: \(; 
+PAR_CLOSE: \);
 
 %token PLUS MINUS ASTERISK SLASH PAR_OPEN PAR_CLOSE INTEGER
 %nt grammar expr term factor value
+
+
 
 %grammar%
 
@@ -30,11 +44,11 @@ grammar: expr {
 expr: term                      { $$ = $0; }
 expr: expr PLUS term            { $$ = $0 + $2; }
 expr: expr MINUS term           { $$ = $0 - $2; }
-
+  
 term: factor                    { $$ = $0; }
 term: term ASTERISK factor      { $$ = $0 * $2; }
 term: term SLASH factor         { $$ = $0 / $2; }
-
+  
 factor: value                   { $$ = $0; }
 factor: MINUS factor            { $$ = -$1; }
 factor: PAR_OPEN expr PAR_CLOSE { $$ = $1; }
@@ -57,15 +71,24 @@ int main(int argc, char **argv) {
   
   fprintf(stderr, "Enter an expression (-1 to exit):\n");
 
+
   struct calc_stack stack;
   calc_stack_init(&stack);
+
   do {
     if (!fgets(s, sizeof(s), stdin)) {
       perror("Error reading");
       r = EXIT_FAILURE;
       break;
     }
-    calc_set_input(&stack, s, strlen(s), 1);
+    if (strlen(s) && (s[strlen(s) - 1] == '\n')) {
+      /* Remove \n so we can check end of input */
+      calc_set_input(&stack, s, strlen(s) - 1, 1);
+    }
+    else {
+      calc_set_input(&stack, s, strlen(s), 1);
+    }
+    calc_set_mode(&stack, M_CALC_FLAPDROL);
     do {
       r = calc_scan(&stack, &value);
       if (r == _CALC_SYNTAX_ERROR) {
@@ -74,7 +97,12 @@ int main(int argc, char **argv) {
     } while (r == _CALC_SYNTAX_ERROR);
 
     if (r) {
-      fprintf(stderr, "Unexpected error\n");
+      if (r == _CALC_LEXICAL_ERROR) {
+        fprintf(stderr, "Lexical error\n");
+      }
+      else {
+        fprintf(stderr, "Unexpected error\n");
+      }
       r = EXIT_FAILURE;
       break;
     }
