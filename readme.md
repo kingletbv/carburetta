@@ -2,7 +2,9 @@
 
 Carburetta is a parser generator for C and C++. It aims to make parsing of smaller languages trivial and larger languages doable.
 
-Please note that this project is _not_ accepting pull requests, both due to the intricacies of the code making isolated changes impractical, and the impracticality of determining contribution ownership.
+Please note that this project is _not accepting pull requests_, both due to the intricacies of the code making isolated changes impractical, and the impracticality of determining contribution ownership.
+
+To learn more about Carburetta, please go to its website at [https://carburetta.com/](https://carburetta.com/)
 
 ## Getting Started
 
