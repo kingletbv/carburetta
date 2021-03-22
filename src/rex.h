@@ -21,6 +21,8 @@
 #include <stdint.h>
 #endif
 
+struct rex_nfa;
+
 #include "rex_parse.h"
 
 #define REX_ANCHOR_START_OF_INPUT 0
