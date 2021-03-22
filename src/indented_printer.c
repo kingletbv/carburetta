@@ -37,6 +37,11 @@
 #include <string.h>
 #endif
 
+#ifndef ERRNO_H_INCLUDED
+#define ERRNO_H_INCLUDED
+#include <errno.h>
+#endif
+
 #ifndef REPORT_ERROR_H_INCLUDED
 #define REPORT_ERROR_H_INCLUDED
 #include "report_error.h"
