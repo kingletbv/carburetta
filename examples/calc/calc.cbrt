@@ -19,13 +19,7 @@
 %scanner%
 %prefix calc_
 
-%mode flapdrol
-
-<flapdrol> { 
-INTEGER: F { $$ = 666; fprintf(stderr, "Flapdrol!\n"); calc_set_mode(stack, M_CALC_DEFAULT); }
-}
-//INTEGER: F { $$ = 666; fprintf(stderr, "Flapdrol!\n"); calc_set_mode(stack, M_CALC_DEFAULT); }
-INTEGER: [0-9]+ { $$ = atoi($text); fprintf(stderr, "%s\n", $text);calc_set_mode(stack, M_CALC_DEFAULT); }
+INTEGER: [0-9]+ { $$ = atoi($text); fprintf(stderr, "%s\n", $text); }
 
 : [\ \n]+; /* skip spaces and newlines */
 PLUS: \+; 
@@ -37,8 +31,6 @@ PAR_CLOSE: \);
 
 %token PLUS MINUS ASTERISK SLASH PAR_OPEN PAR_CLOSE INTEGER
 %nt grammar expr term factor value
-
-
 
 %grammar%
 
@@ -103,7 +95,6 @@ int main(int argc, char **argv) {
     else {
       calc_set_input(&stack, s, strlen(s), 1);
     }
-    calc_set_mode(&stack, M_CALC_FLAPDROL);
     do {
       r = calc_scan(&stack, &value);
       if (r == _CALC_SYNTAX_ERROR) {
