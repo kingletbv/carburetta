@@ -88,9 +88,9 @@ int main(int argc, char **argv) {
 ## Usage
 
 ```shell
-$ carburetta inputfile.cnd --c parser.c --h
+$ carburetta inputfile.cbrt --c parser.c --h
 ```
 
-Will read the input grammar in `inputfile.cnd` and generate the C file `parser.c` containing the parser code, and a header file `parser.h` containing the declarations
+Will read the input grammar in `inputfile.cbrt` and generate the C file `parser.c` containing the parser code, and a header file `parser.h` containing the declarations
 necessary for calling the parser from another source file.
 
