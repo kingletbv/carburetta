@@ -158,7 +158,7 @@ void at_exit_delete_temp_output_handler(void) {
 
 void print_usage(void) {
   fprintf(stderr, "Carburetta parser generator (C) 2020-2021 Kinglet B.V.\n"
-                  "version 0.8.0\n"
+                  "version 0.8.1\n"
                   "https://carburetta.com/\n"
                   "\n"
                   "carburetta <inputfile.cbrt> [ --c [ <c_filename> [--h [h_filename] ] ] ]\n"
