@@ -1,6 +1,6 @@
-# Carburetta - Parser Generator
+# Carburetta - Fused Scanner & Parser Generator
 
-Carburetta is a parser generator for C and C++. It aims to make parsing of smaller languages trivial and larger languages doable.
+Carburetta is a fused scanner & parser generator for C and C++. It aims to make parsing of smaller languages trivial and larger languages doable.
 
 Please note that this project is _not accepting pull requests_, both due to the intricacies of the code making isolated changes impractical, and the impracticality of determining contribution ownership.
 
