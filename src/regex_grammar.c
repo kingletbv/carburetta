@@ -431,7 +431,7 @@ static const int rxg_production_syms[] = {
   44
 };
 
-#ifndef CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED
+#ifndef CARB_RXG_CARBURETTASRCREGEX_GRAMMAR_H_INCLUDED
 struct rxg_stack {
   int error_recovery_:1;
   int pending_reset_:1;
@@ -539,7 +539,7 @@ struct rxg_stack {
 
 #define M_RXG_DEFAULT 1
 
-#endif /* CARB_RXG_SRCREGEX_GRAMMAR_H_INCLUDED */
+#endif /* CARB_RXG_CARBURETTASRCREGEX_GRAMMAR_H_INCLUDED */
 
 void rxg_stack_init(struct rxg_stack *stack) {
   stack->error_recovery_ = 0;
@@ -3114,7 +3114,7 @@ for (;;) {
             stack->continue_at_ = 0;
             {
               /* Syntax error */ \
-              if (sym != PRD_INPUT_END) {\
+              if (sym != RXG_INPUT_END) {\
                 re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
                 } \
               else { \
@@ -5096,7 +5096,7 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
           stack->continue_at_ = 0;
           {
             /* Syntax error */ \
-            if (sym != PRD_INPUT_END) {\
+            if (sym != RXG_INPUT_END) {\
               re_error_tkr(tkr, "Syntax error \"%s\" not expected", tkr->xmatch_.translated_); \
               } \
             else { \
