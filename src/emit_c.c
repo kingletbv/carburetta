@@ -3899,31 +3899,33 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
 
   ip_printf(ip, "\n");
 
-  struct mode *m;
-  m = cc->modetab_.modes_;
-  if (m) {
-    do {
-      m = m->next_;
+  if (prdg->num_patterns_) {
+    struct mode *m;
+    m = cc->modetab_.modes_;
+    if (m) {
+      do {
+        m = m->next_;
 
-      char *ident = (char *)malloc(1 + m->def_.num_translated_);
-      char *s = ident;
-      const char *p;
-      if (!ident) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      /* Transform into C identifier */
-      for (p = m->def_.translated_; p < (m->def_.translated_ + m->def_.num_translated_); ++p) {
-        int c = *p;
-        if ((c >= 'a') && (c <= 'z')) c = c - 'a' + 'A';
-        if (c == '-') c = '_';
-        *s++ = c;
-      }
-      *s++ = '\0';
+        char *ident = (char *)malloc(1 + m->def_.num_translated_);
+        char *s = ident;
+        const char *p;
+        if (!ident) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        /* Transform into C identifier */
+        for (p = m->def_.translated_; p < (m->def_.translated_ + m->def_.num_translated_); ++p) {
+          int c = *p;
+          if ((c >= 'a') && (c <= 'z')) c = c - 'a' + 'A';
+          if (c == '-') c = '_';
+          *s++ = c;
+        }
+        *s++ = '\0';
 
-      ip_printf(ip, "#define M_%s%s %d\n", cc_PREFIX(cc), ident, m->rex_mode_->dfa_node_->ordinal_);
-      free(ident);
-    } while (m != cc->modetab_.modes_);
+        ip_printf(ip, "#define M_%s%s %d\n", cc_PREFIX(cc), ident, m->rex_mode_->dfa_node_->ordinal_);
+        free(ident);
+      } while (m != cc->modetab_.modes_);
+    }
   }
 
   ip_printf(ip, "\n");
