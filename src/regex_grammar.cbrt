@@ -119,17 +119,6 @@
   return PRD_SYNTAX_ERROR;
 
 
-%scanner%
-: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
-  fprintf(stderr, "Imagine a sensible action here.\n");
-}
-
-//comment: x {
-//}
-
-
-//xy("/\\*([^\\*]|[\\r\\n]|(\\*+([^\\*/]|[\\r\\n])))*\\*/", TOK_C_STYLE_COMMENT, TOK_WHITESPACE)
-
 %grammar%
 
 %%
