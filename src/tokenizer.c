@@ -165,6 +165,11 @@ int tkr_tokenizer_inputx(struct tkr_tokenizer *tkr, struct xlts *input, int is_f
       tkr->best_match_variant_ = best_match_variant;
       tkr->best_match_size_ = best_match_size;
 
+      /* Update line and column with result from XLTS; we do this so any *subsequent* end of input
+       * marker (with no xlts containing a location) will know about our rough location, should
+       * an error message be needed from the tkr */
+      xlts_end_location(&tkr->xmatch_, &tkr->start_line_, &tkr->start_col_, NULL, &tkr->filename_);
+
       return TKR_MATCH;
     }
   }
@@ -207,6 +212,11 @@ int tkr_tokenizer_inputx(struct tkr_tokenizer *tkr, struct xlts *input, int is_f
       tkr->best_match_size_ = best_match_size;
 
       tkr->input_index_ = input_index;
+
+      /* Update line and column with result from XLTS; we do this so any subsequent end of input
+       * marker (with no xlts containing a location) will know about our rough location, should
+       * an error message be needed from the tkr */
+      xlts_end_location(&tkr->xmatch_, &tkr->start_line_, &tkr->start_col_, NULL, &tkr->filename_);
 
       return TKR_MATCH;
     }
@@ -269,6 +279,11 @@ int tkr_tokenizer_inputx(struct tkr_tokenizer *tkr, struct xlts *input, int is_f
   tkr->best_match_size_ = best_match_size;
 
   tkr->input_index_ = input_index;
+
+  /* Update line and column with result from XLTS; we do this so any subsequent end of input
+   * marker (with no xlts containing a location) will know about our rough location, should
+   * an error message be needed from the tkr */
+  xlts_end_location(&tkr->xmatch_, &tkr->start_line_, &tkr->start_col_, NULL, &tkr->filename_);
 
   return TKR_MATCH;
 

@@ -654,3 +654,41 @@ int xlts_line(struct xlts *x) {
   }
   return 0;
 }
+
+int xlts_end_location(struct xlts *x, int *endline, int *endcolumn, size_t *endoffset, const char **filename) {
+  size_t chunk_idx;
+  chunk_idx = x->num_chunks_;
+  if (chunk_idx) {
+    do {
+      chunk_idx--;
+      struct xlts_chunk *chunk = x->chunks_ + chunk_idx;
+      if ((chunk->ct_ == XLTS_EQUAL) ||
+          (chunk->ct_ == XLTS_ORIGINAL)) {
+        if (endline) {
+          *endline = chunk->line_;
+        }
+        if (endcolumn) {
+          *endcolumn = chunk->col_ + (int)chunk->num_original_bytes_;
+        }
+        if (endoffset) {
+          *endoffset = chunk->offset_ + chunk->num_original_bytes_;
+        }
+        if (filename) {
+          *filename = chunk->filename_;
+        }
+        if (x->original_[x->num_original_ - 1] == '\n') {
+          /* Process trailing newline. */
+          if (endline) {
+            *endline++;
+          }
+          if (endcolumn) {
+            *endcolumn = 1;
+          }
+        }
+        return 0;
+      }
+    } while (chunk_idx);
+  }
+  /* no source location found */
+  return -1;
+}

@@ -115,7 +115,8 @@ void tkr_tokenizer_cleanup(struct tkr_tokenizer *tkr);
 
 void tkr_tokenizer_switch(struct tkr_tokenizer *tkr, const struct sc_scanner *scanner);
 
-/* Clear any prior partial buffered state from tokenizer */
+/* Clear any prior partial buffered state from tokenizer; input_line_, input_col_ and
+ * input_offset_ are *retained*. */
 void tkr_tokenizer_reset(struct tkr_tokenizer *tkr);
 
 int tkr_tokenizer_inputs(struct tkr_tokenizer *tkr, const char *input, size_t input_size, int is_final_input);

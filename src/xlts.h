@@ -109,6 +109,11 @@ void xlts_swap(struct xlts *a, struct xlts *b);
  * empty or has no XLTS_EQUAL chunks */
 int xlts_line(struct xlts *x);
 
+/* Returns the line, column and offset after which the string ends. If the last character of the
+ * string is a newline, the line and character position returned will be /after/ the newline,
+ * on the next line. */
+int xlts_end_location(struct xlts *x, int *endline, int *endcolumn, size_t *endoffset, const char **filename);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
