@@ -1,4 +1,7 @@
 
+- fix: <prefix>scan() header prototype was broken if no additional params
+  were passed in.
+
 - fix: if, for whatever  reason, the input has  no epilogue section, both
   the scanner and  grammar sections should still  complete their parsing.
   (I.e. know  they've reached the  end of their inputs.)  Previously, the

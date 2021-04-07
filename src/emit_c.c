@@ -4129,7 +4129,7 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "int %sstack_can_recover(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "int %sstack_accepts(struct %sstack *stack, int sym);\n", cc_prefix(cc), cc_prefix(cc));
   if (prdg->num_patterns_) {
-    ip_printf(ip, "void %sset_mode(struct %sstack *stack, int mode);", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "void %sset_mode(struct %sstack *stack, int mode);\n", cc_prefix(cc), cc_prefix(cc));
     ip_printf(ip, "void %sset_input(struct %sstack *stack, const char *input, size_t input_size, int is_final_input);\n", cc_prefix(cc), cc_prefix(cc));
 
     if (cc->params_snippet_.num_tokens_) {
@@ -4141,7 +4141,7 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
       ip_printf(ip, ");\n");
     }
     else {
-      ip_printf(ip, "int %sscanstruct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+      ip_printf(ip, "int %sscan(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
     }
 
     ip_printf(ip, "void %sset_location(struct %sstack *stack, int line, int col, size_t offset);\n", cc_prefix(cc), cc_prefix(cc));
