@@ -29,7 +29,7 @@ $(OUT)/calc: $(INTERMEDIATE)/calc/calc.c
 	$(CC) -o $(OUT)/calc $(INTERMEDIATE)/calc/calc.c
 
 $(OUT)/template_scan: $(INTERMEDIATE)/template_scan/template_scan.c
-	$(CC) -o $(out)/template_scan $(INTERMEDIATE)/template_scan/template_scan.c
+	$(CC) -o $(OUT)/template_scan $(INTERMEDIATE)/template_scan/template_scan.c
 
 .PHONY: clean
 clean:
