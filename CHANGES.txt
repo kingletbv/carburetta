@@ -1,4 +1,9 @@
 
+- fix: if, for whatever  reason, the input has  no epilogue section, both
+  the scanner and  grammar sections should still  complete their parsing.
+  (I.e. know  they've reached the  end of their inputs.)  Previously, the
+  last line / directive / production could be ignored.
+
 0.8.2 - 2021-04-06
 
 - $chg_term() -- allows  changing the  terminal currently  matched in the
