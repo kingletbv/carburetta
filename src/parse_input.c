@@ -1364,6 +1364,22 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
 
   } while (num_bytes_read);
 
+  /* Process the End of Input */
+  if (where_are_we == PROLOGUE) {
+    /* No parsing to finish (prologue is user code) */
+  }
+  else if (where_are_we == GRAMMAR) {
+    /* Finish grammar parsing (is_final == 1) */
+    pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
+  }
+  else if (where_are_we == SCANNER) {
+    /* Finish scanner parsing (is_final == 1) */
+    pi_process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, prdg, &cc->symtab_);
+  }
+  else /* (where_are_we == EPILOGUE) */ {
+    /* No parsing to finish (epilogue is also user code) */
+  }
+    
   /* Finished parsing */
   if (prdg->have_errors_ || have_error) {
     r = 1;
