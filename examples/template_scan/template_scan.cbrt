@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
     if ((argv[n][0] == '-') && (argv[n][1] == '-')) {
       /* Skip value for the argument */
       if ((n + 1) < argc) n++;
+      continue;
     }
     /* Not an -- style argument, use it as input file */
     inputfile = argv[n];
