@@ -1,0 +1,177 @@
+#define _CRT_SECURE_NO_WARNINGS /* C4996 */
+#include <stdio.h>
+#include <stdlib.h>
+
+/*
+ * template_scan: scans an input file (might be stdin) for macros of the form "{{ identifier }}"
+ * The identifier is looked up as one of the arguments in the commandline using the form "--identifier",
+ * following the "--identifier" argument should be the filename of the file to insert at the macro's
+ * point in the input.
+ * All other input is written to stdout as regular output.
+ * Uses C library IO for clarity's sake and portability. Would be improved by using platform specific
+ * calls (posix) but that would sacrifice portabiliy.
+ * When you try this interactively, the scanner matches multiple lines of input up until the macro
+ * expansion "{{  }}" as a single token, so you may not immediately get the output you expect until you
+ * invoke a macro (even if it's just a dud macro "{{ }}" with no expansions ).
+ */
+
+%scanner%
+%prefix template_scan_
+
+/* outfp: the file we're writing to, currently always stdout.
+ * argc: the number of arguments passed to main()
+ * argv: the argument values passed to main() */
+%params FILE *outfp, int argc, char **argv
+
+%mode BODY
+
+: \A([^\{]|\{[^\{])*\{\{ {
+  /* Content from the start to the file to the first macro insertion
+   * (matching "\A" (start of file) to the first "{{") */
+  fwrite($text, 1, $len - 2 /* minus {{ */, outfp);
+  $set_mode(BODY);
+}
+
+: \A([^\{]|\{[^\{])*\Z {
+  /* Content from the start of the file to the end of the file, with
+   * no macro insertions
+   * (matching "\A" (start of file) to "\Z" (end of file) */
+  fwrite($text, 1, $len, outfp);
+}
+
+<BODY> {
+  : [\ \r\n]+ {
+    /* Whitespace in Macro area (ignored) */
+  }
+  : [_a-zA-Z][_a-zA-Z0-9]* {
+    int n;
+    int inserted = 0;
+    for (n = 1; n < argc; ++n) {
+      if ((argv[n][0] == '-') && (argv[n][1] == '-') && ((n + 1) < argc)) {
+        /* Have a match for the macro, try to open the corresponding file */
+        if (!strcmp(argv[n] + 2, $text)) {
+          FILE *fp = fopen(argv[n + 1], "rb");
+          if (!fp) {
+            fprintf(stderr, "Line %d, column %d: failed to open file \"%s\": %s\n", $line, $column, argv[n + 1], strerror(errno));
+            break;
+          }
+          static char buf[500];
+          size_t size_read;
+          while (0 < (size_read = fread(buf, 1, sizeof(buf), fp))) {
+            size_t bytes_written;
+            bytes_written = fwrite(buf, 1, size_read, outfp);
+            if (bytes_written != size_read) {
+              fprintf(stderr, "Line %d, column %d: failed to insert file \"%s\": %s\n", $line, $column, argv[n + 1], strerror(errno));
+            }
+          }
+          fclose(fp);
+          inserted = 1;
+        }
+        n ++; /* skip argument, loop's ++ will skip filename */
+      }
+    }
+    if (!inserted) {
+      fprintf(stderr, "Line %d, column %d: \"--%s\" was not an argument\n", $line, $column, $text);
+    }
+  }
+
+  : \}\}([^\{]|\{[^\{])*\{\{ {
+    /* Content from the last macro insertion to the next macro insertion
+     * (matching "}}" to the next "{{" */
+    fwrite($text + 2, 1, $len - 4 /* minus }} + {{ */, outfp);
+  }
+
+  : \}\}([^\{]|\{[^\{])*\Z {
+    /* Content from the last macro insertion to the end */
+    fwrite($text + 2, 1, $len - 2 /* minus }} */, outfp);
+  }
+}
+
+%%
+
+int main(int argc, char **argv) {
+  int r;
+  int done = 0;
+  static char s[300];
+
+  FILE *inputfp = stdin;
+  const char *inputfile = NULL;
+
+  /* Find input file amongst the arguments. */
+  int n;
+  for (n = 1; n < argc; ++n) {
+    if ((argv[n][0] == '-') && (argv[n][1] == '-')) {
+      /* Skip value for the argument */
+      if ((n + 1) < argc) n++;
+    }
+    /* Not an -- style argument, use it as input file */
+    inputfile = argv[n];
+    inputfp = fopen(argv[n], "rb");
+    if (!inputfp) {
+      fprintf(stderr, "Failed to open input file \"%s\"\n", argv[n]);
+      return EXIT_FAILURE;
+    }
+  }
+
+  struct template_scan_stack stack;
+  template_scan_stack_init(&stack);
+
+  do {
+    static char buf[500];
+    size_t bufsize;
+    if (inputfp == stdin) {
+      /* Assume interactive input: */
+      if (!fgets(buf, sizeof(buf), inputfp)) {
+        bufsize = 0;
+      }
+      else {
+        /* Problems permitting null characters on input with this.. */
+        bufsize = strlen(buf);
+      }
+    }
+    else {
+      bufsize = fread(buf, 1, sizeof(buf), inputfp);
+    }
+    if (!bufsize) {
+      if (ferror(inputfp)) {
+        fprintf(stderr, "Error reading from %s\n", (inputfp == stdin) ? "stdin" : inputfile);
+        goto exit_failure;
+      }
+      if (feof(stdin)) {
+        done = 1;
+      }
+    }
+
+    /* Set the input for the scanner to work on */
+    template_scan_set_input(&stack, buf, bufsize, done);
+    
+    /* Perform the scan */
+    r = template_scan_scan(&stack, stdout, argc, argv);
+
+    if (r) {
+      if (r == -1) {
+        done = 1;
+      }
+      else if (r == _TEMPLATE_SCAN_LEXICAL_ERROR) {
+        fprintf(stderr, "Lexical error\n");
+      }
+      else if (r == _TEMPLATE_SCAN_FEED_ME) {
+        continue;
+      }
+      else {
+        fprintf(stderr, "Unexpected error\n");
+      }
+      r = EXIT_FAILURE;
+      break;
+    }
+  } while (!done);
+  template_scan_stack_cleanup(&stack);
+
+  fclose(inputfp);
+  return r;
+
+exit_failure:
+  fclose(inputfp);
+
+  return EXIT_FAILURE;
+}
