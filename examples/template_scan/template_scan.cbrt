@@ -52,7 +52,7 @@
         if (!strcmp(argv[n] + 2, $text)) {
           FILE *fp = fopen(argv[n + 1], "rb");
           if (!fp) {
-            fprintf(stderr, "Line %d, column %d: failed to open file \"%s\": %s\n", $line, $column, argv[n + 1], strerror(errno));
+            fprintf(stderr, "Line %d, column %d: failed to open file \"%s\"\n", $line, $column, argv[n + 1]);
             break;
           }
           static char buf[500];
@@ -61,7 +61,7 @@
             size_t bytes_written;
             bytes_written = fwrite(buf, 1, size_read, outfp);
             if (bytes_written != size_read) {
-              fprintf(stderr, "Line %d, column %d: failed to insert file \"%s\": %s\n", $line, $column, argv[n + 1], strerror(errno));
+              fprintf(stderr, "Line %d, column %d: failed to insert file \"%s\"\n", $line, $column, argv[n + 1]);
             }
           }
           fclose(fp);
