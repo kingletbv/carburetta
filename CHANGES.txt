@@ -1,0 +1,26 @@
+
+0.8.2 - 2021-04-06
+
+- $chg_term() -- allows  changing the  terminal currently  matched in the
+  scanner prior to that matched terminal entering the parser.
+  This is a fairly advanced  feature that can  be hazardous, nevertheless
+  some languages really need it (C).
+
+- $set_mode() -- allows setting the current  scanner mode using a special
+  identifier from inside a pattern  action. This avoids the need of using
+  prefixes (for  both the  <prefix>set_mode  function and  its M_<PREFIX>
+  constants.
+
+- Better error location management, in particular when the error does not
+  have any input associated with it (eg. for instance, "unexpected end of
+  input" on any of the sections, has no associated text and yet can occur
+  frequently if, e.g. a brace is mismatched.)
+
+- Scannerless generation fix; previously had trouble generating without a 
+  scanner but this is a supported method.
+
+- Minor cleanups in code and NOTICE file.
+
+
+0.8.0 - 2021-03-22 - Initial Release.
+
