@@ -1698,6 +1698,9 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "  r = %sappend_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);\n", cc_prefix(cc));
   ip_printf(ip,  "  if (r) return r;\n"
                  "\n"
+                 "  /* Resume scanning after the input already processed. */\n"
+                 "  match_index = stack->match_buffer_size_;\n"
+                 "\n"
                  "  if (!is_final_input) {\n"
                  "    /* Need more input */\n"
                  "    stack->scan_state_ = scan_state;\n"
