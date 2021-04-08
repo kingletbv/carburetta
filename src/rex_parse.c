@@ -208,7 +208,7 @@ static const int rex_production_syms[] = {
   31
 };
 
-#ifndef CARB_REX_CARBURETTASRCREX_PARSE_H_INCLUDED
+#ifndef CARB_REX_SRCREX_PARSE_H_INCLUDED
 struct rex_stack {
   int error_recovery_:1;
   int pending_reset_:1;
@@ -299,7 +299,7 @@ struct rex_stack {
 
 #define M_REX_DEFAULT 1
 
-#endif /* CARB_REX_CARBURETTASRCREX_PARSE_H_INCLUDED */
+#endif /* CARB_REX_SRCREX_PARSE_H_INCLUDED */
 
 void rex_stack_init(struct rex_stack *stack) {
   stack->error_recovery_ = 0;
@@ -813,6 +813,9 @@ int rex_lex(struct rex_stack *stack) {
   
   r = rex_append_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);
   if (r) return r;
+  
+  /* Resume scanning after the input already processed. */
+  match_index = stack->match_buffer_size_;
   
   if (!is_final_input) {
     /* Need more input */
