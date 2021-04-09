@@ -1,3 +1,5 @@
+0.8.4 - 2021-04-09
+
 - inireader example - reads .ini files using Carburetta in a scanner-only
   fashion. Demonstrates  how to build a  library-like  encapsulation of a
   carburetta  scanner/parser where  the user-code  retains control of the 
