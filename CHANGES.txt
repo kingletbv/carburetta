@@ -3,6 +3,11 @@
   carburetta  scanner/parser where  the user-code  retains control of the 
   flow.
 
+- the template_scan example, showing how to use only the scanner section,
+  without a grammar section. The  example takes input and substitutes the
+  django like escaped fields like {{ this }} for files passed by argument
+  like "--this file".
+
 - fix: <prefix>scan() header prototype was broken if no additional params
   were passed in.
 
