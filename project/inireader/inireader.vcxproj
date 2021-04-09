@@ -19,27 +19,33 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\examples\template_scan\template_scan.cbrt">
+    <CustomBuild Include="..\..\examples\inireader\iniparser.cbrt">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\template_scan\obj\%(Filename).c --h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\template_scan\obj\%(Filename).c --h</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\template_scan\obj\%(Filename).c</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\inireader\obj\%(Filename).c --h</Command>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\template_scan\obj\%(Filename).c</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\inireader\obj\%(Filename).c --h</Command>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\template_scan\obj\%(Filename).c --h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\template_scan\obj\%(Filename).c --h</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\template_scan\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\inireader\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\inireader\obj\%(Filename).c</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\inireader\obj\%(Filename).c --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\inireader\obj\%(Filename).c --h</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\inireader\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\inireader\obj\%(Filename).c</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\template_scan\obj\%(Filename).c</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
     </CustomBuild>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\examples\inireader\ini_reader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\examples\inireader\main.c" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{086D0A79-D89B-4B0A-8B89-B79134EAB7F9}</ProjectGuid>
+    <ProjectGuid>{03367FAB-7969-4D84-9A7B-D6ED81C25BED}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>templatescan</RootNamespace>
+    <RootNamespace>inireader</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -90,22 +96,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)build\Win_amd64\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\Win_amd64\$(Configuration)\template_scan\obj\</IntDir>
+    <IntDir>$(SolutionDir)build\Win_amd64\$(Configuration)\inireader\obj\</IntDir>
+    <IncludePath>$(SolutionDir)examples\inireader;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)build\Win_amd64\$(Configuration)\inireader\obj\</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)build\Win_x86\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\Win_x86\$(Configuration)\template_scan\obj\</IntDir>
+    <IntDir>$(SolutionDir)build\Win_x86\$(Configuration)\inireader\obj\</IntDir>
+    <IncludePath>$(SolutionDir)examples\inireader;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)build\Win_x86\$(Configuration)\inireader\obj\</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)build\Win_x86\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\Win_x86\$(Configuration)\template_scan\obj\</IntDir>
+    <IntDir>$(SolutionDir)build\Win_x86\$(Configuration)\inireader\obj\</IntDir>
+    <IncludePath>$(SolutionDir)examples\inireader;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)build\Win_x86\$(Configuration)\inireader\obj\</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)build\Win_amd64\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\Win_amd64\$(Configuration)\template_scan\obj\</IntDir>
+    <IntDir>$(SolutionDir)build\Win_amd64\$(Configuration)\inireader\obj\</IntDir>
+    <IncludePath>$(SolutionDir)examples\inireader;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)build\Win_amd64\$(Configuration)\inireader\obj\</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -114,7 +124,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -129,7 +139,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -146,7 +156,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -165,7 +175,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>

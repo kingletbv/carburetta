@@ -21,12 +21,19 @@ $(INTERMEDIATE)/calc/calc.c: $(OUT)/carburetta examples/calc/calc.cbrt
 	mkdir -p $(@D)
 	$(OUT)/carburetta examples/calc/calc.cbrt --c $(INTERMEDIATE)/calc/calc.c
 
+$(INTERMEDIATE)/inireader/inireader.c: $(OUT)/carburetta examples/inireader/inireader.cbrt
+	mkdir -p $(@D)
+	$(OUT)/carburetta examples/inireader/inireader.cbrt --c $(INTERMEDIATE)/inireader/inireader.c
+    
 $(INTERMEDIATE)/template_scan/template_scan.c: $(OUT)/carburetta examples/template_scan/template_scan.cbrt
 	mkdir -p $(@D)
 	$(OUT)/carburetta examples/template_scan/template_scan.cbrt --c $(INTERMEDIATE)/template_scan/template_scan.c
 
 $(OUT)/calc: $(INTERMEDIATE)/calc/calc.c
 	$(CC) -o $(OUT)/calc $(INTERMEDIATE)/calc/calc.c
+
+$(OUT)/inireader: $(INTERMEDIATE)/inireader/inireader.c
+	$(CC) -o $(OUT)/inireader $(INTERMEDIATE)/inireader/inireader.c
 
 $(OUT)/template_scan: $(INTERMEDIATE)/template_scan/template_scan.c
 	$(CC) -o $(OUT)/template_scan $(INTERMEDIATE)/template_scan/template_scan.c
