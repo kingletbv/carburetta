@@ -28,6 +28,11 @@
 #include <string.h>
 #endif
 
+#ifndef INTTYPES_H_INCLUDED
+#define INTTYPES_H_INCLUDED
+#include <inttypes.h>
+#endif
+
 #ifndef CTYPE_H_INCLUDED
 #define CTYPE_H_INCLUDED
 #include <ctype.h>
@@ -156,6 +161,33 @@ void at_exit_delete_temp_output_handler(void) {
   }
 }
 
+void print_dbg_char(FILE *fp, int c) {
+  if (isprint(c) && (c != '\\') && (c != '\'') && (c != '\"') ) {
+    printf("%c", c);
+    return;
+  }
+  switch (c) {
+  case '\a': printf("\\a"); break;
+  case '\b': printf("\\b"); break;
+  case '\f': printf("\\f"); break;
+  case '\n': printf("\\n"); break;
+  case '\r': printf("\\r"); break;
+  case '\t': printf("\\t"); break;
+  case '\v': printf("\\v"); break;
+  case '\\': printf("\\\\"); break;
+  case '\'': printf("\\'"); break;
+  case '\"': printf("\\\""); break;
+  case '\?': printf("\\?"); break;
+  default:
+    if (c <= 0xFFFF) {
+      printf("\\u%04x", c);
+    }
+    else {
+      printf("\\U%08x", c);
+    }
+  }
+}
+
 void print_usage(void) {
   fprintf(stderr, "Carburetta parser generator (C) 2020-2021 Kinglet B.V.\n"
                   "version 0.8.3\n"
@@ -226,6 +258,7 @@ int main(int argc, char **argv) {
   int expecting_cfile = 0;
   int generate_cfile = 1;
   int generate_hfile = 0;
+  int experimental = 0;
   char *input_filename = NULL;
   while (cr) {
     if (!strcmp("--c", *cpv)) {
@@ -238,6 +271,10 @@ int main(int argc, char **argv) {
       expecting_cfile = 0;
       generate_hfile = 1;
       cr--; cpv++;
+    }
+    else if (!strcmp("--x", *cpv)) {
+      cr--; cpv++;
+      experimental = 1;
     }
     else if (expecting_hfile) {
       if (cc.h_output_filename_) {
@@ -837,6 +874,50 @@ int main(int argc, char **argv) {
         goto cleanup_exit;
       }
     }
+
+    if (experimental) {
+      /* Debug print all grouped ranges */
+      struct rex_symbol_group *sg = rex.dfa_.symbol_groups_;
+      printf("Symbol groups:\n");
+      if (sg) {
+        FILE *fp = stdout;
+        int n = 0;
+        do {
+          sg = sg->chain_;
+
+          fprintf(fp, "%3d: ", n);
+
+          struct rex_symbol_range *sr = sg->ranges_;
+          if (sr) {
+            do {
+              sr = sr->chain_;
+
+              if ((sr->symbol_start_ + 1) == sr->symbol_end_) {
+                fprintf(fp, "\'");
+                print_dbg_char(fp, sr->symbol_start_);
+                fprintf(fp, "\'");
+              }
+              else {
+                fprintf(fp, "\'");
+                print_dbg_char(fp, sr->symbol_start_);
+                fprintf(fp, "\'-\'");
+                print_dbg_char(fp, sr->symbol_end_ - 1);
+                fprintf(fp, "\'");
+              }
+              if (sr != sg->ranges_) {
+                fprintf(fp, ", ");
+              }
+            } while (sr != sg->ranges_);
+          }
+
+          fprintf(fp, "\n");
+          fprintf(fp, "     %016" PRIx64 "\n", sg->dfa_trans_group_membership_[0]);
+
+          n++;
+
+        } while (sg != rex.dfa_.symbol_groups_);
+      }
+    } /* (experimental) */
   }
 
   FILE *outfp;

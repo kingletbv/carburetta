@@ -31,6 +31,8 @@ struct rex_nfa;
 #define REX_ANCHOR_END_OF_INPUT 3
 
 #define REX_DFA_HASH_TABLE_SIZE 127
+#define REX_SYMBOL_GROUP_HASH_TABLE_SIZE 127
+
 
 struct rex_nfa_trans {
   /* Valid if !is_empty_, contains symbol for this transition */
@@ -80,6 +82,10 @@ struct rex_dfa {
 
   int next_dfa_node_ordinal_;
 
+  struct rex_dfa_trans_group *trans_groups_;
+
+  struct rex_symbol_group *symbol_groups_;
+
   struct rex_dfa_node *hash_table_[REX_DFA_HASH_TABLE_SIZE];
 };
 
@@ -100,6 +106,10 @@ struct rex_dfa_node {
   /* 1-based ordinal of the DFA node (value 0 is reserved for lexical errors) */
   int ordinal_;
 
+  /* Pointer to the group of transitions, from the same DFA node, for which this is  
+   * their to_ DFA node. (Used at runtime) */
+  struct rex_dfa_trans_group *trans_group_;
+
   /* Map of all NFA nodes in this DFA state - note this is a variable length map (the '1' should be ignored.) */
   uint64_t map_[1];
 };
@@ -117,6 +127,47 @@ struct rex_dfa_trans {
 
   struct rex_dfa_trans *from_peer_;
   struct rex_dfa_trans *to_peer_;
+  
+  struct rex_dfa_trans *trans_group_sibling_;
+};
+
+struct rex_dfa_trans_group {
+  /* Ordinal number of the trans group, starts at 0 and is incremented for each group thus created. */
+  int ordinal_;
+
+  /* Backside of range (the end of the range symbol_end_) is the value valid in the heap. */
+  int heap_is_at_backside_:1;
+
+  /* Tail cyclic chain, ordered by symbol start, of all rex_dfa_trans members of this group */
+  struct rex_dfa_trans *transitions_;
+  struct rex_dfa_trans_group *sibling_;
+};
+
+struct rex_symbol_group {
+  /* Tail cyclic chain of all symbol groups within the dfa */
+  struct rex_symbol_group *chain_;
+
+  /* Tail cyclic chain within the hashtable (at runtime, active only inside rex_dfa_make_symbol_groups().) */
+  struct rex_symbol_group *hash_chain_;
+
+
+  /* Ordered set of tail cyclic symbol ranges that define the group */
+  struct rex_symbol_range *ranges_;
+
+  /* Map of all rex_dfa_trans_group members of this symbol group - note this is a variable length bitmap (the '1' array
+   * size should be ignored.) The rex_dfa_trans_group::ordinal_ corresponds to the bit set. */
+  uint64_t dfa_trans_group_membership_[1];
+};
+
+struct rex_symbol_range {
+  /* Next range in rex_symbol_group::ranges_ */
+  struct rex_symbol_range *chain_;
+
+  /* Start symbol (inclusive) of range */
+  uint32_t symbol_start_;
+
+  /* End symbol (exclusive) of range */
+  uint32_t symbol_end_;
 };
 
 struct rex_pattern {

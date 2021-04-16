@@ -44,6 +44,11 @@
 #endif
 #endif
 
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
+#include <assert.h>
+#endif
+
 #ifndef REX_PARSE_H_INCLUDED
 #define REX_PARSE_H_INCLUDED
 struct rex_nfa;
@@ -468,6 +473,8 @@ void rex_dfa_init(struct rex_dfa *dfa) {
   dfa->failed_ = 0;
   dfa->nodes_ = NULL;
   dfa->next_dfa_node_ordinal_ = 1;
+  dfa->trans_groups_ = NULL;
+  dfa->symbol_groups_ = NULL;
   size_t n;
   for (n = 0; n < REX_DFA_HASH_TABLE_SIZE; ++n) {
     dfa->hash_table_[n] = NULL;
@@ -496,6 +503,27 @@ void rex_dfa_cleanup(struct rex_dfa *dfa) {
       dn = next;
 
     } while (dn != dfa->nodes_);
+  }
+  struct rex_symbol_group *sg = dfa->symbol_groups_;
+  if (sg) {
+    do {
+      struct rex_symbol_group *next = sg->chain_;
+
+      struct rex_symbol_range *sr = sg->ranges_;
+      if (sr) {
+        do {
+          struct rex_symbol_range *next = sr->chain_;
+
+          free(sr);
+
+          sr = next;
+        } while (sr != sg->ranges_);
+      }
+
+      free(sg);
+
+      sg = next;
+    } while (sg != dfa->symbol_groups_);
   }
 }
 
@@ -558,7 +586,333 @@ static struct rex_dfa_trans *rex_alloc_dfa_trans(struct rex_scanner *rex, struct
     dt->to_peer_ = dt;
   }
 
+  dt->trans_group_sibling_ = NULL;
+
   return dt;
+}
+
+static struct rex_dfa_trans_group *rex_alloc_trans_group(struct rex_dfa *dfa) {
+  struct rex_dfa_trans_group *tg = (struct rex_dfa_trans_group *)malloc(sizeof(struct rex_dfa_trans_group));
+  if (!tg) {
+    return NULL;
+  }
+  if (dfa->trans_groups_) {
+    tg->ordinal_ = dfa->trans_groups_->ordinal_ + 1; /* tail's ordinal + 1*/
+    tg->sibling_ = dfa->trans_groups_->sibling_;
+    dfa->trans_groups_->sibling_ = tg;
+  }
+  else {
+    /* First ordinal is 0 */
+    tg->ordinal_ = 0;
+    tg->sibling_ = tg;
+  }
+  dfa->trans_groups_ = tg;
+
+  tg->transitions_ = NULL;
+  tg->heap_is_at_backside_ = 0;
+
+  return tg;
+}
+
+static uint32_t rex_dfa_trans_group_get_clipped_range_value(struct rex_dfa_trans_group *dtg) {
+  /* Check the first of the transitions (these rotate round-robin during processing, always pointing to the current
+   * symbol range for which the trans_group was inserted) and determine if the start of that range is valid for the
+   * symbol_clip, if so, return it, if not, return the end of the range. */
+  if (dtg->heap_is_at_backside_) {
+    return dtg->transitions_->trans_group_sibling_->symbol_end_;
+  }
+  return dtg->transitions_->trans_group_sibling_->symbol_start_;
+}
+
+static void rex_dfa_trans_group_heapify(struct rex_dfa_trans_group **heap, size_t length, size_t at) {
+  for (;;) {
+    size_t left, right;
+    left = at + at + 1;
+    right = left + 1;
+    size_t smallest;
+    if ((left < length) && 
+        (rex_dfa_trans_group_get_clipped_range_value(heap[left]) < rex_dfa_trans_group_get_clipped_range_value(heap[at]))) {
+      smallest = left;
+    }
+    else {
+      smallest = at;
+    }
+    if ((right < length) &&
+        (rex_dfa_trans_group_get_clipped_range_value(heap[right]) < rex_dfa_trans_group_get_clipped_range_value(heap[smallest]))) {
+      smallest = right;
+    }
+    if (smallest == at) {
+      /* no swap needed, the heap is sound. */
+      return;
+    }
+    /* Tail cyclic recursion; continue to heapify at index smallest */
+    struct rex_dfa_trans_group *swap = heap[smallest];
+    heap[smallest] = heap[at];
+    heap[at] = swap;
+    at = smallest;
+  }
+}
+
+static int rex_dfa_make_trans_group_priority_queue(struct rex_dfa *dfa, size_t *plength, struct rex_dfa_trans_group ***pheap) {
+  size_t queue_length = dfa->trans_groups_ ? (size_t)dfa->trans_groups_->ordinal_ + 1 : 0;
+  if (!queue_length) return 0;
+
+  struct rex_dfa_trans_group **heap = (struct rex_dfa_trans_group **)calloc(queue_length, sizeof(struct rex_dfa_trans_group *));
+  if (!heap) {
+    return _REX_NO_MEMORY;
+  }
+
+  /* Copy all trans_group pointers into the array and prepare to make a heap */
+  struct rex_dfa_trans_group *dtg = dfa->trans_groups_;
+  if (dtg) {
+    do {
+      dtg = dtg->sibling_;
+
+      heap[dtg->ordinal_] = dtg;
+      dtg->heap_is_at_backside_ = 0;
+
+    } while (dtg != dfa->trans_groups_);
+  }
+
+  size_t n = queue_length / 2;
+  do {
+    rex_dfa_trans_group_heapify(heap, queue_length, n);
+  } while (n--);
+
+  *plength = queue_length;
+  *pheap = heap;
+
+  return 0;
+}
+
+static int rex_dfa_make_symbol_groups(struct rex_dfa *dfa) {
+  int r;
+  size_t n;
+  struct rex_dfa_trans_group **heap = NULL;
+  uint64_t *dfa_trans_group_members = NULL;
+  struct rex_symbol_group **symbol_group_hashtable = NULL;
+  struct rex_dfa_node *dn;
+  
+  /* Group all DFA transitions from and to the identical DFA nodes into groups,
+   * these groups can then be classified for input ranges such that we may produce
+   * a new set of symbols "categories" that do not overlap, but strongly compress the
+   * input ranges while at the same time allowing very large codepoint numbers on the
+   * input.. */
+  dn = dfa->nodes_;
+  if (dn) {
+    do {
+      dn = dn->chain_;
+
+      struct rex_dfa_trans *dt = dn->outbound_;
+      if (dt) {
+        do {
+          dt = dt->from_peer_;
+
+          dt->to_->trans_group_ = NULL;
+          
+        } while (dt != dn->outbound_);
+
+        do {
+          dt = dt->from_peer_;
+                    
+          if (!dt->is_anchor_) {
+            if (!dt->to_->trans_group_) {
+              dt->to_->trans_group_ = rex_alloc_trans_group(dfa);
+              if (!dt->to_->trans_group_) {
+                r = _REX_NO_MEMORY;
+                goto cleanup;
+              }
+            }
+            struct rex_dfa_trans_group *tg = dt->to_->trans_group_;
+
+            if (tg->transitions_) {
+              dt->trans_group_sibling_ = tg->transitions_->trans_group_sibling_;
+              tg->transitions_->trans_group_sibling_ = dt;
+            }
+            else {
+              dt->trans_group_sibling_ = dt;
+            }
+            tg->transitions_ = dt;
+          }
+
+        } while (dt != dn->outbound_);
+      }
+
+    } while (dn != dfa->nodes_);
+  }
+
+  /* Discover all possible dfa-trans-group intersections, each of these intersections
+   * develop a bitmask (where a set bit is a dfa-trans-group's membership with the 
+   * intersection). Upon occurrance of such a bit, the dfa-trans-group is chained into
+   * the new dfa-trans-group-intersection. Another word for dfa-trans-group-intersection
+   * might be symbol-category. */
+  /* 1) Develop heaps, each heap holds the "symbol" at the transition of the dfa-trans-group. 
+   *    All the transitions are the ranges of the dfa_trans'itions that the dfa-trans-group
+   *    is made of.
+   * 2) The first heap delineates the bits that are currently "off" (and their symbol priority
+   *    is therefore the start of the range where the bit turns on.)
+   * 3) The second heap delinieats the bits that are currently "on" (and their symbol priority
+   *    is therefore the end of the range where the bit turns off.)
+   * XXX: Should we not consider to combine the two heaps? We need to check both anyway, for any
+   *      transition point, in priority order.
+   * XXX: We should, and furthermore, we should walk rex_dfa_trans_group::transitions_ in round-
+   *      robin order. When the last symbol edge has transitioned, everything will be back the
+   *      way it was.
+   */
+  size_t heap_length = 0;
+  r = rex_dfa_make_trans_group_priority_queue(dfa, &heap_length, &heap);
+  if (r) goto cleanup;
+
+  size_t num_trans_groups = (size_t)dfa->trans_groups_->ordinal_;
+
+  size_t dfa_trans_group_members_size = sizeof(uint64_t) * ((63 + num_trans_groups) / 64);
+  dfa_trans_group_members = (uint64_t *)malloc(dfa_trans_group_members_size);
+  if (!dfa_trans_group_members) {
+    r = _REX_NO_MEMORY;
+    goto cleanup;
+  }
+  memset(dfa_trans_group_members, 0, dfa_trans_group_members_size);
+
+  symbol_group_hashtable = (struct rex_symbol_group **)malloc(sizeof(struct rex_symbol_group *) * REX_SYMBOL_GROUP_HASH_TABLE_SIZE);
+  if (!symbol_group_hashtable) {
+    r = _REX_NO_MEMORY;
+    goto cleanup;
+  }
+  for (n = 0; n < REX_SYMBOL_GROUP_HASH_TABLE_SIZE; ++n) {
+    symbol_group_hashtable[n] = NULL;
+  }
+
+  uint32_t symbol_clip = 0;
+
+  uint32_t current_symbol_edge = 0;
+
+  while (heap_length) {
+
+    current_symbol_edge = rex_dfa_trans_group_get_clipped_range_value(heap[0]);
+    do {
+      if (!heap[0]->heap_is_at_backside_) {
+        /* heap[0] joins the current set; re-insert it on its next symbol edge */
+        dfa_trans_group_members[heap[0]->ordinal_ / 64] |= ((uint64_t)1) << (heap[0]->ordinal_ & 63);
+        heap[0]->heap_is_at_backside_ = 1;
+        rex_dfa_trans_group_heapify(heap, heap_length, 0);
+      }
+      else {
+        /* heap[0] leaves the current set - check if this ends its entire consideration or 
+         * if we need to re-insert it. */
+        dfa_trans_group_members[heap[0]->ordinal_ / 64] &= ~(((uint64_t)1) << (heap[0]->ordinal_ & 63));
+        
+        /* Step to next DFA transition (in a round-robin fashion) and see if we arrived
+         * back at the start (if so, then the start of the range is behind us (behind symbol_clip)). */
+        heap[0]->transitions_ = heap[0]->transitions_->trans_group_sibling_;
+        heap[0]->heap_is_at_backside_ = 0; /* start of next dfa transition range */
+        if (rex_dfa_trans_group_get_clipped_range_value(heap[0]) < current_symbol_edge) {
+          /* We've already passed the next range. */
+          /* All of the DFA transitions in this DFA transition group are behind us, delete
+           * from the heap */
+          heap[0] = heap[--heap_length];
+          rex_dfa_trans_group_heapify(heap, heap_length, 0);
+        }
+        else {
+          /* We did not arrive back at the start, re-insert */
+          rex_dfa_trans_group_heapify(heap, heap_length, 0);
+        }
+      }
+    } while (heap_length && (current_symbol_edge == rex_dfa_trans_group_get_clipped_range_value(heap[0])));
+
+    if (heap_length) {
+      symbol_clip = rex_dfa_trans_group_get_clipped_range_value(heap[0]);
+
+      /* Current range is from current_symbol_edge to symbol_clip; the current membership of DFA trans groups for
+       * this range is dfa_trans_group_members. */
+      /* Look for the symbol group with these DFA transition groups as members.. */
+      uint64_t hash = 0;
+      size_t n;
+      for (n = 0; n < dfa_trans_group_members_size / sizeof(uint64_t); ++n) {
+        /* Rotate Left by 13 bits (13 is a prime, this is intentional) */
+        hash = (hash << 13) | (hash >> ((-13) & 63));
+        hash += dfa_trans_group_members[n];
+      }
+      int hash_index = (int)(hash % REX_SYMBOL_GROUP_HASH_TABLE_SIZE);
+      struct rex_symbol_group *tail = symbol_group_hashtable[hash_index];
+      struct rex_symbol_group *sg = tail;
+      int match_found = 0;
+      if (tail) {
+        do {
+          sg = sg->hash_chain_;
+
+          if (!memcmp(sg->dfa_trans_group_membership_, dfa_trans_group_members, dfa_trans_group_members_size)) {
+            match_found = 1;
+            break;
+          }
+        } while (sg != tail);
+      }
+      if (!match_found) {
+        sg = (struct rex_symbol_group *)malloc(sizeof(struct rex_symbol_group) + dfa_trans_group_members_size - sizeof(uint64_t));
+        if (!sg) {
+          r = _REX_NO_MEMORY;
+          goto cleanup;
+        }
+        memcpy(sg->dfa_trans_group_membership_, dfa_trans_group_members, dfa_trans_group_members_size);
+        if (tail) {
+          sg->hash_chain_ = tail->hash_chain_;
+          tail->hash_chain_ = sg;
+        }
+        else {
+          sg->hash_chain_ = sg;
+        }
+        symbol_group_hashtable[hash_index] = sg;
+        sg->ranges_ = NULL;
+
+        if (dfa->symbol_groups_) {
+          sg->chain_ = dfa->symbol_groups_->chain_;
+          dfa->symbol_groups_->chain_ = sg;
+        }
+        else {
+          sg->chain_ = sg;
+        }
+        dfa->symbol_groups_ = sg;
+      }
+
+      /* Append current range to ranges of match - remember from above, the current range is from current_symbol_edge to symbol_clip */
+      if (!sg->ranges_ || (sg->ranges_->symbol_end_ != current_symbol_edge)) {
+        /* Allocate new range and append. */
+        struct rex_symbol_range *sr = (struct rex_symbol_range *)malloc(sizeof(struct rex_symbol_range));
+        if (!sr) {
+          r = _REX_NO_MEMORY;
+          goto cleanup;
+        }
+        if (sg->ranges_) {
+          sr->chain_ = sg->ranges_->chain_;
+          sg->ranges_->chain_ = sr;
+        }
+        else {
+          sr->chain_ = sr;
+        }
+        sg->ranges_ = sr;
+
+        sr->symbol_start_ = current_symbol_edge;
+        sr->symbol_end_ = symbol_clip;
+      }
+      else /* (sg->ranges_ && (sg->ranges_->symbol_end_ == current_symbol_edge)) */ {
+        /* Extend last range to include current one */
+        sg->ranges_->symbol_end_ = symbol_clip;
+      }
+    }
+    /*
+    Adjacent symbol transitions ? Would be caught, right ?
+    symbol_end_ is exclusive.
+    * Build the bitmap
+    * Build out the range
+    * Figure out how to skip areas with no map (these should be handled by the "catch all" UTF-8 decoding -- all map bits set to 0 perhaps?)
+    * Each map should be hashed to a symbol-group; ranges should be added to those symbol groups.
+    */
+  }
+
+cleanup:
+  if (heap) free(heap);
+  if (dfa_trans_group_members) free(dfa_trans_group_members);
+  if (symbol_group_hashtable) free(symbol_group_hashtable);
+  return r;
 }
 
 int rex_realize_modes(struct rex_scanner *rex) {
@@ -1174,6 +1528,9 @@ int rex_realize_modes(struct rex_scanner *rex) {
       dn->pattern_matched_ = pat;
     } while (dn != rex->dfa_.nodes_);
   }
+
+  r = rex_dfa_make_symbol_groups(&rex->dfa_);
+  if (r) goto cleanup;
 
   r = 0;
 cleanup:
