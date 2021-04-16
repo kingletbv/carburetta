@@ -190,7 +190,7 @@ void print_dbg_char(FILE *fp, int c) {
 
 void print_usage(void) {
   fprintf(stderr, "Carburetta parser generator (C) 2020-2021 Kinglet B.V.\n"
-                  "version 0.8.3\n"
+                  "version 0.8.5\n"
                   "https://carburetta.com/\n"
                   "\n"
                   "carburetta <inputfile.cbrt> [ --c [ <c_filename> [--h [h_filename] ] ] ]\n"

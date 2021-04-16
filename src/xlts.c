@@ -679,7 +679,7 @@ int xlts_end_location(struct xlts *x, int *endline, int *endcolumn, size_t *endo
         if (x->original_[x->num_original_ - 1] == '\n') {
           /* Process trailing newline. */
           if (endline) {
-            *endline++;
+            (*endline)++;
           }
           if (endcolumn) {
             *endcolumn = 1;
