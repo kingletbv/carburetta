@@ -743,22 +743,8 @@ static int rex_dfa_make_symbol_groups(struct rex_dfa *dfa) {
 
   /* Discover all possible dfa-trans-group intersections, each of these intersections
    * develop a bitmask (where a set bit is a dfa-trans-group's membership with the 
-   * intersection). Upon occurrance of such a bit, the dfa-trans-group is chained into
-   * the new dfa-trans-group-intersection. Another word for dfa-trans-group-intersection
-   * might be symbol-category. */
-  /* 1) Develop heaps, each heap holds the "symbol" at the transition of the dfa-trans-group. 
-   *    All the transitions are the ranges of the dfa_trans'itions that the dfa-trans-group
-   *    is made of.
-   * 2) The first heap delineates the bits that are currently "off" (and their symbol priority
-   *    is therefore the start of the range where the bit turns on.)
-   * 3) The second heap delinieats the bits that are currently "on" (and their symbol priority
-   *    is therefore the end of the range where the bit turns off.)
-   * XXX: Should we not consider to combine the two heaps? We need to check both anyway, for any
-   *      transition point, in priority order.
-   * XXX: We should, and furthermore, we should walk rex_dfa_trans_group::transitions_ in round-
-   *      robin order. When the last symbol edge has transitioned, everything will be back the
-   *      way it was.
-   */
+   * intersection). These intersections form the ranges of the symbol groups down the
+   * line.. */
   size_t heap_length = 0;
   r = rex_dfa_make_trans_group_priority_queue(dfa, &heap_length, &heap);
   if (r) goto cleanup;
