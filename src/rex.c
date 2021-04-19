@@ -481,6 +481,30 @@ void rex_dfa_init(struct rex_dfa *dfa) {
   }
 }
 
+void rex_selector_cleanup(struct rex_selector *selector) {
+  if (selector->next_in_dfa_transition_group_ == selector) {
+    selector->dfa_transition_group_->selectors_ = NULL;
+  }
+  else {
+    if (selector->dfa_transition_group_->selectors_ == selector) {
+      selector->dfa_transition_group_->selectors_ = selector->next_in_dfa_transition_group_;
+    }
+    selector->next_in_dfa_transition_group_->prev_in_dfa_transition_group_ = selector->prev_in_dfa_transition_group_;
+    selector->prev_in_dfa_transition_group_->next_in_dfa_transition_group_ = selector->next_in_dfa_transition_group_;
+  }
+
+  if (selector->next_in_symbol_group_ == selector) {
+    selector->symbol_group_->selectors_ = NULL;
+  }
+  else {
+    if (selector->symbol_group_->selectors_ == selector) {
+      selector->symbol_group_->selectors_ = selector->next_in_symbol_group_;
+    }
+    selector->next_in_symbol_group_->prev_in_symbol_group_ = selector->prev_in_symbol_group_;
+    selector->prev_in_symbol_group_->next_in_symbol_group_ = selector->next_in_symbol_group_;
+  }
+}
+
 void rex_dfa_cleanup(struct rex_dfa *dfa) {
   struct rex_dfa_node *dn = dfa->nodes_;
   if (dn) {
@@ -520,10 +544,29 @@ void rex_dfa_cleanup(struct rex_dfa *dfa) {
         } while (sr != sg->ranges_);
       }
 
+      while (sg->selectors_) {
+        struct rex_selector *selector = sg->selectors_;
+        rex_selector_cleanup(selector);
+        free(selector);
+      }
+
       free(sg);
 
       sg = next;
     } while (sg != dfa->symbol_groups_);
+  }
+  struct rex_dfa_trans_group *tg = dfa->trans_groups_;
+  if (tg) {
+    do {
+      tg = tg->sibling_;
+
+      while (tg->selectors_) {
+        struct rex_selector *selector = tg->selectors_;
+        rex_selector_cleanup(selector);
+        free(selector);
+      }
+
+    } while (tg != dfa->trans_groups_);
   }
 }
 
@@ -610,6 +653,7 @@ static struct rex_dfa_trans_group *rex_alloc_trans_group(struct rex_dfa *dfa) {
 
   tg->transitions_ = NULL;
   tg->heap_is_at_backside_ = 0;
+  tg->selectors_ = NULL;
 
   return tg;
 }
@@ -848,6 +892,7 @@ static int rex_dfa_make_symbol_groups(struct rex_dfa *dfa) {
         }
         symbol_group_hashtable[hash_index] = sg;
         sg->ranges_ = NULL;
+        sg->selectors_ = NULL;
 
         if (dfa->symbol_groups_) {
           sg->chain_ = dfa->symbol_groups_->chain_;
@@ -857,6 +902,46 @@ static int rex_dfa_make_symbol_groups(struct rex_dfa *dfa) {
           sg->chain_ = sg;
         }
         dfa->symbol_groups_ = sg;
+
+        /* Chain the new symbol group to all DFA transition groups that it selects for (which transition on any
+         * member range of the symbol group.) These are the active DFA trans groups on the heap. */
+        for (n = 0; n < heap_length; ++n) {
+          struct rex_dfa_trans_group *tg = heap[n];
+          if (tg->heap_is_at_backside_) {
+            /* If range is active (heap is at backside of range) then it must be an active member */
+            assert(dfa_trans_group_members[tg->ordinal_ / 64] & (((uint64_t)1) << (tg->ordinal_ & 63)));
+            struct rex_selector *selector = (struct rex_selector *)malloc(sizeof(struct rex_selector));
+            if (!selector) {
+              r = _REX_NO_MEMORY;
+              goto cleanup;
+            }
+            selector->dfa_transition_group_ = tg;
+            if (tg->selectors_) {
+              selector->next_in_dfa_transition_group_ = tg->selectors_;
+              selector->prev_in_dfa_transition_group_ = tg->selectors_->prev_in_dfa_transition_group_;
+              selector->next_in_dfa_transition_group_->prev_in_dfa_transition_group_ = selector->prev_in_dfa_transition_group_->next_in_dfa_transition_group_ = selector;
+            }
+            else {
+              selector->next_in_dfa_transition_group_ = selector->prev_in_dfa_transition_group_ = selector;
+              tg->selectors_ = selector;
+            }
+
+            selector->symbol_group_ = sg;
+            if (sg->selectors_) {
+              selector->next_in_symbol_group_ = sg->selectors_;
+              selector->prev_in_symbol_group_ = sg->selectors_->prev_in_symbol_group_;
+              selector->prev_in_symbol_group_->next_in_symbol_group_ = selector->next_in_symbol_group_->prev_in_symbol_group_ = selector;
+            }
+            else {
+              selector->next_in_symbol_group_ = selector->prev_in_symbol_group_ = selector;
+              sg->selectors_ = selector;
+            }
+          }
+          else {
+            /* If range is not active (heap at frontside of some range,) then it must not be an active member */
+            assert(!(dfa_trans_group_members[tg->ordinal_ / 64] & (((uint64_t)1) << (tg->ordinal_ & 63))));
+          }
+        }
       }
 
       /* Append current range to ranges of match - remember from above, the current range is from current_symbol_edge to symbol_clip */
@@ -884,14 +969,6 @@ static int rex_dfa_make_symbol_groups(struct rex_dfa *dfa) {
         sg->ranges_->symbol_end_ = symbol_clip;
       }
     }
-    /*
-    Adjacent symbol transitions ? Would be caught, right ?
-    symbol_end_ is exclusive.
-    * Build the bitmap
-    * Build out the range
-    * Figure out how to skip areas with no map (these should be handled by the "catch all" UTF-8 decoding -- all map bits set to 0 perhaps?)
-    * Each map should be hashed to a symbol-group; ranges should be added to those symbol groups.
-    */
   }
 
 cleanup:

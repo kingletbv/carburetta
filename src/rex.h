@@ -141,6 +141,9 @@ struct rex_dfa_trans_group {
   /* Tail cyclic chain, ordered by symbol start, of all rex_dfa_trans members of this group */
   struct rex_dfa_trans *transitions_;
   struct rex_dfa_trans_group *sibling_;
+
+  /* Tail cyclic chain of all selector symbol groups whose symbols transition this dfa transition group. */
+  struct rex_selector *selectors_;
 };
 
 struct rex_symbol_group {
@@ -150,9 +153,11 @@ struct rex_symbol_group {
   /* Tail cyclic chain within the hashtable (at runtime, active only inside rex_dfa_make_symbol_groups().) */
   struct rex_symbol_group *hash_chain_;
 
-
   /* Ordered set of tail cyclic symbol ranges that define the group */
   struct rex_symbol_range *ranges_;
+
+  /* All DFA transition groups that transition on any of this symbol group's symbols */
+  struct rex_selector *selectors_;
 
   /* Map of all rex_dfa_trans_group members of this symbol group - note this is a variable length bitmap (the '1' array
    * size should be ignored.) The rex_dfa_trans_group::ordinal_ corresponds to the bit set. */
@@ -168,6 +173,17 @@ struct rex_symbol_range {
 
   /* End symbol (exclusive) of range */
   uint32_t symbol_end_;
+};
+
+struct rex_selector {
+  /* "Association class" linking n:m the DFA transition groups (uniquely identifying all transitions between
+   * two DFA nodes) with the symbol groups that select all those transition groups (identifying all symbols
+   * that select for those transitions.) */
+  struct rex_symbol_group *symbol_group_;
+  struct rex_selector *next_in_symbol_group_, *prev_in_symbol_group_;
+
+  struct rex_dfa_trans_group *dfa_transition_group_;
+  struct rex_selector *next_in_dfa_transition_group_, *prev_in_dfa_transition_group_;
 };
 
 struct rex_pattern {
