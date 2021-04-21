@@ -3348,7 +3348,7 @@ int encode_utf8_range(struct rex_scanner *rex, uint32_t u32_start, uint32_t u32_
     if (r) return r;
   }
   if ((u32_start <= 0x10FFFF) && (u32_end >= 0x10000)) {
-    sfirst = (u32_start < 0x10000) ? 0x100000 : u32_start;
+    sfirst = (u32_start < 0x10000) ? 0x10000 : u32_start;
     slast = (u32_end > 0x10FFFF) ? 0x10FFFF : u32_end;
     /* Encode quadruple byte code unit range */
     uint8_t mincu[] = {0xF0, 0x80, 0x80, 0x80};
