@@ -68,6 +68,7 @@ void carburetta_context_init(struct carburetta_context *cc) {
   cc->epilogue_ = NULL;
   cc->current_snippet_continuation_ = 0;
   cc->continuation_enabled_ = 1;
+  cc->experimental_ = 0;
 }
 
 void carburetta_context_cleanup(struct carburetta_context *cc) {

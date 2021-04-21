@@ -258,7 +258,6 @@ int main(int argc, char **argv) {
   int expecting_cfile = 0;
   int generate_cfile = 1;
   int generate_hfile = 0;
-  int experimental = 0;
   char *input_filename = NULL;
   while (cr) {
     if (!strcmp("--c", *cpv)) {
@@ -274,7 +273,7 @@ int main(int argc, char **argv) {
     }
     else if (!strcmp("--x", *cpv)) {
       cr--; cpv++;
-      experimental = 1;
+      cc.experimental_ = 1;
     }
     else if (expecting_hfile) {
       if (cc.h_output_filename_) {
@@ -861,6 +860,9 @@ int main(int argc, char **argv) {
 
   if (prdg.num_patterns_) {
     r = rex_realize_modes(&rex);
+    if (!r) {
+      r = rex_dfa_make_symbol_groups(&rex.dfa_);
+    }
     if (r) {
       switch (r) {
       case _REX_NO_MEMORY:
@@ -875,49 +877,6 @@ int main(int argc, char **argv) {
       }
     }
 
-    if (experimental) {
-      /* Debug print all grouped ranges */
-      struct rex_symbol_group *sg = rex.dfa_.symbol_groups_;
-      printf("Symbol groups:\n");
-      if (sg) {
-        FILE *fp = stdout;
-        int n = 0;
-        do {
-          sg = sg->chain_;
-
-          fprintf(fp, "%3d: ", n);
-
-          struct rex_symbol_range *sr = sg->ranges_;
-          if (sr) {
-            do {
-              sr = sr->chain_;
-
-              if ((sr->symbol_start_ + 1) == sr->symbol_end_) {
-                fprintf(fp, "\'");
-                print_dbg_char(fp, sr->symbol_start_);
-                fprintf(fp, "\'");
-              }
-              else {
-                fprintf(fp, "\'");
-                print_dbg_char(fp, sr->symbol_start_);
-                fprintf(fp, "\'-\'");
-                print_dbg_char(fp, sr->symbol_end_ - 1);
-                fprintf(fp, "\'");
-              }
-              if (sr != sg->ranges_) {
-                fprintf(fp, ", ");
-              }
-            } while (sr != sg->ranges_);
-          }
-
-          fprintf(fp, "\n");
-          fprintf(fp, "     %016" PRIx64 "\n", sg->dfa_trans_group_membership_[0]);
-
-          n++;
-
-        } while (sg != rex.dfa_.symbol_groups_);
-      }
-    } /* (experimental) */
   }
 
   FILE *outfp;

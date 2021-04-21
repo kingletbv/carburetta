@@ -150,6 +150,11 @@ struct rex_symbol_group {
   /* Tail cyclic chain of all symbol groups within the dfa */
   struct rex_symbol_group *chain_;
 
+  /* Ordinal number for the symbol group. Starts at 1 and is incremented for each symbol group created.
+   * Symbol group number 0 is not assigned and may be used for valid encodings that do not match any
+   * symbol group of the language. */
+  int ordinal_;
+
   /* Tail cyclic chain within the hashtable (at runtime, active only inside rex_dfa_make_symbol_groups().) */
   struct rex_symbol_group *hash_chain_;
 
@@ -235,9 +240,13 @@ size_t rex_nfa_make_node(struct rex_nfa *nfa);
 
 void rex_dfa_init(struct rex_dfa *dfa);
 void rex_dfa_cleanup(struct rex_dfa *dfa);
+int rex_dfa_make_symbol_groups(struct rex_dfa *dfa);
 
 void rex_init(struct rex_scanner *rex);
 void rex_cleanup(struct rex_scanner *rex);
+/* Allocates a pattern without generating any NFA for it */
+int rex_alloc_pattern(struct rex_scanner *rex, uintptr_t action, struct rex_pattern **ppat);
+/* Allocates a pattern and initializes it with an NFA representing the regex regular expression. */
 int rex_add_pattern(struct rex_scanner *rex, const char *regex, uintptr_t action, struct rex_pattern **ppat);
 int rex_add_mode(struct rex_scanner *rex, struct rex_mode **pmode);
 int rex_add_pattern_to_mode(struct rex_mode *mode, struct rex_pattern *pat);

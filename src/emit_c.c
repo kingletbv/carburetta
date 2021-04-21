@@ -3088,6 +3088,287 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
   return 0;
 }
 
+int emit_table(struct indented_printer *ip, int *table, size_t num_rows, size_t num_columns) {
+  int *column_widths = calloc(num_columns, sizeof(int));
+  if (!column_widths) {
+    ip->had_error_ = 1;
+    re_error_nowhere("Error, no memory\n");
+    return -1;
+  }
+
+  size_t col, row;
+  for (col = 0; col < num_columns; ++col) {
+    column_widths[col] = 3;
+
+    for (row = 0; row < num_rows; ++row) {
+      int ordinal = table[row * num_columns + col];
+      int width_needed = 1;
+      if (ordinal < 0) {
+        ordinal = -ordinal;
+        width_needed += 1;
+      }
+      if (ordinal < 100) {
+        width_needed += 1;
+      }
+      else if (ordinal < 1000) {
+        width_needed += 2;
+      }
+      else if (ordinal < 10000) {
+        width_needed += 3;
+      }
+      else {
+        width_needed += 4;
+      }
+      if (width_needed > column_widths[col]) {
+        column_widths[col] = width_needed;
+      }
+    }
+  }
+
+  for (row = 0; row < num_rows; ++row) {
+    if (!row) {
+      ip_force_indent_print(ip);
+      ip_printf(ip, "/*\n");
+      ip_force_indent_print(ip);
+      for (col = 0; col < num_columns; ++col) {
+        ip_printf(ip, "%*s%02X%s", column_widths[col] - 2, "", (int)col, ((col + 1) == num_columns) ? " */\n" : " ");
+      }
+    }
+    ip_force_indent_print(ip);
+    for (col = 0; col < num_columns; ++col) {
+      int cell_value = table[row * num_columns + col];
+      ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], cell_value);
+    }
+    ip_printf(ip, "%s\n", ((row + 1) == num_rows) ? "" : ",");
+  }
+
+  free(column_widths);
+
+  return 0;
+}
+
+int encode_utf8_code_units(struct rex_scanner *rex, size_t num_digits, uint8_t *low, uint8_t *high, uint8_t *min, uint8_t *max, size_t from_nfa, size_t to_nfa) {
+  enum {
+    EXACT,
+    ADJACENT,
+    RANGE
+  } needs[6];
+  
+  struct {
+    size_t top;
+    size_t mid;
+    size_t bottom;
+  } nodes[(sizeof(needs)/sizeof(*needs))];
+
+  assert(num_digits < ((sizeof(needs)/sizeof(*needs)) - 1));
+  size_t n;
+  needs[0] = EXACT;
+  for (n = 0; n < num_digits; ++n) {
+    if (needs[n] == EXACT) {
+      if (low[n] == high[n]) {
+        needs[n + 1] = EXACT;
+      }
+      else if ((low[n] + 1) == high[n]) {
+        needs[n + 1] = ADJACENT;
+      }
+      else {
+        needs[n + 1] = RANGE;
+      }
+    }
+    else if (needs[n] == ADJACENT) {
+      if ((low[n] == max[n]) && (high[n] == min[n])) {
+        needs[n + 1] = ADJACENT;
+      }
+      else {
+        needs[n + 1] = RANGE;
+      }
+    }
+    else {
+      needs[n + 1] = RANGE;
+    }
+  }
+
+  int node_idx = 0;
+
+  if (needs[num_digits] == EXACT) {
+    nodes[num_digits].mid = to_nfa;
+  }
+  else if (needs[num_digits] == ADJACENT) {
+    nodes[num_digits].top = to_nfa;
+    nodes[num_digits].bottom = to_nfa;
+  }
+  else if (needs[num_digits] == RANGE) {
+    nodes[num_digits].top = to_nfa;
+    nodes[num_digits].mid = to_nfa;
+    nodes[num_digits].bottom = to_nfa;
+  }
+
+  n = num_digits - 1;
+  do {
+    if (needs[n] == EXACT) {
+      /* one node at n, range top-mid-bottom to next depending on what's next */
+      if (n) {
+        nodes[n].mid = rex_nfa_make_node(&rex->nfa_);
+        if (nodes[n].mid == SIZE_MAX) {
+          return _REX_NO_MEMORY;
+        }
+      }
+      else {
+        nodes[0].mid = from_nfa;
+      }
+      if (needs[n + 1] == EXACT) {
+        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].mid);
+        rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].mid, low[n]);
+      }
+      else if (needs[n + 1] == ADJACENT) {
+        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].top);
+        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, high[n], nodes[n+1].bottom);
+        rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].top, low[n]);
+        rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].bottom, high[n]);
+      }
+      else if (needs[n + 1] == RANGE) {
+        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].top);
+        printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].mid, low[n] + 1, high[n] - 1, nodes[n+1].mid);
+        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, high[n], nodes[n+1].bottom);
+        rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].top, low[n]);
+        rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].mid, low[n] + 1, high[n] - 1);
+        rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].bottom, high[n]);
+      }
+    }
+    else if (needs[n] == ADJACENT) {
+      /* two nodes, range top-mid and mid-bottom, to next, depending on what's next */
+      nodes[n].top = rex_nfa_make_node(&rex->nfa_);
+      nodes[n].bottom = rex_nfa_make_node(&rex->nfa_);
+      if ((nodes[n].top == SIZE_MAX) || (nodes[n].bottom == SIZE_MAX)) {
+        return _REX_NO_MEMORY;
+      }
+
+      if (needs[n + 1] == ADJACENT) {
+        printf("[%zu] -- %c --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
+        printf("[%zu] -- %c --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
+        rex_nfa_make_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].top, low[n]);
+        rex_nfa_make_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].bottom, high[n]);
+      }
+      else if (needs[n + 1] == RANGE) {
+        printf("[%zu] -- %c --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
+        rex_nfa_make_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].top, low[n]);
+        if (low[n] != max[n]) {
+          printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].top, low[n] + 1, max[n], nodes[n + 1].mid);
+          rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].mid, low[n] + 1, max[n]);
+        }
+        if (high[n] != min[n]) {
+          printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].bottom, min[n], high[n] - 1, nodes[n + 1].mid);
+          rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].mid, min[n], high[n] - 1);
+        }
+        printf("[%zu] -- %c --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
+        rex_nfa_make_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].bottom, high[n]);
+      }
+    }
+    else if (needs[n] == RANGE) {
+      /* three nodes, range top-mid, mid-mid, and mid-bottom, to next three. */
+      nodes[n].top = rex_nfa_make_node(&rex->nfa_);
+      nodes[n].mid = rex_nfa_make_node(&rex->nfa_);
+      nodes[n].bottom = rex_nfa_make_node(&rex->nfa_);
+
+      if ((nodes[n].top == SIZE_MAX) || (nodes[n].mid == SIZE_MAX) || (nodes[n].bottom == SIZE_MAX)) {
+        return _REX_NO_MEMORY;
+      }
+
+      /* needs[n+1] == RANGE */
+      printf("[%zu] -- %c --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
+      rex_nfa_make_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].top, low[n]);
+      if (low[n] != max[n]) {
+        printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].top, low[n] + 1, max[n], nodes[n + 1].mid);
+        rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].mid, low[n] + 1, max[n]);
+      }
+      printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].mid, min[n], max[n], nodes[n + 1].mid);
+      rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].mid, min[n], max[n]);
+      if (high[n] != min[n]) {
+        printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].bottom, min[n], high[n] - 1, nodes[n + 1].mid);
+        rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].mid, min[n], high[n] - 1);
+      }
+      printf("[%zu] -- %c --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
+      rex_nfa_make_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].bottom, high[n]);
+    }
+
+  } while (n--);
+
+  printf("Start at [%zu]\n", nodes[0].mid);
+  return 0;
+}
+
+
+int encode_utf8_range(struct rex_scanner *rex, uint32_t u32_start, uint32_t u32_end, size_t from_nfa, size_t to_nfa) {
+  int r;
+  uint32_t sfirst, slast;
+
+  if ((u32_start <= 0x7F) && (u32_end >= 0x00)) {
+    sfirst = u32_start;
+    slast = (u32_end > 0x7F) ? 0x7F : u32_end;
+    /* Encode single byte code unit range */
+    uint8_t mincu[] = {0x00};
+    uint8_t maxcu[] = {0x7F};
+    uint8_t firstcu[] = {0x00};
+    uint8_t lastcu[] = {0x00};
+    firstcu[0] += sfirst & 0x7F;
+    lastcu[0] += slast & 0x7F;
+    r = encode_utf8_code_units(rex, sizeof(mincu), firstcu, lastcu, mincu, maxcu, from_nfa, to_nfa);
+    if (r) return r;
+  }
+  if ((u32_start <= 0x7FF) && (u32_end >= 0x80)) {
+    sfirst = (u32_start < 0x80) ? 0x80 : u32_start;
+    slast = (u32_end > 0x7FF) ? 0x7FF : u32_end;
+    /* Encode double byte code unit range */
+    uint8_t mincu[] = {0xC0, 0x80};
+    uint8_t maxcu[] = {0xDF, 0xBF};
+    uint8_t firstcu[] = {0xC0, 0x80};
+    uint8_t lastcu[] = {0xC0, 0x80};
+    firstcu[0] += (uint8_t)((0x7FF & sfirst) >> 6);
+    firstcu[1] += (uint8_t)(0x3F & sfirst);
+    lastcu[0] += (uint8_t)((0x7FF & slast) >> 6);
+    lastcu[1] += (uint8_t)(0x3F & slast);
+    r = encode_utf8_code_units(rex, sizeof(mincu), firstcu, lastcu, mincu, maxcu, from_nfa, to_nfa);
+    if (r) return r;
+  }
+  if ((u32_start <= 0xFFFF) && (u32_end >= 0x800)) {
+    sfirst = (u32_start < 0x800) ? 0x800 : u32_start;
+    slast = (u32_end > 0xFFFF) ? 0xFFFF : u32_end;
+    /* Encode triple byte code unit range */
+    uint8_t mincu[] = {0xE0, 0x80, 0x80};
+    uint8_t maxcu[] = {0xEF, 0xBF, 0xBF};
+    uint8_t firstcu[] = {0xE0, 0x80, 0x80};
+    uint8_t lastcu[] = {0xE0, 0x80, 0x80};
+    firstcu[0] += (uint8_t)((0xFFFF & sfirst) >> 12);
+    firstcu[1] += (uint8_t)((0x0FC0 & sfirst) >> 6);
+    firstcu[2] += (uint8_t)(0x3F & sfirst);
+    lastcu[0] += (uint8_t)((0xFFFF & slast) >> 12);
+    lastcu[1] += (uint8_t)((0x0FC0 & slast) >> 6);
+    lastcu[2] += (uint8_t)(0x3F & slast);
+    r = encode_utf8_code_units(rex, sizeof(mincu), firstcu, lastcu, mincu, maxcu, from_nfa, to_nfa);
+    if (r) return r;
+  }
+  if ((u32_start <= 0x10FFFF) && (u32_end >= 0x10000)) {
+    sfirst = (u32_start < 0x10000) ? 0x100000 : u32_start;
+    slast = (u32_end > 0x10FFFF) ? 0x10FFFF : u32_end;
+    /* Encode quadruple byte code unit range */
+    uint8_t mincu[] = {0xF0, 0x80, 0x80, 0x80};
+    uint8_t maxcu[] = {0xF7, 0xBF, 0xBF, 0xBF};
+    uint8_t firstcu[] = {0xF0, 0x80, 0x80, 0x80};
+    uint8_t lastcu[] = {0xF0, 0x80, 0x80, 0x80};
+    firstcu[0] += (uint8_t)((0xFC0000 & sfirst) >> 18);
+    firstcu[1] += (uint8_t)((0x3F000 & sfirst) >> 12);
+    firstcu[2] += (uint8_t)((0x0FC0 & sfirst) >> 6);
+    firstcu[3] += (uint8_t)(0x3F & sfirst);
+    lastcu[0] += (uint8_t)((0xFC0000 & slast) >> 18);
+    lastcu[1] += (uint8_t)((0x3F000 & slast) >> 12);
+    lastcu[2] += (uint8_t)((0x0FC0 & slast) >> 6);
+    lastcu[3] += (uint8_t)(0x3F & slast);
+    r = encode_utf8_code_units(rex, sizeof(mincu), firstcu, lastcu, mincu, maxcu, from_nfa, to_nfa);
+    if (r) return r;
+  }
+  return 0;
+}
+
 void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct rex_scanner *rex, struct lr_generator *lalr) {
   int *state_syms;
   state_syms = NULL;
@@ -3111,6 +3392,318 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "#include <stdint.h> /* SIZE_MAX */\n");
 
   emit_sym_data_struct(ip, cc);
+
+  if (prdg->num_patterns_) {
+    if (cc->experimental_) {
+      /* +1 to include a 0 column, +4 to include room for anchors (start-of-input, start-of-line, end-of-line, end-of-input) */
+      size_t num_columns = rex->dfa_.symbol_groups_ ? rex->dfa_.symbol_groups_->ordinal_ + 1 + 4 : 1;
+      size_t first_anchor_column = rex->dfa_.symbol_groups_->ordinal_ + 1;
+
+      size_t num_rows = rex->dfa_.nodes_->ordinal_ + 1;
+      size_t num_cells;
+      if (multiply_size_t(num_columns, num_rows, NULL, &num_cells)) {
+        /* Overflow */
+        re_error_nowhere("Error, overflow\n");
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+      int *table = (int *)calloc(num_cells, sizeof(int));
+      if (!table) {
+        /* No memory */
+        re_error_nowhere("Error, no memory\n");
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+      struct rex_dfa_node *dn = rex->dfa_.nodes_;
+      if (dn) {
+        do {
+          dn = dn->chain_;
+
+          int *row = table + num_columns * dn->ordinal_;
+
+          memset(row, 0, sizeof(int) * num_columns);
+
+          /* Loop over all transition groups from the current DFA node.
+           * XXX: Note, we loop over all, and filter. Inefficient. */
+          struct rex_dfa_trans_group *tg = rex->dfa_.trans_groups_;
+          if (tg) {
+            do {
+              tg = tg->sibling_;
+
+              if (tg->transitions_->from_ == dn) {
+                struct rex_selector *selector = tg->selectors_;
+                if (selector) {
+                  do {
+                    selector = selector->next_in_dfa_transition_group_;
+
+                    row[selector->symbol_group_->ordinal_] = tg->transitions_->to_->ordinal_;
+
+                  } while (selector != tg->selectors_);
+                }
+              }
+
+            } while (tg != rex->dfa_.trans_groups_);
+          }
+
+          struct rex_dfa_trans *dt = dn->outbound_;
+          size_t n;
+          for (n = 0; n < 4; ++n) {
+            /* Default is for anchor cells to aim to own state */
+            row[first_anchor_column + n] = dn->ordinal_;
+          }
+          if (dt) {
+            do {
+              dt = dt->from_peer_;
+
+              if (dt->is_anchor_) {
+                /* Actual anchor transitions point to other state, overwriting default.
+                 * See REX_ANCHOR_XXX constants for dt->symbol_start_ values (0..3) if is_anchor_*/
+                row[first_anchor_column + dt->symbol_start_] = dt->to_->ordinal_;
+              }
+
+            } while (dt != dn->outbound_);
+          }
+        } while (dn != rex->dfa_.nodes_);
+      }
+      ip_printf(ip, "static const int %sscan_table_grouped_rex_[] = {\n", cc_prefix(cc));
+      if (emit_table(ip, table, num_rows, num_columns)) {
+        ip->had_error_ = 1;
+        free(table);
+        goto cleanup_exit;
+      }
+      free(table);
+      ip_printf(ip, "};\n");
+      
+      /* Raw encoding map */
+      int srmap[256] = {0};
+      struct rex_symbol_group *sg =rex->dfa_.symbol_groups_;
+      if (sg) {
+        do {
+          sg = sg->chain_;
+
+          struct rex_symbol_range *sr = sg->ranges_;
+          if (sr) {
+            do {
+              sr = sr->chain_;
+
+              uint32_t sym;
+              for (sym = sr->symbol_start_; sym != sr->symbol_end_; ++sym) {
+                if (sym < 256) {
+                  srmap[sym] = sg->ordinal_;
+                }
+              }
+            } while (sr != sg->ranges_);
+          }
+        } while (sg != rex->dfa_.symbol_groups_);
+      }
+
+      uint32_t n;
+      ip_printf(ip, "static const int %sscan_table_grouped_raw_encoding_[] = {\n", cc_prefix(cc));
+      for (n = 0; n < 256; ++n) {
+        ip_printf(ip, "%s%d", n ? ", " : "", srmap[n]);
+      }
+      ip_printf(ip, "\n};\n");
+
+      /* UTF-8 encoding map */
+      struct rex_scanner utf8_scanner;
+      rex_init(&utf8_scanner);
+
+      struct rex_mode *default_mode = NULL;
+      int r;
+      r = rex_add_mode(&utf8_scanner, &default_mode);
+      if (r) {
+        ip->had_error_ = 1;
+        rex_cleanup(&utf8_scanner);
+        goto cleanup_exit;
+      }
+
+      sg = rex->dfa_.symbol_groups_;
+      if (sg) {
+        do {
+          sg = sg->chain_;
+
+          struct rex_pattern *pat = NULL;
+          
+          r = rex_alloc_pattern(&utf8_scanner, (uintptr_t)sg->ordinal_, &pat);
+          if (r) {
+            ip->had_error_ = 1;
+            rex_cleanup(&utf8_scanner);
+            goto cleanup_exit;
+          }
+          pat->nfa_begin_state_ = rex_nfa_make_node(&utf8_scanner.nfa_);
+          pat->nfa_final_state_ = rex_nfa_make_node(&utf8_scanner.nfa_);
+          if ((pat->nfa_begin_state_ == SIZE_MAX) || (pat->nfa_final_state_ == SIZE_MAX)) {
+            ip->had_error_ = 1;
+            rex_cleanup(&utf8_scanner);
+            goto cleanup_exit;
+          }
+          utf8_scanner.nfa_.nfa_nodes_[pat->nfa_final_state_].pattern_matched_ = pat;
+          r = rex_add_pattern_to_mode(default_mode, pat);
+          if (r) {
+            ip->had_error_ = 1;
+            rex_cleanup(&utf8_scanner);
+            goto cleanup_exit;
+          }
+
+          struct rex_symbol_range *sr = sg->ranges_;
+          if (sr) {
+            do {
+              sr = sr->chain_;
+
+              r = encode_utf8_range(&utf8_scanner, sr->symbol_start_, sr->symbol_end_, pat->nfa_begin_state_, pat->nfa_final_state_);
+              if (r) {
+                ip->had_error_ = 1;
+                rex_cleanup(&utf8_scanner);
+                goto cleanup_exit;
+              }
+
+            } while (sr != sg->ranges_);
+          }
+        } while (sg != rex->dfa_.symbol_groups_);
+      }
+
+      /* Catch-all symbol group #1 (entire unicode range) -- this distinguishes valid UTF-8 encodings from invalid ones. */
+      struct rex_pattern *pat = NULL;
+      r = rex_alloc_pattern(&utf8_scanner, 1, &pat);
+      if (r) {
+        ip->had_error_ = 1;
+        rex_cleanup(&utf8_scanner);
+        goto cleanup_exit;
+      }
+      pat->nfa_begin_state_ = rex_nfa_make_node(&utf8_scanner.nfa_);
+      pat->nfa_final_state_ = rex_nfa_make_node(&utf8_scanner.nfa_);
+      if ((pat->nfa_begin_state_ == SIZE_MAX) || (pat->nfa_final_state_ == SIZE_MAX)) {
+        ip->had_error_ = 1;
+        rex_cleanup(&utf8_scanner);
+        goto cleanup_exit;
+      }
+      utf8_scanner.nfa_.nfa_nodes_[pat->nfa_final_state_].pattern_matched_ = pat;
+      r = rex_add_pattern_to_mode(default_mode, pat);
+      if (r) {
+        ip->had_error_ = 1;
+        rex_cleanup(&utf8_scanner);
+        goto cleanup_exit;
+      }
+
+      r = encode_utf8_range(&utf8_scanner, 0x00, 0x110000, pat->nfa_begin_state_, pat->nfa_final_state_);
+      if (r) {
+        ip->had_error_ = 1;
+        rex_cleanup(&utf8_scanner);
+        goto cleanup_exit;
+      }
+
+      r = rex_realize_modes(&utf8_scanner);
+      if (r) {
+        ip->had_error_ = 1;
+        rex_cleanup(&utf8_scanner);
+        goto cleanup_exit;
+      }
+
+      /* Renumber the ordinals for the DFA nodes. DFA nodes that have a matching pattern are not part of the final set (as the
+       * transition /to/ the DFA node is the moment the action is taken; for any UTF-8 codepoint there can only be a single
+       * match, there is no notion of a "longest" match.)
+       * Node number 0 is the starting node, it is never a destination as there are no cycles in the UTF-8 decoding DFA. A
+       * destination of 0 means the encoding under examination is invalid. */
+      dn = utf8_scanner.dfa_.nodes_;
+      /* ordinal 0 is for invalid encodings, 
+       * regular symbol groups start at 1. */
+      int ordinal = 1;
+      if (dn) {
+        do {
+          dn = dn->chain_;
+
+          if (dn == default_mode->dfa_node_) {
+            /* Start condition */
+            dn->ordinal_ = 0;
+          }
+          else if (!dn->pattern_matched_) {
+            dn->ordinal_ = ordinal++;
+          }
+          else {
+            /* DFA node with pattern match. These are not emitted */
+            dn->ordinal_ = INT_MIN;
+          }
+        } while (dn != utf8_scanner.dfa_.nodes_);
+      }
+
+      num_columns = 256;
+      num_rows = (size_t)ordinal;
+      num_cells = num_rows * num_columns;
+
+      if (multiply_size_t(num_rows, num_columns, NULL, &num_cells)) {
+        re_error_nowhere("Error, overflow\n");
+        ip->had_error_ = 1;
+        rex_cleanup(&utf8_scanner);
+        goto cleanup_exit;
+      }
+
+      table = calloc(num_cells, sizeof(int));
+      if (!table) {
+        re_error_nowhere("Error, no memory\n");
+        ip->had_error_ = 1;
+        rex_cleanup(&utf8_scanner);
+        goto cleanup_exit;
+      }
+
+      dn = utf8_scanner.dfa_.nodes_;
+      if (dn) {
+        do {
+          dn = dn->chain_;
+
+          int *row = NULL;
+
+          if (dn == default_mode->dfa_node_) {
+            /* Start condition */
+            row = table;
+          }
+          else if (!dn->pattern_matched_) {
+            row = table + num_columns * (size_t)dn->ordinal_;
+          }
+          else {
+            /* DFA node with pattern match. These are not emitted */
+          }
+          if (row) {
+            struct rex_dfa_trans *dt = dn->outbound_;
+            if (dt) {
+              do {
+                dt = dt->from_peer_;
+                                
+                if (dt->to_->pattern_matched_) {
+                  uint32_t c;
+                  /* Completion of pattern dt->to_->pattern_matched_ */
+                  for (c = dt->symbol_start_; c < dt->symbol_end_; ++c) {
+                    row[c] = (int)dt->to_->pattern_matched_->action_;
+                  }
+                }
+                else {
+                  uint32_t c;
+                  /* Transition to state dt->to_. */
+                  for (c = dt->symbol_start_; c < dt->symbol_end_; ++c) {
+                    row[c] = -dt->to_->ordinal_;
+                  }
+                }
+
+              } while (dt != dn->outbound_);
+            }
+          }
+        } while (dn != utf8_scanner.dfa_.nodes_);
+      }
+      ip_printf(ip, "static const int %sutf8_decoder_[] = {\n", cc_prefix(cc));
+      if (emit_table(ip, table, num_rows, num_columns)) {
+        ip->had_error_ = 1;
+        free(table);
+        rex_cleanup(&utf8_scanner);
+        goto cleanup_exit;
+      }
+      free(table);
+      ip_printf(ip, "};\n");
+
+      rex_cleanup(&utf8_scanner);
+
+      ip_printf(ip, "static const size_t %snum_scan_table_rows_ = %zu;\n", cc_prefix(cc), num_rows);
+      ip_printf(ip, "static const size_t %snum_scan_table_grouped_columns_ = %zu;\n", cc_prefix(cc), num_columns);
+    }
+  }
 
   if (prdg->num_patterns_) {
     ip_printf(ip, "static const size_t %sscan_table_rex[] = {\n", cc_prefix(cc));

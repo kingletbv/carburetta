@@ -368,6 +368,34 @@ void rex_cleanup(struct rex_scanner *rex) {
   rex_dfa_cleanup(&rex->dfa_);
 }
 
+int rex_alloc_pattern(struct rex_scanner *rex, uintptr_t action, struct rex_pattern **ppat) {
+  if (rex->nfa_.failed_) {
+    return rex->nfa_.failed_;
+  }
+
+  struct rex_pattern *pat = (struct rex_pattern *)malloc(sizeof(struct rex_pattern));
+  if (!pat) return _REX_NO_MEMORY;
+
+  pat->nfa_begin_state_ = 0;
+  pat->nfa_final_state_ = 0;
+  pat->ordinal_ = rex->next_pattern_ordinal_++;
+  pat->action_ = action;
+  pat->modes_ = NULL;
+
+  if (rex->patterns_) {
+    pat->chain_ = rex->patterns_->chain_;
+    rex->patterns_->chain_ = pat;
+  }
+  else {
+    pat->chain_ = pat;
+  }
+  rex->patterns_ = pat;
+
+  if (ppat) *ppat = pat;
+
+  return 0;
+}
+
 int rex_add_pattern(struct rex_scanner *rex, const char *regex, uintptr_t action, struct rex_pattern **ppat) {
   int r;
 
@@ -388,25 +416,15 @@ int rex_add_pattern(struct rex_scanner *rex, const char *regex, uintptr_t action
     return rex->nfa_.failed_;
   }
 
-  struct rex_pattern *pat = (struct rex_pattern *)malloc(sizeof(struct rex_pattern));
+  struct rex_pattern *pat = NULL;
+  r = rex_alloc_pattern(rex, action, &pat);
+
   if (!pat) return _REX_NO_MEMORY;
 
   pat->nfa_begin_state_ = start;
   pat->nfa_final_state_ = end;
-  pat->ordinal_ = rex->next_pattern_ordinal_++;
-  pat->action_ = action;
-  pat->modes_ = NULL;
 
   rex->nfa_.nfa_nodes_[end].pattern_matched_ = pat;
-
-  if (rex->patterns_) {
-    pat->chain_ = rex->patterns_->chain_;
-    rex->patterns_->chain_ = pat;
-  }
-  else {
-    pat->chain_ = pat;
-  }
-  rex->patterns_ = pat;
 
   if (ppat) *ppat = pat;
 
@@ -729,7 +747,7 @@ static int rex_dfa_make_trans_group_priority_queue(struct rex_dfa *dfa, size_t *
   return 0;
 }
 
-static int rex_dfa_make_symbol_groups(struct rex_dfa *dfa) {
+int rex_dfa_make_symbol_groups(struct rex_dfa *dfa) {
   int r;
   size_t n;
   struct rex_dfa_trans_group **heap = NULL;
@@ -897,9 +915,11 @@ static int rex_dfa_make_symbol_groups(struct rex_dfa *dfa) {
         if (dfa->symbol_groups_) {
           sg->chain_ = dfa->symbol_groups_->chain_;
           dfa->symbol_groups_->chain_ = sg;
+          sg->ordinal_ = dfa->symbol_groups_->ordinal_ + 1;
         }
         else {
           sg->chain_ = sg;
+          sg->ordinal_ = 1;
         }
         dfa->symbol_groups_ = sg;
 
@@ -1591,9 +1611,6 @@ int rex_realize_modes(struct rex_scanner *rex) {
       dn->pattern_matched_ = pat;
     } while (dn != rex->dfa_.nodes_);
   }
-
-  r = rex_dfa_make_symbol_groups(&rex->dfa_);
-  if (r) goto cleanup;
 
   r = 0;
 cleanup:
