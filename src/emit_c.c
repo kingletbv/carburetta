@@ -1384,7 +1384,538 @@ static int emit_pattern_action_snippet(struct indented_printer *ip, struct carbu
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
+static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg) {
+  /* Emit the scan function, it scans the input for regex matches without actually executing any actions */
+  /* (we're obviously in need of a templating language..) */
+  ip_printf(ip, "static int %sappend_match_buffer(struct %sstack *stack, const char *s, size_t len) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "  size_t size_needed = len;\n"
+                "  size_needed += stack->match_buffer_size_;\n"
+                "  if (size_needed < stack->match_buffer_size_) {\n");
+  ip_printf(ip, "    return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  ip_printf(ip, "  }\n"
+                "  if (size_needed == SIZE_MAX) {\n"
+                "    /* cannot fit null terminator */\n");
+  ip_printf(ip, "    return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  ip_printf(ip, "  }\n"
+                "  size_needed++; /* null terminator */\n"
+                "  if (size_needed < 128) {\n"
+                "    size_needed = 128;\n"
+                "  }\n"
+                "  if (size_needed > stack->match_buffer_size_allocated_) {\n"
+                "    /* intent of code: grow buffer size by powers of 2-1, unless our needs require more now. */\n"
+                "    size_t size_to_allocate = stack->match_buffer_size_allocated_ * 2 + 1;\n"
+                "    if (size_to_allocate <= stack->match_buffer_size_allocated_) {\n");
+  ip_printf(ip, "      return _%sOVERFLOW;\n", cc_PREFIX(cc));
+  ip_printf(ip,"    }\n"
+                "    if (size_to_allocate < size_needed) {\n"
+                "      size_to_allocate = size_needed;\n"
+                "    }\n"
+                "    void *buf = realloc(stack->match_buffer_, size_to_allocate);\n"
+                "    if (!buf) {\n");
+  ip_printf(ip, "      return _%sNO_MEMORY;\n", cc_PREFIX(cc));
+  ip_printf(ip, "    }\n"
+                "    stack->match_buffer_ = (char *)buf;\n"
+                "    stack->match_buffer_size_allocated_ = size_to_allocate;\n"
+                "  }\n"
+                "\n"
+                "  memcpy(stack->match_buffer_ + stack->match_buffer_size_, s, len);\n"
+                "  stack->match_buffer_size_ += len;\n"
+                "  stack->match_buffer_[stack->match_buffer_size_] = '\\0';\n"
+                "  return 0;\n"
+                "}\n"
+                "\n");
+  ip_printf(ip, "void %sset_input(struct %sstack *stack, const char *input, size_t input_size, int is_final_input) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip, "  stack->input_ = input;\n"
+                "  stack->input_size_ = input_size;\n"
+                "  stack->is_final_input_ = is_final_input;\n"
+                "  stack->input_index_ = 0;\n");
+  ip_printf(ip, "}\n"
+                "\n");
+
+  ip_printf(ip,  "void %sset_location(struct %sstack *stack, int line, int col, size_t offset) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip,  "  if (stack->token_size_) {\n");
+  ip_printf(ip,  "    /* Parsing of next token not in progress, set end location of this token as\n");
+  ip_printf(ip,  "    ** it will be the start of the next token. */\n");
+  ip_printf(ip,  "    stack->input_line_ = stack->input_line_ - stack->best_match_line_ + line;\n");
+  ip_printf(ip,  "    stack->input_col_ = stack->input_col_ - stack->best_match_col_ + col;\n");
+  ip_printf(ip,  "    stack->input_offset_ = stack->input_offset_ - stack->best_match_offset_ + offset;\n");
+  ip_printf(ip,  "\n");
+  ip_printf(ip,  "    stack->best_match_line_ = line;\n");
+  ip_printf(ip,  "    stack->best_match_col_ = col;\n");
+  ip_printf(ip,  "    stack->best_match_offset_ = offset;\n");
+  ip_printf(ip,  "    return;\n");
+  ip_printf(ip,  "  }\n");
+  ip_printf(ip,  "  /* Parsing of token in progress, dynamically move the start of the token, as\n");
+  ip_printf(ip,  "  ** well as the relative current partial end of the token, to the desired location. */\n");
+  ip_printf(ip,  "  stack->input_line_ = stack->input_line_ - stack->match_line_ + line;\n");
+  ip_printf(ip,  "  stack->input_col_ = stack->input_col_ - stack->match_col_ + col;\n");
+  ip_printf(ip,  "  stack->input_offset_ = stack->input_offset_ - stack->match_offset_ + offset;\n");
+  ip_printf(ip,  "\n");
+  ip_printf(ip,  "  stack->best_match_line_ = stack->best_match_line_ - stack->match_line_ + line;\n");
+  ip_printf(ip,  "  stack->best_match_col_ = stack->best_match_col_ - stack->match_col_ + col;\n");
+  ip_printf(ip,  "  stack->best_match_offset_ = stack->best_match_offset_ - stack->match_offset_ + offset;\n");
+  ip_printf(ip,  "  stack->match_line_ = line;\n");
+  ip_printf(ip,  "  stack->match_col_ = col;\n");
+  ip_printf(ip,  "  stack->match_offset_ = offset;\n");
+  ip_printf(ip, "}\n"
+                "\n");
+
+  ip_printf(ip, "const char *%stext(struct %sstack *stack) {\n"
+                "  return stack->match_buffer_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "size_t %slen(struct %sstack *stack) {\n"
+                "  return stack->token_size_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "int %sline(struct %sstack *stack) {\n"
+                "  return stack->match_line_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "int %scolumn(struct %sstack *stack) {\n"
+                "  return stack->match_col_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "size_t %soffset(struct %sstack *stack) {\n"
+                "  return stack->match_offset_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "int %sendline(struct %sstack *stack) {\n"
+                "  return stack->best_match_line_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "int %sendcolumn(struct %sstack *stack) {\n"
+                "  return stack->best_match_col_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "size_t %sendoffset(struct %sstack *stack) {\n"
+                "  return stack->best_match_offset_;\n"
+                "}\n"
+                "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip,  "int %slex(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
+  ip_printf(ip,  "  int r;\n"
+                 "  unsigned char c;\n"
+                 "  const char *input = stack->input_;\n"
+                 "  size_t input_size = stack->input_size_;\n"
+                 "  int is_final_input = !!stack->is_final_input_;\n"
+                 "  size_t scan_state = stack->scan_state_;\n");
+  ip_printf(ip,  "  const size_t *transition_table = %sscan_table_rex;\n", cc_prefix(cc));
+  ip_printf(ip,  "  const size_t *actions = %sscan_actions_rex;\n", cc_prefix(cc));
+  ip_printf(ip,  "  const size_t row_size = 260;\n");
+  ip_printf(ip,  "  const size_t default_action = %zu;\n", 0);
+  ip_printf(ip,  "  const size_t start_state = %zu;\n", 1);
+  ip_printf(ip,  "  const size_t start_action = 0;\n", cc_prefix(cc));
+  ip_printf(ip,  "  char *cp = stack->cp_;\n");
+  ip_printf(ip,  "\n"
+                 "  size_t match_index = stack->match_index_;\n"
+                 "\n"
+                 "  size_t best_match_action = stack->best_match_action_;\n"
+                 "  size_t best_match_size = stack->best_match_size_;\n"
+                 "  size_t best_match_offset = stack->best_match_offset_;\n"
+                 "  int best_match_line = stack->best_match_line_;\n"
+                 "  int best_match_col = stack->best_match_col_;\n"
+                 "\n"
+                 "  size_t input_index = stack->input_index_;\n"
+                 "  size_t input_offset = stack->input_offset_;\n"
+                 "  int input_line = stack->input_line_;\n"
+                 "  int input_col = stack->input_col_;\n"
+                 "\n"
+                 "  int symgrp = stack->sym_grp_;\n"
+                 "\n"
+                 "  /* Move any prior token out of the way */\n"
+                 "  if (stack->token_size_) {\n"
+                 "    stack->match_buffer_[stack->token_size_] = stack->terminator_repair_;\n"
+                 "\n"
+                 "    memcpy(stack->match_buffer_, stack->match_buffer_ + stack->token_size_, stack->match_buffer_size_ - stack->token_size_);\n"
+                 "    stack->match_buffer_size_ -= stack->token_size_;\n"
+                 "    stack->match_offset_ = stack->best_match_offset_;\n"
+                 "    stack->match_line_ = stack->best_match_line_;\n"
+                 "    stack->match_col_ = stack->best_match_col_;\n"
+                 "    \n"
+                 "    /* Reset scanner to get ready for next token */\n"
+                 "    stack->match_index_ = 0;\n"
+                 "    stack->best_match_action_ = best_match_action = start_action;\n"
+                 "    stack->best_match_size_ = best_match_size = 0;\n"
+                 "    stack->scan_state_ = scan_state = stack->current_mode_start_state_;\n"
+                 "    stack->token_size_ = 0;\n"
+                 "    \n"
+                 "  }\n"
+                 "\n");
+  ip_printf(ip,  "  size_t at_match_index_offset = stack->match_offset_;\n"
+                 "  int at_match_index_line = stack->match_line_;\n"
+                 "  int at_match_index_col = stack->match_col_;\n"
+                 "  while (match_index < stack->match_buffer_size_) {\n"
+                 "    c = (unsigned char)stack->match_buffer_[match_index];\n");
+  ip_printf(ip,  "    int next_sg = %sutf8_decoder_[256 * symgrp + c];\n", cc_prefix(cc));
+  ip_printf(ip,  "    if (next_sg >= 0 || !~next_sg) {\n"
+                 "      if (next_sg >= 0) {\n"
+                 "        /* Use next_sg as the new symgroup */\n"
+                 "        match_index++;\n"
+                 "        symgrp = next_sg;\n"
+                 "        *cp++ = c;\n"
+                 "      }\n"
+                 "      else /* (!~next_sg) */ {\n"
+                 "        /* Invalid encoding, set next_sg to the unused codepoint group, this will \n"
+                 "         * induce a syntax error in the transition_table. */\n"
+                 "        next_sg = 0;\n"
+                 "        if (!symgrp) {\n"
+                 "          /* Eat at least 1 byte of input, otherwise we will not make progress; but\n"
+                 "           * the byte that triggered an encoding error on a multi-byte codepoint should\n"
+                 "           * be reconsidered as the starting byte on a new codepoint. */\n"
+                 "          match_index++;\n"
+                 "          *cp++ = c;\n"
+                 "        }\n"
+                 "      }\n"
+                 "\n"
+                 "      for (;;) {\n"
+                 "        /* Check for start of input */\n"
+                 "        if ((transition_table[row_size * (1 + scan_state) - 4] != scan_state) && (!at_match_index_offset)) {\n"
+                 "          scan_state = transition_table[row_size * (1 + scan_state) - 4];\n"
+                 "        }\n"
+                 "        /* Check for start of line */\n"
+                 "        else if ((transition_table[row_size * (1 + scan_state) - 3] != scan_state) && (at_match_index_col == 1)) {\n"
+                 "          scan_state = transition_table[row_size * (1 + scan_state) - 3];\n"
+                 "        }\n"
+                 "        /* Check for end of line */\n"
+                 "        else if ((transition_table[row_size * (1 + scan_state) - 2] != scan_state) && ('\n' == stack->match_buffer_[codepoint_starts_at])) {\n"
+                 "          scan_state = transition_table[row_size * (1 + scan_state) - 2];\n"
+                 "        }\n"
+                 "        /* (No need to check for end of input; we have at least 1 character ahead) */\n"
+                 "        else {\n"
+                 "          break;\n"
+                 "        }\n"
+                 "      }\n"
+                 "      size_t state_action = actions[scan_state];\n"
+                 "      if (state_action != default_action) /* replace with actual */ {\n"
+                 "        best_match_action = state_action;\n"
+                 "        best_match_size = match_index;\n"
+                 "        best_match_offset = at_match_index_offset;\n"
+                 "        best_match_line = at_match_index_line;\n"
+                 "        best_match_col = at_match_index_col;\n"
+                 "      }\n"
+                 "      scan_state = transition_table[row_size * scan_state + symgrp];\n"
+                 "      /* reset decoder */\n"
+                 "      symgrp = 0;\n"
+                 "      cp = stack->codepoint_;\n"
+                 "      if (scan_state) {\n"
+                 "        at_match_index_offset++;\n"
+                 "        if (stack->codepoint_[0] != '\n') {\n"
+                 "          at_match_index_col++;\n"
+                 "        }\n"
+                 "        else {\n"
+                 "          at_match_index_col = 1;\n"
+                 "          at_match_index_line++;\n"
+                 "        }\n"
+                 "\n"
+                 "        match_index++;\n"
+                 "      }\n"
+                 "      else {\n"
+                 "        /* error, or, end of token, depending on whether we have a match before */\n"
+                 "        if (best_match_action == default_action) {\n"
+                 "          goto syntax_error;\n"
+                 "        }\n"
+                 "\n"
+                 "        /* Ensure token match is null terminated */\n"
+                 "        stack->terminator_repair_ = stack->match_buffer_[best_match_size];\n"
+                 "        stack->match_buffer_[best_match_size] = '\0';\n"
+                 "        stack->token_size_ = best_match_size;\n"
+                 "        stack->best_match_action_ = best_match_action;\n"
+                 "        stack->best_match_size_ = best_match_size;\n"
+                 "        stack->best_match_offset_ = best_match_offset;\n"
+                 "        stack->best_match_line_ = best_match_line;\n"
+                 "        stack->best_match_col_ = best_match_col;\n"
+                 "\n"
+                 "        stack->input_index_ = input_index;\n"
+                 "        stack->input_offset_ = input_offset;\n"
+                 "        stack->input_line_ = input_line;\n"
+                 "        stack->input_col_ = input_col;\n"
+                 "\n"
+                 "        stack->cp_ = cp;\n"
+                 "        stack->sym_grp_ = symgrp;\n"
+                 "\n"
+                 "        return _TEMPL_MATCH;\n"
+                 "      }\n"
+                 "    }\n"
+                 "    else /* (next_sg < 0) */ {\n"
+                 "      /* Partial analysis of codepoint; keep going */\n"
+                 "      match_index++;\n"
+                 "      symgrp = ~next_sg;\n"
+                 "    }\n"
+                 "  }\n"
+
+                 "  while (input_index < input_size) {\n"
+                 "    c = (unsigned char)input[input_index];\n");
+  ip_printf(ip,  "    int next_sg = %sutf8_decoder_[256 * symgrp + c];\n", cc_prefix(cc));
+  ip_printf(ip,  "    if (next_sg >= || !~next_sg) {\n"
+                 "      if (next_sg >= 0) {\n"
+                 "        /* Use next_sg as the new symgroup */\n"
+                 "        input_index++;\n"
+                 "        symgrp = next_sg;\n"
+                 "        *cp++ = c;\n"
+                 "      }\n"
+                 "      else /* (!~next_sg) */ {\n"
+                 "        /* Invalid encoding, set next_sg to the unused codepoint group, this will \n"
+                 "         * induce a syntax error in the transition_table. */\n"
+                 "        next_sg = 0;\n"
+                 "        if (!symgrp) {\n"
+                 "          /* Eat at least 1 byte of input, otherwise we will not make progress; but\n"
+                 "           * the byte that triggered an encoding error on a multi-byte codepoint should\n"
+                 "           * be reconsidered as the starting byte on a new codepoint. */\n"
+                 "          input_index++;\n"
+                 "          *cp++ = c;\n"
+                 "        }\n"
+                 "      }\n"
+                 "\n");
+  ip_printf(ip,  "      for (;;) {\n"
+                 "        /* Check for start of input */\n"
+                 /* 256 + REX_ANCHOR_START_OF_INPUT */
+                 "        if ((transition_table[row_size * (1 + scan_state) - 4] != scan_state) && (!input_offset)) {\n"
+                 "          scan_state = transition_table[row_size * (1 + scan_state) - 4];\n"
+                 "        }\n"
+                 "        /* Check for start of line */\n"
+                 /* 256 + REX_ANCHOR_START_OF_LINE */
+                 "        else if ((transition_table[row_size * (1 + scan_state) - 3] != scan_state) && (input_col == 1)) {\n"
+                 "          scan_state = transition_table[row_size * (1 + scan_state) - 3];\n"
+                 "        }\n"
+                 "        /* Check for end of line */\n"
+                 /* 256 + REX_ANCHOR_END_OF_LINE */
+                 "        else if ((transition_table[row_size * (1 + scan_state) - 2] != scan_state) && ('\\n' == c)) {\n"
+                 "          scan_state = transition_table[row_size * (1 + scan_state) - 2];\n"
+                 "        }\n"
+                 "        /* (No need to check for end of input; we have at least 1 character ahead) */\n"
+                 "        else {\n"
+                 "          break;\n"
+                 "        }\n"
+                 "      }\n"
+                 "      size_t state_action = actions[scan_state];\n"
+                 "      if (state_action != default_action) /* replace with actual */ {\n"
+                 "        best_match_action = state_action;\n"
+                 "        best_match_size = stack->match_buffer_size_ + input_index - stack->input_index_;\n"
+                 "        best_match_offset = input_offset;\n"
+                 "        best_match_col = input_col;\n"
+                 "        best_match_line = input_line;\n"
+                 "      }\n"
+                 "      scan_state = transition_table[row_size * scan_state + symgrp];\n"
+                 "      /* Reset decoder */\n"
+                 "      symgrp = 0;\n" 
+                 "      cp = stack->codepoint_;\n"
+                 "      if (scan_state) {\n"
+                 "        input_offset++;\n"
+                 "        if (stack->codepoint_[0] != '\\n') {\n"
+                 "          input_col++;\n"
+                 "        }\n"
+                 "        else {\n"
+                 "          input_col = 1;\n"
+                 "          input_line++;\n"
+                 "        }\n"
+                 "        input_index++;\n"
+                 "      }\n"
+                 "      else {\n"
+                 "        /* Append from stack->input_index_ to input_index, excluding input_index itself */\n"
+                 "        r = %sappend_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);\n", cc_prefix(cc));
+  ip_printf(ip,  "        if (r) return r;\n"
+                 " \n"
+                 "        if (best_match_action == default_action) {\n"
+                 "          goto syntax_error;\n"
+                 "        }\n"
+                 "\n"
+                 "        /* Ensure token match is null terminated, note that the size we just appended may\n"
+                 "         * (likely) be longer than the last section we matched. */\n"
+                 "        stack->terminator_repair_ = stack->match_buffer_[best_match_size];\n"
+                 "        stack->match_buffer_[best_match_size] = '\\0';\n"
+                 "        stack->token_size_ = best_match_size;\n"
+                 "        stack->best_match_action_ = best_match_action;\n"
+                 "        stack->best_match_size_ = best_match_size;\n"
+                 "        stack->best_match_offset_ = best_match_offset;\n"
+                 "        stack->best_match_line_ = best_match_line;\n"
+                 "        stack->best_match_col_ = best_match_col;\n"
+                 "\n"
+                 "        stack->input_index_ = input_index;\n"
+                 "        stack->input_offset_ = input_offset;\n"
+                 "        stack->input_line_ = input_line;\n"
+                 "        stack->input_col_ = input_col;\n"
+                 "\n"
+                 "        stack->cp_ = cp;\n"
+                 "        stack->sym_grp_ = symgrp;\n"
+                 "\n");
+  ip_printf(ip,  "        return _%sMATCH;\n", cc_PREFIX(cc));
+  ip_printf(ip,  "      }\n"
+                 "    }\n"
+                 "    else /* (next_sg < 0) */ {\n"
+                 "      /* Partial analysis of codepoint; keep going */\n"
+                 "      match_index++;\n"
+                 "      symgrp = ~next_sg;\n"
+                 "    }\n"
+                 "  }\n"
+                 "\n"
+                 "  r = %sappend_match_buffer(stack, input + stack->input_index_, input_index - stack->input_index_);\n", cc_prefix(cc));
+  ip_printf(ip,  "  if (r) return r;\n"
+                 "\n"
+                 "  /* Resume scanning after the input already processed. */\n"
+                 "  match_index = stack->match_buffer_size_;\n"
+                 "\n"
+                 "  if (!is_final_input) {\n"
+                 "    /* Need more input */\n"
+                 "    stack->scan_state_ = scan_state;\n"
+                 "    stack->token_size_ = 0; /* no match yet */\n"
+                 "    stack->input_index_ = input_index;\n"
+                 "    stack->input_offset_ = input_offset;\n"
+                 "    stack->input_line_ = input_line;\n"
+                 "    stack->input_col_ = input_col;\n"
+                 "\n"
+                 "    stack->best_match_action_ = best_match_action;\n"
+                 "    stack->best_match_size_ = best_match_size;\n"
+                 "    stack->best_match_offset_ = best_match_offset;\n"
+                 "    stack->best_match_line_ = best_match_line;\n"
+                 "    stack->best_match_col_ = best_match_col;\n"
+                 "\n"
+                 "    stack->match_index_ = match_index;\n"
+                 "\n"
+                 "    stack->cp_ = cp;\n"
+                 "    stack->sym_grp_ = symgrp;\n"
+                 "\n");
+  ip_printf(ip,  "    return _%sFEED_ME;\n", cc_PREFIX(cc));
+  ip_printf(ip,  "  }\n"
+                 "  for (;;) {\n"
+                 "    /* Check for start of input */\n"
+                 /* 256 + REX_ANCHOR_START_OF_INPUT */
+                 "    if ((transition_table[row_size * (1 + scan_state) - 4] != scan_state) && (!input_offset)) {\n"
+                 "      scan_state = transition_table[row_size * (1 + scan_state) - 4];\n"
+                 "    }\n"
+                 "    /* Check for start of line */\n"
+                 /* 256 + REX_ANCHOR_START_OF_LINE */
+                 "    else if ((transition_table[row_size * (1 + scan_state) - 3] != scan_state) && (input_col == 1)) {\n"
+                 "      scan_state = transition_table[row_size * (1 + scan_state) - 3];\n"
+                 "    }\n"
+                 "    /* Check for end of line (always true at end of input) */\n"
+                 /* 256 + REX_ANCHOR_END_OF_LINE */
+                 "    else if (transition_table[row_size * (1 + scan_state) - 2] != scan_state) {\n"
+                 "      scan_state = transition_table[row_size * (1 + scan_state) - 2];\n"
+                 "    }\n"
+                 "    /* Check for end of input (always true) */\n"
+                 /* 256 + REX_ANCHOR_END_OF_INPUT */
+                 "    else if (transition_table[row_size * (1 + scan_state) - 1] != scan_state) {\n"
+                 "      scan_state = transition_table[row_size * (1 + scan_state) - 1];\n"
+                 "    }\n"
+                 "    /* (No need to check for end of input; we have at least 1 character ahead) */\n"
+                 "    else {\n"
+                 "      break;\n"
+                 "    }\n"
+                 "  }\n"
+                 "  size_t state_action = actions[scan_state];\n"
+                 "  if (state_action != default_action) /* replace with actual */ {\n"
+                 "    best_match_action = state_action;\n"
+                 "    best_match_size = stack->match_buffer_size_;\n"
+                 "    best_match_offset = input_offset;\n"
+                 "    best_match_col = input_col;\n"
+                 "    best_match_line = input_line;\n"
+                 "  }\n"
+                 "\n"
+                 "  if (!stack->match_buffer_size_ && (stack->input_index_ == input_size)) {\n"
+                 "    /* Exhausted all input - leave stack in a state where we can\n"
+                 "     * immediately re-use it in its initial state */\n"
+                 "    stack->match_index_ = 0;\n"
+                 "    stack->best_match_action_ = best_match_action = start_action;\n"
+                 "    stack->best_match_size_ = best_match_size;\n"
+                 "    stack->best_match_offset_ = best_match_offset;\n"
+                 "    stack->best_match_line_ = best_match_line;\n"
+                 "    stack->best_match_col_ = best_match_col;\n"
+                 "    stack->scan_state_ = scan_state = stack->current_mode_start_state_;\n"
+                 "\n"
+                 "    stack->token_size_ = 0;\n"
+                 "    stack->input_index_ = 0;\n"
+                 "    stack->input_offset_ = input_offset;\n"
+                 "    stack->input_line_ = input_line;\n"
+                 "    stack->input_col_ = input_col;\n"
+                 "        stack->cp_ = cp;\n"
+                 "        stack->sym_grp_ = symgrp;\n"
+                 "\n");
+  ip_printf(ip,  "    return _%sEND_OF_INPUT;\n", cc_PREFIX(cc));
+  ip_printf(ip,  "  }\n"
+                 "\n"
+                 "  if (best_match_action == default_action) {\n"
+                 "    goto syntax_error;\n"
+                 "  }\n"
+                 "\n"
+                 "  /* Ensure token match is null terminated */\n"
+                 "  stack->terminator_repair_ = stack->match_buffer_[best_match_size];\n"
+                 "  stack->match_buffer_[best_match_size] = '\\0';\n"
+                 "  stack->token_size_ = best_match_size;\n"
+                 "  stack->best_match_action_ = best_match_action;\n"
+                 "  stack->best_match_size_ = best_match_size;\n"
+                 "  stack->best_match_offset_ = best_match_offset;\n"
+                 "  stack->best_match_line_ = best_match_line;\n"
+                 "  stack->best_match_col_ = best_match_col;\n"
+                 "\n"
+                 "  stack->input_index_ = input_index;\n"
+                 "  stack->input_offset_ = input_offset;\n"
+                 "  stack->input_line_ = input_line;\n"
+                 "  stack->input_col_ = input_col;\n"
+                 "  stack->cp_ = cp;\n"
+                 "  stack->sym_grp_ = symgrp;\n"
+                 "\n");
+  ip_printf(ip,  "  return _%sMATCH;\n", cc_PREFIX(cc));
+  ip_printf(ip,  "syntax_error:\n"
+                 "  if (stack->match_buffer_size_) {\n"
+                 "    stack->best_match_offset_ = stack->match_offset_ + 1;\n"
+                 "    if (stack->match_buffer_[0] != '\\n') {\n"
+                 "      stack->best_match_line_ = stack->match_line_;\n"
+                 "      stack->best_match_col_ = stack->match_col_ + 1;\n"
+                 "    }\n"
+                 "    else {\n"
+                 "      stack->best_match_line_ = stack->match_line_ + 1;\n"
+                 "      stack->best_match_col_ = 1;\n"
+                 "    }\n"
+                 "  }\n"
+                 "  else {\n"
+                 "    /* Append the single character causing the syntax error */\n"
+                 "    r = %sappend_match_buffer(stack, input + stack->input_index_, 1);\n", cc_prefix(cc));
+  ip_printf(ip,  "    if (r) return r;\n"
+                 "\n"
+                 "    input_offset++;\n"
+                 "    if (input[stack->input_index_] != '\\n') {\n"
+                 "      input_col++;\n"
+                 "    }\n"
+                 "    else {\n"
+                 "      input_col = 1;\n"
+                 "      input_line++;\n"
+                 "    }\n"
+                 "    input_index = stack->input_index_ + 1;\n"
+                 "    stack->best_match_offset_ = input_offset;\n"
+                 "    stack->best_match_line_ = input_line;\n"
+                 "    stack->best_match_col_ = input_col;\n"
+                 "  }\n"
+                 "  \n"
+                 "  /* Reset scanner to get ready for next token */\n"
+                 "  stack->token_size_ = 1;\n"
+                 "  stack->terminator_repair_ = stack->match_buffer_[1];\n"
+                 "  stack->match_buffer_[1] = '\\0';\n"
+                 "\n"
+                 "  stack->input_index_ = input_index;\n"
+                 "  stack->input_offset_ = input_offset;\n"
+                 "  stack->input_line_ = input_line;\n"
+                 "  stack->input_col_ = input_col;\n"
+                 "  stack->cp_ = cp;\n"
+                 "  stack->sym_grp_ = symgrp;\n"
+                 "\n");
+  ip_printf(ip,  "  return _%sLEXICAL_ERROR;\n", cc_PREFIX(cc));
+  ip_printf(ip,  "}\n");
+}
+
+
 static void emit_lex_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg) {
+  if (cc->experimental_) {
+    emit_lex_function_x(ip, cc, prdg);
+    return;
+  }
   /* Emit the scan function, it scans the input for regex matches without actually executing any actions */
   /* (we're obviously in need of a templating language..) */
   ip_printf(ip, "static int %sappend_match_buffer(struct %sstack *stack, const char *s, size_t len) {\n", cc_prefix(cc), cc_prefix(cc));
@@ -3083,6 +3614,11 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
                   "  char terminator_repair_;\n"
                   "  int input_line_;\n"
                   "  int input_col_;\n");
+    if (cc->experimental_) {
+      ip_printf(ip, "  int sym_grp_;\n");
+      ip_printf(ip, "  char codepoint_[4];\n");
+      ip_printf(ip, "  char *cp_;\n");
+    }
   }
   ip_printf(ip, "};\n");
   return 0;
@@ -3637,14 +4173,21 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
         goto cleanup_exit;
       }
 
-      table = calloc(num_cells, sizeof(int));
+      table = (int *)calloc(num_cells, sizeof(int));
       if (!table) {
         re_error_nowhere("Error, no memory\n");
         ip->had_error_ = 1;
         rex_cleanup(&utf8_scanner);
         goto cleanup_exit;
       }
-
+      size_t cell_idx;
+      for (cell_idx = 0; cell_idx < num_cells; ++cell_idx) {
+        /* Default cell is -1, which equals an error transition (invalid encoding) */
+        /* Regular transitions start at -2 and go down. Two's complement ~cell will
+         * return 0 for errors, non-zero for appropriate transition (row 0 is the
+         * start row..) */
+        table[cell_idx] = ~0;
+      }
       dn = utf8_scanner.dfa_.nodes_;
       if (dn) {
         do {
@@ -3679,6 +4222,11 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                   uint32_t c;
                   /* Transition to state dt->to_. */
                   for (c = dt->symbol_start_; c < dt->symbol_end_; ++c) {
+                    /* We bitwise-complement instead of negate the ordinal of the 
+                     * destination state. Thus, -1 is reserved for an erroneous encoding,
+                     * and -2 (0xFFFE) is the first valid destination state (~0xFFFE == 1),
+                     * note that destination state 0 (~0 == 0xFFFF), while the initial state,
+                     * can never be a destination state. */
                     row[c] = -dt->to_->ordinal_;
                   }
                 }
@@ -4148,8 +4696,12 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     ip_printf(ip, "  stack->input_index_ = 0;\n"
                   "  stack->input_offset_ = 0;\n"
                   "  stack->input_line_ = 1;\n"
-                  "  stack->input_col_ = 1;\n"
-                  "  stack->match_index_ = 0;\n"
+                  "  stack->input_col_ = 1;\n");
+    if (cc->experimental_) {
+      ip_printf(ip, "  stack->sym_grp_ = 0;\n");
+      ip_printf(ip, "  stack->cp_ = stack->codepoint_;\n");
+    }
+    ip_printf(ip, "  stack->match_index_ = 0;\n"
                   "  stack->match_buffer_ = NULL;\n"
                   "  stack->match_buffer_size_ = 0;\n"
                   "  stack->match_buffer_size_allocated_ = 0;\n"
@@ -4574,6 +5126,10 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                   "  stack->best_match_offset_ = 0;\n"
                   "  stack->best_match_line_ = 1;\n"
                   "  stack->best_match_col_ = 1;\n");
+    if (cc->experimental_) {
+      ip_printf(ip, "  stack->sym_grp_ = 0;\n"
+                    "  stack->cp_ = stack->codepoint_;\n");
+    }
   }
 
   ip_printf(ip, "  return 0;\n"
