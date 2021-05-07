@@ -1585,7 +1585,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "          scan_state = transition_table[row_size * (1 + scan_state) - 3];\n"
                  "        }\n"
                  "        /* Check for end of line */\n"
-                 "        else if ((transition_table[row_size * (1 + scan_state) - 2] != scan_state) && ('\n' == stack->match_buffer_[codepoint_starts_at])) {\n"
+                 "        else if ((transition_table[row_size * (1 + scan_state) - 2] != scan_state) && ('\\n' == stack->codepoint_[0])) {\n"
                  "          scan_state = transition_table[row_size * (1 + scan_state) - 2];\n"
                  "        }\n"
                  "        /* (No need to check for end of input; we have at least 1 character ahead) */\n"
@@ -1607,7 +1607,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "      cp = stack->codepoint_;\n"
                  "      if (scan_state) {\n"
                  "        at_match_index_offset++;\n"
-                 "        if (stack->codepoint_[0] != '\n') {\n"
+                 "        if (stack->codepoint_[0] != '\\n') {\n"
                  "          at_match_index_col++;\n"
                  "        }\n"
                  "        else {\n"
@@ -1625,7 +1625,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "\n"
                  "        /* Ensure token match is null terminated */\n"
                  "        stack->terminator_repair_ = stack->match_buffer_[best_match_size];\n"
-                 "        stack->match_buffer_[best_match_size] = '\0';\n"
+                 "        stack->match_buffer_[best_match_size] = '\\0';\n"
                  "        stack->token_size_ = best_match_size;\n"
                  "        stack->best_match_action_ = best_match_action;\n"
                  "        stack->best_match_size_ = best_match_size;\n"
@@ -1654,7 +1654,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "  while (input_index < input_size) {\n"
                  "    c = (unsigned char)input[input_index];\n");
   ip_printf(ip,  "    int next_sg = %sutf8_decoder_[256 * symgrp + c];\n", cc_prefix(cc));
-  ip_printf(ip,  "    if (next_sg >= || !~next_sg) {\n"
+  ip_printf(ip,  "    if ((next_sg >= 0) || !~next_sg) {\n"
                  "      if (next_sg >= 0) {\n"
                  "        /* Use next_sg as the new symgroup */\n"
                  "        input_index++;\n"
@@ -1687,7 +1687,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "        }\n"
                  "        /* Check for end of line */\n"
                  /* 256 + REX_ANCHOR_END_OF_LINE */
-                 "        else if ((transition_table[row_size * (1 + scan_state) - 2] != scan_state) && ('\\n' == c)) {\n"
+                 "        else if ((transition_table[row_size * (1 + scan_state) - 2] != scan_state) && ('\\n' == stack->codepoint_[0])) {\n"
                  "          scan_state = transition_table[row_size * (1 + scan_state) - 2];\n"
                  "        }\n"
                  "        /* (No need to check for end of input; we have at least 1 character ahead) */\n"
@@ -4009,7 +4009,9 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
       }
       free(table);
       ip_printf(ip, "};\n");
-      
+      ip_printf(ip, "static const size_t %snum_scan_table_rows_ = %zu;\n", cc_prefix(cc), num_rows);
+      ip_printf(ip, "static const size_t %snum_scan_table_grouped_columns_ = %zu;\n", cc_prefix(cc), num_columns);
+
       /* Raw encoding map */
       int srmap[256] = {0};
       struct rex_symbol_group *sg =rex->dfa_.symbol_groups_;
@@ -4086,7 +4088,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
             do {
               sr = sr->chain_;
 
-              r = encode_utf8_range(&utf8_scanner, sr->symbol_start_, sr->symbol_end_, pat->nfa_begin_state_, pat->nfa_final_state_);
+              r = encode_utf8_range(&utf8_scanner, sr->symbol_start_, sr->symbol_end_ - 1, pat->nfa_begin_state_, pat->nfa_final_state_);
               if (r) {
                 ip->had_error_ = 1;
                 rex_cleanup(&utf8_scanner);
@@ -4098,9 +4100,9 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
         } while (sg != rex->dfa_.symbol_groups_);
       }
 
-      /* Catch-all symbol group #1 (entire unicode range) -- this distinguishes valid UTF-8 encodings from invalid ones. */
+      /* Catch-all symbol group #0 (entire unicode range) -- this distinguishes valid UTF-8 encodings from invalid ones. */
       struct rex_pattern *pat = NULL;
-      r = rex_alloc_pattern(&utf8_scanner, 1, &pat);
+      r = rex_alloc_pattern(&utf8_scanner, 0, &pat);
       if (r) {
         ip->had_error_ = 1;
         rex_cleanup(&utf8_scanner);
@@ -4121,7 +4123,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
         goto cleanup_exit;
       }
 
-      r = encode_utf8_range(&utf8_scanner, 0x00, 0x110000, pat->nfa_begin_state_, pat->nfa_final_state_);
+      r = encode_utf8_range(&utf8_scanner, 0x00, 0x10FFFF, pat->nfa_begin_state_, pat->nfa_final_state_);
       if (r) {
         ip->had_error_ = 1;
         rex_cleanup(&utf8_scanner);
@@ -4247,9 +4249,6 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
       ip_printf(ip, "};\n");
 
       rex_cleanup(&utf8_scanner);
-
-      ip_printf(ip, "static const size_t %snum_scan_table_rows_ = %zu;\n", cc_prefix(cc), num_rows);
-      ip_printf(ip, "static const size_t %snum_scan_table_grouped_columns_ = %zu;\n", cc_prefix(cc), num_columns);
     }
   }
 
