@@ -1507,9 +1507,9 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "  size_t input_size = stack->input_size_;\n"
                  "  int is_final_input = !!stack->is_final_input_;\n"
                  "  size_t scan_state = stack->scan_state_;\n");
-  ip_printf(ip,  "  const size_t *transition_table = %sscan_table_rex;\n", cc_prefix(cc));
+  ip_printf(ip,  "  const int *transition_table = %sscan_table_grouped_rex_;\n", cc_prefix(cc));
   ip_printf(ip,  "  const size_t *actions = %sscan_actions_rex;\n", cc_prefix(cc));
-  ip_printf(ip,  "  const size_t row_size = 260;\n");
+  ip_printf(ip,  "  const size_t row_size = %snum_scan_table_grouped_columns_;\n", cc_prefix(cc));
   ip_printf(ip,  "  const size_t default_action = %zu;\n", 0);
   ip_printf(ip,  "  const size_t start_state = %zu;\n", 1);
   ip_printf(ip,  "  const size_t start_action = 0;\n", cc_prefix(cc));
@@ -1594,9 +1594,10 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "        }\n"
                  "      }\n"
                  "      size_t state_action = actions[scan_state];\n"
+                 "      ptrdiff_t cp_len = cp - stack->codepoint_;\n"
                  "      if (state_action != default_action) /* replace with actual */ {\n"
                  "        best_match_action = state_action;\n"
-                 "        best_match_size = match_index;\n"
+                 "        best_match_size = match_index - cp_len;\n"
                  "        best_match_offset = at_match_index_offset;\n"
                  "        best_match_line = at_match_index_line;\n"
                  "        best_match_col = at_match_index_col;\n"
@@ -1606,7 +1607,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "      symgrp = 0;\n"
                  "      cp = stack->codepoint_;\n"
                  "      if (scan_state) {\n"
-                 "        at_match_index_offset++;\n"
+                 "        at_match_index_offset += (size_t)cp_len;\n"
                  "        if (stack->codepoint_[0] != '\\n') {\n"
                  "          at_match_index_col++;\n"
                  "        }\n"
@@ -1614,8 +1615,6 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "          at_match_index_col = 1;\n"
                  "          at_match_index_line++;\n"
                  "        }\n"
-                 "\n"
-                 "        match_index++;\n"
                  "      }\n"
                  "      else {\n"
                  "        /* error, or, end of token, depending on whether we have a match before */\n"
@@ -1646,6 +1645,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "    }\n"
                  "    else /* (next_sg < 0) */ {\n"
                  "      /* Partial analysis of codepoint; keep going */\n"
+                 "      *cp++ = c;\n"
                  "      match_index++;\n"
                  "      symgrp = ~next_sg;\n"
                  "    }\n"
@@ -1696,9 +1696,10 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "        }\n"
                  "      }\n"
                  "      size_t state_action = actions[scan_state];\n"
+                 "      ptrdiff_t cp_len = cp - stack->codepoint_;\n"
                  "      if (state_action != default_action) /* replace with actual */ {\n"
                  "        best_match_action = state_action;\n"
-                 "        best_match_size = stack->match_buffer_size_ + input_index - stack->input_index_;\n"
+                 "        best_match_size = stack->match_buffer_size_ + input_index - stack->input_index_ - cp_len;\n"
                  "        best_match_offset = input_offset;\n"
                  "        best_match_col = input_col;\n"
                  "        best_match_line = input_line;\n"
@@ -1708,7 +1709,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "      symgrp = 0;\n" 
                  "      cp = stack->codepoint_;\n"
                  "      if (scan_state) {\n"
-                 "        input_offset++;\n"
+                 "        input_offset += (size_t)cp_len;\n"
                  "        if (stack->codepoint_[0] != '\\n') {\n"
                  "          input_col++;\n"
                  "        }\n"
@@ -1716,7 +1717,6 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "          input_col = 1;\n"
                  "          input_line++;\n"
                  "        }\n"
-                 "        input_index++;\n"
                  "      }\n"
                  "      else {\n"
                  "        /* Append from stack->input_index_ to input_index, excluding input_index itself */\n"
@@ -1751,7 +1751,8 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "    }\n"
                  "    else /* (next_sg < 0) */ {\n"
                  "      /* Partial analysis of codepoint; keep going */\n"
-                 "      match_index++;\n"
+                 "      *cp++ = c;\n"
+                 "      input_index++;\n"
                  "      symgrp = ~next_sg;\n"
                  "    }\n"
                  "  }\n"
