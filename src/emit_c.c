@@ -43,6 +43,11 @@
 #include <assert.h>
 #endif
 
+#ifndef LIMITS_H_INCLUDED
+#define LIMITS_H_INCLUDED
+#include <limits.h>
+#endif
+
 #ifndef MUL_H_INCLUDED
 #define MUL_H_INCLUDED
 #include "mul.h"
