@@ -91,6 +91,9 @@ static uint32_t hex_to_int(const char *txt, size_t len) {
 CHAR: \\x[0-9a-fA-F] { $$ = hex_to_int($text + 2, 1); }
 CHAR: \\x[0-9a-fA-F][0-9a-fA-F] { $$ = hex_to_int($text + 2, 2); }
 
+CHAR: \\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F] { $$ = hex_to_int($text + 2, 4); }
+CHAR: \\u\{[0-9a-fA-F]+\} { $$ = hex_to_int($text + 3, $len - 4); }
+
 %%
 static uint32_t oct_to_int(const char *txt, size_t len) {
   size_t digit;
@@ -189,11 +192,16 @@ sym: DOT {
   size_t i = rex_nfa_make_node(nfa);
   size_t f = rex_nfa_make_node(nfa);
   uint32_t n;
-  for (n = 0; n < 256; ++n) {
-    if (n != 0xA) {
-      rex_nfa_make_trans(nfa, i, f, n);
-    }
-  }
+  rex_nfa_make_ranged_trans(nfa, i, f, 0, 0x9);
+  /* omit 0xA LF */
+  rex_nfa_make_ranged_trans(nfa, i, f, 0xB, 0xC);
+  /* omit 0xD CR */
+  rex_nfa_make_ranged_trans(nfa, i, f, 0xE, 0x84);
+  /* omit 0x85 NEL */
+  rex_nfa_make_ranged_trans(nfa, i, f, 0x86, 0x2027);
+  /* omit 0x2028 Line Separator */
+  /* omit 0x2029 Paragraph Separator */
+  rex_nfa_make_ranged_trans(nfa, i, f, 0x2029, 0x10FFFF);
   
   $$.initial_ = i;
   $$.final_ = f;

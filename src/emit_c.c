@@ -5335,6 +5335,7 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "\n"
                 "#endif /* %s */\n", cc->include_guard_);
 
+  
 cleanup_exit:
   ;
 }
