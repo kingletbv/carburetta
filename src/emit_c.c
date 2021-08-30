@@ -3689,6 +3689,9 @@ int emit_table(struct indented_printer *ip, int *table, size_t num_rows, size_t 
   return 0;
 }
 
+/* set to 1 to debug print the transitions made */
+#define DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS 0
+
 int encode_utf8_code_units(struct rex_scanner *rex, size_t num_digits, uint8_t *low, uint8_t *high, uint8_t *min, uint8_t *max, size_t from_nfa, size_t to_nfa) {
   enum {
     EXACT,
@@ -3759,19 +3762,25 @@ int encode_utf8_code_units(struct rex_scanner *rex, size_t num_digits, uint8_t *
         nodes[0].mid = from_nfa;
       }
       if (needs[n + 1] == EXACT) {
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
         printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].mid);
+#endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].mid, low[n]);
       }
       else if (needs[n + 1] == ADJACENT) {
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
         printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].top);
         printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, high[n], nodes[n+1].bottom);
+#endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].top, low[n]);
         rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].bottom, high[n]);
       }
       else if (needs[n + 1] == RANGE) {
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
         printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].top);
         printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].mid, low[n] + 1, high[n] - 1, nodes[n+1].mid);
         printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, high[n], nodes[n+1].bottom);
+#endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].top, low[n]);
         rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].mid, low[n] + 1, high[n] - 1);
         rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].bottom, high[n]);
@@ -3786,23 +3795,33 @@ int encode_utf8_code_units(struct rex_scanner *rex, size_t num_digits, uint8_t *
       }
 
       if (needs[n + 1] == ADJACENT) {
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
         printf("[%zu] -- %c --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
         printf("[%zu] -- %c --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
+#endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].top, low[n]);
         rex_nfa_make_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].bottom, high[n]);
       }
       else if (needs[n + 1] == RANGE) {
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
         printf("[%zu] -- %c --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
+#endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].top, low[n]);
         if (low[n] != max[n]) {
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
           printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].top, low[n] + 1, max[n], nodes[n + 1].mid);
+#endif
           rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].mid, low[n] + 1, max[n]);
         }
         if (high[n] != min[n]) {
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
           printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].bottom, min[n], high[n] - 1, nodes[n + 1].mid);
+#endif
           rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].mid, min[n], high[n] - 1);
         }
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
         printf("[%zu] -- %c --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
+#endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].bottom, high[n]);
       }
     }
@@ -3817,25 +3836,37 @@ int encode_utf8_code_units(struct rex_scanner *rex, size_t num_digits, uint8_t *
       }
 
       /* needs[n+1] == RANGE */
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
       printf("[%zu] -- %c --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
+#endif
       rex_nfa_make_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].top, low[n]);
       if (low[n] != max[n]) {
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
         printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].top, low[n] + 1, max[n], nodes[n + 1].mid);
+#endif
         rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].mid, low[n] + 1, max[n]);
       }
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
       printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].mid, min[n], max[n], nodes[n + 1].mid);
+#endif
       rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].mid, min[n], max[n]);
       if (high[n] != min[n]) {
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
         printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].bottom, min[n], high[n] - 1, nodes[n + 1].mid);
+#endif
         rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].mid, min[n], high[n] - 1);
       }
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
       printf("[%zu] -- %c --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
+#endif
       rex_nfa_make_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].bottom, high[n]);
     }
 
   } while (n--);
 
+#if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
   printf("Start at [%zu]\n", nodes[0].mid);
+#endif
   return 0;
 }
 
