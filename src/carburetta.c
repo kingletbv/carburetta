@@ -954,6 +954,7 @@ int main(int argc, char **argv) {
     emit_c_file(&ip, &cc, &prdg, &rex, &lalr);
 
     if (ip.had_error_) {
+      r = EXIT_FAILURE;
       ip_cleanup(&ip);
       goto cleanup_exit;
     }
@@ -1003,6 +1004,7 @@ int main(int argc, char **argv) {
     emit_h_file(&ip, &cc, &prdg);
 
     if (ip.had_error_) {
+      r = EXIT_FAILURE;
       ip_cleanup(&ip);
       goto cleanup_exit;
     }
