@@ -1644,9 +1644,9 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "\n"
                  "        stack->cp_ = cp;\n"
                  "        stack->sym_grp_ = symgrp;\n"
-                 "\n"
-                 "        return _TEMPL_MATCH;\n"
-                 "      }\n"
+                 "\n");
+  ip_printf(ip,  "        return _%sMATCH;\n", cc_PREFIX(cc));
+  ip_printf(ip,  "      }\n"
                  "    }\n"
                  "    else /* (next_sg < 0) */ {\n"
                  "      /* Partial analysis of codepoint; keep going */\n"
