@@ -976,6 +976,7 @@ static int pi_process_grammar_tokens(struct tkr_tokenizer *tkr_tokens, struct xl
         break;
       case PRD_SYNTAX_ERROR:
         /* XXX: Need to recover, but how! (Transition on all parent Error syms and attempt to shift input) */
+        re_error_tkr(tkr_tokens, "Syntax error");
         g->have_errors_ = 1;
         break;
       case PRD_NEXT:
@@ -1040,6 +1041,7 @@ static int pi_process_scanner_tokens(struct tkr_tokenizer *tkr_tokens, struct xl
         break;
       case PRD_SYNTAX_ERROR:
         /* XXX: Need to recover, but how! (Transition on all parent Error syms and attempt to shift input) */
+        re_error_tkr(tkr_tokens, "Syntax error");
         g->have_errors_ = 1;
         break;
       case PRD_NEXT:
