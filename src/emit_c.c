@@ -2605,9 +2605,22 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
       }
       ip_printf(ip, ";\n"
                     "              stack->need_sym_ = 1; /* keep scanning */\n");
-      if (emit_pattern_action_snippet(ip, cc, pat)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
+
+      if (pat->common_action_sequence_.num_tokens_) {
+        ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
+        if (emit_pattern_common_action_snippet(ip, cc, pat)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        ip_printf(ip, "              }\n");
+      }
+      if (pat->action_sequence_.num_tokens_) {
+        ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
+        if (emit_pattern_action_snippet(ip, cc, pat)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        ip_printf(ip, "              }\n");
       }
       /* Assuming we still need a sym, we should deconstruct the common data. */
       if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
