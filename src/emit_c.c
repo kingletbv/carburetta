@@ -1546,7 +1546,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "    stack->match_col_ = stack->best_match_col_;\n"
                  "    \n"
                  "    /* Reset scanner to get ready for next token */\n"
-                 "    stack->match_index_ = 0;\n"
+                 "    stack->match_index_ = match_index = 0;\n"
                  "    stack->best_match_action_ = best_match_action = start_action;\n"
                  "    stack->best_match_size_ = best_match_size = 0;\n"
                  "    stack->scan_state_ = scan_state = stack->current_mode_start_state_;\n"
@@ -2081,7 +2081,7 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "    stack->match_col_ = stack->best_match_col_;\n"
                  "    \n"
                  "    /* Reset scanner to get ready for next token */\n"
-                 "    stack->match_index_ = 0;\n"
+                 "    stack->match_index_ = match_index = 0;\n"
                  "    stack->best_match_action_ = best_match_action = start_action;\n"
                  "    stack->best_match_size_ = best_match_size = 0;\n"
                  "    stack->scan_state_ = scan_state = stack->current_mode_start_state_;\n"
@@ -2554,7 +2554,19 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     }
   }
 
-  ip_printf(ip, "          switch (stack->best_match_action_) {\n");
+  ip_printf(ip, "          { /* scope guard */\n");
+
+  /* Emit any requested locals */
+  if (cc->locals_snippet_.num_tokens_) {
+    ip_printf(ip, "          ");
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->locals_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->locals_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, "\n");
+  }
+
+  ip_printf(ip, "            switch (stack->best_match_action_) {\n");
   size_t pat_idx;
   for (pat_idx = 0; pat_idx < prdg->num_patterns_; ++pat_idx) {
     struct prd_pattern *pat = prdg->patterns_ + pat_idx;
@@ -2636,7 +2648,8 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     ip_printf(ip, "              break;\n");
   }
   ip_printf(ip, "          } /* switch */\n");
-  
+  ip_printf(ip, "        } /* scope guard */\n");
+
   ip_printf(ip, "          break;\n");
   ip_printf(ip, "        case _%sOVERFLOW:\n", cc_PREFIX(cc));
   emit_overflow_error(ip, cc);
