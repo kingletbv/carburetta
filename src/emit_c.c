@@ -3371,21 +3371,8 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 "            break;\n"
                 "          }\n"
                 "        }\n");
-  ip_printf(ip, "        if (n != stack->pos_) {\n"
-                "          /* Enter error-token recovery mode given that such a recovery is possible */\n");
-  ip_printf(ip, "          stack->error_recovery_ = (n != stack->pos_);\n"
-                "        }\n"
-                "        else {\n");
-  ip_printf(ip, "          if (sym != ");
-  if (print_sym_as_c_ident(ip, cc, cc->input_end_sym_)) {
-    ip->had_error_ = 1;
-    goto cleanup_exit;
-  }
-  ip_printf(ip, ") {\n");
-  ip_printf(ip, "            /* Retain EOF but discard any other sym so we make progress */\n");
-  emit_on_next(ip, cc);
-  ip_printf(ip, "          }\n"
-                "        }\n");
+  ip_printf(ip, "        /* Enter error-token recovery mode given that such a recovery is possible */\n");
+  ip_printf(ip, "        stack->error_recovery_ = (n != stack->pos_);\n");
   ip_printf(ip, "        /* Issue the error here */\n"
                 "        if (!stack->mute_error_turns_) {\n"
                 "          stack->mute_error_turns_ = 3;\n");
@@ -3411,8 +3398,11 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     ip_printf(ip, "return _%sFINISH;\n", cc_PREFIX(cc));
   }
 
-  ip_printf(ip, "          }\n"
-                "        }\n"
+  ip_printf(ip, "          }\n");
+  ip_printf(ip, "          /* Retain EOF but discard any other sym so we make progress */\n");
+  emit_on_next(ip, cc);
+
+  ip_printf(ip, "        }\n"
                 "      }\n");
 
   ip_printf(ip, "    } /* !stack->error_recovery_ */\n"
