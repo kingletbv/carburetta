@@ -1836,7 +1836,6 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "    stack->scan_state_ = scan_state = stack->current_mode_start_state_;\n"
                  "\n"
                  "    stack->token_size_ = 0;\n"
-                 "    stack->input_index_ = 0;\n"
                  "    stack->input_offset_ = input_offset;\n"
                  "    stack->input_line_ = input_line;\n"
                  "    stack->input_col_ = input_col;\n"
@@ -2303,7 +2302,6 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                  "    stack->scan_state_ = scan_state = stack->current_mode_start_state_;\n"
                  "\n"
                  "    stack->token_size_ = 0;\n"
-                 "    stack->input_index_ = 0;\n"
                  "    stack->input_offset_ = input_offset;\n"
                  "    stack->input_line_ = input_line;\n"
                  "    stack->input_col_ = input_col;\n");
