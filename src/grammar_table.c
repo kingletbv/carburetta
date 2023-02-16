@@ -96,6 +96,25 @@ int gt_transcribe_grammar(struct grammar_table *gt, size_t num_productions, stru
   return r;
 }
 
+void gt_debug_grammar(struct grammar_table *gt, size_t num_productions, struct prd_production *productions, int end_of_production_sym, int end_of_grammar_sym) {
+  size_t prod_idx;
+  gt->num_ordinals_ = 0;
+  for (prod_idx = 0; prod_idx < num_productions; ++prod_idx) {
+    struct prd_production *prod = productions + prod_idx;
+    fprintf(stderr, "%2d:", prod->nt_.sym_->ordinal_);
+
+    size_t sym_idx;
+    for (sym_idx = 0; sym_idx < prod->num_syms_; ++sym_idx) {
+      struct prd_production_sym *sd = prod->syms_ + sym_idx;
+      fprintf(stderr, " %2d", sd->sym_->ordinal_);
+    }
+
+    fprintf(stderr, " %2d\n", end_of_production_sym);
+  }
+
+  fprintf(stderr, "%2d\n", end_of_grammar_sym);
+}
+
 int gt_generate_lalr(struct grammar_table *gt, struct lr_generator *lalr, int end_of_production_sym, int end_of_grammar_sym, int end_of_file_sym, int synthetic_s_sym) {
   lr_error_t lr_err;
   lr_err = lr_gen_parser(lalr, gt->ordinals_, end_of_production_sym, end_of_grammar_sym, end_of_file_sym, synthetic_s_sym);

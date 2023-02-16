@@ -536,6 +536,7 @@ int main(int argc, char **argv) {
     goto cleanup_exit;
   }
 
+  //gt_debug_grammar(&gt, prdg.num_productions_, prdg.productions_, RULE_END, GRAMMAR_END);
 
   /* Resolve all conflict resolutions */
   struct conflict_resolution *confres;
