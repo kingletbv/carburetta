@@ -361,6 +361,37 @@ static int emit_setmode(struct indented_printer *ip, struct carburetta_context *
   return 0;
 }
 
+static int emit_ismode(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st, struct xlts *mode_tk) {
+  if (se->setmode_type_ == SESMT_NONE) {
+    re_error(&st->text_, "cannot use $is_mode from here");
+    return TKR_SYNTAX_ERROR;
+  }
+  struct mode *m = mode_find(&cc->modetab_, mode_tk->translated_);
+  if (!m) {
+    re_error(mode_tk, "mode not found");
+    return TKR_SYNTAX_ERROR;
+  }
+  char *ident = (char *)malloc(1 + m->def_.num_translated_);
+  char *s = ident;
+  const char *p;
+  if (!ident) {
+    re_error(mode_tk, "Error, no memory");
+    return TKR_INTERNAL_ERROR;
+  }
+  /* Transform into C identifier */
+  for (p = m->def_.translated_; p < (m->def_.translated_ + m->def_.num_translated_); ++p) {
+    int c = *p;
+    if ((c >= 'a') && (c <= 'z')) c = c - 'a' + 'A';
+    if (c == '-') c = '_';
+    *s++ = c;
+  }
+  *s++ = '\0';
+  ip_printf_no_indent(ip, "(stack->current_mode_start_state_ == M_%s%s)", cc_PREFIX(cc), ident);
+  free(ident);
+  return 0;
+}
+
+
 static int emit_chgterm(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st, struct xlts *term_tk) {
   if (se->chgterm_type_ == SECTT_NONE) {
     re_error(&st->text_, "cannot use $chg_term from here");
@@ -589,6 +620,7 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
     }
     else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && 
              (!strcmp("$set_mode", se->code_->tokens_[col].text_.translated_) ||
+              !strcmp("$is_mode", se->code_->tokens_[col].text_.translated_) ||
               !strcmp("$chg_term", se->code_->tokens_[col].text_.translated_))) {
       /* Special identifiers that take a single identifier argument between parentheses.
        * This identifier is case insensitive, and may include dashes. Consequently, we 
@@ -646,6 +678,9 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
         if (!failed) {
           if (!strcmp(op, "$set_mode")) {
             r = emit_setmode(ip, cc, se, se->code_->tokens_ + op_at, &ident);
+          }
+          else if (!strcmp(op, "$is_mode")) {
+            r = emit_ismode(ip, cc, se, se->code_->tokens_ + op_at, &ident);
           }
           else if (!strcmp(op, "$chg_term")) {
             r = emit_chgterm(ip, cc, se, se->code_->tokens_ + op_at, &ident);
