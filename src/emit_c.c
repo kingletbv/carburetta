@@ -5239,6 +5239,11 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     ip_printf(ip, "  }\n");
     ip_printf(ip, "  stack->current_mode_start_state_ = mode;\n");
     ip_printf(ip, "}\n");
+    ip_printf(ip, "\n");
+    ip_printf(ip, "int %smode(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "  return (int)stack->current_mode_start_state_;\n");
+    ip_printf(ip, "}\n");
+    ip_printf(ip, "\n");
     emit_lex_function(ip, cc, prdg);
     ip_printf(ip, "\n");
     emit_scan_function(ip, cc, prdg, lalr, state_syms);
@@ -5366,6 +5371,7 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "int %sstack_accepts(struct %sstack *stack, int sym);\n", cc_prefix(cc), cc_prefix(cc));
   if (prdg->num_patterns_) {
     ip_printf(ip, "void %sset_mode(struct %sstack *stack, int mode);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "int %smode(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
     ip_printf(ip, "void %sset_input(struct %sstack *stack, const char *input, size_t input_size, int is_final_input);\n", cc_prefix(cc), cc_prefix(cc));
 
     if (cc->params_snippet_.num_tokens_) {
@@ -5391,7 +5397,6 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
     ip_printf(ip, "int %sendcolumn(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
     ip_printf(ip, "size_t %sendoffset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
     ip_printf(ip, "int %slex(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
-
   }
 
   if (cc->params_snippet_.num_tokens_) {
