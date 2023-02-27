@@ -1,3 +1,32 @@
+
+
+0.8.6 - 2023-02-27
+
+- substantial fixes relative to 0.8.4 ; users are encouraged to upgrade if
+  not on 0.8.5 already.
+
+- build issues under linux (missing limits.h)
+
+- regular expression use of "." operator (the any character),
+  now spans the full unicode range, excluding only newline \xA,
+  carriage return \xD, NEXT LINE (NEL) \x85, and LINE SEPARATOR (LS) 
+  \x2028. Otherwise any character from \x00 to \x10FFFF is matched.
+
+- $is_mode(), allows checking the current scanner mode from within a 
+  pattern action.
+
+- <prefix>mode(), returns the current scanner mode to calling code.
+
+- -x--utf8 - enables utf8 mode for the scanner. This is an experimental
+  function that enables reading UTF-8 as input. Note that, while the
+  core lexing engine can handle UTF-8, the regular expression parser
+  is still missing substantial features (so, for instance, while a
+  unicode literal like \u2028 can be used in a pattern, it cannot be
+  used inside a character class, e.g. [\u2028] is not yet valid.).
+  Eventually the intent is for utf8 mode to be the default and a raw,
+  byte oriented, mode to be the flag selectable mode.
+
+
 0.8.4 - 2021-04-09
 
 - inireader example - reads .ini files using Carburetta in a scanner-only
