@@ -209,6 +209,9 @@ void print_usage(void) {
                   "         generate a C header file and output it to h_filename. If no filename\n"
                   "         is present, a c_filename must be present as it will then be used to\n"
                   "         derive a filename for the header file.\n"
+                  "--x-utf8\n"
+                  "         use UTF-8 encoding for the input file. This is experimental and will\n"
+                  "         generate a parser that reads the input file as UTF-8.\n"
   );
 }
 
@@ -271,9 +274,9 @@ int main(int argc, char **argv) {
       generate_hfile = 1;
       cr--; cpv++;
     }
-    else if (!strcmp("--x", *cpv)) {
+    else if (!strcmp("--x-utf8", *cpv)) {
       cr--; cpv++;
-      cc.experimental_ = 1;
+      cc.utf8_experimental_ = 1;
     }
     else if (expecting_hfile) {
       if (cc.h_output_filename_) {

@@ -1951,7 +1951,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
 
 
 static void emit_lex_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg) {
-  if (cc->experimental_) {
+  if (cc->utf8_experimental_) {
     emit_lex_function_x(ip, cc, prdg);
     return;
   }
@@ -3668,7 +3668,7 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
                   "  char terminator_repair_;\n"
                   "  int input_line_;\n"
                   "  int input_col_;\n");
-    if (cc->experimental_) {
+    if (cc->utf8_experimental_) {
       ip_printf(ip, "  int sym_grp_;\n");
       ip_printf(ip, "  char codepoint_[4];\n");
       ip_printf(ip, "  char *cp_;\n");
@@ -4015,7 +4015,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   emit_sym_data_struct(ip, cc);
 
   if (prdg->num_patterns_) {
-    if (cc->experimental_) {
+    if (cc->utf8_experimental_) {
       /* +1 to include a 0 column, +4 to include room for anchors (start-of-input, start-of-line, end-of-line, end-of-input) */
       size_t num_columns = rex->dfa_.symbol_groups_ ? rex->dfa_.symbol_groups_->ordinal_ + 1 + 4 : 1;
       size_t first_anchor_column = rex->dfa_.symbol_groups_->ordinal_ + 1;
@@ -4781,7 +4781,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                   "  stack->input_offset_ = 0;\n"
                   "  stack->input_line_ = 1;\n"
                   "  stack->input_col_ = 1;\n");
-    if (cc->experimental_) {
+    if (cc->utf8_experimental_) {
       ip_printf(ip, "  stack->sym_grp_ = 0;\n");
       ip_printf(ip, "  stack->cp_ = stack->codepoint_;\n");
     }
@@ -5210,7 +5210,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                   "  stack->best_match_offset_ = 0;\n"
                   "  stack->best_match_line_ = 1;\n"
                   "  stack->best_match_col_ = 1;\n");
-    if (cc->experimental_) {
+    if (cc->utf8_experimental_) {
       ip_printf(ip, "  stack->sym_grp_ = 0;\n"
                     "  stack->cp_ = stack->codepoint_;\n");
     }
