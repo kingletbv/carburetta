@@ -4,7 +4,7 @@ Carburetta is a fused scanner & parser generator for C and C++. It aims to make 
 
 Please note that this project is _not accepting pull requests_, both due to the intricacies of the code making isolated changes impractical, and the impracticality of determining contribution ownership.
 
-To learn more about Carburetta, please go to its website at [https://carburetta.com/](https://carburetta.com/)
+To access Carburetta's manual and learn more about the product, visit the website at [https://carburetta.com/](https://carburetta.com/).
 
 ## Getting Started
 
