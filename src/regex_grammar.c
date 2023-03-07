@@ -417,7 +417,7 @@ static const int rxg_production_syms[] = {
   44
 };
 
-#ifndef CARB_RXG_CARBURETTASRCREGEX_GRAMMAR_H_INCLUDED
+#ifndef CARB_RXG_REGEX_GRAMMAR_H_INCLUDED
 struct rxg_stack {
   int error_recovery_:1;
   int pending_reset_:1;
@@ -494,7 +494,7 @@ struct rxg_stack {
 #define RXG_PATTERN_LIST 48
 
 
-#endif /* CARB_RXG_CARBURETTASRCREGEX_GRAMMAR_H_INCLUDED */
+#endif /* CARB_RXG_REGEX_GRAMMAR_H_INCLUDED */
 
 void rxg_stack_init(struct rxg_stack *stack) {
   stack->error_recovery_ = 0;
@@ -687,7 +687,7 @@ int rxg_stack_accepts(struct rxg_stack *stack, int sym) {
   if (!stack->pos_) return 0;
   return 0 != rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - rxg_minimum_sym)];}
 
-int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value) {
+int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, int char_value) {
   if (stack->pending_reset_) {
     int r;
     r = rxg_stack_reset(stack);
@@ -2536,20 +2536,8 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
             break;
           }
         }
-        if (n != stack->pos_) {
-          /* Enter error-token recovery mode given that such a recovery is possible */
-          stack->error_recovery_ = (n != stack->pos_);
-        }
-        else {
-          if (sym != RXG_INPUT_END) {
-            /* Retain EOF but discard any other sym so we make progress */
-            stack->continue_at_ = 0;
-            {
-              return PRD_NEXT;
-              
-            }
-          }
-        }
+        /* Enter error-token recovery mode given that such a recovery is possible */
+        stack->error_recovery_ = (n != stack->pos_);
         /* Issue the error here */
         if (!stack->mute_error_turns_) {
           stack->mute_error_turns_ = 3;
@@ -2572,6 +2560,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
             /* EOF means we cannot shift to recover, and errors are muted, so return completion */
             stack->pending_reset_ = 1;
             return PRD_SUCCESS;
+          }
+          /* Retain EOF but discard any other sym so we make progress */
+          stack->continue_at_ = 0;
+          {
+            return PRD_NEXT;
+            
           }
         }
       }
@@ -2739,6 +2733,31 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
       char_value = (char_value << 3) + c - '0';
       break;
     }
+    case TOK_ESC_UNI1: {
+      sym = RXG_CHAR;
+      int n = 3; /* position after "\u{" */
+      char_value = 0;
+      while (tkr->xmatch_.translated_[n] != '}') {
+        char c = tkr->xmatch_.translated_[n++];
+        if ((c >= '0') && (c <= '9')) char_value = (char_value << 4) + c - '0';
+        if ((c >= 'a') && (c <= 'f')) char_value = (char_value << 4) + 0xA + c - 'a';
+        if ((c >= 'A') && (c <= 'F')) char_value = (char_value << 4) + 0xA + c - 'A';
+      }
+      break;
+    }
+    case TOK_ESC_UNI2: {
+      sym = RXG_CHAR;
+      int n;
+      char_value = 0;
+      for (n = 2; n < 6; ++n) {
+        char c = tkr->xmatch_.translated_[n];
+        if ((c >= '0') && (c <= '9')) char_value = (char_value << 4) + c - '0';
+        if ((c >= 'a') && (c <= 'f')) char_value = (char_value << 4) + 0xA + c - 'a';
+        if ((c >= 'A') && (c <= 'F')) char_value = (char_value << 4) + 0xA + c - 'A';
+      }
+      break;
+    }
+                     
     case TOK_ESC_INVALID_ESCAPE: {
       re_error_tkr(tkr, "Error, invalid escape \"\\%c\"", tkr->xmatch_.translated_[1]);
       return PRD_SYNTAX_ERROR;

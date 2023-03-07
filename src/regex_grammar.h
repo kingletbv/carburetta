@@ -1,5 +1,5 @@
-#ifndef CARB_RXG_CARBURETTASRCREGEX_GRAMMAR_H_INCLUDED
-#define CARB_RXG_CARBURETTASRCREGEX_GRAMMAR_H_INCLUDED
+#ifndef CARB_RXG_REGEX_GRAMMAR_H_INCLUDED
+#define CARB_RXG_REGEX_GRAMMAR_H_INCLUDED
 
 #include <stddef.h> /* size_t */
 
@@ -89,10 +89,10 @@ extern "C" {
   int rxg_stack_reset(struct rxg_stack *stack);
   int rxg_stack_can_recover(struct rxg_stack *stack);
   int rxg_stack_accepts(struct rxg_stack *stack, int sym);
-  int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, char char_value);
+  int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st, int char_value);
   
   #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
-#endif /* CARB_RXG_CARBURETTASRCREGEX_GRAMMAR_H_INCLUDED */
+#endif /* CARB_RXG_REGEX_GRAMMAR_H_INCLUDED */
