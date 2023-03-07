@@ -126,6 +126,8 @@ xz(TOK_ESC_HEX2) \
 xz(TOK_ESC_OCT1) \
 xz(TOK_ESC_OCT2) \
 xz(TOK_ESC_OCT3) \
+xz(TOK_ESC_UNI1) \
+xz(TOK_ESC_UNI2) \
 xz(TOK_ESC_INVALID_ESCAPE) \
 xz(TOK_ESC_START_OF_INPUT_ESC) \
 xz(TOK_ESC_END_OF_INPUT_ESC)
@@ -237,6 +239,8 @@ xy("\\\\x[0-9a-fA-F][0-9a-fA-F]", TOK_ESC_HEX2, TOK_CHAR) \
 xy("\\\\[0-7]", TOK_ESC_OCT1, TOK_CHAR) \
 xy("\\\\[0-7][0-7]", TOK_ESC_OCT2, TOK_CHAR) \
 xy("\\\\[0-7][0-7][0-7]", TOK_ESC_OCT3, TOK_CHAR) \
+xy("\\\\u\\{[0-9a-fA-F]+\\}", TOK_ESC_UNI1, TOK_CHAR) \
+xy("\\\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]", TOK_ESC_UNI2, TOK_CHAR) \
 xx("\\\\A", TOK_ESC_START_OF_INPUT_ESC) \
 xx("\\\\Z", TOK_ESC_END_OF_INPUT_ESC) \
 xy("\\\\.", TOK_ESC_INVALID_ESCAPE, TOK_CHAR) \
