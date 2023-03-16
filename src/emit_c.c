@@ -4897,7 +4897,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
 
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     ip_printf(ip, "  if (stack->slot_1_has_common_data_) {\n");
-    if (emit_common_destructor_snippet_index_0(ip, cc)) {
+    if (emit_common_destructor_snippet_index_1(ip, cc)) {
       ip->had_error_ = 1;
       goto cleanup_exit;
     }
