@@ -115,7 +115,7 @@ static int to_get_random_bytes(void *buf, size_t num_bytes) {
 
 char *to_derive_temp_name(const char *final_destination_name) {
   char random_digits_5bit[] = "abcdefghijklmnopqrstuvwxyz123456";
-  unsigned char random_bin[5] = { 0 };
+  unsigned char random_bin[6] = { 0 };
   int r = 0;
   r = to_get_random_bytes(random_bin, sizeof(random_bin));
   if (r) return NULL;
