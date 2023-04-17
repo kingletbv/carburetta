@@ -28,6 +28,21 @@
 #include "rex_set_range.h"
 #endif
 
+/* helper function when debugging; checks whether invariants are met. */
+static int rex_set_range_sanity(struct rex_set_range *rng) {
+  size_t n;
+  for (n = 0; n < rng->num_intervals_; ++n) {
+    struct rex_set_interval *iv = rng->intervals_ + n;
+    if (iv->from_ > iv->to_) return -1;
+    if (n && (iv->from_ <= (iv - 1)->to_)) return -1;
+    if (iv->from_ < 0) return -1;
+    if (iv->from_ > 0x10FFFF) return -1;
+    if (iv->to_ < 0) return -1;
+    if (iv->to_ > 0x10FFFF) return -1;
+  }
+  return 0;
+}
+
 void rex_set_range_init(struct rex_set_range *range) {
   range->num_intervals_ = range->num_intervals_allocated_ = 0;
   range->intervals_ = NULL;
@@ -89,6 +104,7 @@ int rex_set_range_add(struct rex_set_range *range, int from, int to) {
         if (rex_set_range_ensure_space(range)) {
           return -1;
         }
+        iv = range->intervals_ + n;
         memmove(iv + 1, iv, (range->num_intervals_ - n) * sizeof(struct rex_set_interval));
         iv->from_ = from;
         iv->to_ = to;
