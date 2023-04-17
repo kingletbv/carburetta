@@ -4360,7 +4360,9 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                   column_widths[col] = 2;
                 }
                 col++;
+                if (col == 256) break;
               }
+              if (col == 256) break;
               uint32_t input_sym;
               int dst_ordinal = dt->to_->ordinal_;
               int width_needed = 1;
@@ -4382,7 +4384,9 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                   column_widths[col] = width_needed;
                 }
                 col++;
+                if (col == 256) break;
               }
+              if (col == 256) break;
             }
 
           } while (dt != dn->outbound_);
@@ -4497,16 +4501,20 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
             dt = dt->from_peer_;
 
             if (!dt->is_anchor_) {
-              while (col < dt->symbol_start_) {
+              while (col < ((dt->symbol_start_ < 256) ? dt->symbol_start_ : 256)) {
                 ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], 0);
                 col++;
+                if (col == 256) break;
               }
 
               uint32_t input_sym;
-              for (input_sym = dt->symbol_start_; input_sym < dt->symbol_end_; ++input_sym) {
-                assert(col == input_sym);
-                ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], dt->to_->ordinal_);
-                col++;
+              if (col < 256) {
+                for (input_sym = dt->symbol_start_; input_sym < dt->symbol_end_; ++input_sym) {
+                  assert(col == input_sym);
+                  ip_printf(ip, "%s%*d", col ? "," : "", column_widths[col], dt->to_->ordinal_);
+                  col++;
+                  if (col == 256) break;
+                }
               }
             }
           } while (dt != dn->outbound_);
