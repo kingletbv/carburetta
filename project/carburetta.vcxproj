@@ -40,6 +40,7 @@
     <ClCompile Include="..\src\report_error.c" />
     <ClCompile Include="..\src\rex.c" />
     <ClCompile Include="..\src\rex_parse.c" />
+    <ClCompile Include="..\src\rex_set_range.c" />
     <ClCompile Include="..\src\scanner.c" />
     <ClCompile Include="..\src\snippet.c" />
     <ClCompile Include="..\src\symbol.c" />
@@ -77,6 +78,7 @@
     <ClInclude Include="..\src\report_error.h" />
     <ClInclude Include="..\src\rex.h" />
     <ClInclude Include="..\src\rex_parse.h" />
+    <ClInclude Include="..\src\rex_set_range.h" />
     <ClInclude Include="..\src\scanner.h" />
     <ClInclude Include="..\src\snippet.h" />
     <ClInclude Include="..\src\symbol.h" />

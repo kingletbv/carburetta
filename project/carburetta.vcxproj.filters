@@ -32,6 +32,7 @@
     <ClCompile Include="..\src\rex.c" />
     <ClCompile Include="..\src\rex_parse.c" />
     <ClCompile Include="..\src\mode.c" />
+    <ClCompile Include="..\src\rex_set_range.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\chain.h" />
@@ -63,6 +64,7 @@
     <ClInclude Include="..\src\rex.h" />
     <ClInclude Include="..\src\rex_parse.h" />
     <ClInclude Include="..\src\mode.h" />
+    <ClInclude Include="..\src\rex_set_range.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\prd_grammar.cbrt" />
