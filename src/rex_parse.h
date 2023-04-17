@@ -1,5 +1,5 @@
-#ifndef CARB_REX_SRCREX_PARSE_H_INCLUDED
-#define CARB_REX_SRCREX_PARSE_H_INCLUDED
+#ifndef CARB_REX_REX_PARSE_H_INCLUDED
+#define CARB_REX_REX_PARSE_H_INCLUDED
 
 #include <stddef.h> /* size_t */
 
@@ -104,6 +104,7 @@ extern "C" {
   int rex_stack_can_recover(struct rex_stack *stack);
   int rex_stack_accepts(struct rex_stack *stack, int sym);
   void rex_set_mode(struct rex_stack *stack, int mode);
+  int rex_mode(struct rex_stack *stack);
   void rex_set_input(struct rex_stack *stack, const char *input, size_t input_size, int is_final_input);
   int rex_scan(struct rex_stack *stack, struct rex_nfa *nfa, size_t *pstart, size_t *pend);
   void rex_set_location(struct rex_stack *stack, int line, int col, size_t offset);
@@ -122,4 +123,4 @@ extern "C" {
 } /* extern "C" */
 #endif
 
-#endif /* CARB_REX_SRCREX_PARSE_H_INCLUDED */
+#endif /* CARB_REX_REX_PARSE_H_INCLUDED */

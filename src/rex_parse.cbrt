@@ -21,6 +21,7 @@
 struct rex_nfa; 
 #include "rex_parse.h"
 #include "rex.h"
+#include "rex_set_range.h"
 
 %scanner%
 
@@ -191,7 +192,6 @@ sym: CHAR {
 sym: DOT {
   size_t i = rex_nfa_make_node(nfa);
   size_t f = rex_nfa_make_node(nfa);
-  uint32_t n;
   rex_nfa_make_ranged_trans(nfa, i, f, 0, 0x9);
   /* omit 0xA LF */
   rex_nfa_make_ranged_trans(nfa, i, f, 0xB, 0xC);
@@ -241,82 +241,68 @@ sym: END_OF_INPUT_ESC {
 
 sym: PAR_OPEN exp PAR_CLOSE { $$ = $1; }
 
-%%
-
-static void make_bitmap_set_trans(struct rex_nfa *nfa, size_t from, size_t to, uint64_t bitmap[4]) {
-  uint32_t v;
-  /* Create a transition that matches each the character corresponding to each bit set in bitmap */
-  for (v = 0; v < 256;) {
-    uint32_t set_range_begin = v;
-    while ((v < 256) && (bitmap[v >> 6] & (((uint64_t)1) << (v & 0x3F)))) {
-      v++;
-    }
-    uint32_t set_range_end = v;
-    if (set_range_begin != set_range_end) {
-      rex_nfa_make_ranged_trans(nfa, from, to, set_range_begin, set_range_end - 1);
-    }
-    while ((v < 256) && !(bitmap[v >> 6] & (((uint64_t)1) << (v & 0x3F)))) {
-      v++;
-    }
-  }
-}
-
-%%
-
-%type range range-elm: uint64_t $[4]
+%type range range-elm: struct rex_set_range 
+%constructor rex_set_range_init(&$$);
+%destructor rex_set_range_cleanup(&$$);
 
 sym: SQBRACE_OPEN range SQBRACE_CLOSE {
   size_t i = rex_nfa_make_node(nfa);
   size_t f = rex_nfa_make_node(nfa);
-  make_bitmap_set_trans(nfa, i, f, $1);
+  size_t n;
+  for (n = 0; n < $1.num_intervals_; ++n) {
+    rex_nfa_make_ranged_trans(nfa, i, f, $1.intervals_[n].from_, $1.intervals_[n].to_);
+  }
   $$.initial_ = i;
   $$.final_ = f;
 }
 
 sym: SQBRACE_OPEN CARET range SQBRACE_CLOSE {
-  size_t n;
-  for (n = 0; n < 4; ++n) {
-    $2[n] = ~$2[n];
-  }
   size_t i = rex_nfa_make_node(nfa);
   size_t f = rex_nfa_make_node(nfa);
-  make_bitmap_set_trans(nfa, i, f, $2);
+  size_t n;
+  if (rex_set_range_unicode_invert(&$2)) {
+    nfa->failed_ = _REX_NO_MEMORY;
+    return _REX_NO_MEMORY;
+  }
+  for (n = 0; n < $2.num_intervals_; ++n) {
+    rex_nfa_make_ranged_trans(nfa, i, f, (uint32_t)$2.intervals_[n].from_, (uint32_t)$2.intervals_[n].to_);
+  }
+
   $$.initial_ = i;
   $$.final_ = f;
 }
 
 range: range range-elm {
-  size_t n;
-  for (n = 0; n < 4; ++n) {
-    $$[n] = $0[n] | $1[n];
+  rex_set_range_swap(&$$, &$0);
+  if (rex_set_range_add_range(&$$, &$1)) {
+    nfa->failed_ = _REX_NO_MEMORY;
+    return _REX_NO_MEMORY;
   }
 }
 
 range: range-elm {
-  size_t n;
-  for (n = 0; n < 4; ++n) {
-    $$[n] = $0[n];
-  }
+  rex_set_range_swap(&$$, &$0);
 }
 
 range-elm: CHAR {
-  size_t n;
-  for (n = 0; n < 4; ++n) {
-    $$[n] = 0;
+  if (rex_set_range_add(&$$, (int)$0, (int)$0)) {
+    nfa->failed_ = _REX_NO_MEMORY;
+    return _REX_NO_MEMORY;
   }
-  $$[$0 >> 6] |= (((uint64_t)1) << ($0 & 0x3F));
 }
 
 range-elm: CHAR DASH CHAR {
-  size_t n;
-  for (n = 0; n < 4; ++n) {
-    $$[n] = 0;
+  int from, to;
+  if ($0 < $2) {
+    from = (int)$0;
+    to = (int)$2;
+  } else {
+    from = (int)$2;
+    to = (int)$0;
   }
-  uint32_t v;
-  uint32_t first = ($0 < $2) ? $0 : $2;
-  uint32_t last = ($0 > $2) ? $0 : $2;
-  for (v = first; v <= last; ++v) {
-    $$[v >> 6] |= (((uint64_t)1) << (v & 0x3F));
+  if (rex_set_range_add(&$$, from, to)) {
+    nfa->failed_ = _REX_NO_MEMORY;
+    return _REX_NO_MEMORY;
   }
 }
 
