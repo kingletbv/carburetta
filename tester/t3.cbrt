@@ -1,0 +1,94 @@
+/* Copyright 2020-2023 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+%scanner%
+%prefix t3_
+
+%params int *times
+
+/* Single dot anychar */
+: . { (*times)++; }
+ 
+%%
+
+int t3(void) {
+  /* NOTE: Should be compiled without UTF-8 mode on carburetta; otherwise it fails on CR/NEL */
+  int rv = -1;
+  int r;
+  struct t3_stack stack;
+  t3_stack_init(&stack);
+  int times;
+  const char single_x[] = "x";
+  t3_set_input(&stack, single_x, sizeof(single_x)-1, 1);
+  times = 0;
+  r = t3_scan(&stack, &times);
+
+  if (r != _T3_FINISH) goto fail;
+  if (times != 1) goto fail;
+
+  const char double_x[] = "xx";
+  t3_set_input(&stack, double_x, sizeof(double_x) - 1, 1);
+  times = 0;
+  r = t3_scan(&stack, &times);
+
+  if (r != _T3_FINISH) goto fail;
+  if (times != 2) goto fail;
+
+
+  const char no_newline[] = "x\nx";
+  t3_set_input(&stack, no_newline, sizeof(no_newline) - 1, 1);
+  times = 0;
+  r = t3_scan(&stack, &times);
+  if (r != _T3_LEXICAL_ERROR) goto fail;
+  if (times != 1) goto fail; /* only one dot (the first x) should have matched */
+
+  uint8_t all_the_chars;
+  int n;
+  for (n = 0; n < 256; ++n) {
+    all_the_chars = (uint8_t)n;
+    t3_set_input(&stack, &all_the_chars, 1, 1);
+    times = 0;
+    r = t3_scan(&stack, &times);
+    if (r == _T3_LEXICAL_ERROR) {
+      /* Raw / Latin-1 decoder is fairly pedantic, the UTF-8 one, due to being complex, only does the bare minimum (LF).
+       * So here we check for all LF, CR and NEL. */
+      if ((n != 0xA) && (n != 0xD) && (n != 0x85 /* NEL */)) {
+        fprintf(stderr, "Unexpected lexical error on latin-1 (raw) character 0x%02X\n", n);
+        goto fail;
+      }
+      /* Newline is expected to fail */
+    }
+    else if ((r == _T3_FINISH) && (n == 0xD)) {
+      fprintf(stderr, "Latin-1 (raw) encoder does not accept CR as newline, is t3 incorrectly compiled for UTF-8?\n");
+      goto fail;
+    }
+    else if ((r == _T3_FINISH) && (n == 0x85)) {
+      fprintf(stderr, "Latin-1 (raw) encoder does not accept NEL (U+0085 NEXT LINE) as newline, is t3 incorrectly compiled for UTF-8?\n");
+      goto fail;
+    }
+    else if (r != _T3_FINISH) {
+      goto fail;
+    }
+    else if (times != 1) goto fail;
+  }
+
+  rv = 0;
+fail:
+  t3_stack_cleanup(&stack);
+  return rv;
+}

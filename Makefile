@@ -6,9 +6,11 @@ INTERMEDIATE = build/linux/objs
 
 SOURCES = $(filter-out src/tokens_generated_scanners.c,$(wildcard $(SRC)/*.c))
 OBJECTS = $(patsubst $(SRC)/%.c,$(INTERMEDIATE)/%.o,$(SOURCES))
+TESTS = $(wildcard tester/*.cbrt)
+TESTS_C = $(patsubst tester/%.cbrt,$(INTERMEDIATE)/tester/%.c,$(TESTS))
 
 .PHONY: all
-all: $(OUT)/carburetta $(OUT)/calc $(OUT)/template_scan $(OUT)/inireader
+all: $(OUT)/carburetta $(OUT)/calc $(OUT)/template_scan $(OUT)/inireader $(OUT)/tester
 
 $(INTERMEDIATE)/%.o: $(SRC)/%.c
 	@mkdir -p $(@D)
@@ -38,6 +40,17 @@ $(OUT)/inireader: $(INTERMEDIATE)/inireader/iniparser.c examples/inireader/main.
 $(OUT)/template_scan: $(INTERMEDIATE)/template_scan/template_scan.c
 	$(CC) -o $(OUT)/template_scan $(INTERMEDIATE)/template_scan/template_scan.c
 
+$(INTERMEDIATE)/tester/%.c: tester/%.cbrt
+	mkdir -p $(@D)
+	$(OUT)/carburetta --x-utf8 $< --c $@ --h
+
+$(INTERMEDIATE)/tester/t3.c: tester/t3.cbrt
+	mkdir -p $(@D)
+	$(OUT)/carburetta $< --c $@ --h
+
+$(OUT)/tester: $(TESTS_C) tester/tester.c
+	$(CC) -o $@ $^
+
 .PHONY: clean
 clean:
 	@rm -rf $(OUT)
@@ -49,3 +62,7 @@ install: all
 .PHONY: uninstall
 uninstall:
 	rm /usr/local/bin/carburetta
+
+.PHONY: test
+test: all
+	$(OUT)/tester

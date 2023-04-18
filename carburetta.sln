@@ -22,6 +22,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "inireader", "project\inirea
 		{BF90520E-4A1A-4AF7-B778-8041EFA5693D} = {BF90520E-4A1A-4AF7-B778-8041EFA5693D}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tester", "project\tester.vcxproj", "{CF3B965A-DA27-4FE2-9C54-0643D347E4EF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BF90520E-4A1A-4AF7-B778-8041EFA5693D} = {BF90520E-4A1A-4AF7-B778-8041EFA5693D}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -62,6 +67,14 @@ Global
 		{03367FAB-7969-4D84-9A7B-D6ED81C25BED}.Release|x64.Build.0 = Release|x64
 		{03367FAB-7969-4D84-9A7B-D6ED81C25BED}.Release|x86.ActiveCfg = Release|Win32
 		{03367FAB-7969-4D84-9A7B-D6ED81C25BED}.Release|x86.Build.0 = Release|Win32
+		{CF3B965A-DA27-4FE2-9C54-0643D347E4EF}.Debug|x64.ActiveCfg = Debug|x64
+		{CF3B965A-DA27-4FE2-9C54-0643D347E4EF}.Debug|x64.Build.0 = Debug|x64
+		{CF3B965A-DA27-4FE2-9C54-0643D347E4EF}.Debug|x86.ActiveCfg = Debug|Win32
+		{CF3B965A-DA27-4FE2-9C54-0643D347E4EF}.Debug|x86.Build.0 = Debug|Win32
+		{CF3B965A-DA27-4FE2-9C54-0643D347E4EF}.Release|x64.ActiveCfg = Release|x64
+		{CF3B965A-DA27-4FE2-9C54-0643D347E4EF}.Release|x64.Build.0 = Release|x64
+		{CF3B965A-DA27-4FE2-9C54-0643D347E4EF}.Release|x86.ActiveCfg = Release|Win32
+		{CF3B965A-DA27-4FE2-9C54-0643D347E4EF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

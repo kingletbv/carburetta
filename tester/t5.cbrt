@@ -1,0 +1,105 @@
+/* Copyright 2020-2023 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+/* little helper function defined below, to read UTF-8 as a codepoint value.. */
+int get_next_utf8_codepoint(const char **pputf8);
+
+/* little helper function to encode a UTF-8 codepoint as a string. */
+int codepoint_as_utf8(char *dst, uint32_t codepoint);
+
+int which_range(uint32_t cp) {
+  /* See below, these are the ranges we'd like to catch. */
+  if ((cp >= 0x5000) && (cp <=   0xC000)) return 5;
+  if ((cp >= 0x4000) && (cp <=   0xD000)) return 4;
+  if ((cp >= 0x3000) && (cp <=   0xE000)) return 3;
+  if ((cp >= 0x2000) && (cp <=   0xF000)) return 2;
+  if ((cp >= 0x1000) && (cp <= 0x100000)) return 1;
+  return 0;
+}
+
+%scanner%
+%prefix t5_
+%params int unicode_value
+
+/* Overlapping character set ranges - first one that matches gets the action, so
+ * start with the narrowest range and expand to a catch all */
+: [\u{5000}-\u{C000}] {
+  const char *cp = $text;
+  if (which_range(get_next_utf8_codepoint(&cp)) != 5) return -1;
+}
+: [\u{4000}-\u{D000}] {
+  const char *cp = $text;
+  if (which_range(get_next_utf8_codepoint(&cp)) != 4) return -1;
+}
+: [\u{3000}-\u{E000}] {
+  const char *cp = $text;
+  if (which_range(get_next_utf8_codepoint(&cp)) != 3) return -1;
+}
+: [\u{2000}-\u{F000}] {
+  const char *cp = $text;
+  if (which_range(get_next_utf8_codepoint(&cp)) != 2) return -1;
+}
+: [\u{1000}-\u{100000}] {
+  const char *cp = $text;
+  if (which_range(get_next_utf8_codepoint(&cp)) != 1) return -1;
+}
+: [\u{0000}-\u{10FFFF}] {
+  const char *cp = $text;
+  if (which_range(get_next_utf8_codepoint(&cp)) != 0) return -1;
+}
+
+: . { 
+  /* Check that the thing we matched is infact the unicode codepoint expected. */
+  const char *cp = $text;
+  if (get_next_utf8_codepoint(&cp) != unicode_value) return -1;
+  if (cp != $text + $len) return -2;
+}
+
+%%
+
+int t5(void) {
+  int rv = -1;
+  int r;
+  struct t5_stack stack;
+  t5_stack_init(&stack);
+  char cp_utf8[4];
+
+  uint32_t cp;
+  for (cp = 0x0; cp < 0x10FFFF; ++cp) {
+    t5_set_input(&stack, cp_utf8, codepoint_as_utf8(cp_utf8, cp), 1);
+    r = t5_scan(&stack, cp);
+    if (r == -1) {
+      /* Codepoint mismatched */
+      fprintf(stderr, "Codepoint 0x%0X mismatched\n", cp);
+
+      rv = -1;
+      goto fail;
+    }
+    if (r != _T5_FINISH) {
+      rv = -4;
+      goto fail;
+    }
+  }
+
+  rv = 0;
+fail:
+  t5_stack_cleanup(&stack);
+  return rv;
+}
+

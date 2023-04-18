@@ -1,0 +1,82 @@
+/* Copyright 2020-2023 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+/* little helper function defined in tester.c, to read UTF-8 as a codepoint value.. */
+int get_next_utf8_codepoint(const char **pputf8);
+
+/* little helper function to encode a UTF-8 codepoint as a string. */
+int codepoint_as_utf8(char *dst, uint32_t codepoint);
+
+%scanner%
+%prefix t4_
+%params int unicode_value
+
+/* Single dot anychar */
+: . { 
+  /* Check that the thing we matched is infact the unicode codepoint expected. */
+  const char *cp = $text;
+  if (get_next_utf8_codepoint(&cp) != unicode_value) return -1;
+  if (cp != $text + $len) return -2;
+}
+
+%%
+
+int t4(void) {
+  int rv = -1;
+  int r;
+  struct t4_stack stack;
+  t4_stack_init(&stack);
+  char cp_utf8[4];
+
+  uint32_t cp;
+  for (cp = 0x0; cp < 0x10FFFF; ++cp) {
+    t4_set_input(&stack, cp_utf8, codepoint_as_utf8(cp_utf8, cp), 1);
+    r = t4_scan(&stack, cp);
+    if (r == -1) {
+      /* Codepoint mismatched */
+      fprintf(stderr, "Codepoint 0x%0X mismatched\n", cp);
+
+      rv = -1;
+      goto fail;
+    }
+    if (r == -2) {
+      /* Length mismatched */
+      rv = -2;
+      goto fail;
+    }
+    if (r == _T4_LEXICAL_ERROR) {
+      /* Failing to match the dot anychar is fine, provided the codepoint is a newline. */
+      if (cp != 0x0A) {
+        /* NOTE: If this fails with cp == 0xD then we're not in UTF-8 mode (enable on carburetta / check build flags.) */
+        fprintf(stderr, "Lexical error on codepoint 0x%X\n", cp);
+        rv = -3;
+        goto fail;
+      }
+    }
+    else if (r != _T4_FINISH) {
+      rv = -4;
+      goto fail;
+    }
+  }
+
+  rv = 0;
+fail:
+  t4_stack_cleanup(&stack);
+  return rv;
+}
