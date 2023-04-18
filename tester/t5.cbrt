@@ -65,10 +65,8 @@ int which_range(uint32_t cp) {
 }
 
 : . { 
-  /* Check that the thing we matched is infact the unicode codepoint expected. */
-  const char *cp = $text;
-  if (get_next_utf8_codepoint(&cp) != unicode_value) return -1;
-  if (cp != $text + $len) return -2;
+  /* Range fully captured by [\u{0000}-\u{10FFFF}] so should not match */
+  return -1;
 }
 
 %%
