@@ -3811,23 +3811,23 @@ int encode_utf8_code_units(struct rex_scanner *rex, size_t num_digits, uint8_t *
       }
       if (needs[n + 1] == EXACT) {
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].mid);
+        printf("[%zu] -- %02X --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].mid);
 #endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].mid, low[n]);
       }
       else if (needs[n + 1] == ADJACENT) {
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].top);
-        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, high[n], nodes[n+1].bottom);
+        printf("[%zu] -- %02X --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].top);
+        printf("[%zu] -- %02X --> [%zu]\n", nodes[n].mid, high[n], nodes[n+1].bottom);
 #endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].top, low[n]);
         rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].bottom, high[n]);
       }
       else if (needs[n + 1] == RANGE) {
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].top);
-        printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].mid, low[n] + 1, high[n] - 1, nodes[n+1].mid);
-        printf("[%zu] -- %c --> [%zu]\n", nodes[n].mid, high[n], nodes[n+1].bottom);
+        printf("[%zu] -- %02X --> [%zu]\n", nodes[n].mid, low[n], nodes[n+1].top);
+        printf("[%zu] -- %02X..%02X --> [%zu]\n", nodes[n].mid, low[n] + 1, high[n] - 1, nodes[n+1].mid);
+        printf("[%zu] -- %02X --> [%zu]\n", nodes[n].mid, high[n], nodes[n+1].bottom);
 #endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].top, low[n]);
         rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].mid, low[n] + 1, high[n] - 1);
@@ -3844,31 +3844,31 @@ int encode_utf8_code_units(struct rex_scanner *rex, size_t num_digits, uint8_t *
 
       if (needs[n + 1] == ADJACENT) {
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-        printf("[%zu] -- %c --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
-        printf("[%zu] -- %c --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
+        printf("[%zu] -- %02X --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
+        printf("[%zu] -- %02X --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
 #endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].top, low[n]);
         rex_nfa_make_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].bottom, high[n]);
       }
       else if (needs[n + 1] == RANGE) {
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-        printf("[%zu] -- %c --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
+        printf("[%zu] -- %02X --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
 #endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].top, low[n]);
         if (low[n] != max[n]) {
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-          printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].top, low[n] + 1, max[n], nodes[n + 1].mid);
+          printf("[%zu] -- %02X..%02X --> [%zu]\n", nodes[n].top, low[n] + 1, max[n], nodes[n + 1].mid);
 #endif
           rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].mid, low[n] + 1, max[n]);
         }
         if (high[n] != min[n]) {
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-          printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].bottom, min[n], high[n] - 1, nodes[n + 1].mid);
+          printf("[%zu] -- %02X..%02X --> [%zu]\n", nodes[n].bottom, min[n], high[n] - 1, nodes[n + 1].mid);
 #endif
           rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].mid, min[n], high[n] - 1);
         }
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-        printf("[%zu] -- %c --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
+        printf("[%zu] -- %02X --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
 #endif
         rex_nfa_make_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].bottom, high[n]);
       }
@@ -3885,27 +3885,27 @@ int encode_utf8_code_units(struct rex_scanner *rex, size_t num_digits, uint8_t *
 
       /* needs[n+1] == RANGE */
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-      printf("[%zu] -- %c --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
+      printf("[%zu] -- %02X --> [%zu]\n", nodes[n].top, low[n], nodes[n + 1].top);
 #endif
       rex_nfa_make_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].top, low[n]);
       if (low[n] != max[n]) {
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-        printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].top, low[n] + 1, max[n], nodes[n + 1].mid);
+        printf("[%zu] -- %02X..%02X --> [%zu]\n", nodes[n].top, low[n] + 1, max[n], nodes[n + 1].mid);
 #endif
         rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].top, nodes[n + 1].mid, low[n] + 1, max[n]);
       }
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-      printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].mid, min[n], max[n], nodes[n + 1].mid);
+      printf("[%zu] -- %02X..%02X --> [%zu]\n", nodes[n].mid, min[n], max[n], nodes[n + 1].mid);
 #endif
       rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].mid, nodes[n + 1].mid, min[n], max[n]);
       if (high[n] != min[n]) {
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-        printf("[%zu] -- %c..%c --> [%zu]\n", nodes[n].bottom, min[n], high[n] - 1, nodes[n + 1].mid);
+        printf("[%zu] -- %02X..%02X --> [%zu]\n", nodes[n].bottom, min[n], high[n] - 1, nodes[n + 1].mid);
 #endif
         rex_nfa_make_ranged_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].mid, min[n], high[n] - 1);
       }
 #if DEBUG_DUMP_ENCODE_UTF8_CODE_UNITS
-      printf("[%zu] -- %c --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
+      printf("[%zu] -- %02X --> [%zu]\n", nodes[n].bottom, high[n], nodes[n + 1].bottom);
 #endif
       rex_nfa_make_trans(&rex->nfa_, nodes[n].bottom, nodes[n + 1].bottom, high[n]);
     }
@@ -4314,7 +4314,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                      * and -2 (0xFFFE) is the first valid destination state (~0xFFFE == 1),
                      * note that destination state 0 (~0 == 0xFFFF), while the initial state,
                      * can never be a destination state. */
-                    row[c] = -dt->to_->ordinal_;
+                    row[c] = ~dt->to_->ordinal_;
                   }
                 }
 
