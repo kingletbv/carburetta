@@ -54,6 +54,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src\typestr.c" />
+    <ClCompile Include="..\src\uc_cat_ranges.c" />
     <ClCompile Include="..\src\xlalr.c" />
     <ClCompile Include="..\src\xlts.c" />
   </ItemGroup>
@@ -86,6 +87,7 @@
     <ClInclude Include="..\src\tokenizer.h" />
     <ClInclude Include="..\src\tokens.h" />
     <ClInclude Include="..\src\typestr.h" />
+    <ClInclude Include="..\src\uc_cat_ranges.h" />
     <ClInclude Include="..\src\xlalr.h" />
     <ClInclude Include="..\src\xlts.h" />
   </ItemGroup>

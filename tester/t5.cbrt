@@ -23,7 +23,7 @@ int get_next_utf8_codepoint(const char **pputf8);
 /* little helper function to encode a UTF-8 codepoint as a string. */
 int codepoint_as_utf8(char *dst, uint32_t codepoint);
 
-int which_range(uint32_t cp) {
+static int which_range(uint32_t cp) {
   /* See below, these are the ranges we'd like to catch. */
   if ((cp >= 0x5000) && (cp <=   0xC000)) return 5;
   if ((cp >= 0x4000) && (cp <=   0xD000)) return 4;

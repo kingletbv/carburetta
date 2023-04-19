@@ -34,19 +34,20 @@ extern "C" {
   #define REX_RESERVED_REGEX_CHAR 17
   #define REX_SEMICOLON 18
   #define REX_CHAR 19
-  #define REX_WHITESPACE 20
-  #define REX_START_OF_INPUT_ESC 21
-  #define REX_END_OF_INPUT_ESC 22
-  #define REX_ERROR 23
-  #define REX_INPUT_END 24
+  #define REX_CATEGORY 20
+  #define REX_WHITESPACE 21
+  #define REX_START_OF_INPUT_ESC 22
+  #define REX_END_OF_INPUT_ESC 23
+  #define REX_ERROR 24
+  #define REX_INPUT_END 25
   
-  #define REX_REGEX 25
-  #define REX_EXP 26
-  #define REX_TERM 27
-  #define REX_ELM 28
-  #define REX_SYM 29
-  #define REX_RANGE 30
-  #define REX_RANGE_ELM 31
+  #define REX_REGEX 26
+  #define REX_EXP 27
+  #define REX_TERM 28
+  #define REX_ELM 29
+  #define REX_SYM 30
+  #define REX_RANGE 31
+  #define REX_RANGE_ELM 32
   
   #define M_REX_DEFAULT 1
   
@@ -96,6 +97,9 @@ extern "C" {
     char terminator_repair_;
     int input_line_;
     int input_col_;
+    int sym_grp_;
+    char codepoint_[4];
+    char *cp_;
   };
   
   void rex_stack_init(struct rex_stack *stack);

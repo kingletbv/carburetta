@@ -1,0 +1,113 @@
+/* Copyright 2020-2023 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+
+%scanner%
+%prefix t6_
+
+%%
+static int num_letters_ = 0;
+static int num_spaces_ = 0;
+static int num_punctuation_ = 0;
+static char msg_[] = "\"Voila\xCC\x80,\" I said, as I handed my Re\xCC\x81sume\xCC\x81 over to the Paparazzo\xCC\x80 over a Pin\xCC\x83""a colada flavored Cre\xCC\x80me bru\xCC\x82le\xCC\x81""e at the ho\xCC\x82tel cafe\xCC\x81.";
+static char bland_msg_[] = "\"Voila,\" I said, as I handed my Resume over to the Paparazzo over a Pina colada flavored Creme brulee at the hotel cafe.";
+static int bleached_msg_len_ = 0;
+static char bleached_msg_[sizeof(msg_) + 1] = {0};
+%%
+
+: (\p{Letter}\p{Nonspacing_Mark}*) {
+  /* Letters including diacretics */
+  num_letters_++;
+  if (bleached_msg_len_ == sizeof(msg_)) return -1;
+  bleached_msg_[bleached_msg_len_++] = *$text;
+}
+
+: \p{Space_Separator} {
+  /* Spaces */
+  num_spaces_++;
+  if (bleached_msg_len_ == sizeof(msg_)) return -1;
+  bleached_msg_[bleached_msg_len_++] = *$text;
+}
+
+: \p{Other_Punctuation} {
+  /* Punctuation */
+  num_punctuation_++;
+  if (bleached_msg_len_ == sizeof(msg_)) return -1;
+  bleached_msg_[bleached_msg_len_++] = *$text;
+}
+
+: . { 
+  /* Range fully captured so should not match */
+  return -1;
+}
+
+%%
+
+int t6(void) {
+  int rv = -1;
+  int r;
+  struct t6_stack stack;
+  t6_stack_init(&stack);
+  
+  t6_set_input(&stack, msg_, sizeof(msg_)-1, 1);
+  r = t6_scan(&stack);
+  if (r == -1) {
+    /* Codepoint mismatched */
+    rv = -1;
+    goto fail;
+  }
+  if (r != _T6_FINISH) {
+    rv = -2;
+    goto fail;
+  }
+  if (bleached_msg_len_ == sizeof(msg_)) {
+    /* Message should not exceed buffer. */
+    rv = -3;
+    goto fail;
+  }
+  bleached_msg_[bleached_msg_len_++] = 0;
+
+  /* Terminate. */
+  if (strcmp(bleached_msg_, bland_msg_)) {
+    /* Bleached message should be msg_ without diacritics; but otherwise the same - unfortunately it's not. */
+    rv = -4;
+    goto fail;
+  }
+
+  if (num_letters_ != 93) {
+    rv = -5;
+    goto fail;
+  }
+
+  if (num_spaces_ != 22) {
+    rv = -6;
+    goto fail;
+  }
+
+  if (num_punctuation_ != 5) {
+    rv = -7;
+    goto fail;
+  }
+
+  rv = 0;
+fail:
+  t6_stack_cleanup(&stack);
+  return rv;
+}
+

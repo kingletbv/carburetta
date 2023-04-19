@@ -113,6 +113,9 @@ xy("[ \\x9\\xb\\xc\\xd]+", TOK_WHITESPACE_CHAR, TOK_WHITESPACE) \
 xz(TOK_RESERVED_REGEX_CHAR) \
 xz(TOK_DOLLAR) \
 xz(TOK_CHAR) \
+xz(TOK_CATEGORY) \
+xz(TOK_REGULAR_CATEGORY) \
+xz(TOK_INVERTED_CATEGORY) \
 xz(TOK_ESC_A) \
 xz(TOK_ESC_B) \
 xz(TOK_ESC_F) \
@@ -241,6 +244,8 @@ xy("\\\\[0-7][0-7]", TOK_ESC_OCT2, TOK_CHAR) \
 xy("\\\\[0-7][0-7][0-7]", TOK_ESC_OCT3, TOK_CHAR) \
 xy("\\\\u\\{[0-9a-fA-F]+\\}", TOK_ESC_UNI1, TOK_CHAR) \
 xy("\\\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]", TOK_ESC_UNI2, TOK_CHAR) \
+xy("\\\\p\\{[a-zA-Z_][0-9a-zA-Z_]*\\}", TOK_REGULAR_CATEGORY, TOK_CATEGORY) \
+xy("\\\\P\\{[a-zA-Z_][0-9a-zA-Z_]*\\}", TOK_INVERTED_CATEGORY, TOK_CATEGORY) \
 xx("\\\\A", TOK_ESC_START_OF_INPUT_ESC) \
 xx("\\\\Z", TOK_ESC_END_OF_INPUT_ESC) \
 xy("\\\\.", TOK_ESC_INVALID_ESCAPE, TOK_CHAR) \

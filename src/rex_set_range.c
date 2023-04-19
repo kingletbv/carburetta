@@ -28,6 +28,11 @@
 #include "rex_set_range.h"
 #endif
 
+#ifndef UC_CAT_RANGES_H_INCLUDED
+#define UC_CAT_RANGES_H_INCLUDED
+#include "uc_cat_ranges.h"
+#endif
+
 /* helper function when debugging; checks whether invariants are met. */
 static int rex_set_range_sanity(struct rex_set_range *rng) {
   size_t n;
@@ -174,6 +179,29 @@ int rex_set_range_add_range(struct rex_set_range *range, const struct rex_set_ra
   for (n = 0; n < other->num_intervals_; ++n) {
     if (rex_set_range_add(range, other->intervals_[n].from_, other->intervals_[n].to_)) {
       /* Propagate failure */
+      return -1;
+    }
+  }
+  return 0;
+}
+
+int rex_set_range_unicode(struct rex_set_range *range, size_t first, size_t last, int invert) {
+  range->num_intervals_ = 0;
+  
+  size_t rng_index;
+
+  for (rng_index = first; rng_index <= last; ++rng_index) {
+    const struct uc_cat_range *rng = g_uc_cat_ranges_[rng_index];
+    size_t n;
+    for (n = 0; n < rng->num_intervals_; ++n) {
+      const struct uc_cat_interval *iv = rng->intervals_ + n;
+      if (rex_set_range_add(range, iv->from_, iv->to_)) {
+        return -1;
+      }
+    }
+  }
+  if (invert) {
+    if (rex_set_range_unicode_invert(range)) {
       return -1;
     }
   }

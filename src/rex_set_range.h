@@ -20,6 +20,8 @@
 extern "C" {
 #endif
 
+struct uc_cat_range;
+
 struct rex_set_interval {
   int from_, to_;
 };
@@ -41,6 +43,10 @@ int rex_set_range_add(struct rex_set_range *range, int from, int to);
 
 /* Merges the two ranges */
 int rex_set_range_add_range(struct rex_set_range *range, const struct rex_set_range *other);
+
+/* Resets "range", adds the given unicode ranges to it, combining them, and then optionally inverts the range.
+ * first and last index g_uc_cat_ranges_[] (see uc_cat_ranges.h). */
+int rex_set_range_unicode(struct rex_set_range *range, size_t first, size_t last, int invert);
 
 /* Inverts the range over the unicode codepoint range; e.g. if the old set range had only
  * the 0x20 space character, the new range would be 0-0x1F; 0x21-0x10FFFF. */

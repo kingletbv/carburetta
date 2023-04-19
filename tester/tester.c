@@ -7,12 +7,12 @@ xx(t1, "Calculator test") \
 xx(t2, "Matching braces") \
 xx(t3, "Dot Anychar Latin-1") \
 xx(t4, "Dot Anychar UTF-8") \
-xx(t5, "Overlapping unicode UTF-8 ranges")
+xx(t5, "Overlapping unicode UTF-8 ranges") \
+xx(t6, "Character set unicode classes")
 
 #define xx(id, desc) int id(void);
 enum_tests
 #undef xx
-
 
 int main(int argc, char **argv) {
   int r;

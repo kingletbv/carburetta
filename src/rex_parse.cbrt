@@ -22,6 +22,7 @@ struct rex_nfa;
 #include "rex_parse.h"
 #include "rex.h"
 #include "rex_set_range.h"
+#include "uc_cat_ranges.h"
 
 %scanner%
 
@@ -29,13 +30,12 @@ struct rex_nfa;
 
 %token PAR_OPEN PAR_CLOSE SQBRACE_OPEN SQBRACE_CLOSE CUBRACE_OPEN CUBRACE_CLOSE
 %token DOT DOLLAR CARET DASH BAR ASTERISK PLUS QUESTION_MARK
-%token RESERVED_REGEX_CHAR SEMICOLON CHAR WHITESPACE
+%token RESERVED_REGEX_CHAR SEMICOLON CHAR CATEGORY WHITESPACE
 %token START_OF_INPUT_ESC END_OF_INPUT_ESC
 
 %nt regex exp term elm sym range range-elm
 
 %params struct rex_nfa *nfa, size_t *pstart, size_t *pend
-
 
 %type exp term elm sym: struct { \
   size_t initial_; \
@@ -43,6 +43,12 @@ struct rex_nfa;
 }
 
 %type CHAR: uint32_t
+
+%type CATEGORY: struct { \
+  int is_inverted_; \
+  size_t first_; \
+  size_t last_; \
+}
 
 PAR_OPEN: \(;
 PAR_CLOSE: \);
@@ -108,6 +114,30 @@ static uint32_t oct_to_int(const char *txt, size_t len) {
 CHAR: \\[0-7] { $$ = oct_to_int($text + 1, 1); }
 CHAR: \\[0-7][0-7] { $$ = oct_to_int($text + 1, 2); }
 CHAR: \\[0-7][0-7][0-7] { $$ = oct_to_int($text + 1, 3); }
+
+CATEGORY: \\p\{[a-zA-Z_][0-9a-zA-Z_]*\} { 
+  size_t first, last;
+  if (!uc_cat_ranges_resolve_codepoint_category($text + 3, $len - 4, &first, &last)) {
+    /* Could not find category */
+    nfa->failed_ = _REX_SYNTAX_ERROR;
+    return _REX_SYNTAX_ERROR;
+  }
+  $$.is_inverted_ = 0;
+  $$.first_ = first;
+  $$.last_ = last;
+}
+
+CATEGORY: \\P\{[a-zA-Z_][0-9a-zA-Z_]*\} {
+  size_t first, last;
+  if (!uc_cat_ranges_resolve_codepoint_category($text + 3, $len - 4, &first, &last)) {
+    /* Could not find category */
+    nfa->failed_ = _REX_SYNTAX_ERROR;
+    return _REX_SYNTAX_ERROR;
+  }
+  $$.is_inverted_ = 1; /* Capital P means inverted */
+  $$.first_ = first;
+  $$.last_ = last;
+}
 
 WHITESPACE: [\ \x9\xb\xc\xd\r\n]+;
 CHAR: [\x20-\x7e] { $$ = $text[0]; }
@@ -185,6 +215,25 @@ sym: CHAR {
   size_t i = rex_nfa_make_node(nfa);
   size_t f = rex_nfa_make_node(nfa);
   rex_nfa_make_trans(nfa, i, f, $0);
+  $$.initial_ = i;
+  $$.final_ = f;
+}
+
+sym: CATEGORY {
+  struct rex_set_range range;
+  rex_set_range_init(&range);
+  if (rex_set_range_unicode(&range, $0.first_, $0.last_, $0.is_inverted_)) {
+    rex_set_range_cleanup(&range);
+    nfa->failed_ = _REX_NO_MEMORY;
+    return _REX_NO_MEMORY;
+  }
+
+  size_t i = rex_nfa_make_node(nfa);
+  size_t f = rex_nfa_make_node(nfa);
+  size_t n;
+  for (n = 0; n < range.num_intervals_; ++n) {
+    rex_nfa_make_ranged_trans(nfa, i, f, range.intervals_[n].from_, range.intervals_[n].to_);
+  }
   $$.initial_ = i;
   $$.final_ = f;
 }
@@ -286,6 +335,13 @@ range: range-elm {
 
 range-elm: CHAR {
   if (rex_set_range_add(&$$, (int)$0, (int)$0)) {
+    nfa->failed_ = _REX_NO_MEMORY;
+    return _REX_NO_MEMORY;
+  }
+}
+
+range-elm: CATEGORY {
+  if (rex_set_range_unicode(&$$, $0.first_, $0.last_, $0.is_inverted_)) {
     nfa->failed_ = _REX_NO_MEMORY;
     return _REX_NO_MEMORY;
   }

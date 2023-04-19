@@ -89,7 +89,7 @@
         struct prd_pattern *pat;
 
 %token CHAR IDENT PAR_OPEN PAR_CLOSE CUR_OPEN CUR_CLOSE COLON SEMICOLON SQ_OPEN SQ_CLOSE DOT DOLLAR CARET DASH BAR ASTERISK PLUS QUESTION_MARK TOKEN WHITESPACE
-%token START_OF_INPUT_ESC END_OF_INPUT_ESC LESS_THAN GREATER_THAN COMMA
+%token START_OF_INPUT_ESC END_OF_INPUT_ESC LESS_THAN GREATER_THAN COMMA CATEGORY
 %nt exp term elm sym range range-elm
 
 %nt grammar pattern action-sequence stmt-action start-regex end-regex start-c-tokenizer end-c-tokenizer accept-whitespace
@@ -439,15 +439,18 @@ sym: END_OF_INPUT_ESC;
 sym: PAR_OPEN exp PAR_CLOSE;
 sym: SQ_OPEN range SQ_CLOSE;
 sym: SQ_OPEN CARET range SQ_CLOSE;
+sym: CATEGORY;
 
 range: range range-elm;
 range: range-elm;
 
 range-elm: CHAR;
+range-elm: CATEGORY;
 range-elm: CHAR DASH CHAR;
 
 action-sequence: ;
 action-sequence: action-sequence CHAR;
+action-sequence: action-sequence CATEGORY;
 action-sequence: action-sequence IDENT;
 action-sequence: action-sequence COLON;
 action-sequence: action-sequence SEMICOLON;
@@ -604,7 +607,14 @@ int rxg_parse_tkr(struct rxg_stack *stack, struct prd_grammar *g, struct tkr_tok
       }
       break;
     }
-                     
+    case TOK_REGULAR_CATEGORY: {
+      sym = RXG_CATEGORY;
+      break;
+    }
+    case TOK_INVERTED_CATEGORY: {
+      sym = RXG_CATEGORY;
+      break;
+    }
     case TOK_ESC_INVALID_ESCAPE: {
       re_error_tkr(tkr, "Error, invalid escape \"\\%c\"", tkr->xmatch_.translated_[1]);
       return PRD_SYNTAX_ERROR;

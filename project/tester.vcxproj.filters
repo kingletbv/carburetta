@@ -6,6 +6,7 @@
     <CustomBuild Include="..\tester\t3.cbrt" />
     <CustomBuild Include="..\tester\t4.cbrt" />
     <CustomBuild Include="..\tester\t5.cbrt" />
+    <CustomBuild Include="..\tester\t6.cbrt" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\tester\tester.c" />
