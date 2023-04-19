@@ -94,7 +94,7 @@ int tok_init(void) {
   if (r) return r;
 
   FILE *fp = fopen("src/tokens_generated_scanners.c", "wb");
-  fprintf(fp, "/* Copyright 2020-2021 Kinglet B.V.\n"
+  fprintf(fp, "/* Copyright 2020-2023 Kinglet B.V.\n"
               " *\n"
               " * Licensed under the Apache License, Version 2.0 (the \"License\");\n"
               " * you may not use this file except in compliance with the License.\n"
