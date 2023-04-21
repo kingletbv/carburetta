@@ -140,11 +140,12 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   r = tkr_tokenizer_inputx(tkr_tokens, directive_line_match, 1);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
-      if (isprint(tkr_str(tkr_tokens)[0])) {
+      unsigned char uc = (unsigned char)tkr_str(tkr_tokens)[0];
+      if (isprint(uc)) {
         re_error_tkr(tkr_tokens, "Syntax error character \"%s\" not expected", tkr_str(tkr_tokens));
       }
       else {
-        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", tkr_str(tkr_tokens)[0]);
+        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", (unsigned char)tkr_str(tkr_tokens)[0]);
       }
     }
     else if (r == TKR_INTERNAL_ERROR) {
@@ -956,11 +957,12 @@ static int pi_process_grammar_tokens(struct tkr_tokenizer *tkr_tokens, struct xl
   r = tkr_tokenizer_inputx(tkr_tokens, input_line, is_final);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
-      if (isprint(tkr_str(tkr_tokens)[0])) {
+      unsigned char uc = (unsigned char)tkr_str(tkr_tokens)[0];
+      if (isprint(uc)) {
         re_error_tkr(tkr_tokens, "Syntax error character \"%s\" not expected", tkr_str(tkr_tokens));
       }
       else {
-        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", tkr_str(tkr_tokens)[0]);
+        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", uc);
       }
     }
     else if (r == TKR_INTERNAL_ERROR) {
@@ -1021,11 +1023,12 @@ static int pi_process_scanner_tokens(struct tkr_tokenizer *tkr_tokens, struct xl
   r = tkr_tokenizer_inputx(tkr_tokens, input_line, is_final);
   while ((r != TKR_END_OF_INPUT) && (r != TKR_FEED_ME)) {
     if (r == TKR_SYNTAX_ERROR) {
-      if (isprint(tkr_str(tkr_tokens)[0])) {
+      unsigned char uc = (unsigned char)tkr_str(tkr_tokens)[0];
+      if (isprint(uc)) {
         re_error_tkr(tkr_tokens, "Syntax error character \"%s\" not expected", tkr_str(tkr_tokens));
       }
       else {
-        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", tkr_str(tkr_tokens)[0]);
+        re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", uc);
       }
     }
     else if (r == TKR_INTERNAL_ERROR) {
@@ -1168,12 +1171,13 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
         goto cleanup_exit;
       }
       if (r == TKR_SYNTAX_ERROR) {
-        if (isprint(tkr_str(&tkr_lines)[0])) {
+        unsigned char uc = (unsigned char)tkr_str(&tkr_lines)[0];
+        if (isprint(uc)) {
           re_error_tkr(&tkr_lines, "Syntax error character \"%s\" not expected", tkr_str(&tkr_lines));
           have_error = 1;
         }
         else {
-          re_error_tkr(&tkr_lines, "Syntax error character 0x%02x not expected", tkr_str(&tkr_lines));
+          re_error_tkr(&tkr_lines, "Syntax error character 0x%02x not expected", uc);
           have_error = 1;
         }
       }

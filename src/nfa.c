@@ -523,7 +523,7 @@ static int scan_token(struct nfa_parse_context *ctx, char *c) {
     /* XXX: Throw error */
     return 0;
   }
-  if ((inc <= 127) && isprint(inc)) {
+  if ((inc >= 0) && (inc <= 127) && isprint(inc)) {
     *c = inc;
     pop(ctx);
     return SYM_CHAR;

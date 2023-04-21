@@ -162,7 +162,7 @@ void at_exit_delete_temp_output_handler(void) {
 }
 
 void print_dbg_char(FILE *fp, int c) {
-  if (isprint(c) && (c != '\\') && (c != '\'') && (c != '\"') ) {
+  if ((c >= 0) && (c <= 255) && isprint(c) && (c != '\\') && (c != '\'') && (c != '\"')) {
     printf("%c", c);
     return;
   }
