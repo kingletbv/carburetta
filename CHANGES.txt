@@ -1,4 +1,16 @@
+0.8.8 - 2023-04-21
 
+- critical fixes relative to 0.8.6 and unit/regression testing to help 
+  prevent such regressions in the future.
+
+- unicode support inside character sets [\u{0}-\u{0x10FFFF}] for instance.
+
+- support for unicode categories as per unicode annex 44 section 5.7.1.
+  Unicode categories can be specified as both \p{Letter} (matches only
+  letters) and \P{Letter} (matches anything but letters).
+
+- Note that the default is still raw encoding, pass the --x-utf8 flag to
+  carburetta to enable utf-8 mode.
 
 0.8.6 - 2023-02-27
 
