@@ -48,6 +48,11 @@
 #include <assert.h>
 #endif
 
+#ifndef VERSION_H_INCLUDED
+#define VERSION_H_INCLUDED
+#include "version.h"
+#endif
+
 #ifndef REPORT_ERROR_H_INCLUDED
 #define REPORT_ERROR_H_INCLUDED
 #include "report_error.h"
@@ -188,31 +193,110 @@ void print_dbg_char(FILE *fp, int c) {
   }
 }
 
+struct cli_args {
+  char short_;
+  const char *long_;
+  const char *arg_line_;
+  const char *description_;
+  int has_value_;
+} g_args_[] = {
+  { 'H', "help", NULL, "Print this help message.", 0 },
+  { 'v', "version", NULL, "Print version information.", 0 },
+  { 'c', "c", "[<c_filename>]", "Generate a C file and output it to c_filename. If no filename is specified, then output will be to stdout.", 1 },
+  { 'h', "h", "[<h_filename>]", "Generate a C header file and output it to h_filename. If no filename is present, a c_filename must be present as it will then be used to derive a filename for the header file.", 1},
+  { '8', "x-utf8", NULL, "Generate a parser that reads input as UTF-8", 0}
+};
+
+int process_option(int argc, const char **argv, int *arg_index, int permit_default_arg) {
+  ++(*arg_index);
+  size_t n;
+  if ((*arg_index) == argc) {
+    return 0; // end reached.
+  }
+  const char *arg = argv[*arg_index];
+  for (n = 0; n < sizeof(g_args_) / sizeof(*g_args_); ++n) {
+    if (arg[0] == '-' && arg[1] == g_args_[n].short_ && !arg[2]) {
+      if (g_args_[n].has_value_) {
+        ++(*arg_index);
+      }
+      return g_args_[n].short_;
+    }
+    else if (arg[0] == '-' && arg[1] == '-' && !strcmp(arg + 2, g_args_[n].long_)) {
+      if (g_args_[n].has_value_) {
+        ++(*arg_index);
+      }
+      return g_args_[n].short_;
+    }
+  }
+  if (arg[0] != '-') {
+    // default argument
+    if (permit_default_arg) return '-';
+    else {
+      // Either default argument not permitted, or default argument already specified.
+      return -2;
+    }
+  }
+  else {
+    fprintf(stderr, "Invalid option %s\n", arg);
+    return -1;
+  }
+}
+
+
+void puts_wrapped(FILE *fp, const char *str, int indent, size_t linesize) {
+  size_t len = strlen(str);
+  size_t line_start = 0;
+  size_t line_end = 0;
+  while (line_end < len) {
+    size_t line_scan = line_end;
+    while ((line_scan < len) && (str[line_scan] != '\n')) {
+      if (str[line_scan] == ' ') line_end = line_scan;
+      if ((line_scan - line_start) >= linesize) break;
+      line_scan++;
+    }
+    if (line_end == line_start) {
+      /* no progress made, force wrap in middle of word */
+      line_end = line_scan;
+    }
+    if (line_scan == len) {
+      line_end = line_scan;
+    }
+    fprintf(fp, "%*s%.*s\n", indent, "", (int)(line_end - line_start), str + line_start);
+    line_start = line_end;
+    if (str[line_start] == '\n') line_start++;
+    else if (str[line_start] == ' ') line_start++;
+    line_end = line_start;
+  }
+}
+
+
 void print_usage(void) {
-  fprintf(stderr, "Carburetta parser generator (C) 2020-2023 Kinglet B.V.\n"
-                  "version 0.8.9\n"
+  fprintf(stderr, "Carburetta scanner and parser generator " CARBURETTA_COPYRIGHT_STR "\n"
+                  "version " CARBURETTA_VERSION_STR "\n"
                   "https://carburetta.com/\n"
                   "\n"
-                  "carburetta <inputfile.cbrt> [ --c [ <c_filename> [--h [h_filename] ] ] ]\n"
+                  "carburetta <inputfile.cbrt> <flags>\n"
                   "\n"
                   "<inputfile.cbrt>\n"
                   "         the input file containing the grammar (mandatory)\n"
-                  "\n"
-                  "--c\n"
-                  "         generate a C file (implied if ommitted)\n"
-                  "\n"
-                  "--c [<c_filename>]\n"
-                  "         generate a C file and output it to c_filename. If no filename is\n"
-                  "         specified, then output will be to stdout\n"
-                  "\n"
-                  "--h [<h_filename>]\n"
-                  "         generate a C header file and output it to h_filename. If no filename\n"
-                  "         is present, a c_filename must be present as it will then be used to\n"
-                  "         derive a filename for the header file.\n"
-                  "--x-utf8\n"
-                  "         use UTF-8 encoding for the input file. This is experimental and will\n"
-                  "         generate a parser that reads the input file as UTF-8.\n"
+                  "\n"        
+                  "<flags>\n"
   );
+  size_t n;
+  for (n = 0; n < sizeof(g_args_) / sizeof(*g_args_); ++n) {
+    fprintf(stderr, "%s-%c, --%s %s\n", n ? "\n" : "", g_args_[n].short_, g_args_[n].long_, g_args_[n].arg_line_ ? g_args_[n].arg_line_ : "");
+    puts_wrapped(stderr, g_args_[n].description_, 9, 79 - 9);
+  }
+
+  fprintf(stderr, "\nReport bugs to: carburetta@kinglet.nl\n"
+                  "Sourcecode repository at: <https://github.com/kingletbv/carburetta>\n"
+                  "Full documentation at: <https://carburetta.com/>\n"
+                  );
+  
+}
+
+void print_version(void) {
+  fprintf(stderr, "Carburetta " CARBURETTA_VERSION_STR "\n");
 }
 
 int main(int argc, char **argv) {
@@ -262,70 +346,84 @@ int main(int argc, char **argv) {
   int generate_cfile = 1;
   int generate_hfile = 0;
   char *input_filename = NULL;
-  while (cr) {
-    if (!strcmp("--c", *cpv)) {
-      expecting_hfile = 0;
-      expecting_cfile = 1;
-      cr--; cpv++;
-    }
-    else if (!strcmp("--h", *cpv)) {
-      expecting_hfile = 1;
-      expecting_cfile = 0;
-      generate_hfile = 1;
-      cr--; cpv++;
-    }
-    else if (!strcmp("--x-utf8", *cpv)) {
-      cr--; cpv++;
-      cc.utf8_experimental_ = 1;
-    }
-    else if (expecting_hfile) {
-      if (cc.h_output_filename_) {
-        re_error_nowhere("Error: only one C header output file permitted");
+
+  int option_index = 0;
+  int have_input_file = 0;
+  int option;
+  do {
+    option = process_option(argc, (const char **)argv, &option_index, !have_input_file);
+    switch (option) {
+      case 0:
+        break;
+      case 'H':
         print_usage();
         goto exit_arg_eval;
-      }
-      if (!strcmp("-", *cpv)) {
-        /* H output filename derived from C output filename */
-      }
-      else {
-        cc.h_output_filename_ = strdup(*cpv);
-        if (!cc.h_output_filename_) {
+      case 'v':
+        print_version();
+        goto exit_arg_eval;
+      case 'c':
+        if ((option_index < argc) && (argv[option_index])[0] != '-') {
+          /* filename specified */
+          if (cc.c_output_filename_) {
+            re_error_nowhere("Error: only one C output file permitted");
+            print_usage();
+            goto exit_arg_eval;
+          }
+          cc.c_output_filename_ = strdup(argv[option_index]);
+          if (!cc.c_output_filename_) {
+            re_error_nowhere("Error: no memory");
+            goto exit_arg_eval;
+          }
+        }
+        else {
+          /* no filename specified, back up */
+          option_index--;
+        }
+        break;
+      case 'h':
+        generate_hfile = 1;
+        if ((option_index < argc) && (argv[option_index])[0] != '-') {
+          /* filename specified */
+          if (cc.c_output_filename_) {
+            re_error_nowhere("Error: only one C output file permitted");
+            print_usage();
+            goto exit_arg_eval;
+          }
+          cc.c_output_filename_ = strdup(argv[option_index]);
+          if (!cc.c_output_filename_) {
+            re_error_nowhere("Error: no memory");
+            goto exit_arg_eval;
+          }
+        }
+        else if ((option_index < argc) && !strcmp(argv[option_index], "-")) {
+          /* headerfile to be generated, but name to be derived from c file. */
+        }
+        else {
+          /* no filename specified, back up */
+          option_index--;
+        }
+        break;
+      case '8':
+        cc.utf8_experimental_ = 1;
+        break;
+      case '?':
+        print_usage();
+        goto exit_arg_eval;
+      case '-':
+        /* default argument */
+        input_filename = strdup(argv[option_index]);
+        if (!input_filename) {
           re_error_nowhere("Error: no memory");
           goto exit_arg_eval;
         }
-      }
-      expecting_hfile = 0;
-      cr--; cpv++;
-    }
-    else if (expecting_cfile) {
-      if (cc.c_output_filename_) {
-        re_error_nowhere("Error: only one C output file permitted");
+        have_input_file = 1;
+        break;
+      default:
+        re_error_nowhere("Error: unknown option");
         print_usage();
         goto exit_arg_eval;
-      }
-      cc.c_output_filename_ = strdup(*cpv);
-      if (!cc.c_output_filename_) {
-        re_error_nowhere("Error: no memory");
-        goto exit_arg_eval;
-      }
-      expecting_cfile = 0;
-      cr--; cpv++;
     }
-    else if (expecting_inputfile) {
-      input_filename = strdup(*cpv);
-      if (!input_filename) {
-        re_error_nowhere("Error: no memory");
-        goto exit_arg_eval;
-      }
-      expecting_inputfile = 0;
-      cr--; cpv++;
-    }
-    else {
-      re_error_nowhere("Error: unrecognized commandline argument \"%s\"", *cpv);
-      print_usage();
-      goto exit_arg_eval;
-    }
-  }
+  } while (option);
 
   if (!input_filename) {
     re_error_nowhere("Error: need an input filename");

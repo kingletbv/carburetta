@@ -67,6 +67,7 @@
     <ClInclude Include="..\src\mode.h" />
     <ClInclude Include="..\src\rex_set_range.h" />
     <ClInclude Include="..\src\uc_cat_ranges.h" />
+    <ClInclude Include="..\src\version.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\prd_grammar.cbrt" />
