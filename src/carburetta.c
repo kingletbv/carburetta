@@ -270,33 +270,33 @@ void puts_wrapped(FILE *fp, const char *str, int indent, size_t linesize) {
 }
 
 
-void print_usage(void) {
-  fprintf(stderr, "Carburetta scanner and parser generator " CARBURETTA_COPYRIGHT_STR "\n"
-                  "version " CARBURETTA_VERSION_STR "\n"
-                  "https://carburetta.com/\n"
-                  "\n"
-                  "carburetta <inputfile.cbrt> <flags>\n"
-                  "\n"
-                  "<inputfile.cbrt>\n"
-                  "         the input file containing the grammar (mandatory)\n"
-                  "\n"        
-                  "<flags>\n"
+void print_usage(FILE *fp) {
+  fprintf(fp, "Carburetta scanner and parser generator " CARBURETTA_COPYRIGHT_STR "\n"
+              "version " CARBURETTA_VERSION_STR "\n"
+              "https://carburetta.com/\n"
+              "\n"
+              "carburetta <inputfile.cbrt> <flags>\n"
+              "\n"
+              "<inputfile.cbrt>\n"
+              "         the input file containing the grammar (mandatory)\n"
+              "\n"        
+              "<flags>\n"
   );
   size_t n;
   for (n = 0; n < sizeof(g_args_) / sizeof(*g_args_); ++n) {
-    fprintf(stderr, "%s-%c, --%s %s\n", n ? "\n" : "", g_args_[n].short_, g_args_[n].long_, g_args_[n].arg_line_ ? g_args_[n].arg_line_ : "");
-    puts_wrapped(stderr, g_args_[n].description_, 9, 79 - 9);
+    fprintf(fp, "%s-%c, --%s %s\n", n ? "\n" : "", g_args_[n].short_, g_args_[n].long_, g_args_[n].arg_line_ ? g_args_[n].arg_line_ : "");
+    puts_wrapped(fp, g_args_[n].description_, 9, 79 - 9);
   }
 
-  fprintf(stderr, "\nReport bugs to: carburetta@kinglet.nl\n"
-                  "Sourcecode repository at: <https://github.com/kingletbv/carburetta>\n"
-                  "Full documentation at: <https://carburetta.com/>\n"
-                  );
+  fprintf(fp, "\nReport bugs to: carburetta@kinglet.nl\n"
+              "Sourcecode repository at: <https://github.com/kingletbv/carburetta>\n"
+              "Full documentation at: <https://carburetta.com/>\n"
+              );
   
 }
 
-void print_version(void) {
-  fprintf(stderr, "Carburetta " CARBURETTA_VERSION_STR "\n");
+void print_version(FILE *fp) {
+  fprintf(fp, "Carburetta " CARBURETTA_VERSION_STR "\n");
 }
 
 int main(int argc, char **argv) {
@@ -356,17 +356,17 @@ int main(int argc, char **argv) {
       case 0:
         break;
       case 'H':
-        print_usage();
-        goto exit_arg_eval;
+        print_usage(stdout);
+        goto exit_arg_eval_success;
       case 'v':
-        print_version();
-        goto exit_arg_eval;
+        print_version(stdout);
+        goto exit_arg_eval_success;
       case 'c':
         if ((option_index < argc) && (argv[option_index])[0] != '-') {
           /* filename specified */
           if (cc.c_output_filename_) {
             re_error_nowhere("Error: only one C output file permitted");
-            print_usage();
+            print_usage(stderr);
             goto exit_arg_eval;
           }
           cc.c_output_filename_ = strdup(argv[option_index]);
@@ -386,7 +386,7 @@ int main(int argc, char **argv) {
           /* filename specified */
           if (cc.c_output_filename_) {
             re_error_nowhere("Error: only one C output file permitted");
-            print_usage();
+            print_usage(stderr);
             goto exit_arg_eval;
           }
           cc.c_output_filename_ = strdup(argv[option_index]);
@@ -407,8 +407,8 @@ int main(int argc, char **argv) {
         cc.utf8_experimental_ = 1;
         break;
       case '?':
-        print_usage();
-        goto exit_arg_eval;
+        print_usage(stdout);
+        goto exit_arg_eval_success;
       case '-':
         /* default argument */
         input_filename = strdup(argv[option_index]);
@@ -420,14 +420,14 @@ int main(int argc, char **argv) {
         break;
       default:
         re_error_nowhere("Error: unknown option");
-        print_usage();
+        print_usage(stderr);
         goto exit_arg_eval;
     }
   } while (option);
 
   if (!input_filename) {
     re_error_nowhere("Error: need an input filename");
-    print_usage();
+    print_usage(stderr);
     goto exit_arg_eval;
   }
 
@@ -447,10 +447,16 @@ int main(int argc, char **argv) {
   }
 
   if (0) {
+    int rv;
+  exit_arg_eval_success:
+    rv = EXIT_SUCCESS;
+    goto exit_arg_eval_i;
   exit_arg_eval:
+    rv = EXIT_FAILURE;
+  exit_arg_eval_i:
     carburetta_context_cleanup(&cc);
     if (input_filename) free(input_filename);
-    return EXIT_FAILURE;
+    return rv;
   }
 
   FILE *fp = NULL;
