@@ -107,6 +107,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   struct snippet dir_snippet;
   int prefer_over_valid = 0;
   int prefer_over_has_rule = 0;
+  int had_syntax_error = 0;
   snippet_init(&dir_snippet);
   enum {
     PCD_NT_DIRECTIVE,
@@ -147,6 +148,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
       else {
         re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", (unsigned char)tkr_str(tkr_tokens)[0]);
       }
+      had_syntax_error = 1;
     }
     else if (r == TKR_INTERNAL_ERROR) {
       goto cleanup_exit;
@@ -938,7 +940,12 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     if (r) goto cleanup_exit;
   }
   
-  r = 0;
+  if (!had_syntax_error) {
+    r = 0;
+  }
+  else {
+    r = TKR_SYNTAX_ERROR;
+  }
 
 cleanup_exit:
   tkr_tokenizer_reset(tkr_tokens);
@@ -964,6 +971,7 @@ static int pi_process_grammar_tokens(struct tkr_tokenizer *tkr_tokens, struct xl
       else {
         re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", uc);
       }
+      g->have_errors_ = 1;
     }
     else if (r == TKR_INTERNAL_ERROR) {
       return r;
@@ -1030,6 +1038,7 @@ static int pi_process_scanner_tokens(struct tkr_tokenizer *tkr_tokens, struct xl
       else {
         re_error_tkr(tkr_tokens, "Syntax error character 0x%02x not expected", uc);
       }
+      g->have_errors_ = 1;
     }
     else if (r == TKR_INTERNAL_ERROR) {
       return r;
