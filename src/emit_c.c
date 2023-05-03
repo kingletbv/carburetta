@@ -1551,7 +1551,6 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip,  "  const size_t *actions = %sscan_actions_rex;\n", cc_prefix(cc));
   ip_printf(ip,  "  const size_t row_size = %snum_scan_table_grouped_columns_;\n", cc_prefix(cc));
   ip_printf(ip,  "  const size_t default_action = %zu;\n", 0);
-  ip_printf(ip,  "  const size_t start_state = %zu;\n", 1);
   ip_printf(ip,  "  const size_t start_action = 0;\n", cc_prefix(cc));
   ip_printf(ip,  "  char *cp = stack->cp_;\n");
   ip_printf(ip,  "\n"
@@ -1617,16 +1616,16 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "\n"
                  "      for (;;) {\n"
                  "        /* Check for start of input */\n"
-                 "        if ((transition_table[row_size * (1 + scan_state) - 4] != scan_state) && (!at_match_index_offset)) {\n"
-                 "          scan_state = transition_table[row_size * (1 + scan_state) - 4];\n"
+                 "        if ((((size_t)transition_table[row_size * (1 + scan_state) - 4]) != scan_state) && (!at_match_index_offset)) {\n"
+                 "          scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 4];\n"
                  "        }\n"
                  "        /* Check for start of line */\n"
-                 "        else if ((transition_table[row_size * (1 + scan_state) - 3] != scan_state) && (at_match_index_col == 1)) {\n"
-                 "          scan_state = transition_table[row_size * (1 + scan_state) - 3];\n"
+                 "        else if ((((size_t)transition_table[row_size * (1 + scan_state) - 3]) != scan_state) && (at_match_index_col == 1)) {\n"
+                 "          scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 3];\n"
                  "        }\n"
                  "        /* Check for end of line */\n"
-                 "        else if ((transition_table[row_size * (1 + scan_state) - 2] != scan_state) && ('\\n' == stack->codepoint_[0])) {\n"
-                 "          scan_state = transition_table[row_size * (1 + scan_state) - 2];\n"
+                 "        else if ((((size_t)transition_table[row_size * (1 + scan_state) - 2]) != scan_state) && ('\\n' == stack->codepoint_[0])) {\n"
+                 "          scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 2];\n"
                  "        }\n"
                  "        /* (No need to check for end of input; we have at least 1 character ahead) */\n"
                  "        else {\n"
@@ -1718,18 +1717,18 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip,  "      for (;;) {\n"
                  "        /* Check for start of input */\n"
                  /* 256 + REX_ANCHOR_START_OF_INPUT */
-                 "        if ((transition_table[row_size * (1 + scan_state) - 4] != scan_state) && (!input_offset)) {\n"
-                 "          scan_state = transition_table[row_size * (1 + scan_state) - 4];\n"
+                 "        if ((((size_t)transition_table[row_size * (1 + scan_state) - 4]) != scan_state) && (!input_offset)) {\n"
+                 "          scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 4];\n"
                  "        }\n"
                  "        /* Check for start of line */\n"
                  /* 256 + REX_ANCHOR_START_OF_LINE */
-                 "        else if ((transition_table[row_size * (1 + scan_state) - 3] != scan_state) && (input_col == 1)) {\n"
-                 "          scan_state = transition_table[row_size * (1 + scan_state) - 3];\n"
+                 "        else if ((((size_t)transition_table[row_size * (1 + scan_state) - 3]) != scan_state) && (input_col == 1)) {\n"
+                 "          scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 3];\n"
                  "        }\n"
                  "        /* Check for end of line */\n"
                  /* 256 + REX_ANCHOR_END_OF_LINE */
-                 "        else if ((transition_table[row_size * (1 + scan_state) - 2] != scan_state) && ('\\n' == stack->codepoint_[0])) {\n"
-                 "          scan_state = transition_table[row_size * (1 + scan_state) - 2];\n"
+                 "        else if ((((size_t)transition_table[row_size * (1 + scan_state) - 2]) != scan_state) && ('\\n' == stack->codepoint_[0])) {\n"
+                 "          scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 2];\n"
                  "        }\n"
                  "        /* (No need to check for end of input; we have at least 1 character ahead) */\n"
                  "        else {\n"
@@ -1829,23 +1828,23 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "  for (;;) {\n"
                  "    /* Check for start of input */\n"
                  /* 256 + REX_ANCHOR_START_OF_INPUT */
-                 "    if ((transition_table[row_size * (1 + scan_state) - 4] != scan_state) && (!input_offset)) {\n"
-                 "      scan_state = transition_table[row_size * (1 + scan_state) - 4];\n"
+                 "    if ((((size_t)transition_table[row_size * (1 + scan_state) - 4]) != scan_state) && (!input_offset)) {\n"
+                 "      scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 4];\n"
                  "    }\n"
                  "    /* Check for start of line */\n"
                  /* 256 + REX_ANCHOR_START_OF_LINE */
-                 "    else if ((transition_table[row_size * (1 + scan_state) - 3] != scan_state) && (input_col == 1)) {\n"
-                 "      scan_state = transition_table[row_size * (1 + scan_state) - 3];\n"
+                 "    else if ((((size_t)transition_table[row_size * (1 + scan_state) - 3]) != scan_state) && (input_col == 1)) {\n"
+                 "      scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 3];\n"
                  "    }\n"
                  "    /* Check for end of line (always true at end of input) */\n"
                  /* 256 + REX_ANCHOR_END_OF_LINE */
-                 "    else if (transition_table[row_size * (1 + scan_state) - 2] != scan_state) {\n"
-                 "      scan_state = transition_table[row_size * (1 + scan_state) - 2];\n"
+                 "    else if (((size_t)transition_table[row_size * (1 + scan_state) - 2]) != scan_state) {\n"
+                 "      scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 2];\n"
                  "    }\n"
                  "    /* Check for end of input (always true) */\n"
                  /* 256 + REX_ANCHOR_END_OF_INPUT */
-                 "    else if (transition_table[row_size * (1 + scan_state) - 1] != scan_state) {\n"
-                 "      scan_state = transition_table[row_size * (1 + scan_state) - 1];\n"
+                 "    else if (((size_t)transition_table[row_size * (1 + scan_state) - 1]) != scan_state) {\n"
+                 "      scan_state = (size_t)transition_table[row_size * (1 + scan_state) - 1];\n"
                  "    }\n"
                  "    /* (No need to check for end of input; we have at least 1 character ahead) */\n"
                  "    else {\n"
@@ -2090,7 +2089,6 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
   ip_printf(ip,  "  const size_t row_size = 260;\n");
 #endif
   ip_printf(ip,  "  const size_t default_action = %zu;\n", 0);
-  ip_printf(ip,  "  const size_t start_state = %zu;\n", 1);
   ip_printf(ip,  "  const size_t start_action = 0;\n", cc_prefix(cc));
   ip_printf(ip,  "\n"
                  "  size_t match_index = stack->match_index_;\n"
