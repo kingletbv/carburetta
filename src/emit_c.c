@@ -2541,6 +2541,25 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
                 "} /* switch */\n");
 }
 
+static int have_destructor_switch_by_state_cases(struct carburetta_context *cc, struct lr_generator *lalr, int *state_syms) {
+  size_t typestr_idx;
+  for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+    struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+    if (ts->destructor_snippet_.num_tokens_) {
+      size_t state_idx;
+      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+        struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+        if (!sym) continue;
+        if (sym->assigned_type_ == ts) {
+          return 1; /* have at least 1 case */
+        }
+      }
+    }
+  }
+
+  return 0;
+}
+
 static void emit_scan_function(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
   /* Emit the parse function */
   cc->current_snippet_continuation_ = 1;
@@ -2774,115 +2793,126 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     ip_printf(ip, "\n");
   }
 
-  ip_printf(ip, "            switch (production) {\n");
-  size_t row;
-  for (row = 0; row < prdg->num_productions_; ++row) {
-    struct prd_production *pd = prdg->productions_ + row;
-    ip_printf(ip, "            /* %s:", pd->nt_.id_.translated_);
-    size_t n;
-    for (n = 0; n < pd->num_syms_; ++n) {
-      ip_printf(ip, " %s", pd->syms_[n].id_.translated_);
-    }
-    ip_printf(ip, " */\n");
-    ip_printf(ip, "              case %d: {\n", (int)row + 1);
-    if (cc->common_data_assigned_type_) {
-      if (!cc->common_data_assigned_type_->is_raii_constructor_) {
-        ip_printf(ip, "                stack->slot_1_has_common_data_ = 1;\n");
-      }
-      /* Emit dst_sym_data constructor first */
-      if (emit_dst_common_constructor_snippet(ip, cc, cc->common_data_assigned_type_->is_raii_constructor_)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      if (cc->common_data_assigned_type_->is_raii_constructor_) {
-        ip_printf(ip, "                stack->slot_1_has_common_data_ = 1;\n");
-      }
-    }
-
-    if (pd->nt_.sym_->assigned_type_) {
-      if (!pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
-        ip_printf(ip, "                stack->slot_1_has_sym_data_ = 1;\n");
-      }
-      ip_printf(ip, "                stack->slot_1_sym_ = ");
-      print_sym_as_c_ident(ip, cc, pd->nt_.sym_);
-      ip_printf(ip, ";\n");
-      if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_, pd->nt_.sym_->assigned_type_->is_raii_constructor_)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      if (pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
-        ip_printf(ip, "                stack->slot_1_has_sym_data_ = 1;\n");
-      }
-    }
-    if (pd->common_action_sequence_.num_tokens_) {
-      if (emit_common_action_snippet(ip, cc, pd)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-    }
-    int emit_discard = pd->common_action_sequence_.num_tokens_ && pd->action_sequence_.num_tokens_;
-    if (emit_discard) {
-      ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
-    }
-    if (emit_action_snippet(ip, cc, pd)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-
-    if (emit_discard) {
-      ip_printf(ip, "              }\n");
-    }
-
-    ip_printf(ip, "              }\n"
-                  "              break;\n");
+  if (!prdg->num_productions_) {
+    ip_printf(ip, "          /* Note: no productions to process */\n");
   }
-  ip_printf(ip, "            } /* switch */\n");
-  ip_printf(ip, "          } /* scope guard */\n");
-  ip_printf(ip, "\n");
-  ip_printf(ip, "          /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
-                "           * push nonterminal_data_reduced_to */\n"
-                "          size_t %ssym_idx;\n", cc_prefix(cc));
-  ip_printf(ip, "          for (%ssym_idx = stack->pos_ - stack->current_production_length_; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
-
-  ip_printf(ip, "            switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
-  size_t typestr_idx;
-  for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
-    struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
-    if (ts->destructor_snippet_.num_tokens_) {
-      int have_cases = 0; /* always true if all types are always used */
-      /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
-      size_t state_idx;
-      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
-        struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
-        if (!sym) continue;
-        if (sym->assigned_type_ == ts) {
-          ip_printf(ip, "              case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
-          have_cases = 1;
-        }
+  else {
+    ip_printf(ip, "            switch (production) {\n");
+    size_t row;
+    for (row = 0; row < prdg->num_productions_; ++row) {
+      struct prd_production *pd = prdg->productions_ + row;
+      ip_printf(ip, "            /* %s:", pd->nt_.id_.translated_);
+      size_t n;
+      for (n = 0; n < pd->num_syms_; ++n) {
+        ip_printf(ip, " %s", pd->syms_[n].id_.translated_);
       }
-      if (have_cases) {
-        ip_printf(ip, "              {\n"
-                       "                ");
-        if (emit_destructor_snippet(ip, cc, ts)) {
+      ip_printf(ip, " */\n");
+      ip_printf(ip, "              case %d: {\n", (int)row + 1);
+      if (cc->common_data_assigned_type_) {
+        if (!cc->common_data_assigned_type_->is_raii_constructor_) {
+          ip_printf(ip, "                stack->slot_1_has_common_data_ = 1;\n");
+        }
+        /* Emit dst_sym_data constructor first */
+        if (emit_dst_common_constructor_snippet(ip, cc, cc->common_data_assigned_type_->is_raii_constructor_)) {
           ip->had_error_ = 1;
           goto cleanup_exit;
         }
+        if (cc->common_data_assigned_type_->is_raii_constructor_) {
+          ip_printf(ip, "                stack->slot_1_has_common_data_ = 1;\n");
+        }
+      }
 
-        ip_printf(ip, "\n"
-                      "              }\n"
-                      "              break;\n");
+      if (pd->nt_.sym_->assigned_type_) {
+        if (!pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
+          ip_printf(ip, "                stack->slot_1_has_sym_data_ = 1;\n");
+        }
+        ip_printf(ip, "                stack->slot_1_sym_ = ");
+        print_sym_as_c_ident(ip, cc, pd->nt_.sym_);
+        ip_printf(ip, ";\n");
+        if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_, pd->nt_.sym_->assigned_type_->is_raii_constructor_)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        if (pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
+          ip_printf(ip, "                stack->slot_1_has_sym_data_ = 1;\n");
+        }
+      }
+      if (pd->common_action_sequence_.num_tokens_) {
+        if (emit_common_action_snippet(ip, cc, pd)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+      }
+      int emit_discard = pd->common_action_sequence_.num_tokens_ && pd->action_sequence_.num_tokens_;
+      if (emit_discard) {
+        ip_printf(ip, "              if (!stack->discard_remaining_actions_) {\n");
+      }
+      if (emit_action_snippet(ip, cc, pd)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+
+      if (emit_discard) {
+        ip_printf(ip, "              }\n");
+      }
+
+      ip_printf(ip, "              }\n"
+                    "              break;\n");
+    }
+    ip_printf(ip, "            } /* switch */\n");
+  }
+  ip_printf(ip, "          } /* scope guard */\n");
+  ip_printf(ip, "\n");
+  int have_specific_destructors = have_destructor_switch_by_state_cases(cc, lalr, state_syms);
+  int have_common_destructors = cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_;
+  if (have_specific_destructors || have_common_destructors) {
+    ip_printf(ip, "        /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
+                  "         * push nonterminal_data_reduced_to */\n"
+                  "        size_t %ssym_idx;\n", cc_prefix(cc));
+    ip_printf(ip, "        for (%ssym_idx = stack->pos_ - stack->current_production_length_; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+    if (have_specific_destructors) {
+      ip_printf(ip, "          switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
+      size_t typestr_idx;
+      for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+        if (ts->destructor_snippet_.num_tokens_) {
+          int have_cases = 0; /* always true if all types are always used */
+          /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
+          size_t state_idx;
+          for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+            struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+            if (!sym) continue;
+            if (sym->assigned_type_ == ts) {
+              ip_printf(ip, "            case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+              have_cases = 1;
+            }
+          }
+          if (have_cases) {
+            ip_printf(ip, "              {\n"
+              "                ");
+            if (emit_destructor_snippet(ip, cc, ts)) {
+              ip->had_error_ = 1;
+              goto cleanup_exit;
+            }
+
+            ip_printf(ip, "\n"
+              "              }\n"
+              "              break;\n");
+          }
+        }
+      }
+      /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
+      ip_printf(ip, "          } /* switch */\n");
+    }
+    if (have_common_destructors) {
+      if (emit_common_destructor_snippet(ip, cc)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
     }
+    ip_printf(ip, "        } /* for */\n");
   }
-  /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
-  ip_printf(ip, "            } /* switch */\n");
-  if (emit_common_destructor_snippet(ip, cc)) {
-    ip->had_error_ = 1;
-    goto cleanup_exit;
-  }
-
-  ip_printf(ip, "          } /* for */\n"
-                "          stack->pos_ -= stack->current_production_length_;\n"
+  ip_printf(ip, "          stack->pos_ -= stack->current_production_length_;\n"
                 "          action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (stack->current_production_nonterminal_ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "          if (action <= 0) {\n");
   emit_internal_error(ip, cc);
@@ -2922,8 +2952,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "              /* Retain EOF but discard any other sym so we make progress */\n"
                 "              stack->need_sym_ = 1;\n");
 
-  ip_printf(ip, "              /* Deconstruct placeholder location for discarded symbol */\n");
-  ip_printf(ip, "              switch (stack->current_sym_) {\n");
+  int have_any_destructor_case = 0;
   size_t ts_idx;
   for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
     struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
@@ -2935,25 +2964,51 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
       if (sym) {
         do {
           if (sym->assigned_type_ == ts) {
-            have_some = 1;
-            ip_printf(ip, "                case %d:\n", sym->ordinal_);
-
+            have_any_destructor_case = 1;
+            break;
           }
-
           sym = sym->next_;
         } while (sym != the_syms[n]);
+        if (have_any_destructor_case) break;
       }
     }
-    if (have_some) {
-      /* Execute destructors for typestr ts at stack->stack_[0] */
-      if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      ip_printf(ip, "                  break;\n");
-    }
+    if (have_any_destructor_case) break;
   }
-  ip_printf(ip, "              } /* switch */\n");
+
+  if (have_any_destructor_case) {
+    ip_printf(ip, "              /* Deconstruct placeholder location for discarded symbol */\n");
+    ip_printf(ip, "              switch (stack->current_sym_) {\n");
+
+    for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+      struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+      struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+      size_t n;
+      int have_some = 0;
+      for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+        struct symbol *sym = the_syms[n];
+        if (sym) {
+          do {
+            if (sym->assigned_type_ == ts) {
+              have_some = 1;
+              ip_printf(ip, "                case %d:\n", sym->ordinal_);
+
+            }
+
+            sym = sym->next_;
+          } while (sym != the_syms[n]);
+        }
+      }
+      if (have_some) {
+        /* Execute destructors for typestr ts at stack->stack_[0] */
+        if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        ip_printf(ip, "                  break;\n");
+      }
+    }
+    ip_printf(ip, "              } /* switch */\n");
+  }
 
   if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
     if (emit_common_destructor_snippet_index_0(ip, cc)) {
@@ -3007,44 +3062,51 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "              if (err_sym_action) {\n"
                 "                /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
-  ip_printf(ip, "                /* Free symdata for every symbol up to the state where we will shift the error token */\n"
-                "                size_t %ssym_idx;\n", cc_prefix(cc));
-  ip_printf(ip, "                for (%ssym_idx = n + 1; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+  if (have_specific_destructors || have_common_destructors) {
+    ip_printf(ip, "                /* Free symdata for every symbol up to the state where we will shift the error token */\n"
+                  "                size_t %ssym_idx;\n", cc_prefix(cc));
+    ip_printf(ip, "                for (%ssym_idx = n + 1; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+    if (have_specific_destructors) {
+      ip_printf(ip, "                  switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
+      size_t typestr_idx;
+      for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+        if (ts->destructor_snippet_.num_tokens_) {
+          int have_cases = 0; /* always true if all types are always used */
+          /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
+          size_t state_idx;
+          for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+            struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+            if (!sym) continue;
+            if (sym->assigned_type_ == ts) {
+              ip_printf(ip, "                    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+              have_cases = 1;
+            }
+          }
+          if (have_cases) {
+            if (emit_destructor_snippet(ip, cc, ts)) {
+              ip->had_error_ = 1;
+              goto cleanup_exit;
+            }
 
-  ip_printf(ip, "                  switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
-  for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
-    struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
-    if (ts->destructor_snippet_.num_tokens_) {
-      int have_cases = 0; /* always true if all types are always used */
-      /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
-      size_t state_idx;
-      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
-        struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
-        if (!sym) continue;
-        if (sym->assigned_type_ == ts) {
-          ip_printf(ip, "                    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
-          have_cases = 1;
+            /* Close this compound block  */
+            ip_printf(ip, "                    break;\n");
+          }
         }
       }
-      if (have_cases) {
-        if (emit_destructor_snippet(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
+      ip_printf(ip, "                  } /* switch */\n");
+    }
 
-        /* Close this compound block  */
-        ip_printf(ip, "                    break;\n");
+    if (have_common_destructors) {
+      if (emit_common_destructor_snippet(ip, cc)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
     }
+    /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
+    ip_printf(ip, "                } /* for */\n");
   }
-  ip_printf(ip, "                  } /* switch */\n");
-  if (emit_common_destructor_snippet(ip, cc)) {
-    ip->had_error_ = 1;
-    goto cleanup_exit;
-  }
-  /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
-  ip_printf(ip, "                } /* for */\n"
-                "                stack->pos_ = n + 1;\n");
+  ip_printf(ip, "                stack->pos_ = n + 1;\n");
   emit_push_state(ip, cc, "err_action");
   ip_printf(ip, "                stack->error_recovery_ = 0;\n");
   ip_printf(ip, "                /* Break out of do { .. } while loop, we've recovered */\n"
@@ -3085,37 +3147,39 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
       ip_printf(ip, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
     }
   }
-  ip_printf(ip, "          /* Deconstruct placeholder location for discarded symbol */\n");
-  ip_printf(ip, "          switch (stack->current_sym_) {\n");
-  for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
-    struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
-    struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
-    size_t n;
-    int have_some = 0;
-    for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
-      struct symbol *sym = the_syms[n];
-      if (sym) {
-        do {
-          if (sym->assigned_type_ == ts) {
-            have_some = 1;
-            ip_printf(ip, "            case %d:\n", sym->ordinal_);
+  if (have_any_destructor_case) {
+    ip_printf(ip, "          /* Deconstruct placeholder location for discarded symbol */\n");
+    ip_printf(ip, "          switch (stack->current_sym_) {\n");
+    for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+      struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+      struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+      size_t n;
+      int have_some = 0;
+      for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+        struct symbol *sym = the_syms[n];
+        if (sym) {
+          do {
+            if (sym->assigned_type_ == ts) {
+              have_some = 1;
+              ip_printf(ip, "            case %d:\n", sym->ordinal_);
 
-          }
+            }
 
-          sym = sym->next_;
-        } while (sym != the_syms[n]);
+            sym = sym->next_;
+          } while (sym != the_syms[n]);
+        }
+      }
+      if (have_some) {
+        /* Execute destructors for typestr ts at stack->stack_[0] */
+        if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        ip_printf(ip, "              break;\n");
       }
     }
-    if (have_some) {
-      /* Execute destructors for typestr ts at stack->stack_[0] */
-      if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      ip_printf(ip, "              break;\n");
-    }
+    ip_printf(ip, "          } /* switch */\n");
   }
-  ip_printf(ip, "          } /* switch */\n");
 
   if (emit_common_destructor_snippet_index_0(ip, cc)) {
     ip->had_error_ = 1;
@@ -3197,7 +3261,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     goto cleanup_exit;
   }
 
-  ip_printf(ip, "        switch (sym) {\n");
+  int have_token_actions = 0;
   size_t ts_idx;
   for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
     int found_matching_terms = 0;
@@ -3208,33 +3272,54 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
         term = term->next_;
 
         if (term->assigned_type_ == ts) {
-          found_matching_terms = 1;
-          ip_printf(ip, "          case ");
-          print_sym_as_c_ident(ip, cc, term);
-          ip_printf(ip, ":\n");
+          have_token_actions = 1;
+          break;
         }
-
       } while (term != cc->symtab_.terminals_);
-    }
-    if (found_matching_terms) {
-      if (!ts->is_raii_constructor_) {
-        ip_printf(ip, "        stack->top_of_stack_has_sym_data_ = 1;\n");
-      }
-      if (emit_token_constructor_snippet(ip, cc, ts, ts->is_raii_constructor_)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      if (ts->is_raii_constructor_) {
-        ip_printf(ip, "        stack->top_of_stack_has_sym_data_ = 1;\n");
-      }
-      if (emit_token_action_snippet(ip, cc, ts)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      ip_printf(ip, "            break;\n");
+      if (have_token_actions) break;
     }
   }
-  ip_printf(ip, "        } /* switch */\n");
+
+  if (have_token_actions) {
+    ip_printf(ip, "        switch (sym) {\n");
+    size_t ts_idx;
+    for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+      int found_matching_terms = 0;
+      struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+      struct symbol *term = cc->symtab_.terminals_;
+      if (term) {
+        do {
+          term = term->next_;
+
+          if (term->assigned_type_ == ts) {
+            found_matching_terms = 1;
+            ip_printf(ip, "          case ");
+            print_sym_as_c_ident(ip, cc, term);
+            ip_printf(ip, ":\n");
+          }
+
+        } while (term != cc->symtab_.terminals_);
+      }
+      if (found_matching_terms) {
+        if (!ts->is_raii_constructor_) {
+          ip_printf(ip, "        stack->top_of_stack_has_sym_data_ = 1;\n");
+        }
+        if (emit_token_constructor_snippet(ip, cc, ts, ts->is_raii_constructor_)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        if (ts->is_raii_constructor_) {
+          ip_printf(ip, "        stack->top_of_stack_has_sym_data_ = 1;\n");
+        }
+        if (emit_token_action_snippet(ip, cc, ts)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        ip_printf(ip, "            break;\n");
+      }
+    }
+    ip_printf(ip, "        } /* switch */\n");
+  }
 
   emit_on_next(ip, cc);
   ip_printf(ip, "      } /* action > 0 */\n");
@@ -3273,114 +3358,130 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     ip_printf(ip, "\n");
   }
    
-  ip_printf(ip, "          switch (production) {\n");
-  size_t row;
-  for (row = 0; row < prdg->num_productions_; ++row) {
-    struct prd_production *pd = prdg->productions_ + row;
-    ip_printf(ip, "            /* %s:", pd->nt_.id_.translated_);
-    size_t n;
-    for (n = 0; n < pd->num_syms_; ++n) {
-      ip_printf(ip, " %s", pd->syms_[n].id_.translated_);
-    }
-    ip_printf(ip, " */\n");
-    ip_printf(ip, "            case %d: {\n", (int)row + 1);
-    if (cc->common_data_assigned_type_) {
-      if (!cc->common_data_assigned_type_->is_raii_constructor_) {
-        ip_printf(ip, "              stack->slot_1_has_common_data_ = 1;\n");
-      }
-      /* Emit dst_sym_data constructor first */
-      if (emit_dst_common_constructor_snippet(ip, cc, cc->common_data_assigned_type_->is_raii_constructor_)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      if (cc->common_data_assigned_type_->is_raii_constructor_) {
-        ip_printf(ip, "              stack->slot_1_has_common_data_ = 1;\n");
-      }
-    }
-
-    if (pd->nt_.sym_->assigned_type_) {
-      if (!pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
-        ip_printf(ip, "              stack->slot_1_has_sym_data_ = 1;\n");
-      }
-      ip_printf(ip, "              stack->slot_1_sym_ = ");
-      print_sym_as_c_ident(ip, cc, pd->nt_.sym_);
-      ip_printf(ip, ";\n");
-
-      if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_, pd->nt_.sym_->assigned_type_->is_raii_constructor_)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-
-      if (pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
-        ip_printf(ip, "              stack->slot_1_has_sym_data_ = 1;\n");
-      }
-    }
-
-    if (emit_common_action_snippet(ip, cc, pd)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-      
-    if (pd->common_action_sequence_.num_tokens_) {
-      ip_printf(ip, "            if (!stack->discard_remaining_actions_) {\n"
-                    "              ");
-    }
-
-    if (emit_action_snippet(ip, cc, pd)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-
-    if (pd->common_action_sequence_.num_tokens_) {
-      ip_printf(ip, "            }\n");
-    }
-
-    ip_printf(ip, "            }\n");
-    ip_printf(ip, "            break;\n");
+  if (!prdg->num_productions_) {
+    ip_printf(ip, "          /* Note: no productions to process */\n");
   }
-  ip_printf(ip, "          } /* switch */\n");
-  ip_printf(ip, "        } /* scope guard */\n");
-  ip_printf(ip, "\n");
-  ip_printf(ip, "        /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
-                "         * push nonterminal_data_reduced_to */\n"
-                "        size_t %ssym_idx;\n", cc_prefix(cc));
-  ip_printf(ip, "        for (%ssym_idx = stack->pos_ - stack->current_production_length_; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
-
-  ip_printf(ip, "          switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
-  size_t typestr_idx;
-  for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
-    struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
-    if (ts->destructor_snippet_.num_tokens_) {
-      int have_cases = 0; /* always true if all types are always used */
-      /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
-      size_t state_idx;
-      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
-        struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
-        if (!sym) continue;
-        if (sym->assigned_type_ == ts) {
-          ip_printf(ip, "            case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
-          have_cases = 1;
+  else {
+    ip_printf(ip, "          switch (production) {\n");
+    size_t row;
+    for (row = 0; row < prdg->num_productions_; ++row) {
+      struct prd_production *pd = prdg->productions_ + row;
+      ip_printf(ip, "            /* %s:", pd->nt_.id_.translated_);
+      size_t n;
+      for (n = 0; n < pd->num_syms_; ++n) {
+        ip_printf(ip, " %s", pd->syms_[n].id_.translated_);
+      }
+      ip_printf(ip, " */\n");
+      ip_printf(ip, "            case %d: {\n", (int)row + 1);
+      if (cc->common_data_assigned_type_) {
+        if (!cc->common_data_assigned_type_->is_raii_constructor_) {
+          ip_printf(ip, "              stack->slot_1_has_common_data_ = 1;\n");
+        }
+        /* Emit dst_sym_data constructor first */
+        if (emit_dst_common_constructor_snippet(ip, cc, cc->common_data_assigned_type_->is_raii_constructor_)) {
+          ip->had_error_ = 1;
+          goto cleanup_exit;
+        }
+        if (cc->common_data_assigned_type_->is_raii_constructor_) {
+          ip_printf(ip, "              stack->slot_1_has_common_data_ = 1;\n");
         }
       }
-      if (have_cases) {
-        if (emit_destructor_snippet(ip, cc, ts)) {
+
+      if (pd->nt_.sym_->assigned_type_) {
+        if (!pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
+          ip_printf(ip, "              stack->slot_1_has_sym_data_ = 1;\n");
+        }
+        ip_printf(ip, "              stack->slot_1_sym_ = ");
+        print_sym_as_c_ident(ip, cc, pd->nt_.sym_);
+        ip_printf(ip, ";\n");
+
+        if (emit_dst_sym_constructor_snippet(ip, cc, pd->nt_.sym_->assigned_type_, pd->nt_.sym_->assigned_type_->is_raii_constructor_)) {
           ip->had_error_ = 1;
           goto cleanup_exit;
         }
 
-        ip_printf(ip, "            break;\n");
+        if (pd->nt_.sym_->assigned_type_->is_raii_constructor_) {
+          ip_printf(ip, "              stack->slot_1_has_sym_data_ = 1;\n");
+        }
+      }
+
+      if (emit_common_action_snippet(ip, cc, pd)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+      
+      if (pd->common_action_sequence_.num_tokens_) {
+        ip_printf(ip, "            if (!stack->discard_remaining_actions_) {\n"
+                      "              ");
+      }
+
+      if (emit_action_snippet(ip, cc, pd)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
+      }
+
+      if (pd->common_action_sequence_.num_tokens_) {
+        ip_printf(ip, "            }\n");
+      }
+
+      ip_printf(ip, "            }\n");
+      ip_printf(ip, "            break;\n");
+    }
+    ip_printf(ip, "          } /* switch */\n");
+  }
+  ip_printf(ip, "        } /* scope guard */\n");
+  ip_printf(ip, "\n");
+  int have_specific_destructors = have_destructor_switch_by_state_cases(cc, lalr, state_syms);
+  int have_common_destructors = cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_;
+  if (have_specific_destructors || have_common_destructors) {
+    ip_printf(ip, "        /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
+                  "         * push nonterminal_data_reduced_to */\n"
+                  "        size_t %ssym_idx;\n", cc_prefix(cc));
+    ip_printf(ip, "        for (%ssym_idx = stack->pos_ - stack->current_production_length_; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+    if (have_specific_destructors) {
+      ip_printf(ip, "          switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
+      size_t typestr_idx;
+      for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+        if (ts->destructor_snippet_.num_tokens_) {
+          int have_cases = 0; /* always true if all types are always used */
+          /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
+          size_t state_idx;
+          for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+            struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+            if (!sym) continue;
+            if (sym->assigned_type_ == ts) {
+              ip_printf(ip, "            case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+              have_cases = 1;
+            }
+          }
+          if (have_cases) {
+            ip_printf(ip, "              {\n"
+              "                ");
+            if (emit_destructor_snippet(ip, cc, ts)) {
+              ip->had_error_ = 1;
+              goto cleanup_exit;
+            }
+
+            ip_printf(ip, "\n"
+              "              }\n"
+              "              break;\n");
+          }
+        }
+      }
+      /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
+      ip_printf(ip, "          } /* switch */\n");
+    }
+    if (have_common_destructors) {
+      if (emit_common_destructor_snippet(ip, cc)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
     }
+    ip_printf(ip, "        } /* for */\n");
   }
-  /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
-  ip_printf(ip, "          } /* switch */\n");
-  if (emit_common_destructor_snippet(ip, cc)) {
-    ip->had_error_ = 1;
-    goto cleanup_exit;
-  }
-
-  ip_printf(ip, "        } /* for */\n"
-                "        stack->pos_ -= stack->current_production_length_;\n"
+ 
+  ip_printf(ip, "        stack->pos_ -= stack->current_production_length_;\n"
                 "        action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (stack->current_production_nonterminal_ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "        if (action <= 0) {\n"
                 "          ");
@@ -3456,45 +3557,51 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip, "            if (err_sym_action) {\n"
                 "              /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
-  ip_printf(ip, "              /* Free symdata for every symbol up to the state where we will shift the error token */\n"
-                "              size_t %ssym_idx;\n", cc_prefix(cc));
-  ip_printf(ip, "              for (%ssym_idx = n + 1; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+  if (have_specific_destructors || have_common_destructors) {
+    ip_printf(ip, "                /* Free symdata for every symbol up to the state where we will shift the error token */\n"
+      "                size_t %ssym_idx;\n", cc_prefix(cc));
+    ip_printf(ip, "                for (%ssym_idx = n + 1; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+    if (have_specific_destructors) {
+      ip_printf(ip, "                  switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
+      size_t typestr_idx;
+      for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+        if (ts->destructor_snippet_.num_tokens_) {
+          int have_cases = 0; /* always true if all types are always used */
+          /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
+          size_t state_idx;
+          for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+            struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+            if (!sym) continue;
+            if (sym->assigned_type_ == ts) {
+              ip_printf(ip, "                    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+              have_cases = 1;
+            }
+          }
+          if (have_cases) {
+            if (emit_destructor_snippet(ip, cc, ts)) {
+              ip->had_error_ = 1;
+              goto cleanup_exit;
+            }
 
-  ip_printf(ip, "                switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
-  for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
-    struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
-    if (ts->destructor_snippet_.num_tokens_) {
-      int have_cases = 0; /* always true if all types are always used */
-      /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
-      size_t state_idx;
-      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
-        struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
-        if (!sym) continue;
-        if (sym->assigned_type_ == ts) {
-          ip_printf(ip, "                  case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
-          have_cases = 1;
+            /* Close this compound block  */
+            ip_printf(ip, "                    break;\n");
+          }
         }
       }
-      if (have_cases) {
-        if (emit_destructor_snippet(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
+      ip_printf(ip, "                  } /* switch */\n");
+    }
 
-        ip_printf(ip, "                  break;\n");
+    if (have_common_destructors) {
+      if (emit_common_destructor_snippet(ip, cc)) {
+        ip->had_error_ = 1;
+        goto cleanup_exit;
       }
     }
+    /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
+    ip_printf(ip, "                } /* for */\n");
   }
-  ip_printf(ip, "                } /* switch */\n");
-
-  if (emit_common_destructor_snippet(ip, cc)) {
-    ip->had_error_ = 1;
-    goto cleanup_exit;
-  }
-
-  /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
-  ip_printf(ip, "              } /* for */\n"
-                "              stack->pos_ = n + 1;\n");
+  ip_printf(ip, "                stack->pos_ = n + 1;\n");
 
   ip_printf(ip, "              /* Push the state of the error transition */\n");
   emit_push_state(ip, cc, "err_action");
@@ -3990,6 +4097,217 @@ int encode_utf8_range(struct rex_scanner *rex, uint32_t u32_start, uint32_t u32_
     lastcu[3] += (uint8_t)(0x3F & slast);
     r = encode_utf8_code_units(rex, sizeof(mincu), firstcu, lastcu, mincu, maxcu, from_nfa, to_nfa);
     if (r) return r;
+  }
+  return 0;
+}
+
+static int emit_stack_deconstruction(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
+  int have_state_cases = have_destructor_switch_by_state_cases(cc, lalr, state_syms);
+  int have_any_destructors = (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) || have_state_cases;
+  size_t typestr_idx;
+  if (have_any_destructors) {
+    ip_printf(ip, "  size_t n;\n"
+                  "  for (n = 2; n < stack->pos_; ++n) {\n");
+    if (have_state_cases) {
+      ip_printf(ip, "    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_sym_data_) {\n");
+      ip_printf(ip, "    switch (stack->stack_[n].state_) {\n");
+      for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+        if (ts->destructor_snippet_.num_tokens_) {
+          int have_cases = 0; /* always true if all types are always used */
+          /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
+          size_t state_idx;
+          for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+            struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+            if (!sym) continue;
+            if (sym->assigned_type_ == ts) {
+              ip_printf(ip, "    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+              have_cases = 1;
+            }
+          }
+          if (have_cases) {
+            ip_printf(ip, "    {\n      ");
+            if (emit_destructor_snippet_indexed_by_n(ip, cc, ts)) {
+              ip->had_error_ = 1;
+              return -1;
+            }
+
+            /* Close this compound block  */
+            ip_printf(ip, "\n    }\n    break;\n");
+          }
+        }
+      }
+      ip_printf(ip, "    } /* switch */\n");
+      ip_printf(ip, "    }\n");
+    }
+    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+      ip_printf(ip, "    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_common_data_) {\n"
+                    "      ");
+      if (emit_common_destructor_snippet_indexed_by_n(ip, cc)) {
+        ip->had_error_ = 1;
+        return -1;
+      }
+      ip_printf(ip, "\n"
+                    "    }\n");
+    }
+
+    ip_printf(ip, "  }\n");
+  }
+  int have_any_destructor_case = 0;
+  size_t ts_idx;
+  for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+    struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+    struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+    size_t n;
+    int have_some = 0;
+    for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+      struct symbol *sym = the_syms[n];
+      if (sym) {
+        do {
+          if (sym->assigned_type_ == ts) {
+            have_any_destructor_case = 1;
+            break;
+          }
+          sym = sym->next_;
+        } while (sym != the_syms[n]);
+        if (have_any_destructor_case) break;
+      }
+    }
+    if (have_any_destructor_case) break;
+  }
+  if (have_any_destructor_case) {
+    ip_printf(ip, "  if (stack->slot_1_has_sym_data_) {\n");
+    ip_printf(ip, "    switch (stack->slot_1_sym_) {\n");
+
+    for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+      struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+      struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+      size_t n;
+      int have_some = 0;
+      for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+        struct symbol *sym = the_syms[n];
+        if (sym) {
+          do {
+            if (sym->assigned_type_ == ts) {
+              have_some = 1;
+              ip_printf(ip, "      case %d:\n", sym->ordinal_);
+            }
+
+            sym = sym->next_;
+          } while (sym != the_syms[n]);
+        }
+      }
+      if (have_some) {
+        /* Execute destructors for typestr ts at stack->stack_[0] */
+        if (ts->destructor_snippet_.num_tokens_) {
+          ip_printf(ip, "        {\n"
+                        "          ");
+          if (emit_destructor_snippet_indexed_by_1(ip, cc, ts)) {
+            ip->had_error_ = 1;
+            return -1;
+          }
+          ip_printf(ip, "\n"
+                        "        }\n");
+        }
+        ip_printf(ip, "        break;\n");
+      }
+    }
+    ip_printf(ip, "    } /* switch */\n");
+    ip_printf(ip, "  }\n");
+  }
+
+  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+    ip_printf(ip, "  if (stack->slot_1_has_common_data_) {\n");
+    if (emit_common_destructor_snippet_index_1(ip, cc)) {
+      ip->had_error_ = 1;
+      return -1;
+    }
+    ip_printf(ip, "\n"
+      "  }\n");
+  }
+
+  if (prdg->num_patterns_) {
+    int have_slot0_destructor_case = 0;
+
+    size_t ts_idx;
+    for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+      struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+      struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+      size_t n;
+      int have_some = 0;
+      for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+        struct symbol *sym = the_syms[n];
+        if (sym) {
+          do {
+            if (sym->assigned_type_ == ts) {
+              have_slot0_destructor_case = 1;
+              break;
+            }
+            sym = sym->next_;
+          } while (sym != the_syms[n]);
+
+          if (have_slot0_destructor_case) break;
+        }
+      }
+      if (have_slot0_destructor_case) break;
+    }
+
+    int have_slot0_common_data_destructor = cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_;
+
+    if (have_slot0_destructor_case || have_slot0_common_data_destructor) {
+      ip_printf(ip, "  if (stack->slot_0_has_current_sym_data_) {\n"
+                    "    /* Deconstruct placeholder location for terminal not yet shifted */\n");
+      if (have_slot0_destructor_case) {
+        ip_printf(ip, "    switch (stack->current_sym_) {\n");
+
+        size_t ts_idx;
+        for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+          struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+          struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+          size_t n;
+          int have_some = 0;
+          for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+            struct symbol *sym = the_syms[n];
+            if (sym) {
+              do {
+                if (sym->assigned_type_ == ts) {
+                  have_some = 1;
+                  ip_printf(ip, "      case %d:\n", sym->ordinal_);
+                }
+
+                sym = sym->next_;
+              } while (sym != the_syms[n]);
+            }
+          }
+          if (have_some) {
+            /* Execute destructors for typestr ts at stack->stack_[0] */
+            if (ts->destructor_snippet_.num_tokens_) {
+              ip_printf(ip, "        {\n"
+                            "          ");
+              if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
+                ip->had_error_ = 1;
+                return -1;
+              }
+              ip_printf(ip, "\n"
+                            "        }\n");
+
+            }
+            ip_printf(ip, "        break;\n");
+          }
+        }
+        ip_printf(ip, "    } /* switch */\n");
+      }
+      if (have_slot0_common_data_destructor) {
+        ip_printf(ip, "  if (stack->slot_0_has_common_data_) {\n");
+        if (emit_common_destructor_snippet_index_0(ip, cc)) {
+          ip->had_error_ = 1;
+          return -1;
+        }
+        ip_printf(ip, "\n"
+                      "    }\n");
+      }
+      ip_printf(ip, "  }\n");
+    }
   }
   return 0;
 }
@@ -4819,161 +5137,13 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
 
   cc->continuation_enabled_ = 0;
   ip_printf(ip, "void %sstack_cleanup(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
-  ip_printf(ip, "  size_t n;\n"
-                "  for (n = 2; n < stack->pos_; ++n) {\n");
-  ip_printf(ip, "    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_sym_data_) {\n");
-  ip_printf(ip, "    switch (stack->stack_[n].state_) {\n");
-  size_t typestr_idx;
-  for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
-    struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
-    if (ts->destructor_snippet_.num_tokens_) {
-      int have_cases = 0; /* always true if all types are always used */
-      /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
-      size_t state_idx;
-      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
-        struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
-        if (!sym) continue;
-        if (sym->assigned_type_ == ts) {
-          ip_printf(ip, "    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
-          have_cases = 1;
-        }
-      }
-      if (have_cases) {
-        ip_printf(ip, "    {\n      ");
-        if (emit_destructor_snippet_indexed_by_n(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
 
-        /* Close this compound block  */
-        ip_printf(ip, "\n    }\n    break;\n");
-      }
-    }
+  if (emit_stack_deconstruction(ip, cc, prdg, lalr, state_syms)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
 
-
-  ip_printf(ip, "    } /* switch */\n");
-  ip_printf(ip, "    }\n");
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-    ip_printf(ip, "    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_common_data_) {\n"
-                  "      ");
-    if (emit_common_destructor_snippet_indexed_by_n(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "\n"
-                  "    }\n");
-  }
-
-  ip_printf(ip, "  }\n");
-
-  ip_printf(ip, "  if (stack->slot_1_has_sym_data_) {\n");
-  ip_printf(ip, "    switch (stack->slot_1_sym_) {\n");
-
-  size_t ts_idx;
-  for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
-    struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
-    struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
-    size_t n;
-    int have_some = 0;
-    for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
-      struct symbol *sym = the_syms[n];
-      if (sym) {
-        do {
-          if (sym->assigned_type_ == ts) {
-            have_some = 1;
-            ip_printf(ip, "      case %d:\n", sym->ordinal_);
-          }
-
-          sym = sym->next_;
-        } while (sym != the_syms[n]);
-      }
-    }
-    if (have_some) {
-      /* Execute destructors for typestr ts at stack->stack_[0] */
-      if (ts->destructor_snippet_.num_tokens_) {
-        ip_printf(ip, "        {\n"
-                      "          ");
-        if (emit_destructor_snippet_indexed_by_1(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
-        ip_printf(ip, "\n"
-                      "        }\n");
-      }
-      ip_printf(ip, "        break;\n");
-    }
-  }
-  ip_printf(ip, "    } /* switch */\n");
-  ip_printf(ip, "  }\n");
-
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-    ip_printf(ip, "  if (stack->slot_1_has_common_data_) {\n");
-    if (emit_common_destructor_snippet_index_1(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "\n"
-                  "  }\n");
-  }
-
-  if (prdg->num_patterns_) {
-    ip_printf(ip, "  if (stack->slot_0_has_current_sym_data_) {\n"
-                  "    /* Deconstruct placeholder location for terminal not yet shifted */\n");
-    ip_printf(ip, "    switch (stack->current_sym_) {\n");
-
-    size_t ts_idx;
-    for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
-      struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
-      struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
-      size_t n;
-      int have_some = 0;
-      for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
-        struct symbol *sym = the_syms[n];
-        if (sym) {
-          do {
-            if (sym->assigned_type_ == ts) {
-              have_some = 1;
-              ip_printf(ip, "      case %d:\n", sym->ordinal_);
-            }
-
-            sym = sym->next_;
-          } while (sym != the_syms[n]);
-        }
-      }
-      if (have_some) {
-        /* Execute destructors for typestr ts at stack->stack_[0] */
-        if (ts->destructor_snippet_.num_tokens_) {
-          ip_printf(ip, "        {\n"
-                        "          ");
-          if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
-            ip->had_error_ = 1;
-            goto cleanup_exit;
-          }
-          ip_printf(ip, "\n"
-                        "        }\n");
-                           
-        }
-        ip_printf(ip, "        break;\n");
-      }
-    }
-    ip_printf(ip, "    } /* switch */\n");
-
-    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-      ip_printf(ip, "  if (stack->slot_0_has_common_data_) {\n");
-      if (emit_common_destructor_snippet_index_0(ip, cc)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      ip_printf(ip, "\n"
-                    "    }\n");
-    }
-    ip_printf(ip, "  }\n");
-  }
-
-
-  ip_printf(ip, "\n"
-                "  if (stack->stack_) free(stack->stack_);\n");
+  ip_printf(ip, "  if (stack->stack_) free(stack->stack_);\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  if (stack->match_buffer_) free(stack->match_buffer_);\n");
   }
@@ -5013,101 +5183,16 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "\n");
 
   ip_printf(ip, "int %sstack_reset(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
-  ip_printf(ip, "  size_t n;\n"
-                "  stack->pending_reset_ = 0;\n"
-                "  stack->discard_remaining_actions_ = 0;\n"
-                "  for (n = 2; n < stack->pos_; ++n) {\n");
-  ip_printf(ip, "    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_sym_data_) {\n");
-  ip_printf(ip, "    switch (stack->stack_[n].state_) {\n");
-  for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
-    struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
-    if (ts->destructor_snippet_.num_tokens_) {
-      int have_cases = 0; /* always true if all types are always used */
-      /* Type has a destructor associated.. Find all state for whose corresponding symbol has the associated type */
-      size_t state_idx;
-      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
-        struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
-        if (!sym) continue;
-        if (sym->assigned_type_ == ts) {
-          ip_printf(ip, "    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
-          have_cases = 1;
-        }
-      }
-      if (have_cases) {
-        ip_printf(ip, "    {\n    ");
-        if (emit_destructor_snippet_indexed_by_n(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
+  ip_printf(ip, "  stack->pending_reset_ = 0;\n"
+                "  stack->discard_remaining_actions_ = 0;\n");
 
-        ip_printf(ip, "\n"
-                      "    }\n"
-                      "    break;\n");
-      }
-    }
-  }
-  ip_printf(ip, "    } /* switch */\n");
-  ip_printf(ip, "    }\n");
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-    ip_printf(ip, "    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_common_data_) {\n"
-                  "      ");
-    if (emit_common_destructor_snippet_indexed_by_n(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "\n"
-                  "    }\n");
+  if (emit_stack_deconstruction(ip, cc, prdg, lalr, state_syms)) {
+    ip->had_error_ = 1;
+    goto cleanup_exit;
   }
 
-  ip_printf(ip, "  }\n");
-
-  ip_printf(ip, "  if (stack->slot_1_has_sym_data_) {\n");
-  ip_printf(ip, "    switch (stack->slot_1_sym_) {\n");
-
-  for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
-    struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
-    struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
-    size_t n;
-    int have_some = 0;
-    for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
-      struct symbol *sym = the_syms[n];
-      if (sym) {
-        do {
-          if (sym->assigned_type_ == ts) {
-            have_some = 1;
-            ip_printf(ip, "      case %d:\n", sym->ordinal_);
-          }
-
-          sym = sym->next_;
-        } while (sym != the_syms[n]);
-      }
-    }
-    if (have_some) {
-      /* Execute destructors for typestr ts at stack->stack_[0] */
-      if (ts->destructor_snippet_.num_tokens_) {
-        ip_printf(ip, "        {\n"
-                      "          ");
-        if (emit_destructor_snippet_indexed_by_1(ip, cc, ts)) {
-          ip->had_error_ = 1;
-          goto cleanup_exit;
-        }
-        ip_printf(ip, "\n"
-                      "        }\n");
-      }
-      ip_printf(ip, "        break;\n");
-    }
-  }
-  ip_printf(ip, "    } /* switch */\n");
-  ip_printf(ip, "  }\n");
-
-  if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-    ip_printf(ip, "  if (stack->slot_1_has_common_data_) {\n");
-    if (emit_common_destructor_snippet_index_1(ip, cc)) {
-      ip->had_error_ = 1;
-      goto cleanup_exit;
-    }
-    ip_printf(ip, "\n"
-                  "  }\n");
+  if (prdg->num_patterns_) {
+    ip_printf(ip, "  stack->slot_0_has_current_sym_data_ = stack->slot_0_has_common_data_ = 0;\n");
   }
 
   ip_printf(ip, "  stack->slot_1_has_sym_data_ = stack->slot_1_has_common_data_ = 0;\n"
@@ -5116,60 +5201,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "  stack->top_of_stack_has_sym_data_ = 0;\n"
                 "  stack->top_of_stack_has_common_data_ = 0;\n");
 
-  if (prdg->num_patterns_) {
-    ip_printf(ip, "  if (stack->slot_0_has_current_sym_data_) {\n"
-                  "    /* Deconstruct placeholder location for terminal not yet shifted */\n");
-    ip_printf(ip, "    switch (stack->current_sym_) {\n");
-
-    size_t ts_idx;
-    for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
-      struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
-      struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
-      size_t n;
-      int have_some = 0;
-      for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
-        struct symbol *sym = the_syms[n];
-        if (sym) {
-          do {
-            if (sym->assigned_type_ == ts) {
-              have_some = 1;
-              ip_printf(ip, "      case %d:\n", sym->ordinal_);
-            }
-
-            sym = sym->next_;
-          } while (sym != the_syms[n]);
-        }
-      }
-      if (have_some) {
-        /* Execute destructors for typestr ts at stack->stack_[0] */
-        if (ts->destructor_snippet_.num_tokens_) {
-          ip_printf(ip, "        {\n"
-                        "          ");
-          if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
-            ip->had_error_ = 1;
-            goto cleanup_exit;
-          }
-          ip_printf(ip, "\n"
-                        "        }\n");
-        }
-        ip_printf(ip, "        break;\n");
-      }
-    }
-    ip_printf(ip, "    } /* switch */\n");
-
-    if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-      ip_printf(ip, "  if (stack->slot_0_has_common_data_) {\n");
-      if (emit_common_destructor_snippet_index_0(ip, cc)) {
-        ip->had_error_ = 1;
-        goto cleanup_exit;
-      }
-      ip_printf(ip, "\n"
-                    "    }\n");
-    }
-    ip_printf(ip, "  }\n");
-
-    ip_printf(ip, "  stack->slot_0_has_current_sym_data_ = stack->slot_0_has_common_data_ = 0;\n");
-  }
+  ip_printf(ip, "  stack->slot_0_has_current_sym_data_ = stack->slot_0_has_common_data_ = 0;\n");
 
   ip_printf(ip, "  stack->sym_data_ = NULL;\n"
                 "  stack->current_production_length_ = 0;\n"
