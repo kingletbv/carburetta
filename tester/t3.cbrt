@@ -61,7 +61,7 @@ int t3(void) {
   int n;
   for (n = 0; n < 256; ++n) {
     all_the_chars = (uint8_t)n;
-    t3_set_input(&stack, &all_the_chars, 1, 1);
+    t3_set_input(&stack, (const char *)&all_the_chars, 1, 1);
     times = 0;
     r = t3_scan(&stack, &times);
     if (r == _T3_LEXICAL_ERROR) {
