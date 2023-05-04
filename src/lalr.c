@@ -107,7 +107,7 @@ static struct lr_state *lr_create_state(struct lr_generator *gen) {
 
 static struct lr_item *lr_find_or_create_item(struct lr_generator *gen, struct lr_state *state, int production, int position) {
   struct lr_item **pi, *next_i;
-  gen; /* unused var */
+  (void)gen; /* unused var */
   for (pi = &state->kernel_items_; *pi; pi = &((*pi)->state_chain_)) {
     if (((*pi)->position_ == position) && ((*pi)->production_ == production)) {
       /* have it, return. */
@@ -247,7 +247,7 @@ static int lr_closure(struct lr_generator *gen, struct lr_state *state) {
                   /* Add transition */
                   struct lr_transition *first_t = lr_find_or_create_outbound_transition(gen, state, first_sym);
                   struct lr_item *first_new_item = lr_find_or_create_item(gen, first_t->to_, (int)prodix, 1);
-                  first_new_item; /* touch first_new_item so it does not go unreferenced. */
+                  (void)first_new_item; /* touch first_new_item so it does not go unreferenced. */
 
                   if ((first_sym >= gen->lowest_nonterm_) && (first_sym <= gen->highest_nonterm_)) {
                     /* First symbol is a non-terminal, meaning we'll need to process the first symbols
@@ -284,7 +284,7 @@ static void lr_destroy_state(struct lr_generator *gen, struct lr_state *morituru
   struct lr_transition *t, *nt;
   struct lr_item *i, *ni;
   /* touch gen so it does not go unreferenced. */
-  gen;
+  (void)gen;
   for (t = moriturus->transitions_to_state_; t; t = nt) {
     struct lr_state *ds = t->from_;
     struct lr_transition **pt;

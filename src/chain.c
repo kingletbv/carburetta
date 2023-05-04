@@ -37,7 +37,7 @@ void *chain_first(void *chain, size_t member) {
 }
 
 void *chain_last(void *chain, size_t member) {
-  member; /* C4100: 'member' : unreferenced formal parameter */
+  (void)member; /* C4100: 'member' : unreferenced formal parameter */
   return chain;
 }
 
