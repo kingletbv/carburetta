@@ -2740,10 +2740,10 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "          /* Fill in the sym from the tokenizer */\n");
   ip_printf(ip, "          stack->need_sym_ = 1;\n");
   if (cc->common_data_assigned_type_) {
-    ip_printf(ip, "          stack->stack_[stack->pos_ - 1].common_ = stack->stack_[0].common_;\n");
+    ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].common_, &stack->stack_[0].common_, sizeof(stack->stack_[0].common_));\n");
   }
   if (cc->have_typed_symbols_) {
-    ip_printf(ip, "          stack->stack_[stack->pos_ - 1].v_ = stack->stack_[0].v_;\n");
+    ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_[0].v_));\n");
   }
   ip_printf(ip, "          stack->slot_0_has_current_sym_data_ = 0;\n");
   ip_printf(ip, "          stack->slot_0_has_common_data_ = 0;\n");
@@ -2924,8 +2924,8 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
 
   emit_push_state(ip, cc, "action /* action for a \"goto\" shift is the ordinal */");
   ip_printf(ip, "          struct %ssym_data *sd = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
-  ip_printf(ip, "          *sd = stack->stack_[1];\n"
-                "          sd->state_ = action;\n");
+  ip_printf(ip, "          memcpy(sd, stack->stack_+1, sizeof(*sd));\n");
+  ip_printf(ip, "          sd->state_ = action;\n");
   ip_printf(ip, "          stack->slot_1_has_common_data_ = 0;\n");
   ip_printf(ip, "          stack->slot_1_has_sym_data_ = 0;\n");
   ip_printf(ip, "          stack->top_of_stack_has_sym_data_ = 1;\n");
@@ -3500,8 +3500,8 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   emit_push_state(ip, cc, "action /* action for a \"goto\" shift is the ordinal */");
 
   ip_printf(ip, "        struct %ssym_data *sd = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
-  ip_printf(ip, "        *sd = stack->stack_[1];\n"
-                "        sd->state_ = action;\n");
+  ip_printf(ip, "        memcpy(sd, stack->stack_+1, sizeof(*sd));\n");
+  ip_printf(ip, "        sd->state_ = action;\n");
   ip_printf(ip, "        stack->slot_1_has_common_data_ = 0;\n");
   ip_printf(ip, "        stack->slot_1_has_sym_data_ = 0;\n");
   ip_printf(ip, "        stack->top_of_stack_has_common_data_ = 1;\n");
