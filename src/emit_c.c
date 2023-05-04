@@ -305,6 +305,7 @@ static int emit_sym_specific_data(struct indented_printer *ip, struct carburetta
   case SEST_FMT_INDEX_ORDINAL:
     ip_printf_no_indent(ip, se->sym_fmt_, sym_index, sym->assigned_type_->ordinal_);
     break;
+  case SEST_NONE: break;/* already handled at the top, but silences a warning */
   }
   return 0;
 }
@@ -325,6 +326,7 @@ static int emit_dest_commondata(struct indented_printer *ip, struct carburetta_c
   case SECDT_FMT:
     ip_puts_no_indent(ip, se->common_dest_fmt_);
     break;
+  case SECDT_NONE: break;/* already handled at the top, but silences a warning */
   }
 
   return 0;
@@ -412,118 +414,110 @@ static int emit_chgterm(struct indented_printer *ip, struct carburetta_context *
 }
 
 static int emit_len(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
-  if (se->len_type_ == SELT_NONE) {
-    re_error(&st->text_, "$len cannot resolve to a length");
-    return TKR_SYNTAX_ERROR;
-  }
   switch (se->len_type_) {
   case SELT_FMT:
     ip_puts_no_indent(ip, se->len_fmt_);
     break;
+  case SELT_NONE: 
+    re_error(&st->text_, "$len cannot resolve to a length");
+    return TKR_SYNTAX_ERROR;
   }
   return 0;
 }
 
 static int emit_discard(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
-  if (se->discard_type_ == SEDIT_NONE) {
-    re_error(&st->text_, "$discard use is limited to common actions");
-    return TKR_SYNTAX_ERROR;
-  }
   switch (se->discard_type_) {
   case SEDIT_FMT:
     ip_puts_no_indent(ip, se->discard_fmt_);
     break;
+  case SEDIT_NONE: 
+    re_error(&st->text_, "$discard use is limited to common actions");
+    return TKR_SYNTAX_ERROR;
   }
   return 0;
 }
 
 static int emit_text(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
-  if (se->text_type_ == SETT_NONE) {
-    re_error(&st->text_, "$text use is limited to pattern actions");
-    return TKR_SYNTAX_ERROR;
-  }
   switch (se->text_type_) {
   case SETT_FMT:
     ip_puts_no_indent(ip, se->text_fmt_);
     break;
+  case SETT_NONE: 
+    re_error(&st->text_, "$text use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
   }
   return 0;
 }
 
 static int emit_line(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
-  if (se->line_type_ == SELIT_NONE) {
-    re_error(&st->text_, "$line use is limited to pattern actions");
-    return TKR_SYNTAX_ERROR;
-  }
   switch (se->line_type_) {
   case SELIT_FMT:
     ip_puts_no_indent(ip, se->line_fmt_);
     break;
+  case SELIT_NONE:
+    re_error(&st->text_, "$line use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
   }
   return 0;
 }
 
 static int emit_column(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
-  if (se->col_type_ == SECOT_NONE) {
-    re_error(&st->text_, "$column use is limited to pattern actions");
-    return TKR_SYNTAX_ERROR;
-  }
   switch (se->col_type_) {
   case SECOT_FMT:
     ip_puts_no_indent(ip, se->col_fmt_);
     break;
+  case SECOT_NONE:
+    re_error(&st->text_, "$column use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
   }
   return 0;
 }
 
 static int emit_offset(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
-  if (se->offset_type_ == SEOT_NONE) {
-    re_error(&st->text_, "$offset use is limited to pattern actions");
-    return TKR_SYNTAX_ERROR;
-  }
   switch (se->offset_type_) {
   case SELIT_FMT:
     ip_puts_no_indent(ip, se->offset_fmt_);
     break;
+  case SELIT_NONE:
+    re_error(&st->text_, "$offset use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
   }
   return 0;
 }
 
 static int emit_endline(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
-  if (se->end_line_type_ == SEELIT_NONE) {
-    re_error(&st->text_, "$endline use is limited to pattern actions");
-    return TKR_SYNTAX_ERROR;
-  }
   switch (se->end_line_type_) {
   case SEELIT_FMT:
     ip_puts_no_indent(ip, se->end_line_fmt_);
     break;
+  case SEELIT_NONE:
+    re_error(&st->text_, "$endline use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
   }
   return 0;
 }
 
 static int emit_endcolumn(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
-  if (se->end_col_type_ == SEECOT_NONE) {
-    re_error(&st->text_, "$endcolumn use is limited to pattern actions");
-    return TKR_SYNTAX_ERROR;
-  }
   switch (se->end_col_type_) {
   case SEECOT_FMT:
     ip_puts_no_indent(ip, se->end_col_fmt_);
     break;
+  case SEECOT_NONE:
+    re_error(&st->text_, "$endcolumn use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
   }
   return 0;
 }
 
 static int emit_endoffset(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
-  if (se->end_offset_type_ == SEEOT_NONE) {
-    re_error(&st->text_, "$endoffset use is limited to pattern actions");
-    return TKR_SYNTAX_ERROR;
-  }
   switch (se->end_offset_type_) {
-  case SELIT_FMT:
+  case SEEOT_FMT:
     ip_puts_no_indent(ip, se->end_offset_fmt_);
     break;
+  case SEEOT_NONE:
+    re_error(&st->text_, "$endoffset use is limited to pattern actions");
+    return TKR_SYNTAX_ERROR;
+
   }
   return 0;
 }
@@ -546,6 +540,7 @@ static int emit_common(struct indented_printer *ip, struct carburetta_context *c
   case SECT_FMT:
     ip_puts_no_indent(ip, se->common_fmt_prefix_);
     break;
+  case SECT_NONE: break;/* already handled at the top, but silences a warning */
   }
   size_t n;
   for (n = start_of_index; n < end_of_index; ++n) {
