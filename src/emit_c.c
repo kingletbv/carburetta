@@ -1128,13 +1128,13 @@ static int emit_destructor_snippet(struct indented_printer *ip, struct carburett
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
-  se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
+  se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
   se.dest_typestr_ = ts;
-  se.dest_fmt_ = "((stack->stack_ + %ssym_idx)->v_.uv%d_)";
+  se.dest_fmt_ = "((stack->stack_ + stack->sym_idx_)->v_.uv%d_)";
   se.sym_type_ = SEST_NONE;
   se.common_type_ = SECT_NONE;
-  se.common_dest_type_ = SECDT_FMT_PREFIX;
-  se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "((stack->stack_ + stack->sym_idx_)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
   se.len_type_ = SELT_NONE;
@@ -1228,12 +1228,12 @@ static int emit_common_destructor_snippet(struct indented_printer *ip, struct ca
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
-  se.dest_type_ = SEDT_FMT_PREFIX;
-  se.dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "((stack->stack_ + stack->sym_idx_)->common_)";
   se.sym_type_ = SEST_NONE;
   se.common_type_ = SECT_NONE;
-  se.common_dest_type_ = SECDT_FMT_PREFIX;
-  se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "((stack->stack_ + stack->sym_idx_)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
   se.len_type_ = SELT_NONE;
@@ -2866,11 +2866,10 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   int have_common_destructors = cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_;
   if (have_specific_destructors || have_common_destructors) {
     ip_printf(ip, "        /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
-                  "         * push nonterminal_data_reduced_to */\n"
-                  "        size_t %ssym_idx;\n", cc_prefix(cc));
-    ip_printf(ip, "        for (%ssym_idx = stack->pos_ - stack->current_production_length_; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                  "         * push nonterminal_data_reduced_to */\n");
+    ip_printf(ip, "        for (stack->sym_idx_ = stack->pos_ - stack->current_production_length_; stack->sym_idx_ < stack->pos_; ++stack->sym_idx_) {\n");
     if (have_specific_destructors) {
-      ip_printf(ip, "          switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
+      ip_printf(ip, "          switch (stack->stack_[stack->sym_idx_].state_) {\n");
       size_t typestr_idx;
       for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
         struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
@@ -3065,11 +3064,10 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "                /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
   if (have_specific_destructors || have_common_destructors) {
-    ip_printf(ip, "                /* Free symdata for every symbol up to the state where we will shift the error token */\n"
-                  "                size_t %ssym_idx;\n", cc_prefix(cc));
-    ip_printf(ip, "                for (%ssym_idx = n + 1; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "                /* Free symdata for every symbol up to the state where we will shift the error token */\n");
+    ip_printf(ip, "                for (stack->sym_idx_ = n + 1; stack->sym_idx_ < stack->pos_; ++stack->sym_idx_) {\n");
     if (have_specific_destructors) {
-      ip_printf(ip, "                  switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
+      ip_printf(ip, "                  switch (stack->stack_[stack->sym_idx_].state_) {\n");
       size_t typestr_idx;
       for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
         struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
@@ -3439,11 +3437,10 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   int have_common_destructors = cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_;
   if (have_specific_destructors || have_common_destructors) {
     ip_printf(ip, "        /* Free symdata for every symbol in the production, including the first slot where we will soon\n"
-                  "         * push nonterminal_data_reduced_to */\n"
-                  "        size_t %ssym_idx;\n", cc_prefix(cc));
-    ip_printf(ip, "        for (%ssym_idx = stack->pos_ - stack->current_production_length_; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                  "         * push nonterminal_data_reduced_to */\n");
+    ip_printf(ip, "        for (stack->sym_idx_ = stack->pos_ - stack->current_production_length_; stack->sym_idx_ < stack->pos_; ++stack->sym_idx_) {\n");
     if (have_specific_destructors) {
-      ip_printf(ip, "          switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
+      ip_printf(ip, "          switch (stack->stack_[stack->sym_idx_].state_) {\n", cc_prefix(cc));
       size_t typestr_idx;
       for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
         struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
@@ -3565,11 +3562,10 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 "              /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
   if (have_specific_destructors || have_common_destructors) {
-    ip_printf(ip, "                /* Free symdata for every symbol up to the state where we will shift the error token */\n"
-      "                size_t %ssym_idx;\n", cc_prefix(cc));
-    ip_printf(ip, "                for (%ssym_idx = n + 1; %ssym_idx < stack->pos_; ++%ssym_idx) {\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "                /* Free symdata for every symbol up to the state where we will shift the error token */\n");
+    ip_printf(ip, "                for (stack->sym_idx_ = n + 1; stack->sym_idx_ < stack->pos_; ++stack->sym_idx_) {\n");
     if (have_specific_destructors) {
-      ip_printf(ip, "                  switch (stack->stack_[%ssym_idx].state_) {\n", cc_prefix(cc));
+      ip_printf(ip, "                  switch (stack->stack_[stack->sym_idx_].state_) {\n");
       size_t typestr_idx;
       for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
         struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
@@ -3768,6 +3764,7 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
   ip_printf(ip, "  struct %ssym_data *sym_data_;\n", cc_prefix(cc));
   ip_printf(ip, "  size_t current_production_length_;\n");
   ip_printf(ip, "  int current_production_nonterminal_;\n");
+  ip_printf(ip, "  size_t sym_idx_;\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  size_t scan_state_;\n"
                   "  size_t current_mode_start_state_;\n"
@@ -5119,7 +5116,8 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "  stack->stack_ = NULL;\n"
                 "  stack->sym_data_ = NULL;\n"
                 "  stack->current_production_length_ = 0;\n"
-                "  stack->current_production_nonterminal_ = 0;\n");
+                "  stack->current_production_nonterminal_ = 0;\n"
+                "  stack->sym_idx_ = 0;\n");
   if (prdg->num_patterns_) {
     ip_printf(ip, "  stack->slot_0_has_current_sym_data_ = stack->slot_0_has_common_data_ = 0;\n");
     ip_printf(ip, "  stack->current_mode_start_state_ = M_%sDEFAULT;\n", cc_PREFIX(cc));
@@ -5220,7 +5218,8 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
 
   ip_printf(ip, "  stack->sym_data_ = NULL;\n"
                 "  stack->current_production_length_ = 0;\n"
-                "  stack->current_production_nonterminal_ = 0;\n");
+                "  stack->current_production_nonterminal_ = 0;\n"
+                "  stack->sym_idx_ = 0;\n");
   ip_printf(ip, "  stack->pos_ = 0;\n"
                 "  stack->error_recovery_ = 0;\n");
   if (prdg->num_patterns_) {
