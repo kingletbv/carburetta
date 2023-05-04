@@ -3668,6 +3668,12 @@ cleanup_exit:
 
 int emit_sym_data_struct(struct indented_printer *ip, struct carburetta_context *cc) {
   ip_printf(ip, "struct %ssym_data {\n", cc_prefix(cc));
+  /* emit stub to disable C++ destructors on child members */
+  ip_printf(ip, "#ifdef __cplusplus\n"
+                "  // clear destructor in case C++ symbol types have non-trivial destructors\n"
+                "  // (we invoke their destructors explicitly)\n"
+                "  ~%ssym_data() = delete;\n"
+                "#endif\n", cc_prefix(cc));
   ip_printf(ip, "  int state_;\n");
   if (cc->common_data_assigned_type_) {
     struct typestr *ts = cc->common_data_assigned_type_;
@@ -4340,7 +4346,11 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   }
 
   ip_printf(ip, "/* --------- START OF GENERATED CODE ------------ */\n");
-
+  ip_printf(ip, "#if defined(__clang__)\n");
+  ip_printf(ip, "#elif defined(__GNUC__) && defined(__cplusplus)\n"
+                "/* don't warn on realloc, memcpy, memset on C++ classes */\n"
+                "#pragma GCC diagnostic ignored \"-Wclass-memaccess\"\n"
+                "#endif\n");
   ip_printf(ip, "#include <stdlib.h> /* realloc(), free(), NULL, size_t */\n");
   ip_printf(ip, "#include <string.h> /* memcpy() */\n");
   ip_printf(ip, "#include <stddef.h> /* size_t */\n");
