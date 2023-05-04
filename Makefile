@@ -1,4 +1,6 @@
 CC=gcc
+#CC=clang
+CXXFLAGS=-Wall
 
 OUT = build/linux
 SRC = src
@@ -6,8 +8,11 @@ INTERMEDIATE = build/linux/objs
 
 SOURCES = $(filter-out src/tokens_generated_scanners.c,$(wildcard $(SRC)/*.c))
 OBJECTS = $(patsubst $(SRC)/%.c,$(INTERMEDIATE)/%.o,$(SOURCES))
-TESTS = $(wildcard tester/*.cbrt)
-TESTS_C = $(patsubst tester/%.cbrt,$(INTERMEDIATE)/tester/%.c,$(TESTS))
+TESTS_SRC = $(wildcard tester/*.cbrt)
+TESTS_CPP_SRC = $(wildcard tester/cpp/*.cbrt)
+TESTS_C = $(patsubst tester/%.cbrt,$(INTERMEDIATE)/tester/%.c,$(TESTS_SRC))
+TESTS_CPP = $(patsubst tester/cpp/%.cbrt,$(INTERMEDIATE)/tester/cpp/%.cpp,$(TESTS_CPP_SRC))
+TESTS_CPP_OBJ = $(patsubst tester/cpp/%.cbrt,$(INTERMEDIATE)/tester/cpp/%.o,$(TESTS_CPP_SRC))
 
 .PHONY: all
 all: $(OUT)/carburetta $(OUT)/calc $(OUT)/template_scan $(OUT)/inireader $(OUT)/tester
@@ -40,6 +45,7 @@ $(OUT)/inireader: $(INTERMEDIATE)/inireader/iniparser.c examples/inireader/main.
 $(OUT)/template_scan: $(INTERMEDIATE)/template_scan/template_scan.c
 	$(CC) -o $(OUT)/template_scan $(INTERMEDIATE)/template_scan/template_scan.c
 
+.PRECIOUS: $(INTERMEDIATE)/tester/%.c
 $(INTERMEDIATE)/tester/%.c: tester/%.cbrt
 	mkdir -p $(@D)
 	$(OUT)/carburetta --x-utf8 $< --c $@ --h
@@ -48,8 +54,16 @@ $(INTERMEDIATE)/tester/t3.c: tester/t3.cbrt
 	mkdir -p $(@D)
 	$(OUT)/carburetta $< --c $@ --h
 
-$(OUT)/tester: $(TESTS_C) tester/tester.c
-	$(CC) -o $@ $^
+.PRECIOUS: $(INTERMEDIATE)/tester/cpp/%.cpp
+$(INTERMEDIATE)/tester/cpp/%.cpp: tester/cpp/%.cbrt
+	mkdir -p $(@D)
+	$(OUT)/carburetta --x-utf8 $< --c $@ --h
+
+$(INTERMEDIATE)/tester/cpp/%.o: $(INTERMEDIATE)/tester/cpp/%.cpp
+	$(CC) $(CXXFLAGS) -c $^ -o $@
+
+$(OUT)/tester: $(TESTS_C) $(TESTS_CPP_OBJ) tester/tester.c
+	$(CC) -o $@ $^ -lstdc++
 
 .PHONY: clean
 clean:
