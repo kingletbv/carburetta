@@ -4430,7 +4430,6 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
       }
       free(table);
       ip_printf(ip, "};\n");
-      ip_printf(ip, "static const size_t %snum_scan_table_rows_ = %zu;\n", cc_prefix(cc), num_rows);
       ip_printf(ip, "static const size_t %snum_scan_table_grouped_columns_ = %zu;\n", cc_prefix(cc), num_columns);
 
       /* Raw encoding map */
@@ -4455,13 +4454,6 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
           }
         } while (sg != rex->dfa_.symbol_groups_);
       }
-
-      uint32_t n;
-      ip_printf(ip, "static const int %sscan_table_grouped_raw_encoding_[] = {\n", cc_prefix(cc));
-      for (n = 0; n < 256; ++n) {
-        ip_printf(ip, "%s%d", n ? ", " : "", srmap[n]);
-      }
-      ip_printf(ip, "\n};\n");
 
       /* UTF-8 encoding map */
       struct rex_scanner utf8_scanner;
@@ -4673,7 +4665,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     }
   }
 
-  if (prdg->num_patterns_) {
+  if (prdg->num_patterns_ && !cc->utf8_experimental_) {
     ip_printf(ip, "static const size_t %sscan_table_rex[] = {\n", cc_prefix(cc));
     size_t col;
     char column_widths[256 + 4] = {0};
@@ -4894,9 +4886,12 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     }
 
     ip_printf(ip, "};\n");
+  }
 
+  if (prdg->num_patterns_) {
     ip_printf(ip, "static const size_t %sscan_actions_rex[] = { ", cc_prefix(cc));
     ip_printf(ip, "0"); /* dummy state 0 action */
+    struct rex_dfa_node *dn = rex->dfa_.nodes_;
     if (dn) {
       do {
         dn = dn->chain_;
@@ -4913,8 +4908,6 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   num_columns = (size_t)(1 + lalr->max_sym_ - lalr->min_sym_);
   ip_printf(ip, "static const int %sminimum_sym = %d;\n", cc_prefix(cc), lalr->min_sym_);
   ip_printf(ip, "static const size_t %snum_columns = %zu;\n", cc_prefix(cc), num_columns);
-  ip_printf(ip, "static const size_t %snum_rows = %zu;\n", cc_prefix(cc), (size_t)lalr->nr_states_);
-  ip_printf(ip, "static const size_t %snum_productions = %zu;\n", cc_prefix(cc), lalr->nr_productions_);
   ip_printf(ip, "static const int %sparse_table[] = {\n", cc_prefix(cc));
   size_t row, col;
   char *column_widths;
