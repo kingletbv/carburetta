@@ -1,3 +1,25 @@
+0.8.10 - 2023-05-04
+
+- bring C++ back up from regressions - please be careful to read
+  about the limitations in the manual.
+
+- add t8 C++ simple calculator test case to unit/regression tests
+
+- added GNU style --version and --help flags
+
+- clear warnings across MSVC, GCC and Clang on C and C++.
+
+- various important fixes.
+
+- Flag --x-utf8 no longer generates the raw scanner table, the latter
+  may be quite substantial and is not used (by definition) when specifying
+  --x-utf8. This can be a substantial space savings.
+
+- Manual (carburetta.com/manual.html) updated for 0.8.10, including the
+  innards of utf8 operation which was previously missing.
+
+- In memoriam https://en.wikipedia.org/wiki/Remembrance_of_the_Dead
+
 0.8.8 - 2023-04-21
 
 - critical fixes relative to 0.8.6 and unit/regression testing to help 
