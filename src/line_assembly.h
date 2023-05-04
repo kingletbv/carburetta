@@ -21,7 +21,7 @@
  * Lines may be extended by using a line-continuation (a backslash followed by a newline, or a backslash followed by a 
  * carriage return and a newline.)
  * Lines may also be extended using a C-style multi-line comment such as the one you're reading.
- * These two may be combined, eg. the opening "/*" may be encoded as "/\\\r\n*" and this should
+ * These two may be combined, eg. the opening / and * may be encoded as "/\\\r\n*" and this should
  * still work.
  * Downstream from line assembly we still need to generate accurate line and column numbers; so these need to be preserved.
  * Downstream parsing should proceed as if the line-continuations were never part of the input and as if the C-style 
