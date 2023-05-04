@@ -78,8 +78,6 @@ PAR_CLOSE: \);
 %raii_constructor new (&$$) GrammarObj();
 %destructor $$.~GrammarObj();
 
-%common_type struct { int line_, col_, endline_, endcol_; }
-
 %params int &final_result
 
 grammar: expr {
