@@ -5218,8 +5218,6 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "  stack->top_of_stack_has_sym_data_ = 0;\n"
                 "  stack->top_of_stack_has_common_data_ = 0;\n");
 
-  ip_printf(ip, "  stack->slot_0_has_current_sym_data_ = stack->slot_0_has_common_data_ = 0;\n");
-
   ip_printf(ip, "  stack->sym_data_ = NULL;\n"
                 "  stack->current_production_length_ = 0;\n"
                 "  stack->current_production_nonterminal_ = 0;\n");
