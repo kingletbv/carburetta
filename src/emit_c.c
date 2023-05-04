@@ -1567,7 +1567,8 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "  int input_line = stack->input_line_;\n"
                  "  int input_col = stack->input_col_;\n"
                  "\n"
-                 "  int symgrp = stack->sym_grp_;\n"
+                 "  int symgrp;\n"
+                 "  symgrp = stack->sym_grp_;\n"
                  "\n"
                  "  /* Move any prior token out of the way */\n"
                  "  if (stack->token_size_) {\n"
@@ -2727,9 +2728,11 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "      } /* switch */\n");
   ip_printf(ip, "    } /* if (need_sym_) */\n");
   ip_printf(ip, "    else {\n");
-  ip_printf(ip, "      int sym = stack->current_sym_;\n"
+  ip_printf(ip, "      int sym;\n"
+                "      sym = stack->current_sym_;\n"
                 "      if (!stack->error_recovery_) {\n"
-                "        int action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                "        int action;\n"
+                "        action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   /* Shift logic */
   ip_printf(ip, "        if (action > 0) {\n");
   emit_push_state(ip, cc, "action");
@@ -2760,7 +2763,8 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "        } /* action > 0 */\n");
 
   ip_printf(ip, "        else if (action < 0) {\n"
-                "          int production = -action - 1;\n"
+                "          int production;\n"
+                "          production = -action - 1;\n"
                 "          stack->discard_remaining_actions_ = 0;\n"
                 "          stack->current_production_length_ = %sproduction_lengths[production];\n", cc_prefix(cc));
   ip_printf(ip, "          stack->current_production_nonterminal_ = %sproduction_syms[production];\n", cc_prefix(cc));
@@ -2931,8 +2935,9 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "        else /* action == 0 */ {\n");
   ip_printf(ip, "          /* check if we can recover using an error token. */\n"
                 "          size_t n;\n"
-                "          for (n = 0; n < stack->pos_; ++n) {\n");
-  ip_printf(ip, "            int err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
+                "          for (n = 0; n < stack->pos_; ++n) {\n"
+                "            int err_action;\n");
+  ip_printf(ip, "            err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
   ip_printf(ip, "            if (err_action > 0) {\n"
                 "              /* we can transition on the error token somewhere on the stack */\n"
                 "              break;\n"
@@ -3055,10 +3060,12 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "          do {\n"
                 "            --n;\n"
                 "            /* Can we shift an error token? */\n");
-  ip_printf(ip, "            int err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
+  ip_printf(ip, "            int err_action;\n"
+                "            err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
   ip_printf(ip, "            if (err_action > 0) {\n");
   ip_printf(ip, "              /* Does the resulting state accept the current symbol? */\n"
-                "              int err_sym_action = %sparse_table[%snum_columns * err_action + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                "              int err_sym_action;\n"
+                "              err_sym_action = %sparse_table[%snum_columns * err_action + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "              if (err_sym_action) {\n"
                 "                /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
@@ -3230,7 +3237,8 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip, "  if (stack->mute_error_turns_) stack->mute_error_turns_--;\n");
   ip_printf(ip, "  for (;;) {\n"
                 "    if (!stack->error_recovery_) {\n"
-                "      int action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                "      int action;\n"
+                "      action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
 
   /* Shift logic */
   ip_printf(ip, "      if (action > 0) {\n");
@@ -3325,7 +3333,8 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip, "      } /* action > 0 */\n");
 
   ip_printf(ip, "      else if (action < 0) {\n"
-                "        int production = -action - 1;\n"
+                "        int production;\n"
+                "        production = -action - 1;\n"
                 "        stack->discard_remaining_actions_ = 0;\n"
                 "        stack->current_production_length_ = %sproduction_lengths[production];\n", cc_prefix(cc));
   ip_printf(ip, "        stack->current_production_nonterminal_ = %sproduction_syms[production];\n", cc_prefix(cc));
@@ -3502,7 +3511,8 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip, "        /* check if we can recover using an error token. */\n"
                 "        size_t n;\n"
                 "        for (n = 0; n < stack->pos_; ++n) {\n");
-  ip_printf(ip, "          int err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
+  ip_printf(ip, "          int err_action;\n"
+                "          err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
   ip_printf(ip, "          if (err_action > 0) {\n"
                 "            /* we can transition on the error token somewhere on the stack */\n"
                 "            break;\n"
@@ -3550,10 +3560,12 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 "        do {\n"
                 "          --n;\n"
                 "          /* Can we shift an error token? */\n");
-  ip_printf(ip, "          int err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
+  ip_printf(ip, "          int err_action;\n"
+                "          err_action = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
   ip_printf(ip, "          if (err_action > 0) {\n");
   ip_printf(ip, "            /* Does the resulting state accept the current symbol? */\n"
-                "            int err_sym_action = %sparse_table[%snum_columns * err_action + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                "            int err_sym_action;\n"
+                "            err_sym_action = %sparse_table[%snum_columns * err_action + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "            if (err_sym_action) {\n"
                 "              /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
