@@ -173,8 +173,19 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
           eat_whitespace = 0;
           /* Keep whitespace for all code directives */
         }
+        else if ((directive == PCD_TOKEN_TYPE_DIRECTIVE) ||
+                 (directive == PCD_COMMON_TYPE_DIRECTIVE)) {
+          eat_whitespace = 0;
+          /* Keep whitespace for all type directives */
+        }
+        else if (directive == PCD_TYPE_DIRECTIVE) {
+          /* Skip whitespace at first, until colon is matched, after
+           * which whitespace is kept (ate_colon_seperator is toggled by 
+           * directive handler below) */
+          eat_whitespace = !ate_colon_seperator;
+        }
         else {
-          /* Consume whitespace for all type directives */
+          /* Consume whitespace for all other directives */
           eat_whitespace = 1;
         }
       }
@@ -427,7 +438,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
           }
           else if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
             /* Trim simple whitespace off the head end, otherwise simply copy. */
-            if (cc->token_type_.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+            if (cc->token_type_.num_tokens_ || (tkr_tokens->best_match_variant_ != TOK_WHITESPACE)) {
               if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
                 if (strcmp("$", tkr_str(tkr_tokens))) {
                   re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a type string may only have a single \"$\" special identifier as a declarator identifier placeholder", tkr_str(tkr_tokens));
@@ -499,13 +510,16 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
                 }
               }
               else {
+                /* Note that we no longer consume whitespace when this flag is set (see above,) we seek 
+                 * the full type string including whitespace.
+                 * this ensures that "unsigned long" is not treated as "unsignedlong" */
                 ate_colon_seperator = 1;
               }
             }
             else {
               /* ate_colon_seperator -- everything else is part of the type, use the same logic
-               * as for token_type */
-              if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+               * as for token_type -- note that any prefixed whitespace is ignored.. */
+              if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_variant_ != TOK_WHITESPACE)) {
                 if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
                   if (strcmp("$", tkr_str(tkr_tokens))) {
                     re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a type string may only have a single \"$\" special identifier as a declarator identifier placeholder", tkr_str(tkr_tokens));
@@ -529,7 +543,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
           }
           else if (directive == PCD_COMMON_TYPE_DIRECTIVE) {
             /* Trim simple whitespace off the head end, otherwise simply copy. */
-            if (cc->common_data_type_.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+            if (cc->common_data_type_.num_tokens_ || (tkr_tokens->best_match_variant_ != TOK_WHITESPACE)) {
               if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
                 if (strcmp("$", tkr_str(tkr_tokens))) {
                   re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a type string may only have a single \"$\" special identifier as a declarator identifier placeholder", tkr_str(tkr_tokens));
@@ -554,7 +568,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
                    (directive == PCD_RAII_CONSTRUCTOR_DIRECTIVE) ||
                    (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
                    (directive == PCD_TOKEN_ACTION_DIRECTIVE)) {
-            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_action_ != TOK_WHITESPACE)) {
+            if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_variant_ != TOK_WHITESPACE)) {
               r = snippet_append_tkr(&dir_snippet, tkr_tokens);
               if (r) {
                 r = TKR_INTERNAL_ERROR;

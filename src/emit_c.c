@@ -3705,7 +3705,7 @@ int emit_sym_data_struct(struct indented_printer *ip, struct carburetta_context 
       for (tok_idx = 0; tok_idx < ts->typestr_snippet_.num_tokens_; ++tok_idx) {
         struct snippet_token *st = ts->typestr_snippet_.tokens_ + tok_idx;
         if (st->variant_ != TOK_SPECIAL_IDENT) {
-          ip_printf(ip, "%s%s", tok_idx ? " " : "", st->text_.translated_);
+          ip_printf(ip, "%s", st->text_.translated_);
         }
         else {
           found_placeholder = 1;
