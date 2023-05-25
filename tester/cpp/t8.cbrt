@@ -72,6 +72,7 @@ PAR_CLOSE: \);
 
 %type expr term factor value INTEGER: Value
 %raii_constructor new (&$$) Value();
+%move $$ = std::move($0);
 %destructor $$.~Value();
 
 %type grammar: GrammarObj

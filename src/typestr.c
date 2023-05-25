@@ -69,6 +69,7 @@ static void typestr_init(struct typestr *ts) {
   snippet_init(&ts->typestr_snippet_);
   ts->ordinal_ = 0;
   snippet_init(&ts->constructor_snippet_);
+  snippet_init(&ts->move_snippet_);
   snippet_init(&ts->destructor_snippet_);
   snippet_init(&ts->token_action_snippet_);
 }

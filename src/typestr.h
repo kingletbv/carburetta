@@ -70,6 +70,7 @@ struct typestr {
   int ordinal_;
 
   struct snippet constructor_snippet_;
+  struct snippet move_snippet_;
   struct snippet destructor_snippet_;
   struct snippet token_action_snippet_;
 };
