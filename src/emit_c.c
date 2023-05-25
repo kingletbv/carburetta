@@ -5151,6 +5151,51 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "#include <string.h> /* memcpy() */\n");
   ip_printf(ip, "#include <stddef.h> /* size_t */\n");
   ip_printf(ip, "#include <stdint.h> /* SIZE_MAX */\n");
+  if (cc->have_cpp_classes_) {
+    ip_printf(ip, "#ifndef __cplusplus\n");
+    ip_printf(ip, "#error use of %%class directive requires compilation as C++\n");
+    ip_printf(ip, "#else\n");
+    ip_printf(ip, "#include <type_traits> // std::enable_if<>\n");
+    ip_printf(ip, "#include <new>         // placement new\n");
+    ip_printf(ip, "#endif\n");
+    ip_printf(ip, "\n");
+    ip_printf(ip, "template<typename T>\n"
+                  "typename std::enable_if<!std::is_array<T>::value>::type %sdestroy_at(T *p) {\n", cc_prefix(cc));
+    ip_printf(ip, "  p->~T();\n");
+    ip_printf(ip, "}\n");
+    ip_printf(ip, "template<typename T, size_t num_elms>\n"
+                  "void %sdestroy_at(T (*p)[num_elms]) {\n", cc_prefix(cc));
+    ip_printf(ip, "  for (size_t i = 0; i < num_elms; ++i) {\n");
+    ip_printf(ip, "    %sdestroy_at(&(*p)[i]);\n", cc_prefix(cc));
+    ip_printf(ip, "  }\n");
+    ip_printf(ip, "}\n");
+    ip_printf(ip, "\n");
+
+    ip_printf(ip, "template<typename T>\n"
+                  "typename std::enable_if<!std::is_array<T>::value>::type %sconstruct_at(T *p) {\n", cc_prefix(cc));
+    ip_printf(ip, "  new (p) T();\n");
+    ip_printf(ip, "}\n");
+    ip_printf(ip, "template<typename T, size_t num_elms>\n"
+                  "void %sconstruct_at(T (*p)[num_elms]) {\n", cc_prefix(cc));
+    ip_printf(ip, "  for (size_t i = 0; i < num_elms; ++i) {\n");
+    ip_printf(ip, "    %sconstruct_at(&(*p)[i]);\n", cc_prefix(cc));
+    ip_printf(ip, "  }\n");
+    ip_printf(ip, "}\n");
+    ip_printf(ip, "\n");
+
+    ip_printf(ip, "template<typename T>\n"
+                  "typename std::enable_if<!std::is_array<T>::value>::type %smove_at(T *dst, T *src) {\n", cc_prefix(cc));
+    ip_printf(ip, "  (*dst) = std::move(*src);\n");
+    ip_printf(ip, "}\n");
+    ip_printf(ip, "template<typename T, size_t num_elms>\n"
+                  "void %smove_at(T (*dst)[num_elms], T (*src)[num_elms]) {\n", cc_prefix(cc));
+    ip_printf(ip, "  for (size_t i = 0; i < num_elms; ++i) {\n");
+    ip_printf(ip, "    %smove_at(&(*dst)[i], &(*src)[i]);\n", cc_prefix(cc));
+    ip_printf(ip, "  }\n");
+    ip_printf(ip, "}\n");
+    ip_printf(ip, "\n");
+
+  }
 
   emit_sym_data_struct(ip, cc);
 

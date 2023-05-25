@@ -95,6 +95,7 @@ struct carburetta_context {
   int over_prod_place_;
   struct conflict_resolution *conflict_resolutions_;
   int have_typed_symbols_ :1;
+  int have_cpp_classes_ :1; /* Have C++ classes as types, e.g. %class directive has been used */
   char *h_output_filename_;
   char *c_output_filename_;
   char *include_guard_;

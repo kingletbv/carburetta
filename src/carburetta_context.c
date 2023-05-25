@@ -61,6 +61,7 @@ void carburetta_context_init(struct carburetta_context *cc) {
   cc->over_prod_place_ = -1;
   cc->conflict_resolutions_ = NULL;
   cc->have_typed_symbols_ = 0;
+  cc->have_cpp_classes_ = 0;
   cc->h_output_filename_ = NULL;
   cc->c_output_filename_ = NULL;
   cc->include_guard_ = NULL;

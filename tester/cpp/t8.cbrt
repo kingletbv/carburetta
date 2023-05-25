@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include <new> // placement new
 #include <cstdlib> // atoi
 
 // stub object to keep count of how many 'grammar' nonterminals we have alive.
@@ -70,14 +69,9 @@ PAR_CLOSE: \);
 
 %grammar%
 
-%type expr term factor value INTEGER: Value
-%raii_constructor new (&$$) Value();
-%move $$ = std::move($0);
-%destructor $$.~Value();
+%class expr term factor value INTEGER: Value
 
-%type grammar: GrammarObj
-%raii_constructor new (&$$) GrammarObj();
-%destructor $$.~GrammarObj();
+%class grammar: GrammarObj
 
 %params int &final_result
 

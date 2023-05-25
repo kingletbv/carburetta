@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE /* make vasprintf accessible */
 #ifndef STDIO_H_INCLUDED
 #define STDIO_H_INCLUDED
 #include <stdio.h>
@@ -36,6 +37,11 @@
 #ifndef ASSERT_H_INCLUDED
 #define ASSERT_H_INCLUDED
 #include <assert.h>
+#endif
+
+#ifndef STDARG_H_INCLUDED
+#define STDARG_H_INCLUDED
+#include <stdarg.h>
 #endif
 
 #ifndef REPORT_ERROR_H_INCLUDED
@@ -93,6 +99,63 @@
 #include "parse_input.h"
 #endif
 
+#ifndef EMIT_C_H_INCLUDED
+#define EMIT_C_H_INCLUDED
+#include "emit_c.h"
+#endif
+
+#ifdef _MSC_VER
+static char *memvasprintf(const char *format, va_list args) {
+  char *p = (char *)malloc(_vscprintf(format, args) + 1);
+  vsprintf(p, format, args);
+  return p;
+}
+#else
+char *memvasprintf(const char *format, va_list args) {
+  char *p;
+  vasprintf(&p, format, args);
+  return p;
+}
+#endif
+
+
+static int snippify(struct snippet *snip, const char *text, ...) {
+  va_list args;
+  va_start(args, text);
+
+  char *s = memvasprintf(text, args);
+  if (!s) {
+    va_end(args);
+    return 0;
+  }
+  struct tkr_tokenizer tkr;
+  tok_init_tkr_tokenizer(&tkr);
+  int done = 0;
+  int success = 0;
+  size_t len = strlen(s);
+  while (!done) {
+    switch (tkr_tokenizer_inputs(&tkr, s, len, 1)) {
+    case TKR_SYNTAX_ERROR:
+    case TKR_INTERNAL_ERROR:
+    case TKR_FEED_ME: /* should never TKR_FEED_ME as we pass 1 for is_final above. */
+      done = 1;
+      success = 0;
+      break;
+    case TKR_MATCH:
+      snippet_append_tkr(snip, &tkr);
+      break;
+    case TKR_END_OF_INPUT:
+      done = 1;
+      success = 1;
+      break;
+    }
+  }
+  free(s);
+  tkr_tokenizer_cleanup(&tkr);
+  va_end(args);
+  return success;
+}
+
 static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, struct xlts *directive_line_match, struct carburetta_context *cc) {
   int r;
   int ate_percent = 0;
@@ -114,6 +177,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_TOKEN_DIRECTIVE,
     PCD_TOKEN_TYPE_DIRECTIVE,
     PCD_TYPE_DIRECTIVE,
+    PCD_CLASS_DIRECTIVE,
     PCD_COMMON_TYPE_DIRECTIVE,
     PCD_CONSTRUCTOR_DIRECTIVE,
     PCD_RAII_CONSTRUCTOR_DIRECTIVE,
@@ -180,7 +244,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
           eat_whitespace = 0;
           /* Keep whitespace for all type directives */
         }
-        else if (directive == PCD_TYPE_DIRECTIVE) {
+        else if ((directive == PCD_TYPE_DIRECTIVE) || (directive == PCD_CLASS_DIRECTIVE)) {
           /* Skip whitespace at first, until colon is matched, after
            * which whitespace is kept (ate_colon_seperator is toggled by 
            * directive handler below) */
@@ -225,6 +289,9 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             }
             else if (!strcmp("type", tkr_str(tkr_tokens))) {
               directive = PCD_TYPE_DIRECTIVE;
+            }
+            else if (!strcmp("class", tkr_str(tkr_tokens))) {
+              directive = PCD_CLASS_DIRECTIVE;
             }
             else if (!strcmp("common_type", tkr_str(tkr_tokens))) {
               directive = PCD_COMMON_TYPE_DIRECTIVE;
@@ -467,7 +534,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               }
             }
           }
-          else if (directive == PCD_TYPE_DIRECTIVE) {
+          else if ((directive == PCD_TYPE_DIRECTIVE) || (directive == PCD_CLASS_DIRECTIVE)) {
             if (!ate_colon_seperator) {
               if (tkr_tokens->best_match_action_ != TOK_COLON) {
                 if (tkr_tokens->best_match_action_ == TOK_IDENT) {
@@ -481,7 +548,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
                     size_t n;
                     for (n = 0; n < num_typed_symbols; ++n) {
                       if (sym == typed_symbols[n]) {
-                        re_error_tkr(tkr_tokens, "Error: \"%s\" appears more than once in type directive", tkr_str(tkr_tokens));
+                        re_error_tkr(tkr_tokens, "Error: \"%s\" appears more than once in type or class directive", tkr_str(tkr_tokens));
                         r = TKR_SYNTAX_ERROR;
                         goto cleanup_exit;
                       }
@@ -530,12 +597,12 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_variant_ != TOK_WHITESPACE)) {
                 if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
                   if (strcmp("$", tkr_str(tkr_tokens))) {
-                    re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a type string may only have a single \"$\" special identifier as a declarator identifier placeholder", tkr_str(tkr_tokens));
+                    re_error_tkr(tkr_tokens, "Error: \"%s\" not allowed, a type or class string may only have a single \"$\" special identifier as a declarator identifier placeholder", tkr_str(tkr_tokens));
                     r = TKR_SYNTAX_ERROR;
                     goto cleanup_exit;
                   }
                   if (found_a_placeholder) {
-                    re_error_tkr(tkr_tokens, "Error: a type string may have at most 1 declarator identifier placeholder");
+                    re_error_tkr(tkr_tokens, "Error: a type or class string may have at most 1 declarator identifier placeholder");
                     r = TKR_SYNTAX_ERROR;
                     goto cleanup_exit;
                   }
@@ -807,11 +874,12 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   }
 
   if ((directive == PCD_TYPE_DIRECTIVE) ||
+      (directive == PCD_CLASS_DIRECTIVE) ||
       (directive == PCD_TOKEN_TYPE_DIRECTIVE) ||
       (directive == PCD_COMMON_TYPE_DIRECTIVE)) {
     /* Trim all whitespace off, pop any "$$" special identifiers at the tail end */
     struct snippet *snip;
-    if (directive == PCD_TYPE_DIRECTIVE) {
+    if ((directive == PCD_TYPE_DIRECTIVE) || (directive == PCD_CLASS_DIRECTIVE)) {
       snip = &dir_snippet;
     }
     else if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
@@ -843,7 +911,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     }
   }
 
-  if (directive == PCD_TYPE_DIRECTIVE) {
+  if ((directive == PCD_TYPE_DIRECTIVE) || (directive == PCD_CLASS_DIRECTIVE)) {
     size_t n;
     struct typestr *nt_ts = typestr_add(&cc->tstab_, &dir_snippet);
     if (!nt_ts) {
@@ -860,6 +928,20 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     }
     cc->have_typed_symbols_ = 1;
     nt_ts->is_symbol_type_ = 1;
+    if (directive == PCD_CLASS_DIRECTIVE) {
+      cc->have_cpp_classes_ = 1; /* compile in support for %class implicitly generated code. */
+
+      nt_ts->is_raii_constructor_ = 1;
+      snippet_clear(&nt_ts->constructor_snippet_);
+      snippet_clear(&nt_ts->move_snippet_);
+      snippet_cleanup(&nt_ts->destructor_snippet_);
+      if (!snippify(&nt_ts->constructor_snippet_, "%sconstruct_at(&$$);", cc_prefix(cc)) ||
+          !snippify(&nt_ts->move_snippet_, "%smove_at(&$$, &$0);", cc_prefix(cc)) ||
+          !snippify(&nt_ts->destructor_snippet_, "%sdestroy_at(&$$);", cc_prefix(cc))) {
+        r = TKR_INTERNAL_ERROR;
+        goto cleanup_exit;
+      }
+    }
   }
 
   if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
