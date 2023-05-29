@@ -2971,8 +2971,30 @@ void emit_feed_me(struct indented_printer *ip, struct carburetta_context *cc) {
   }
 }
 
+static int check_have_sym_types(struct carburetta_context *cc) {
+  size_t ts_idx;
+  for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+    struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+    struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+    size_t n;
+    int have_some = 0;
+    for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+      struct symbol *sym = the_syms[n];
+      if (sym) {
+        do {
+          if (sym->assigned_type_ == ts) {
+            return 1;
+          }
+          sym = sym->next_;
+        } while (sym != the_syms[n]);
+      }
+    }
+  }
+  return 0;
+}
 
-static void emit_push_state(struct indented_printer *ip, struct carburetta_context *cc, struct lr_generator *lalr, int *state_syms, const char *action) {
+
+static void emit_push_state(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms, const char *action) {
   ip_printf(ip, "  if (stack->num_stack_allocated_ == stack->pos_) {\n"
                 "    size_t new_num_allocated;\n"
                 "    if (stack->num_stack_allocated_) {\n"
@@ -3011,6 +3033,7 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
       if (have_any_cases) break;
     }
   }
+  int have_sym_types = check_have_sym_types(cc);
   int need_a_for = have_any_cases;
   if (!need_a_for && cc->common_data_assigned_type_) {
     if (cc->common_data_assigned_type_->constructor_snippet_.num_tokens_ ||
@@ -3039,6 +3062,130 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
     ip_printf(ip, "      stack->new_buf_[stack->new_buf_sym_partial_pos_].state_ = stack->stack_[stack->new_buf_sym_partial_pos_].state_;\n");
     ip_printf(ip, "      stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;\n");
     ip_printf(ip, "      stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 1;\n");
+
+    ip_printf(ip, "      if ((stack->new_buf_sym_partial_pos_ == 0) || (stack->new_buf_sym_partial_pos_ == 1)) {\n");
+    if (cc->common_data_assigned_type_) ip_printf(ip, "        int need_common_move = 0;\n");
+    if (have_sym_types) ip_printf(ip, "        int need_sym_move;\n");
+    if (have_sym_types) ip_printf(ip, "        int sym_to_move;\n");
+    if (have_sym_types) ip_printf(ip, "        sym_to_move = 0; /* silence a waring with this explicit initialization */\n"
+                                      "        need_sym_move = 0;\n");
+    
+    ip_printf(ip, "        if (stack->new_buf_sym_partial_pos_ == 0) {\n");
+    if (prdg->num_patterns_) {
+      ip_printf(ip, "      /* slot 0 is used for pattern matching; stack->current_sym_ describes its\n"
+                    "       * contents, not stack->stack_[0].state_ */\n");
+      if (cc->common_data_assigned_type_) ip_printf(ip, "          need_common_move = stack->slot_0_has_common_data_;\n");
+      if (have_sym_types) ip_printf(ip, "          need_sym_move = stack->slot_0_has_current_sym_data_;\n");
+      if (have_sym_types) ip_printf(ip, "          sym_to_move = stack->current_sym_;\n");
+    }
+    else {
+      ip_printf(ip, "      /* slot 0 goes unused in scannerless operation */\n");
+      if (cc->common_data_assigned_type_) ip_printf(ip, "      need_common_move = 0;\n");
+      if (have_sym_types) ip_printf(ip, "      need_sym_move = 0;\n");
+    }
+    ip_printf(ip, "      }\n"
+                  "      else if (stack->new_buf_sym_partial_pos_ == 1) {\n");
+    if (cc->common_data_assigned_type_) ip_printf(ip, "          need_common_move = stack->slot_1_has_common_data_;\n");
+    if (have_sym_types) ip_printf(ip, "          need_sym_move = stack->slot_1_has_sym_data_;\n");
+    if (have_sym_types) ip_printf(ip, "          sym_to_move = stack->slot_1_sym_;\n");
+    ip_printf(ip, "      }\n");
+
+    if (cc->common_data_assigned_type_) {
+      ip_printf(ip, "        if (need_common_move) {\n");
+      if (!cc->common_data_assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "          stack->newbuf_pos_has_common_data_ = 1;\n");
+      }
+      if (cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+        emit_common_newbuf_constructor_snippet_indexed_by_nbspp(ip, cc, cc->common_data_assigned_type_->is_raii_constructor_);
+      }
+      else if (cc->common_data_assigned_type_->move_snippet_.num_tokens_) {
+        /* clear to 0 if a move is defined */
+        ip_printf(ip, "      memset(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, 0, sizeof(stack->stack->common_));\n");
+      }
+      if (cc->common_data_assigned_type_->is_raii_constructor_) {
+        ip_printf(ip, "          stack->newbuf_pos_has_common_data_ = 1;\n");
+      }
+
+      if (cc->common_data_assigned_type_->move_snippet_.num_tokens_) {
+        emit_common_move_snippet_indexed_by_nbspp(ip, cc);
+      }
+      else {
+        ip_printf(ip, "      memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, &stack->stack_[stack->new_buf_sym_partial_pos_].common_, sizeof(stack->stack_->common_));\n");
+      }
+      if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+        emit_common_destructor_snippet_indexed_by_nbspp(ip, cc);
+      }
+      ip_printf(ip, "        }\n");
+    }
+    if (have_sym_types) {
+      ip_printf(ip, "        if (need_sym_move) {\n");
+      ip_printf(ip, "          switch (sym_to_move) {\n");
+
+      size_t ts_idx;
+      for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+        struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+        size_t n;
+        int have_some = 0;
+        for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+          struct symbol *sym = the_syms[n];
+          if (sym) {
+            do {
+              if (sym->assigned_type_ == ts) {
+                have_some = 1;
+                ip_printf(ip, "      case ");
+                print_sym_as_c_ident(ip, cc, sym);
+                ip_printf(ip, ":\n");
+              }
+              sym = sym->next_;
+            } while (sym != the_syms[n]);
+          }
+        }
+        if (have_some) {
+          /* Move from stack_ to newbuf_. */
+          if (!ts->is_raii_constructor_) {
+            ip_printf(ip, "      stack->newbuf_pos_has_sym_data_ = 1;\n");
+          }
+
+          if (ts->constructor_snippet_.num_tokens_) {
+            if (emit_newbuf_constructor_snippet_newbuf_indexed_by_nbspp(ip, cc, ts, ts->is_raii_constructor_)) {
+              ip->had_error_ = 1;
+              return;
+            }
+          }
+          else if (ts->move_snippet_.num_tokens_) {
+            /* clear to 0 if a move is defined. */
+            ip_printf(ip, "      memset(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, 0, sizeof(stack->stack->v_));\n");
+          }
+          if (ts->is_raii_constructor_) {
+            ip_printf(ip, "      stack->newbuf_pos_has_sym_data_ = 1;\n");
+          }
+
+          if (ts->move_snippet_.num_tokens_) {
+            if (emit_move_snippet_newbuf_indexed_by_nbspp(ip, cc, ts)) {
+              ip->had_error_ = 1;
+              return;
+            }
+          }
+          else {
+            ip_printf(ip, "    memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));\n");
+          }
+
+          if (ts->destructor_snippet_.num_tokens_) {
+            if (emit_destructor_snippet_indexed_by_nbspp(ip, cc, ts)) {
+              ip->had_error_ = 1;
+              return;
+            }
+            ip_printf(ip, "\n    break;\n");
+          }
+        }
+      }
+
+      ip_printf(ip, "          }\n");
+      ip_printf(ip, "        }\n");
+    }
+    ip_printf(ip, "      }\n");
+    ip_printf(ip, "      else /* not 0 or 1, but >= 2 state derived sym */ {\n");
     if (cc->common_data_assigned_type_) {
       if (!cc->common_data_assigned_type_->is_raii_constructor_) {
         ip_printf(ip, "          stack->newbuf_pos_has_common_data_ = 1;\n");
@@ -3124,7 +3271,8 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
       }
       ip_printf(ip, "      } /* switch */\n");
     }
-    ip_printf(ip, "    };\n");
+    ip_printf(ip, "    }\n");
+    ip_printf(ip, "    }\n");
     ip_printf(ip, "    if (stack->stack_) free(stack->stack_);\n");
     ip_printf(ip, "    stack->stack_ = stack->new_buf_;\n");
     ip_printf(ip, "    stack->new_buf_sym_partial_pos_ = 0;\n");
@@ -3133,6 +3281,8 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
   ip_printf(ip, "    stack->num_stack_allocated_ = stack->new_buf_num_allocated_;\n"
                 "  }\n"
                 "  stack->stack_[stack->pos_++].state_ = %s;\n", action);
+  ip_printf(ip, "  stack->top_of_stack_has_sym_data_ = 0;\n");
+  ip_printf(ip, "  stack->top_of_stack_has_common_data_ = 0;\n");
 }
 
 static void emit_stack_static_slots_init(struct indented_printer *ip, struct carburetta_context *cc) {
@@ -3363,7 +3513,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 "        action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   /* Shift logic */
   ip_printf(ip, "        if (action > 0) {\n");
-  emit_push_state(ip, cc, lalr, state_syms, "action");
+  emit_push_state(ip, cc, prdg, lalr, state_syms, "action");
   ip_printf(ip, "\n"
                 "          /* Fill in the sym from the tokenizer */\n");
   ip_printf(ip, "          stack->need_sym_ = 1;\n");
@@ -3643,13 +3793,13 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     ip_printf(ip, "        } /* for */\n");
   }
   ip_printf(ip, "          stack->pos_ -= stack->current_production_length_;\n"
+                "          stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 1;\n"
                 "          action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (stack->current_production_nonterminal_ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "          if (action <= 0) {\n");
   emit_internal_error(ip, cc);
   ip_printf(ip, "          }\n");
 
-  emit_push_state(ip, cc, lalr, state_syms, "action /* action for a \"goto\" shift is the ordinal */");
-  ip_printf(ip, "          stack->stack_[stack->pos_ - 1].state_ = action;\n");
+  emit_push_state(ip, cc, prdg, lalr, state_syms, "action /* action for a \"goto\" shift is the ordinal */");
 
   if (cc->common_data_assigned_type_) {
     if (!cc->common_data_assigned_type_->is_raii_constructor_) {
@@ -3943,8 +4093,10 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
     ip_printf(ip, "                } /* for */\n");
   }
-  ip_printf(ip, "                stack->pos_ = n + 1;\n");
-  emit_push_state(ip, cc, lalr, state_syms, "err_action");
+  ip_printf(ip, "                stack->pos_ = n + 1;\n"
+                "                stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 1;\n");
+
+  emit_push_state(ip, cc, prdg, lalr, state_syms, "err_action");
   ip_printf(ip, "                stack->error_recovery_ = 0;\n");
   ip_printf(ip, "                /* Break out of do { .. } while loop, we've recovered */\n"
                 "                break;\n");
@@ -4072,7 +4224,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
 
   /* Shift logic */
   ip_printf(ip, "      if (action > 0) {\n");
-  emit_push_state(ip, cc, lalr, state_syms, "action");
+  emit_push_state(ip, cc, prdg, lalr, state_syms, "action");
 
   ip_printf(ip, "\n");
   int need_sym_data = 0;
@@ -4320,13 +4472,14 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   }
  
   ip_printf(ip, "        stack->pos_ -= stack->current_production_length_;\n"
+                "        stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 1;\n"
                 "        action = %sparse_table[%snum_columns * stack->stack_[stack->pos_ - 1].state_ + (stack->current_production_nonterminal_ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "        if (action <= 0) {\n"
                 "          ");
   emit_internal_error(ip, cc);
   ip_printf(ip, "        }\n");
 
-  emit_push_state(ip, cc, lalr, state_syms, "action /* action for a \"goto\" shift is the ordinal */");
+  emit_push_state(ip, cc, prdg, lalr, state_syms, "action /* action for a \"goto\" shift is the ordinal */");
 
   ip_printf(ip, "        struct %ssym_data *sd = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
   ip_printf(ip, "        memcpy(sd, stack->stack_+1, sizeof(*sd));\n");
@@ -4441,10 +4594,11 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
     /* Enumerate all states, for each state, determine the type corresponding to the state from the symbol corresponding to the state. */
     ip_printf(ip, "                } /* for */\n");
   }
-  ip_printf(ip, "                stack->pos_ = n + 1;\n");
+  ip_printf(ip, "                stack->pos_ = n + 1;\n"
+                "                stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 1;\n");
 
   ip_printf(ip, "              /* Push the state of the error transition */\n");
-  emit_push_state(ip, cc, lalr, state_syms, "err_action");
+  emit_push_state(ip, cc, prdg, lalr, state_syms, "err_action");
 
   ip_printf(ip, "              stack->error_recovery_ = 0;\n");
   ip_printf(ip, "              /* Break out of do { .. } while loop, we've recovered */\n"
@@ -4969,33 +5123,113 @@ static int emit_stack_deconstruction(struct indented_printer *ip, struct carbure
     
     ip_printf(ip, "  for (; n < stack->pos_; ++n) {\n");
     if (have_common_destructor) ip_printf(ip, "    int need_common_deconstruct = 0;\n");
-    if (have_state_cases) ip_printf(ip, "    int need_sym_deconstruct = 0;\n");
+    if (have_state_cases) ip_printf(ip, "    int need_state_deconstruct = 0;\n");
+    ip_printf(ip, "    if ((n == 0) || (n == 1)) {\n");
+    int have_sym_destructors = check_have_sym_types(cc);
+    if (have_sym_destructors) {
+      ip_printf(ip, "      int need_sym_deconstruct = 0;\n");
+      ip_printf(ip, "      int sym_to_deconstruct;\n");
+    }
+    if (have_state_cases) ip_printf(ip, "      need_state_deconstruct = 0;\n");
     ip_printf(ip, "    if (n == 0) {\n");
     if (prdg->num_patterns_) {
+      ip_printf(ip, "      /* slot 0 is used for pattern matching; stack->current_sym_ describes its\n"
+                    "       * contents, not stack->stack_[0].state_ */\n");
+      if (have_sym_destructors) ip_printf(ip, "      sym_to_deconstruct = stack->current_sym_;\n");
+      if (have_sym_destructors) ip_printf(ip, "      need_sym_deconstruct = stack->slot_0_has_current_sym_data_;\n");
       if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = stack->slot_0_has_common_data_;\n");
-      if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = stack->slot_0_has_current_sym_data_;\n");
     }
     else {
       ip_printf(ip, "      /* slot 0 goes unused in scannerless operation */\n");
       if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = 0;\n");
-      if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = 0;\n");
+      if (have_sym_destructors) ip_printf(ip, "      need_sym_deconstruct = 0;\n");
     }
-    ip_printf(ip, "    } else if (n == 1) {\n");
+    ip_printf(ip, "    }\n"
+                  "    else if (n == 1) {\n");
+    if (have_sym_destructors) {
+      ip_printf(ip, "      sym_to_deconstruct = stack->slot_1_sym_;\n");
+      ip_printf(ip, "      need_sym_deconstruct = stack->slot_1_has_sym_data_;\n");
+    }
     if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = stack->slot_1_has_common_data_;\n");
-    if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = stack->slot_1_has_sym_data_;\n");
-    ip_printf(ip, "    } else if (n == (stack->pos_ - 1)) {\n");
-    if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = stack->top_of_stack_has_common_data_;\n");
-    if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = stack->top_of_stack_has_sym_data_;\n");
-    ip_printf(ip, "    } else if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {\n");
+    ip_printf(ip, "    }\n");
+    if (have_sym_destructors || have_common_destructor) {
+      ip_printf(ip, "      if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {\n");
+      if (have_sym_destructors) {
+        ip_printf(ip, "        need_sym_deconstruct = need_sym_deconstruct && stack->stack_newbuf_pos_has_sym_data_;\n");
+      }
+      if (have_common_destructor) {
+        ip_printf(ip, "        need_common_deconstruct = need_common_deconstruct && stack->stack_newbuf_pos_has_common_data_;\n");
+      }
+      ip_printf(ip, "      }\n");
+    }
+
+    if (have_sym_destructors) {
+      ip_printf(ip, "    if (need_sym_deconstruct) {\n");
+      ip_printf(ip, "      switch (sym_to_deconstruct) {\n");
+      size_t ts_idx;
+      for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+        struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+        size_t n;
+        int have_some = 0;
+        for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+          struct symbol *sym = the_syms[n];
+          if (sym) {
+            do {
+              if (sym->assigned_type_ == ts) {
+                have_some = 1;
+                ip_printf(ip, "      case ");
+                print_sym_as_c_ident(ip, cc, sym);
+                ip_printf(ip, ":\n");
+              }
+              sym = sym->next_;
+            } while (sym != the_syms[n]);
+          }
+        }
+        if (have_some) {
+          /* Execute destructor snippet at stack_[0] or stack_[1]. */
+          ip_printf(ip, "    {\n      ");
+          if (emit_destructor_snippet_indexed_by_n(ip, cc, ts)) {
+            ip->had_error_ = 1;
+            return -1;
+          }
+          /* Close this compound block  */
+          ip_printf(ip, "\n    }\n    break;\n");
+        }
+      }
+      ip_printf(ip, "      }\n");
+      ip_printf(ip, "    }\n");
+    }
+    ip_printf(ip, "    }\n"
+                  "    else if (n == (stack->pos_ - 1)) {\n");
+    if (have_common_destructor) {
+      ip_printf(ip, "      need_common_deconstruct = stack->top_of_stack_has_common_data_;\n");
+    }
+    if (have_state_cases) {
+      ip_printf(ip, "      need_state_deconstruct = stack->top_of_stack_has_sym_data_;\n");
+    }
+    if (have_common_destructor || have_state_cases) {
+      ip_printf(ip, "      if (n == stack->new_buf_sym_partial_pos_) {\n");
+      if (have_common_destructor) {
+        ip_printf(ip, "      need_common_deconstruct = need_common_deconstruct && stack->stack_newbuf_pos_has_common_data_;\n");
+      }
+      if (have_state_cases) {
+        ip_printf(ip, "      need_state_deconstruct = need_state_deconstruct && stack->stack_newbuf_pos_has_sym_data_;\n");
+      }
+      ip_printf(ip, "      }\n");
+    }
+    ip_printf(ip, "    }\n"
+                  "    else if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {\n");
     if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = stack->stack_newbuf_pos_has_common_data_;\n");
-    if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = stack->stack_newbuf_pos_has_sym_data_;\n");
-    ip_printf(ip, "    } else {\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_deconstruct = stack->stack_newbuf_pos_has_sym_data_;\n");
+    ip_printf(ip, "    }\n"
+                  "    else {\n");
     if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = 1;\n");
-    if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = 1;\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_deconstruct = 1;\n");
     ip_printf(ip, "    }\n");
 
     if (have_state_cases) {
-      ip_printf(ip, "    if (need_sym_deconstruct) {\n");
+      ip_printf(ip, "    if (need_state_deconstruct) {\n");
       ip_printf(ip, "    switch (stack->stack_[n].state_) {\n");
       for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
         struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
@@ -5043,41 +5277,111 @@ static int emit_stack_deconstruction(struct indented_printer *ip, struct carbure
                   "     * exists for a brief period time when we resize stack->stack_, however, because\n"
                   "     * constructors and moves are allowed to throw, or otherwise return and fail, it is\n"
                   "     * required that we deconstruct the stack->new_buf_ elements cleanly. */\n");
-
-    ip_printf(ip, "  if (!stack->new_buf_) n = 0;\n");
-    ip_printf(ip, "  else {\n");
-    ip_printf(ip, "    n = stack->new_buf_sym_partial_pos_;\n");
-    ip_printf(ip, "  }\n");
-    
     ip_printf(ip, "  for (n = 0; n <= stack->new_buf_sym_partial_pos_; ++n) {\n");
     if (have_common_destructor) ip_printf(ip, "    int need_common_deconstruct = 0;\n");
-    if (have_state_cases) ip_printf(ip, "    int need_sym_deconstruct = 0;\n");
-    ip_printf(ip, "    if (n == 0) {\n");
+    if (have_state_cases) ip_printf(ip, "    int need_state_deconstruct = 0;\n");
+
+    ip_printf(ip, "    if ((n == 0) || (n == 1)) {\n");
+    if (have_sym_destructors) {
+      ip_printf(ip, "      int need_sym_deconstruct = 0;\n");
+      ip_printf(ip, "      int sym_to_deconstruct;\n");
+    }
+    if (have_state_cases) ip_printf(ip, "      need_state_deconstruct = 0;\n");
+    ip_printf(ip, "      if (n == 0) {\n");
     if (prdg->num_patterns_) {
+      if (have_sym_destructors) ip_printf(ip, "        sym_to_deconstruct = stack->current_sym_;\n");
+      ip_printf(ip, "        /* slot 0 is used for pattern matching; stack->current_sym_ describes its\n"
+                    "         * contents, not stack->stack_[0].state_ */\n");
+      if (have_sym_destructors) ip_printf(ip, "      need_sym_deconstruct = stack->slot_0_has_current_sym_data_;\n");
       if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = stack->slot_0_has_common_data_;\n");
-      if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = stack->slot_0_has_current_sym_data_;\n");
-    }
-    else {
-      ip_printf(ip, "      /* slot 0 goes unused in scannerless operation */\n");
+    }else {
+      ip_printf(ip, "        /* slot 0 goes unused in scannerless operation */\n");
       if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = 0;\n");
-      if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = 0;\n");
+      if (have_sym_destructors) ip_printf(ip, "      need_sym_deconstruct = 0;\n");
     }
-    ip_printf(ip, "    } else if (n == 1) {\n");
+    ip_printf(ip, "      }\n");
+    ip_printf(ip, "      else if (n == 1) {\n");
+    if (have_sym_destructors) {
+      ip_printf(ip, "      sym_to_deconstruct = stack->slot_1_sym_;\n");
+      ip_printf(ip, "      need_sym_deconstruct = stack->slot_1_has_sym_data_;\n");
+    }
     if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = stack->slot_1_has_common_data_;\n");
-    if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = stack->slot_1_has_sym_data_;\n");
-    ip_printf(ip, "    } else if (n == (stack->pos_ - 1)) {\n");
+    ip_printf(ip, "      }\n");
+    if (have_sym_destructors || have_common_destructor) {
+      ip_printf(ip, "      if (n == stack->new_buf_sym_partial_pos_) {\n");
+      if (have_sym_destructors) {
+        ip_printf(ip, "        need_sym_deconstruct = need_sym_deconstruct && stack->newbuf_pos_has_sym_data_;\n");
+      }
+      if (have_common_destructor) {
+        ip_printf(ip, "        need_common_deconstruct = need_common_deconstruct && stack->newbuf_pos_has_common_data_;\n");
+      }
+      ip_printf(ip, "      }\n");
+    }
+    if (have_sym_destructors) {
+      ip_printf(ip, "        if (need_sym_deconstruct) {\n");
+      ip_printf(ip, "          switch (sym_to_deconstruct) {\n");
+      size_t ts_idx;
+      for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+        struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+        size_t n;
+        int have_some = 0;
+        for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+          struct symbol *sym = the_syms[n];
+          if (sym) {
+            do {
+              if (sym->assigned_type_ == ts) {
+                have_some = 1;
+                ip_printf(ip, "      case ");
+                print_sym_as_c_ident(ip, cc, sym);
+                ip_printf(ip, ":\n");
+              }
+              sym = sym->next_;
+            } while (sym != the_syms[n]);
+          }
+        }
+        if (have_some) {
+          /* Execute destructor snippet at stack_[0] or stack_[1]. */
+          ip_printf(ip, "    {\n      ");
+          if (emit_newbuf_destructor_snippet_indexed_by_n(ip, cc, ts)) {
+            ip->had_error_ = 1;
+            return -1;
+          }
+          /* Close this compound block  */
+          ip_printf(ip, "\n    }\n    break;\n");
+        }
+      }
+      ip_printf(ip, "      }\n");
+      ip_printf(ip, "    }\n");
+    }
+    ip_printf(ip, "    }\n"
+                  "    else if (n == (stack->pos_ - 1)) {\n");
     if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = stack->top_of_stack_has_common_data_;\n");
-    if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = stack->top_of_stack_has_sym_data_;\n");
-    ip_printf(ip, "    } else if (n == stack->new_buf_sym_partial_pos_) {\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_deconstruct = stack->top_of_stack_has_sym_data_;\n");
+
+    if (have_common_destructor || have_state_cases) {
+      ip_printf(ip, "      if (n == stack->new_buf_sym_partial_pos_) {\n");
+      if (have_common_destructor) {
+        ip_printf(ip, "      need_common_deconstruct = need_common_deconstruct && stack->newbuf_pos_has_common_data_;\n");
+      }
+      if (have_state_cases) {
+        ip_printf(ip, "      need_state_deconstruct = need_state_deconstruct && stack->newbuf_pos_has_sym_data_;\n");
+      }
+      ip_printf(ip, "      }\n");
+    }
+
+    ip_printf(ip, "    }\n"
+                  "    else if (n == stack->new_buf_sym_partial_pos_) {\n");
     if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = stack->newbuf_pos_has_common_data_;\n");
-    if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = stack->newbuf_pos_has_sym_data_;\n");
-    ip_printf(ip, "    } else {\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_deconstruct = stack->newbuf_pos_has_sym_data_;\n");
+    ip_printf(ip, "    }\n"
+                  "    else {\n");
     if (have_common_destructor) ip_printf(ip, "      need_common_deconstruct = 1;\n");
-    if (have_state_cases) ip_printf(ip, "      need_sym_deconstruct = 1;\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_deconstruct = 1;\n");
     ip_printf(ip, "    }\n");
 
     if (have_state_cases) {
-      ip_printf(ip, "    if (need_sym_deconstruct) {\n");
+      ip_printf(ip, "    if (need_state_deconstruct) {\n");
       ip_printf(ip, "    switch (stack->stack_[n].state_) {\n");
       for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
         struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
@@ -5119,7 +5423,8 @@ static int emit_stack_deconstruction(struct indented_printer *ip, struct carbure
                     "    }\n");
     }
     ip_printf(ip, "  }\n");
-
+    ip_printf(ip, "    free(stack->new_buf_);\n");
+    ip_printf(ip, "    stack->new_buf_ = NULL;\n");
     ip_printf(ip, "  }\n");
 
   }
