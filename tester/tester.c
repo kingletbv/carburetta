@@ -10,7 +10,8 @@ xx(t4, "Dot Anychar UTF-8") \
 xx(t5, "Overlapping unicode UTF-8 ranges") \
 xx(t6, "Character set unicode category \\p{}") \
 xx(t7, "Character set unicode category inversion \\P{}") \
-xx(t8, "C++ calculator test")
+xx(t8, "C++ calculator test") \
+xx(t9, "C++ tracing failing constructor cleanup test")
 
 #define xx(id, desc) int id(void);
 enum_tests
