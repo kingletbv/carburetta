@@ -13,27 +13,21 @@
  * limitations under the License.
  */
 
-// t9 - C++ tracing failing constructor cleanup test
+// t11 - C++ tracing constructor test carrying data
 //
-// We parse a simple expression grammar, and count the number of live Value objects.
-// As we parse the input, we count the number of times (full_construct_count) that 
-// the constructor for Value is invoked.
-// We then run it with a watermark ranging from 0 to full_construct_count and have
-// the constructor throw an exception at the watermark. When we _reset() the parser 
-// after catching the exception, we expect the number of live Value objects to be
-// exactly 0.
-// This makes for a fairly rigorous test of the parser's ability to clean up after
-// itself.
+// This is like t9, however, the expression has to carry and preserve data on the stack
+// while it resizes (whereas with t9 the syms on the stack are parentheses where the
+// data does not influence the result.)
 
 #include <stdio.h>  // fprintf, stderr
 #include <stdint.h> // SIZE_MAX
 #include <cstdlib> // atoi
 #include <exception> // std::exception
 
-namespace nt9 {
+namespace nt11 {
 
 class WatermarkException : public std::exception {
-public:
+  public:
   const char *what() const noexcept override {
     return "Watermark exceeded";
   }
@@ -41,7 +35,7 @@ public:
 
 // stub object to keep count of how many 'grammar' nonterminals we have alive.
 class GrammarObj {
-public:
+  public:
   static size_t open_grammar_count_;
   GrammarObj() { open_grammar_count_++; }
   ~GrammarObj() { open_grammar_count_--; }
@@ -74,17 +68,14 @@ class CountedValue {
 
 // Value object for all valued nonterminals and the INTEGER terminal.
 class Value : public CountedValue {
-public:
+  public:
   int value_ = 0;
-  Value() : Value(0) {
-  }
+  Value() : Value(0) {}
   Value(const Value &v) {
     value_ = v.value();
   }
-  Value(int val) : value_(val) {
-  }
-  ~Value() {
-  }
+  Value(int val) : value_(val) {}
+  ~Value() {}
   int value() const { return value_; }
   void set_value(int value) { value_ = value; }
   Value operator+(const Value &r) const { return Value(value() + r.value()); }
@@ -116,19 +107,19 @@ size_t CountedValue::move_watermark_count_ = SIZE_MAX;
 size_t GrammarObj::open_grammar_count_ = 0;
 }
 
-using namespace nt9;
+using namespace nt11;
 
 %scanner%
-%prefix t9_
+%prefix t11_
 
-INTEGER: [0-9]+ { $$ = Value(atoi($text)); }
+INTEGER: [0-9] + { $$ = Value(atoi($text)); }
 
-: [\ \n]+; /* skip spaces and newlines */
-PLUS: \+; 
+: [\ \n] +; /* skip spaces and newlines */
+PLUS: \+;
 MINUS: \-;
-ASTERISK: \*;
-SLASH: /; 
-PAR_OPEN: \(; 
+ASTERISK: \ *;
+SLASH: /;
+PAR_OPEN: \(;
 PAR_CLOSE: \);
 
 %token PLUS MINUS ASTERISK SLASH PAR_OPEN PAR_CLOSE INTEGER
@@ -143,50 +134,68 @@ PAR_CLOSE: \);
 //       managed as the stack grows.
 %class expr term factor value PAR_OPEN PAR_CLOSE INTEGER: Value
 
-%class grammar: GrammarObj
+%class grammar : GrammarObj
 
 %params int &final_result
 
-grammar: expr {
+grammar: expr{
   final_result = $0.value();
 }
 
-expr: term                      { $$ = $0; }
-expr: expr PLUS term            { $$ = $0 + $2; }
-expr: expr MINUS term           { $$ = $0 - $2; }
-  
-term: factor                    { $$ = $0; }
-term: term ASTERISK factor      { $$ = $0 * $2; }
-term: term SLASH factor         { $$ = $0 / $2; }
-  
-factor: value                   { $$ = $0; }
-factor: MINUS factor            { $$ = -$1; }
-factor: PAR_OPEN expr PAR_CLOSE { $$ = $1; }
+expr: term{ $$ = $0; }
+expr: expr PLUS term{ $$ = $0 + $2; }
+expr: expr MINUS term{ $$ = $0 - $2; }
 
-value: INTEGER                  { $$ = $0; }
+term: factor{ $$ = $0; }
+term: term ASTERISK factor{ $$ = $0 * $2; }
+term: term SLASH factor{ $$ = $0 / $2; }
+
+factor: value{ $$ = $0; }
+factor: MINUS factor{ $$ = -$1; }
+factor: PAR_OPEN expr PAR_CLOSE{ $$ = $1; }
+
+value: INTEGER{ $$ = $0; }
 
 %%
 
-extern "C" int t9() {
+extern "C" int t11() {
   int rv = -1;
   int r;
 
-  const char sum[] = "((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1+2*-3"
-                     "))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))";
+  const char sum[] = "1 + (2 + (3 + (4 + (5 + (6 + (7 + (8 + (9 + "
+                     "(10 + (11 + (12 + (13 + (14 + (15 + (16 + (17 + (18 + (19 + "
+                     "(20 + (21 + (22 + (23 + (24 + (25 + (26 + (27 + (28 + (29 + "
+                     "(30 + (31 + (32 + (33 + (34 + (35 + (36 + (37 + (38 + (39 + "
+                     "(40 + (41 + (42 + (43 + (44 + (45 + (46 + (47 + (48 + (49 + "
+                     "(50 + (51 + (52 + (53 + (54 + (55 + (56 + (57 + (58 + (59 + "
+                     "(60 + (61 + (62 + (63 + (64 + (65 + (66 + (67 + (68 + (69 + "
+                     "(70 + (71 + (72 + (73 + (74 + (75 + (76 + (77 + (78 + (79 + "
+                     "(80 + (81 + (82 + (83 + (84 + (85 + (86 + (87 + (88 + (89 + "
+                     "(90 + (91 + (92 + (93 + (94 + (95 + (96 + (97 + (98 + (99 + 100"
+                     "))))))))))"
+                     "))))))))))"
+                     "))))))))))"
+                     "))))))))))"
+                     "))))))))))"
+                     "))))))))))"
+                     "))))))))))"
+                     "))))))))))"
+                     "))))))))))"
+                     "))))))))";
 
-  struct t9_stack stack;
-  t9_stack_init(&stack);
+  struct t11_stack stack;
+  t11_stack_init(&stack);
 
-
-  t9_set_input(&stack, sum, sizeof(sum) - 1, 1);
+  t11_set_input(&stack, sum, sizeof(sum) - 1, 1);
   int final_result = 0;
-  r = t9_scan(&stack, final_result);
-  if (r != _T9_FINISH) {
+  r = t11_scan(&stack, final_result);
+  if (r != _T11_FINISH) {
     rv = -1;
     goto fail;
   }
 
-  if (final_result != -5) {
+  // (n/2)(first term + last term) ; (100/2) * (1 + 100) == 5050
+  if (final_result != 5050) {
     rv = -2;
     goto fail;
   }
@@ -202,7 +211,7 @@ extern "C" int t9() {
     goto fail;
   }
 
-  t9_stack_reset(&stack);
+  t11_stack_reset(&stack);
 
   size_t full_construct_count;
   full_construct_count = Value::total_construct_count_;
@@ -210,26 +219,26 @@ extern "C" int t9() {
   // size_t full_move_count;
   // full_move_count = Value::total_move_count_;
 
-  nt9::g_check_enabled_ = true;
+  nt11::g_check_enabled_ = true;
 
-  for (nt9::CountedValue::construct_watermark_count_ = 1;
-       nt9::CountedValue::construct_watermark_count_ < full_construct_count;
-       nt9::CountedValue::construct_watermark_count_++) {
-    nt9::CountedValue::total_construct_count_ = 0;
-    nt9::CountedValue::total_move_count_ = 0;
-    t9_set_input(&stack, sum, sizeof(sum) - 1, 1);
+  for (nt11::CountedValue::construct_watermark_count_ = 1;
+    nt11::CountedValue::construct_watermark_count_ < full_construct_count;
+    nt11::CountedValue::construct_watermark_count_++) {
+    nt11::CountedValue::total_construct_count_ = 0;
+    nt11::CountedValue::total_move_count_ = 0;
+    t11_set_input(&stack, sum, sizeof(sum) - 1, 1);
     try {
-      r = t9_scan(&stack, final_result);
+      r = t11_scan(&stack, final_result);
     }
     catch (const WatermarkException &) {
-      if (nt9::CountedValue::open_value_count_ == 0) {
+      if (nt11::CountedValue::open_value_count_ == 0) {
         rv = -5;
         goto fail;
       }
-      t9_stack_reset(&stack);
-      if (nt9::CountedValue::open_value_count_ != 0) {
+      t11_stack_reset(&stack);
+      if (nt11::CountedValue::open_value_count_ != 0) {
         // Missed cleanups of Value objects.
-        fprintf(stderr, "Missed cleanups of %zu Value objects, watermark at %zu constructions\n", nt9::Value::open_value_count_, nt9::Value::construct_watermark_count_);
+        fprintf(stderr, "Missed cleanups of %zu Value objects, watermark at %zu constructions\n", nt11::Value::open_value_count_, nt11::Value::construct_watermark_count_);
         rv = -6;
         goto fail;
       }
@@ -237,11 +246,11 @@ extern "C" int t9() {
       // perform a full, hard, reset, in particular, we want buffer allocations to be done
       // anew as moving data around incrementally growing buffers is an important part of
       // the deallocation/cleanup logic we'd like to test.
-      t9_stack_cleanup(&stack);
-      t9_stack_init(&stack);
+      t11_stack_cleanup(&stack);
+      t11_stack_init(&stack);
     }
-    if (r == _T9_FINISH) {
-      if (nt9::CountedValue::construct_watermark_count_ != full_construct_count) {
+    if (r == _T11_FINISH) {
+      if (nt11::CountedValue::construct_watermark_count_ != full_construct_count) {
         // Should only have finished if we don't hit the watermark.
         rv = -7;
         goto fail;
@@ -257,7 +266,7 @@ extern "C" int t9() {
 
   /* Resetting the stack should clear out the only object on the stack,
    * being, the grammar object. */
-  t9_stack_reset(&stack);
+  t11_stack_reset(&stack);
 
   if (GrammarObj::open_grammar_count_ > 0) {
     rv = -6;
@@ -266,7 +275,7 @@ extern "C" int t9() {
   rv = 0;
 
 fail:
-  t9_stack_cleanup(&stack);
+  t11_stack_cleanup(&stack);
   return rv;
 }
 

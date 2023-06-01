@@ -13,24 +13,17 @@
  * limitations under the License.
  */
 
-// t9 - C++ tracing failing constructor cleanup test
+// t10 - C++ tracing failing move cleanup test
 //
-// We parse a simple expression grammar, and count the number of live Value objects.
-// As we parse the input, we count the number of times (full_construct_count) that 
-// the constructor for Value is invoked.
-// We then run it with a watermark ranging from 0 to full_construct_count and have
-// the constructor throw an exception at the watermark. When we _reset() the parser 
-// after catching the exception, we expect the number of live Value objects to be
-// exactly 0.
-// This makes for a fairly rigorous test of the parser's ability to clean up after
-// itself.
+// This is like t9, but applied to the %move directive, which is also permitted to 
+// fail.
 
 #include <stdio.h>  // fprintf, stderr
 #include <stdint.h> // SIZE_MAX
 #include <cstdlib> // atoi
 #include <exception> // std::exception
 
-namespace nt9 {
+namespace nt10 {
 
 class WatermarkException : public std::exception {
 public:
@@ -52,13 +45,6 @@ bool g_check_enabled_ = false;
 class CountedValue {
   public:
   CountedValue() {
-    if (g_check_enabled_ && (total_construct_count_ == 31)) {
-      // Set a value here to intercept the debugger at a specific point.
-      //fprintf(stderr, "CountedValue::CountedValue() watermark check exceeded\n");
-    }
-    if (total_construct_count_ == construct_watermark_count_) {
-      throw WatermarkException();
-    }
     open_value_count_++;
     total_construct_count_++;
   }
@@ -97,6 +83,10 @@ public:
     return *this;
   }
   Value &operator=(Value &&r) {
+    if (g_check_enabled_ && (total_move_count_ == 31)) {
+      // Set a value here to intercept the debugger at a specific point.
+      //fprintf(stderr, "CountedValue::CountedValue() watermark check exceeded\n");
+    }
     if (total_move_count_ == move_watermark_count_) {
       throw WatermarkException();
     }
@@ -116,10 +106,10 @@ size_t CountedValue::move_watermark_count_ = SIZE_MAX;
 size_t GrammarObj::open_grammar_count_ = 0;
 }
 
-using namespace nt9;
+using namespace nt10;
 
 %scanner%
-%prefix t9_
+%prefix t10_
 
 INTEGER: [0-9]+ { $$ = Value(atoi($text)); }
 
@@ -167,21 +157,21 @@ value: INTEGER                  { $$ = $0; }
 
 %%
 
-extern "C" int t9() {
+extern "C" int t10() {
   int rv = -1;
   int r;
 
   const char sum[] = "((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1+2*-3"
                      "))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))";
 
-  struct t9_stack stack;
-  t9_stack_init(&stack);
+  struct t10_stack stack;
+  t10_stack_init(&stack);
 
 
-  t9_set_input(&stack, sum, sizeof(sum) - 1, 1);
+  t10_set_input(&stack, sum, sizeof(sum) - 1, 1);
   int final_result = 0;
-  r = t9_scan(&stack, final_result);
-  if (r != _T9_FINISH) {
+  r = t10_scan(&stack, final_result);
+  if (r != _T10_FINISH) {
     rv = -1;
     goto fail;
   }
@@ -202,34 +192,31 @@ extern "C" int t9() {
     goto fail;
   }
 
-  t9_stack_reset(&stack);
+  t10_stack_reset(&stack);
 
-  size_t full_construct_count;
-  full_construct_count = Value::total_construct_count_;
-  // there if we needed (will move to its own test):
-  // size_t full_move_count;
-  // full_move_count = Value::total_move_count_;
+  size_t full_move_count;
+  full_move_count = Value::total_move_count_;
 
-  nt9::g_check_enabled_ = true;
+  nt10::g_check_enabled_ = true;
 
-  for (nt9::CountedValue::construct_watermark_count_ = 1;
-       nt9::CountedValue::construct_watermark_count_ < full_construct_count;
-       nt9::CountedValue::construct_watermark_count_++) {
-    nt9::CountedValue::total_construct_count_ = 0;
-    nt9::CountedValue::total_move_count_ = 0;
-    t9_set_input(&stack, sum, sizeof(sum) - 1, 1);
+  for (nt10::CountedValue::move_watermark_count_ = 1;
+       nt10::CountedValue::move_watermark_count_ < full_move_count;
+       nt10::CountedValue::move_watermark_count_++) {
+    nt10::CountedValue::total_construct_count_ = 0;
+    nt10::CountedValue::total_move_count_ = 0;
+    t10_set_input(&stack, sum, sizeof(sum) - 1, 1);
     try {
-      r = t9_scan(&stack, final_result);
+      r = t10_scan(&stack, final_result);
     }
     catch (const WatermarkException &) {
-      if (nt9::CountedValue::open_value_count_ == 0) {
+      if (nt10::CountedValue::open_value_count_ == 0) {
         rv = -5;
         goto fail;
       }
-      t9_stack_reset(&stack);
-      if (nt9::CountedValue::open_value_count_ != 0) {
+      t10_stack_reset(&stack);
+      if (nt10::CountedValue::open_value_count_ != 0) {
         // Missed cleanups of Value objects.
-        fprintf(stderr, "Missed cleanups of %zu Value objects, watermark at %zu constructions\n", nt9::Value::open_value_count_, nt9::Value::construct_watermark_count_);
+        fprintf(stderr, "Missed cleanups of %zu Value objects, watermark at %zu constructions\n", nt10::Value::open_value_count_, nt10::Value::construct_watermark_count_);
         rv = -6;
         goto fail;
       }
@@ -237,11 +224,11 @@ extern "C" int t9() {
       // perform a full, hard, reset, in particular, we want buffer allocations to be done
       // anew as moving data around incrementally growing buffers is an important part of
       // the deallocation/cleanup logic we'd like to test.
-      t9_stack_cleanup(&stack);
-      t9_stack_init(&stack);
+      t10_stack_cleanup(&stack);
+      t10_stack_init(&stack);
     }
-    if (r == _T9_FINISH) {
-      if (nt9::CountedValue::construct_watermark_count_ != full_construct_count) {
+    if (r == _T10_FINISH) {
+      if (nt10::CountedValue::construct_watermark_count_ != full_move_count) {
         // Should only have finished if we don't hit the watermark.
         rv = -7;
         goto fail;
@@ -257,7 +244,7 @@ extern "C" int t9() {
 
   /* Resetting the stack should clear out the only object on the stack,
    * being, the grammar object. */
-  t9_stack_reset(&stack);
+  t10_stack_reset(&stack);
 
   if (GrammarObj::open_grammar_count_ > 0) {
     rv = -6;
@@ -266,7 +253,7 @@ extern "C" int t9() {
   rv = 0;
 
 fail:
-  t9_stack_cleanup(&stack);
+  t10_stack_cleanup(&stack);
   return rv;
 }
 
