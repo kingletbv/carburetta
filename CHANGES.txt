@@ -1,3 +1,50 @@
+0.8.12 - 2023-06-02
+
+- `%class` directive
+  The `%class` directive wraps up a few C++ features into a single directive
+  that is much more friendly for newcomers. It is a shorthand for the
+  `%type`, `%raii_constructor`, `%destructor` and `%move` directives in the
+  common scenario where `%type` is used to specify a C++ class.
+  Please see the manual at https://carburetta.com/manual.html for details.
+
+- `%move` directive
+  `%move` is to be used alongside %constructor and %destructor directives, and
+  describes how to move the datatype from $0 to $$.
+  The `%move` directive while common for both C and C++, allows better support 
+  for C++ classes in particular. If no `%move` directive is specified for a type, 
+  then a `memcpy` is performed.
+  Please see the manual at https://carburetta.com/manual.html for details.
+
+- preserve whitespace in types, this fixes a problem with C++ where
+  `std::int64_t` would be generated as `std : : int64_t` (note the
+  spaces) because Carburetta internally did not recognize `::` as
+  one token. This is now fixed; no spaces are generated in types anymore,
+  so while `::` is still not a token for Carburetta internally, it
+  no longer injects spaces.
+
+- The new `%move` directive requires constructors and destructors to
+  be called far more religiously than before. This is a good thing,
+  but may require existing C code to have to use `%move` where it 
+  could rely 
+
+- add t9 C++ tracing failing constructor cleanup test
+  This tests that whenever any constructor fail at whatever moment (via `throw`
+  or early `return`,) that all the destructors are still called correctly.
+
+- add t10 C++ tracing failing move cleanup test
+  This is like t9, but for the `%move` directive; which is also allowed to
+  fail at any moment.
+  Note that no corresponding test exists for `%destructor` because it is
+  never allowed to fail.
+
+- add t11 C++ tracing failing constructor carrying data
+  This is like t9 but the test-case has symbols carrying data.
+
+- odd patch levels (e.g. 0.8.11 or the soon to be 0.8.13, but not 0.8.12) are
+  development versions, the commandline version information now reflects this.
+
+- Manual updated to 0.8.12, see https://carburetta.com/manual.html for details.
+
 0.8.10 - 2023-05-04
 
 - bring C++ back up from regressions - please be careful to read
