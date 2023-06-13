@@ -179,6 +179,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_TYPE_DIRECTIVE,
     PCD_CLASS_DIRECTIVE,
     PCD_COMMON_TYPE_DIRECTIVE,
+    PCD_COMMON_CLASS_DIRECTIVE,
     PCD_CONSTRUCTOR_DIRECTIVE,
     PCD_RAII_CONSTRUCTOR_DIRECTIVE,
     PCD_MOVE_DIRECTIVE,
@@ -295,6 +296,9 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             }
             else if (!strcmp("common_type", tkr_str(tkr_tokens))) {
               directive = PCD_COMMON_TYPE_DIRECTIVE;
+            }
+            else if (!strcmp("common_class", tkr_str(tkr_tokens))) {
+              directive = PCD_COMMON_CLASS_DIRECTIVE;
             }
             else if (!strcmp("constructor", tkr_str(tkr_tokens))) {
               directive = PCD_CONSTRUCTOR_DIRECTIVE;
@@ -616,7 +620,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               }
             }
           }
-          else if (directive == PCD_COMMON_TYPE_DIRECTIVE) {
+          else if ((directive == PCD_COMMON_TYPE_DIRECTIVE) || (directive == PCD_COMMON_CLASS_DIRECTIVE)) {
             /* Trim simple whitespace off the head end, otherwise simply copy. */
             if (cc->common_data_type_.num_tokens_ || (tkr_tokens->best_match_variant_ != TOK_WHITESPACE)) {
               if (tkr_tokens->best_match_variant_ == TOK_SPECIAL_IDENT) {
@@ -876,7 +880,8 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   if ((directive == PCD_TYPE_DIRECTIVE) ||
       (directive == PCD_CLASS_DIRECTIVE) ||
       (directive == PCD_TOKEN_TYPE_DIRECTIVE) ||
-      (directive == PCD_COMMON_TYPE_DIRECTIVE)) {
+      (directive == PCD_COMMON_TYPE_DIRECTIVE) ||
+      (directive == PCD_COMMON_CLASS_DIRECTIVE)) {
     /* Trim all whitespace off, pop any "$$" special identifiers at the tail end */
     struct snippet *snip;
     if ((directive == PCD_TYPE_DIRECTIVE) || (directive == PCD_CLASS_DIRECTIVE)) {
@@ -885,8 +890,8 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     else if (directive == PCD_TOKEN_TYPE_DIRECTIVE) {
       snip = &cc->token_type_;
     }
-    else /* (directive == PCD_COMMON_TYPE_DIRECTIVE) */ {
-      assert(directive == PCD_COMMON_TYPE_DIRECTIVE);
+    else /* (directive == PCD_COMMON_TYPE_DIRECTIVE) || (directive == PCD_COMMON_CLASS_DIRECTIVE) */ {
+      assert((directive == PCD_COMMON_TYPE_DIRECTIVE) || (directive == PCD_COMMON_CLASS_DIRECTIVE));
       snip = &cc->common_data_type_;
     }
     while (snip->num_tokens_ &&
@@ -956,7 +961,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     token_ts->is_symbol_type_ = 1;
   }
 
-  if (directive == PCD_COMMON_TYPE_DIRECTIVE) {
+  if ((directive == PCD_COMMON_TYPE_DIRECTIVE) || (directive == PCD_COMMON_CLASS_DIRECTIVE)) {
     struct typestr *common_ts = typestr_add(&cc->tstab_, &cc->common_data_type_);
     if (!common_ts) {
       r = TKR_INTERNAL_ERROR;
@@ -964,6 +969,20 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     }
     cc->common_data_assigned_type_ = common_ts;
     cc->most_recent_typestr_ = common_ts;
+    if (directive == PCD_COMMON_CLASS_DIRECTIVE) {
+      cc->have_cpp_classes_ = 1; /* compile in support for %class implicitly generated code. */
+
+      common_ts->is_raii_constructor_ = 1;
+      snippet_clear(&common_ts->constructor_snippet_);
+      snippet_clear(&common_ts->move_snippet_);
+      snippet_cleanup(&common_ts->destructor_snippet_);
+      if (!snippify(&common_ts->constructor_snippet_, "%sconstruct_at(&$$);", cc_prefix(cc)) ||
+          !snippify(&common_ts->move_snippet_, "%smove_at(&$$, &$0);", cc_prefix(cc)) ||
+          !snippify(&common_ts->destructor_snippet_, "%sdestroy_at(&$$);", cc_prefix(cc))) {
+        r = TKR_INTERNAL_ERROR;
+        goto cleanup_exit;
+      }
+    }
   }
 
   if (directive == PCD_CONSTRUCTOR_DIRECTIVE) {

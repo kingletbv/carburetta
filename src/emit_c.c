@@ -303,7 +303,12 @@ static int emit_sym_specific_data(struct indented_printer *ip, struct carburetta
       re_error(&st->text_, "Symbol index >0 exceeds number of available symbols");
       return TKR_SYNTAX_ERROR;
     }
-    ip_printf_no_indent(ip, se->sym_fmt_, se->fixed_sym_0_->ordinal_);
+    if (se->fixed_sym_0_) {
+      ip_printf_no_indent(ip, se->sym_fmt_, se->fixed_sym_0_->ordinal_);
+    }
+    else {
+      ip_printf_no_indent(ip, se->sym_fmt_);
+    }
     return 0;
   }
   if (sym_index >= se->prod_->num_syms_) {
@@ -1120,7 +1125,7 @@ static int emit_common_move_snippet_indexed_by_nbspp(struct indented_printer *ip
   se.code_ = &cc->common_data_assigned_type_->move_snippet_;
   se.dest_type_ = SEDT_FMT;
   se.dest_fmt_ = "stack->new_buf_[stack->new_buf_sym_partial_pos_].common_";
-  se.sym_type_ = SEST_FMT;
+  se.sym_type_ = SEST_FMT_FIXED_INDEX_0_ORDINAL;
   se.sym_fmt_ = "(stack->stack_[stack->new_buf_sym_partial_pos_].common_)";
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT;
@@ -1145,7 +1150,7 @@ static int emit_common_move_to_top_of_stack_from_slot_0_snippet(struct indented_
   se.code_ = &cc->common_data_assigned_type_->move_snippet_;
   se.dest_type_ = SEDT_FMT;
   se.dest_fmt_ = "stack->new_buf_[stack->pos_ - 1].common_";
-  se.sym_type_ = SEST_FMT;
+  se.sym_type_ = SEST_FMT_FIXED_INDEX_0_ORDINAL;
   se.sym_fmt_ = "(stack->stack_[0].common_)";
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT;
@@ -1170,7 +1175,7 @@ static int emit_common_move_to_top_of_stack_from_slot_1_snippet(struct indented_
   se.code_ = &cc->common_data_assigned_type_->move_snippet_;
   se.dest_type_ = SEDT_FMT;
   se.dest_fmt_ = "stack->new_buf_[stack->pos_ - 1].common_";
-  se.sym_type_ = SEST_FMT;
+  se.sym_type_ = SEST_FMT_FIXED_INDEX_0_ORDINAL;
   se.sym_fmt_ = "(stack->stack_[1].common_)";
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT;
@@ -3064,7 +3069,8 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
     ip_printf(ip, "      stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 1;\n");
 
     ip_printf(ip, "      if ((stack->new_buf_sym_partial_pos_ == 0) || (stack->new_buf_sym_partial_pos_ == 1)) {\n");
-    if (cc->common_data_assigned_type_) ip_printf(ip, "        int need_common_move = 0;\n");
+    if (cc->common_data_assigned_type_) ip_printf(ip, "        int need_common_move;\n");
+    if (cc->common_data_assigned_type_) ip_printf(ip, "        need_common_move = 0;\n");
     if (have_sym_types) ip_printf(ip, "        int need_sym_move;\n");
     if (have_sym_types) ip_printf(ip, "        int sym_to_move;\n");
     if (have_sym_types) ip_printf(ip, "        sym_to_move = 0; /* silence a waring with this explicit initialization */\n"
