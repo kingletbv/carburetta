@@ -1987,6 +1987,15 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                 "}\n"
                 "\n", cc_prefix(cc), cc_prefix(cc));
 
+  ip_printf(ip, "void *%stoken_common_data(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
+  if (cc->common_data_assigned_type_) {
+    ip_printf(ip, "  return stack->slot_0_has_common_data_ ? &stack->stack_[0].common_ : NULL;\n");
+  }
+  else {
+    ip_printf(ip, "  return NULL; /* no %%common_type or %%common_class so this is always NULL */\n");
+  }
+  ip_printf(ip, "}\n");
+
   ip_printf(ip,  "int %slex(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip,  "  int r;\n"
                  "  unsigned char c;\n"
@@ -2519,6 +2528,15 @@ static void emit_lex_function(struct indented_printer *ip, struct carburetta_con
                 "  return stack->best_match_offset_;\n"
                 "}\n"
                 "\n", cc_prefix(cc), cc_prefix(cc));
+
+  ip_printf(ip, "void *%stoken_common_data(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
+  if (cc->common_data_assigned_type_) {
+    ip_printf(ip, "  return stack->slot_0_has_common_data_ ? &stack->stack_[0].common_ : NULL;\n");
+  }
+  else {
+    ip_printf(ip, "  return NULL; /* no %%common_type or %%common_class so this is always NULL */\n");
+  }
+  ip_printf(ip, "}\n");
 
   ip_printf(ip,  "int %slex(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip,  "  int r;\n"
@@ -6565,6 +6583,8 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
     ip_printf(ip, "int %sendline(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
     ip_printf(ip, "int %sendcolumn(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
     ip_printf(ip, "size_t %sendoffset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    ip_printf(ip, "void *%stoken_common_data(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+
     ip_printf(ip, "int %slex(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   }
 
