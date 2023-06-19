@@ -3496,6 +3496,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
       if (cc->common_data_assigned_type_ && cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
         ip_printf(ip, "              if (stack->need_sym_) {\n"
                       "                ");
+        ip_printf(ip, "          stack->slot_0_has_common_data_ = 0;\n");
         if (emit_pattern_token_common_destructor_snippet(ip, cc)) {
           ip->had_error_ = 1;
           goto cleanup_exit;
