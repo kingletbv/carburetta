@@ -1,3 +1,47 @@
+0.8.14 - 2023-06-21
+
+- Added regression tests t12 to t15, all of which are C++ tests that test
+  common data in the same manner as we already tested symbol data.
+
+- fix regression on moving data, specifying a move snippet for the common 
+  type would invoke it from the wrong source location.
+
+- fix for scanner pattern matches without sym but with common data
+  such matches would invoke the common data destructor twice, once following
+  the pattern action, and possibly again if the stack was reset or
+  cleaned up before the next token.
+
+- fix for generated code skipping over initializer for "need_common_move"
+  variable (C++ only issue.)
+
+- fix for common move snippets not being able to use `$0` to refer to the 
+  source common data (could still use `${0}` but this is not symmetric with
+  `%type` -- while `${0}` typically refers to common data and `$0` to sym
+  specific data, the subject here is the data type, rather than how it is
+  used; so consistency across `%type` and `%common_type` is preferred over
+  the distinction between common data and symbol data.)
+
+- `<prefix>token_common_data()`
+  Returns the common data associated with the current token. This is useful
+  in the specific scenario of a scanner / parser combination where the parser
+  runs into a _<PREFIX>SYNTAX_ERROR on the next token. This next token has
+  already been scanned (and therefore its common data constructed), but has
+  not yet moved into the parser stack. However, to report the error, the
+  common data may be very useful. Because there is no way to access it without
+  knowing about the implementation details of the scanner, the new
+  `<prefix>token_common_data()` function is provided.
+  Note that is can return NULL if there is currently no "next" token, which is
+  most of the time. It is probably only useful in the specific scenario above,
+  and even then only when the parser is not used stand-alone but in combination
+  with a scanner.
+  Please see the manual at https://carburetta.com/manual.html for details.
+
+- `%common_class` directive
+  The `%common_class` directive is the C++ class variation for %common_type,
+  it provides the same convenience of use as `%class` but for the common data
+  types. 
+  Please see the manual at https://carburetta.com/manual.html for details.
+
 0.8.12 - 2023-06-02
 
 - `%class` directive
