@@ -14,7 +14,10 @@ xx(t8, "C++ calculator test") \
 xx(t9, "C++ tracing failing constructor cleanup test") \
 xx(t10, "C++ tracing failing move cleanup test") \
 xx(t11, "C++ tracing failing constructor carrying data") \
-xx(t12, "C++ calculator over common data")
+xx(t12, "C++ calculator over common data") \
+xx(t13, "C++ tracing failing constructor cleanup test over common data") \
+xx(t14, "C++ tracing failing move cleanup test over common data") \
+xx(t15, "C++ tracing failing constructor carrying data over common data")
 
 #define xx(id, desc) int id(void);
 enum_tests

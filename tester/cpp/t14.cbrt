@@ -1,0 +1,241 @@
+/* Copyright 2020-2023 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// t14 - this is like t10 - C++ tracing failing move cleanup test - but over common data
+
+#include <stdio.h>  // fprintf, stderr
+#include <stdint.h> // SIZE_MAX
+#include <cstdlib> // atoi
+#include <exception> // std::exception
+
+namespace nt14 {
+
+class WatermarkException : public std::exception {
+public:
+  const char *what() const noexcept override {
+    return "Watermark exceeded";
+  }
+};
+
+bool g_check_enabled_ = false;
+
+class CountedValue {
+  public:
+  CountedValue() {
+    open_value_count_++;
+    total_construct_count_++;
+  }
+  ~CountedValue() {
+    open_value_count_--;
+  }
+  static size_t open_value_count_;
+  static size_t total_construct_count_;
+  static size_t total_move_count_;
+  static size_t construct_watermark_count_;
+  static size_t move_watermark_count_;
+};
+
+// Value object for all valued nonterminals and the INTEGER terminal.
+class Value : public CountedValue {
+public:
+  int value_ = 0;
+  Value() : Value(0) {
+  }
+  Value(const Value &v) {
+    value_ = v.value();
+  }
+  Value(int val) : value_(val) {
+  }
+  ~Value() {
+  }
+  int value() const { return value_; }
+  void set_value(int value) { value_ = value; }
+  Value operator+(const Value &r) const { return Value(value() + r.value()); }
+  Value operator-(const Value &r) const { return Value(value() - r.value()); }
+  Value operator*(const Value &r) const { return Value(value() * r.value()); }
+  Value operator/(const Value &r) const { return Value(value() / r.value()); }
+  Value operator-() const { return Value(-value()); }
+  Value &operator=(const Value &r) {
+    set_value(r.value());
+    return *this;
+  }
+  Value &operator=(Value &&r) {
+    if (g_check_enabled_ && (total_move_count_ == 31)) {
+      // Set a value here to intercept the debugger at a specific point.
+      //fprintf(stderr, "CountedValue::CountedValue() watermark check exceeded\n");
+    }
+    if (total_move_count_ == move_watermark_count_) {
+      throw WatermarkException();
+    }
+    total_move_count_++;
+    set_value(r.value());
+    r.set_value(0);
+    return *this;
+  }
+};
+
+size_t CountedValue::open_value_count_ = 0;
+size_t CountedValue::total_construct_count_ = 0;
+size_t CountedValue::total_move_count_ = 0;
+size_t CountedValue::construct_watermark_count_ = SIZE_MAX;
+size_t CountedValue::move_watermark_count_ = SIZE_MAX;
+} // namespace nt14
+
+using namespace nt14;
+
+%scanner%
+%prefix t14_
+
+INTEGER: [0-9]+ { $ = Value(atoi($text)); }
+
+: [\ \n]+; /* skip spaces and newlines */
+PLUS: \+; 
+MINUS: \-;
+ASTERISK: \*;
+SLASH: /; 
+PAR_OPEN: \(; 
+PAR_CLOSE: \);
+
+%token PLUS MINUS ASTERISK SLASH PAR_OPEN PAR_CLOSE INTEGER
+%nt grammar expr term factor value
+
+%grammar%
+
+%common_class Value
+
+%params int &final_result
+
+grammar: expr {
+  final_result = ${0}.value();
+}
+
+expr: term                      { $ = ${0}; }
+expr: expr PLUS term            { $ = ${0} + ${2}; }
+expr: expr MINUS term           { $ = ${0} - ${2}; }
+  
+term: factor                    { $ = ${0}; }
+term: term ASTERISK factor      { $ = ${0} * ${2}; }
+term: term SLASH factor         { $ = ${0} / ${2}; }
+  
+factor: value                   { $ = ${0}; }
+factor: MINUS factor            { $ = -${1}; }
+factor: PAR_OPEN expr PAR_CLOSE { $ = ${1}; }
+
+value: INTEGER                  { $ = ${0}; }
+
+%%
+
+extern "C" int t14() {
+  int rv = -1;
+  int r;
+
+  const char sum[] = "((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1+2*-3"
+                     "))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))";
+
+  struct t14_stack stack;
+  t14_stack_init(&stack);
+
+
+  t14_set_input(&stack, sum, sizeof(sum) - 1, 1);
+  int final_result = 0;
+  r = t14_scan(&stack, final_result);
+  if (r != _T14_FINISH) {
+    rv = -1;
+    goto fail;
+  }
+
+  if (final_result != -5) {
+    rv = -2;
+    goto fail;
+  }
+
+  /* At this point, the only object that should exist on the stack
+   * is the grammar object; all other value objects should be cleaned up. */
+  if (Value::open_value_count_ != 1) {
+    rv = -3;
+    goto fail;
+  }
+
+  t14_stack_reset(&stack);
+
+  if (Value::open_value_count_ > 0) {
+    rv = -4;
+    goto fail;
+  }
+
+  size_t full_move_count;
+  full_move_count = Value::total_move_count_;
+
+  nt14::g_check_enabled_ = true;
+
+  for (nt14::CountedValue::move_watermark_count_ = 1;
+       nt14::CountedValue::move_watermark_count_ < full_move_count;
+       nt14::CountedValue::move_watermark_count_++) {
+    nt14::CountedValue::total_construct_count_ = 0;
+    nt14::CountedValue::total_move_count_ = 0;
+    t14_set_input(&stack, sum, sizeof(sum) - 1, 1);
+    try {
+      r = t14_scan(&stack, final_result);
+    }
+    catch (const WatermarkException &) {
+      if (nt14::CountedValue::open_value_count_ == 0) {
+        rv = -5;
+        goto fail;
+      }
+      t14_stack_reset(&stack);
+      if (nt14::CountedValue::open_value_count_ != 0) {
+        // Missed cleanups of Value objects.
+        fprintf(stderr, "Missed cleanups of %zu Value objects, watermark at %zu constructions\n", nt14::Value::open_value_count_, nt14::Value::construct_watermark_count_);
+        rv = -6;
+        goto fail;
+      }
+      r = -1; // Don't mistake this exception for anything else
+      // perform a full, hard, reset, in particular, we want buffer allocations to be done
+      // anew as moving data around incrementally growing buffers is an important part of
+      // the deallocation/cleanup logic we'd like to test.
+      t14_stack_cleanup(&stack);
+      t14_stack_init(&stack);
+    }
+    if (r == _T14_FINISH) {
+      if (nt14::CountedValue::construct_watermark_count_ != full_move_count) {
+        // Should only have finished if we don't hit the watermark.
+        rv = -7;
+        goto fail;
+      }
+    }
+    else if (r != -1) {
+      // Did not catch an exception and did not finish, this is a fail.
+      rv = -8;
+      goto fail;
+    }
+  }
+
+
+  /* Resetting the stack should clear out the only object on the stack,
+   * being, the grammar object. */
+  t14_stack_reset(&stack);
+
+  if (Value::open_value_count_ > 0) {
+    rv = -9;
+    goto fail;
+  }
+
+  rv = 0;
+
+fail:
+  t14_stack_cleanup(&stack);
+  return rv;
+}
+
