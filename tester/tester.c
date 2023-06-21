@@ -13,7 +13,8 @@ xx(t7, "Character set unicode category inversion \\P{}") \
 xx(t8, "C++ calculator test") \
 xx(t9, "C++ tracing failing constructor cleanup test") \
 xx(t10, "C++ tracing failing move cleanup test") \
-xx(t11, "C++ tracing failing constructor carrying data")
+xx(t11, "C++ tracing failing constructor carrying data") \
+xx(t12, "C++ calculator over common data")
 
 #define xx(id, desc) int id(void);
 enum_tests
