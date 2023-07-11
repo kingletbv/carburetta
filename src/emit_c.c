@@ -3200,8 +3200,8 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
               ip->had_error_ = 1;
               return;
             }
-            ip_printf(ip, "\n    break;\n");
           }
+          ip_printf(ip, "\n    break;\n");
         }
       }
 
@@ -3288,8 +3288,8 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
                 ip->had_error_ = 1;
                 return;
               }
-              ip_printf(ip, "\n    break;\n");
             }
+            ip_printf(ip, "\n    break;\n");
           }
         }
       }
@@ -3642,8 +3642,8 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 ip->had_error_ = 1;
                 return;
               }
-              ip_printf(ip, "\n    break;\n");
             }
+            ip_printf(ip, "\n    break;\n");
           }
         }
       }
@@ -3926,8 +3926,8 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 ip->had_error_ = 1;
                 return;
               }
-              ip_printf(ip, "\n    break;\n");
             }
+            ip_printf(ip, "\n    break;\n");
           }
         }
       }
