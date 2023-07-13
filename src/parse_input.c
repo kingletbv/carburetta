@@ -200,7 +200,9 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_ERROR_TOKEN,
     PCD_PREFER,
     PCD_OVER,
-    PCD_MODE
+    PCD_MODE,
+    PCD_EXTERNC,
+    PCD_NO_EXTERNC
   } directive;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
@@ -387,6 +389,34 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             else if (!strcmp("mode", tkr_str(tkr_tokens))) {
               directive = PCD_MODE;
             }
+            else if (!strcmp("externc", tkr_str(tkr_tokens))) {
+              directive = PCD_EXTERNC; // no further logic to handle this fyi.
+              if (cc->externc_option_.num_translated_) {
+                re_error_tkr(tkr_tokens, "%%externc %s with earlier specification", cc->generate_externc_ ? "is redundant" : "conflicts");
+                re_error(&cc->externc_option_, "see %s specification here", cc->externc_option_.translated_);
+              }
+              xlts_reset(&cc->externc_option_);
+              r = xlts_append(&cc->externc_option_, &tkr_tokens->xmatch_);
+              if (r) {
+                r = TKR_INTERNAL_ERROR;
+                goto cleanup_exit;
+              }
+              cc->generate_externc_ = 1;
+            }
+            else if (!strcmp("no_externc", tkr_str(tkr_tokens))) {
+              directive = PCD_NO_EXTERNC; // no further logic to handle this fyi.
+              if (cc->externc_option_.num_translated_) {
+                re_error_tkr(tkr_tokens, "%%no_externc %s with earlier specification", cc->generate_externc_ ? "conflicts" : "is redundant");
+                re_error(&cc->externc_option_, "see %s specification here", cc->externc_option_.translated_);
+              }
+              xlts_reset(&cc->externc_option_);
+              r = xlts_append(&cc->externc_option_, &tkr_tokens->xmatch_);
+              if (r) {
+                r = TKR_INTERNAL_ERROR;
+                goto cleanup_exit;
+              }
+              cc->generate_externc_ = 0;
+            }
             else {
               re_error_tkr(tkr_tokens, "Syntax error invalid directive \"%%%s\"", tkr_str(tkr_tokens));
               r = TKR_SYNTAX_ERROR;
@@ -460,6 +490,11 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
               r = TKR_SYNTAX_ERROR;
               goto cleanup_exit;
             }
+          }
+          else if ((directive == PCD_EXTERNC) || (directive == PCD_NO_EXTERNC)) {
+            re_error_tkr(tkr_tokens, "End of line expected");
+            r = TKR_SYNTAX_ERROR;
+            goto cleanup_exit;
           }
           else if (directive == PCD_END_TOKEN) {
             if (tkr_tokens->best_match_variant_ == TOK_IDENT) {
@@ -935,6 +970,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     nt_ts->is_symbol_type_ = 1;
     if (directive == PCD_CLASS_DIRECTIVE) {
       cc->have_cpp_classes_ = 1; /* compile in support for %class implicitly generated code. */
+      if (!cc->externc_option_.num_translated_) cc->generate_externc_ = 0;
 
       nt_ts->is_raii_constructor_ = 1;
       snippet_clear(&nt_ts->constructor_snippet_);
@@ -971,6 +1007,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     cc->most_recent_typestr_ = common_ts;
     if (directive == PCD_COMMON_CLASS_DIRECTIVE) {
       cc->have_cpp_classes_ = 1; /* compile in support for %class implicitly generated code. */
+      if (!cc->externc_option_.num_translated_) cc->generate_externc_ = 0;
 
       common_ts->is_raii_constructor_ = 1;
       snippet_clear(&common_ts->constructor_snippet_);

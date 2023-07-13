@@ -62,6 +62,8 @@ void carburetta_context_init(struct carburetta_context *cc) {
   cc->conflict_resolutions_ = NULL;
   cc->have_typed_symbols_ = 0;
   cc->have_cpp_classes_ = 0;
+  cc->generate_externc_ = 1;
+  xlts_init(&cc->externc_option_);
   cc->h_output_filename_ = NULL;
   cc->c_output_filename_ = NULL;
   cc->include_guard_ = NULL;
@@ -113,6 +115,7 @@ void carburetta_context_cleanup(struct carburetta_context *cc) {
   if (cc->include_guard_) free(cc->include_guard_);
   parts_free(cc->prologue_);
   parts_free(cc->epilogue_);
+  xlts_cleanup(&cc->externc_option_);
 }
 
 void conflict_resolution_init(struct conflict_resolution *cr) {

@@ -96,6 +96,8 @@ struct carburetta_context {
   struct conflict_resolution *conflict_resolutions_;
   int have_typed_symbols_ :1;
   int have_cpp_classes_ :1; /* Have C++ classes as types, e.g. %class directive has been used */
+  int generate_externc_:1;  /* Generate extern "C" { ... } around the generated code */
+  struct xlts externc_option_; /* "%externc" or "%noexternc"; but only when this is specified, used to determine if generate_externc_ flag is implicit or explicit. */
   char *h_output_filename_;
   char *c_output_filename_;
   char *include_guard_;

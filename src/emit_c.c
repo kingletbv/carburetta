@@ -6467,11 +6467,12 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "#include <stddef.h> /* size_t */\n"
                  "\n");
 
-  ip_printf(ip, "#ifdef __cplusplus\n"
-                 "extern \"C\" {\n"
-                 "#endif\n"
-                 "\n");
-
+  if (cc->generate_externc_) {
+    ip_printf(ip, "#ifdef __cplusplus\n"
+                   "extern \"C\" {\n"
+                   "#endif\n"
+                   "\n");
+  }
   emit_return_code_defines(ip, cc);
   ip_printf(ip, "\n");
 
@@ -6601,10 +6602,12 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
     ip_printf(ip, "int %sparse(struct %sstack *stack, int sym);\n", cc_prefix(cc), cc_prefix(cc));
   }
 
-  ip_printf(ip, "\n"
-                "#ifdef __cplusplus\n"
-                "} /* extern \"C\" */\n"
-                "#endif\n");
+  ip_printf(ip, "\n");
+  if (cc->generate_externc_) {
+    ip_printf(ip, "#ifdef __cplusplus\n"
+                  "} /* extern \"C\" */\n"
+                  "#endif\n");
+  }
 
   ip_printf(ip, "\n"
                 "#endif /* %s */\n", cc->include_guard_);
