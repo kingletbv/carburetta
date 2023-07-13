@@ -102,6 +102,7 @@ struct carburetta_context {
   char *c_output_filename_;
   char *include_guard_;
   struct part *prologue_;
+  struct part *header_;
   struct part *epilogue_;
   int current_snippet_continuation_;
   int continuation_enabled_:1;

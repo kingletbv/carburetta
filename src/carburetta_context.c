@@ -68,6 +68,7 @@ void carburetta_context_init(struct carburetta_context *cc) {
   cc->c_output_filename_ = NULL;
   cc->include_guard_ = NULL;
   cc->prologue_ = NULL;
+  cc->header_ = NULL;
   cc->epilogue_ = NULL;
   cc->current_snippet_continuation_ = 0;
   cc->continuation_enabled_ = 1;
@@ -114,6 +115,7 @@ void carburetta_context_cleanup(struct carburetta_context *cc) {
   if (cc->h_output_filename_) free(cc->h_output_filename_);
   if (cc->include_guard_) free(cc->include_guard_);
   parts_free(cc->prologue_);
+  parts_free(cc->header_);
   parts_free(cc->epilogue_);
   xlts_cleanup(&cc->externc_option_);
 }

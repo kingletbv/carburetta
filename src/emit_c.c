@@ -6478,12 +6478,25 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "#include <stddef.h> /* size_t */\n"
                  "\n");
 
+  /* emit %header section.. Note that this is *after* the #ifndef include guard but *before* the extern "C" */
+  struct part *pt;
+  pt = cc->header_;
+  if (pt) {
+    do {
+      pt = pt->next_;
+
+      ip_write_no_indent(ip, pt->chars_, pt->num_chars_);
+
+    } while (pt != cc->header_);
+  }
+
   if (cc->generate_externc_) {
     ip_printf(ip, "#ifdef __cplusplus\n"
                    "extern \"C\" {\n"
                    "#endif\n"
                    "\n");
   }
+
   emit_return_code_defines(ip, cc);
   ip_printf(ip, "\n");
 

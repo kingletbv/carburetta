@@ -1304,6 +1304,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
     PROLOGUE,
     GRAMMAR,
     SCANNER,
+    HEADER,
     EPILOGUE
   } where_are_we, default_mode;
   where_are_we = PROLOGUE;
@@ -1376,6 +1377,10 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           case LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER:
             where_are_we = default_mode = GRAMMAR;
             break;
+          case LD_CARBURETTA_HEADER_SECTION_DELIMETER:
+            where_are_we = HEADER;
+            default_mode = PROLOGUE;
+            break;
           case LD_CARBURETTA_SECTION_DELIMITER:
             if (default_mode == UNDEFINED) {
               re_error_tkr(&tkr_lines, "Error, no section type to return to");
@@ -1400,6 +1405,46 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
             break;
           }
         }
+        else if (where_are_we == HEADER) {
+          switch (tkr_lines.best_match_variant_) {
+            case LD_C_PREPROCESSOR:
+              /* Preserve line continuations */
+              parts_append(&cc->header_, token_buf.num_original_, token_buf.original_);
+              break;
+            case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
+              where_are_we = default_mode = SCANNER;
+              break;
+            case LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER:
+              where_are_we = default_mode = GRAMMAR;
+              break;
+            case LD_CARBURETTA_HEADER_SECTION_DELIMETER:
+              re_error_tkr(&tkr_lines, "Error, already in header area");
+              have_error = 1;
+              break;
+            case LD_CARBURETTA_SECTION_DELIMITER:
+              if (default_mode == UNDEFINED) {
+                re_error_tkr(&tkr_lines, "Error, no section type to return to");
+                r = 1;
+                goto cleanup_exit;
+              }
+              where_are_we = default_mode;
+              break;
+            case LD_REGULAR:
+              /* Preserve line continuations */
+              parts_append(&cc->header_, token_buf.num_original_, token_buf.original_);
+              break;
+            case LD_CARBURETTA_DIRECTIVE:
+              r = pi_process_carburetta_directive(&tkr_tokens, &token_buf, cc);
+              if (r == TKR_INTERNAL_ERROR) {
+                r = 1;
+                goto cleanup_exit;
+              }
+              else if (r) {
+                have_error = 1;
+              }
+              break;
+          }
+        }
         else if (where_are_we == GRAMMAR) {
           switch (tkr_lines.best_match_variant_) {
           case LD_C_PREPROCESSOR:
@@ -1415,6 +1460,12 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
             r = pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
 
             where_are_we = default_mode = SCANNER;
+            break;
+          case LD_CARBURETTA_HEADER_SECTION_DELIMETER:
+            /* Finish up */
+            r = pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
+
+            where_are_we = HEADER;
             break;
           case LD_CARBURETTA_SECTION_DELIMITER:
             /* Finish up */
@@ -1455,6 +1506,12 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
 
             where_are_we = default_mode = GRAMMAR;
             break;
+          case LD_CARBURETTA_HEADER_SECTION_DELIMETER:
+            /* Finish up */
+            r = pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
+
+            where_are_we = HEADER;
+            break;
           case LD_CARBURETTA_SECTION_DELIMITER:
             /* Finish up */
             r = pi_process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, prdg, &cc->symtab_);
@@ -1484,6 +1541,7 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
           case LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER:
           case LD_CARBURETTA_SECTION_DELIMITER:
+          case LD_CARBURETTA_HEADER_SECTION_DELIMETER:
             /* Going back to the grammar or scanner, append the epilogue we gathered to the prologue as it is
              * actually inline code. */
           {
@@ -1510,6 +1568,9 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           }
           else if (tkr_lines.best_match_variant_ == LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER) {
             where_are_we = default_mode = GRAMMAR;
+          }
+          else if (tkr_lines.best_match_variant_ == LD_CARBURETTA_HEADER_SECTION_DELIMETER) {
+            where_are_we = HEADER;
           }
           else {
             /* Back to previous or default */
@@ -1548,8 +1609,8 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
   } while (num_bytes_read);
 
   /* Process the End of Input */
-  if (where_are_we == PROLOGUE) {
-    /* No parsing to finish (prologue is user code) */
+  if ((where_are_we == PROLOGUE) || (where_are_we == HEADER)) {
+    /* No parsing to finish (prologue and header are user code) */
   }
   else if (where_are_we == GRAMMAR) {
     /* Finish grammar parsing (is_final == 1) */
