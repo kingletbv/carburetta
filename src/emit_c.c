@@ -2361,9 +2361,18 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "  stack->sym_grp_ = symgrp;\n"
                  "\n");
   ip_printf(ip,  "  return _%sMATCH;\n", cc_PREFIX(cc));
-  ip_printf(ip,  "syntax_error:\n"
+  ip_printf(ip,  "syntax_error: {\n"
+                 "  /* compute length of first codepoint in the match; this is not necessarily the\n"
+                 "   * codepoint where we discovered the error. */\n"
+                 "  size_t cp_len;\n"
+                 "  static size_t utf8_cp_len[] = { /* 0xxxx */ 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1, 1, 1, 1, \n"
+                 "                                  /* 10xxx */ 1, 1, 1, 1, 1, 1, 1, 1, /* lead byte as continuation byte is invalid encoding */\n"
+                 "                                  /* 110xx */ 2, 2, 2, 2, \n"
+                 "                                  /* 1110x */ 3, 3, \n"
+                 "                                  /* 11110 */ 4 };\n"
                  "  if (stack->match_buffer_size_) {\n"
-                 "    stack->best_match_offset_ = stack->match_offset_ + 1;\n"
+                 "    cp_len = utf8_cp_len[((unsigned char)stack->match_buffer_[0]) >> 3];\n"
+                 "    stack->best_match_offset_ = stack->match_offset_ + cp_len;\n"
                  "    if (stack->match_buffer_[0] != '\\n') {\n"
                  "      stack->best_match_line_ = stack->match_line_;\n"
                  "      stack->best_match_col_ = stack->match_col_ + 1;\n"
@@ -2374,8 +2383,9 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "    }\n"
                  "  }\n"
                  "  else {\n"
-                 "    /* Append the single character causing the syntax error */\n"
-                 "    r = %sappend_match_buffer(stack, input + stack->input_index_, 1);\n", cc_prefix(cc));
+                 "    cp_len = utf8_cp_len[((unsigned char)input[stack->input_index_]) >> 3];\n"
+                 "    /* Append the single codepoint causing the syntax error */\n"
+                 "    r = %sappend_match_buffer(stack, input + stack->input_index_, cp_len);\n", cc_prefix(cc));
   ip_printf(ip,  "    if (r) return r;\n"
                  "\n"
                  "    input_offset++;\n"
@@ -2386,16 +2396,16 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "      input_col = 1;\n"
                  "      input_line++;\n"
                  "    }\n"
-                 "    input_index = stack->input_index_ + 1;\n"
+                 "    input_index = stack->input_index_ + cp_len;\n"
                  "    stack->best_match_offset_ = input_offset;\n"
                  "    stack->best_match_line_ = input_line;\n"
                  "    stack->best_match_col_ = input_col;\n"
                  "  }\n"
                  "  \n"
                  "  /* Reset scanner to get ready for next token */\n"
-                 "  stack->token_size_ = 1;\n"
-                 "  stack->terminator_repair_ = stack->match_buffer_[1];\n"
-                 "  stack->match_buffer_[1] = '\\0';\n"
+                 "  stack->token_size_ = cp_len;\n"
+                 "  stack->terminator_repair_ = stack->match_buffer_[cp_len];\n"
+                 "  stack->match_buffer_[cp_len] = '\\0';\n"
                  "\n"
                  "  stack->input_index_ = input_index;\n"
                  "  stack->input_offset_ = input_offset;\n"
@@ -2405,6 +2415,7 @@ static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_c
                  "  stack->sym_grp_ = symgrp;\n"
                  "\n");
   ip_printf(ip,  "  return _%sLEXICAL_ERROR;\n", cc_PREFIX(cc));
+  ip_printf(ip,  "}\n"); /* syntax_error: */
   ip_printf(ip,  "}\n");
 }
 
