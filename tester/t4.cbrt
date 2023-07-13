@@ -44,6 +44,10 @@ int t4(void) {
   t4_stack_init(&stack);
   char cp_utf8[4];
 
+  int found_0xA, found_0xD, found_0x85 /* NEL */, found_0x2028 /* LS */;
+
+  found_0xA = found_0xD = found_0x85 = found_0x2028 = 0;
+
   uint32_t cp;
   for (cp = 0x0; cp < 0x10FFFF; ++cp) {
     t4_set_input(&stack, cp_utf8, codepoint_as_utf8(cp_utf8, cp), 1);
@@ -62,8 +66,11 @@ int t4(void) {
     }
     if (r == _T4_LEXICAL_ERROR) {
       /* Failing to match the dot anychar is fine, provided the codepoint is a newline. */
-      if (cp != 0x0A) {
-        /* NOTE: If this fails with cp == 0xD then we're not in UTF-8 mode (enable on carburetta / check build flags.) */
+      if (cp == 0xA) { found_0xA = 1; }
+      else if (cp == 0xD) { found_0xD = 1; }
+      else if (cp == 0x85) { found_0x85 = 1; }
+      else if (cp == 0x2028) { found_0x2028 = 1; }
+      else {
         fprintf(stderr, "Lexical error on codepoint 0x%X\n", cp);
         rv = -3;
         goto fail;
@@ -73,6 +80,26 @@ int t4(void) {
       rv = -4;
       goto fail;
     }
+  }
+  if (!found_0xA) {
+    fprintf(stderr, "Dot unexpectedly matched on 0xA\n");
+    rv = -5;
+    goto fail;
+  }
+  if (!found_0xD) {
+    fprintf(stderr, "Dot unexpectedly matched on 0xD\n");
+    rv = -6;
+    goto fail;
+  }
+  if (!found_0x85) {
+    fprintf(stderr, "Dot unexpectedly matched on 0x85\n");
+    rv = -7;
+    goto fail;
+  }
+  if (!found_0x2028) {
+    fprintf(stderr, "Dot unexpectedly matched on 0x2028\n");
+    rv = -8;
+    goto fail;
   }
 
   rv = 0;
