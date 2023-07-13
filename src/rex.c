@@ -811,7 +811,7 @@ int rex_dfa_make_symbol_groups(struct rex_dfa *dfa) {
   r = rex_dfa_make_trans_group_priority_queue(dfa, &heap_length, &heap);
   if (r) goto cleanup;
 
-  size_t num_trans_groups = (size_t)dfa->trans_groups_->ordinal_;
+  size_t num_trans_groups = 1 + (size_t)dfa->trans_groups_->ordinal_;
 
   size_t dfa_trans_group_members_size = sizeof(uint64_t) * ((63 + num_trans_groups) / 64);
   dfa_trans_group_members = (uint64_t *)malloc(dfa_trans_group_members_size);
