@@ -1,3 +1,40 @@
+0.8.16 - 2023-07-14
+
+- Critical fixes as per below, please upgrade.
+
+- Improved regression test t4, it previously was incomplete which did not
+  surface until a recent change. The test now checks for the correct
+  behavior.
+
+- New `%header%` directive, it allows adding code directly to the generated
+  header to simplify resolving dependencies your scanners and parsers may
+  have.
+  Please see the manual at https://carburetta.com/manual.html for details.
+
+- Changed default behavior for `extern "C" { ... }`, it is no longer 
+  generated when Carburetta perceives that the scanner or parser is C++
+  code (i.e. detected by the presence of `%class` or `%common_class`.)
+  Please see the manual at https://carburetta.com/manual.html for details.
+
+- New `%externc` and `%no_externc` directives, to let you directly control
+  whether the generated header is wrapped in `extern "C" { ... }` or not;
+  overriding any default behavior.
+  Please see the manual at https://carburetta.com/manual.html for details.
+
+- Critical fix: `%type` without a `%destructor` would generate broken parsers. 
+
+- Critical fix: Buffer under-allocation in Carburetta itself, this could cause 
+  corruption in the generated scanner and is presumed to be the reason why t4 
+  previously passed.
+
+- fix when generating --x-utf8 UTF-8 based parser, and <PREFIX>LEXICAL_ERROR 
+  was returned (because the scanner could not match any pattern) and the first 
+  codepoint was multi-byte, then only the first byte was returned as the
+  matching text for the error. Thus the scanner would restart and immediately
+  bork over the next subsequent continuation byte. This is now fixed, the
+  new (correct) behavior is for it to return the entire codepoint.
+
+
 0.8.14 - 2023-06-21
 
 - Added regression tests t12 to t15, all of which are C++ tests that test
