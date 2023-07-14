@@ -1,0 +1,282 @@
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef VECTOR_INCLUDED
+#define VECTOR_INCLUDED
+#include <vector>
+#endif
+
+#ifndef STRING_INCLUDED
+#define STRING_INCLUDED
+#include <string>
+#endif
+
+#ifndef MEMORY_INCLUDED
+#define MEMORY_INCLUDED
+#include <memory>
+#endif
+
+#ifndef TILLY_PARSER_H_INCLUDED
+#define TILLY_PARSER_H_INCLUDED
+#include "tilly_parser.h"
+#endif
+
+#ifndef SITUS_H_INCLUDED
+#define SITUS_H_INCLUDED
+#include "situs.h"
+#endif
+
+#ifndef TILES_H_INCLUDED
+#define TILES_H_INCLUDED
+#include "tiles.h"   // include this so we grab the extern "C" on declarations
+#endif
+
+%scanner%
+%prefix tiles_
+
+%common_class Situs
+
+%params TillyParser &tp, Situs &input_situs
+
+%token BANG TILDE PERCENT PERCENT_EQUALS AMPERSAND AMPERSAND_AMPERSAND
+%token AMPERSAND_EQUALS PAR_OPEN PAR_CLOSE ASTERISK ASTERISK_EQUALS PLUS PLUS_PLUS
+%token COMMA MINUS MINUS_MINUS MINUS_EQUALS DOT DOT_DOT_DOT SLASH SLASH_EQUALS
+%token COLON SEMICOLON LT LT_LT LT_LT_EQUALS LT_EQUALS EQUALS EQUALS_EQUALS
+%token BANG_EQUALS GT GT_EQUALS GT_GT GT_GT_EQUALS ARROW SQBRACE_OPEN SQBRACE_CLOSE
+%token CARET CARET_EQUALS CUBRACE_OPEN CUBRACE_CLOSE BAR BAR_EQUALS BAR_BAR QUESTION_MARK
+%token INTEGER_LIT FLOAT_LIT STRING_LIT CHAR_LIT IDENT SPECIAL_IDENT 
+
+$: {
+  // Move Situs from the input to the current match
+  $.move_range(&input_situs, $endoffset - $offset, $text);
+}
+
+: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
+  /* C-Style comment (ignored) */
+}
+
+: / /.* {
+  // C++ style comment
+}
+
+: [\x9\xb\xc\xd]+ {
+  // Whitespace..
+}
+
+: (\r\n|\n) {
+  // Newline (whitespace)
+}
+
+: [\ \t\v\r\n]+ {
+  // Whitespace
+}
+
+BANG: ! {}
+TILDE: ~ {}
+PERCENT: % {}
+PERCENT_EQUALS: %= {}
+AMPERSAND: & {}
+AMPERSAND_AMPERSAND: && {}
+AMPERSAND_EQUALS: &= {}
+PAR_OPEN: \( {}
+PAR_CLOSE: \) {}
+ASTERISK: \* {}
+ASTERISK_EQUALS: \*= {}
+PLUS: \+ {}
+PLUS_PLUS: \+\+ {}
+COMMA: \, {}
+MINUS: \- {}
+MINUS_MINUS: \-\- {}
+
+ASTERISK: \* {}
+ASTERISK_EQUALS: \*= {}
+PLUS: \+ {}
+PLUS_PLUS: \+\+ {}
+COMMA: \, {}
+MINUS: \- {}
+MINUS_MINUS: \-\- {}
+MINUS_EQUALS: \-= {}
+DOT: \. {}
+DOT_DOT_DOT: \.\.\. {}
+SLASH: / {}
+SLASH_EQUALS: /= {}
+COLON: \: {}
+SEMICOLON: \; {}
+LT: < {}
+LT_LT: << {}
+LT_LT_EQUALS: <<= {}
+LT_EQUALS: <= {}
+EQUALS: = {}
+EQUALS_EQUALS: == {}
+BANG_EQUALS: != {}
+GT: > {}
+GT_EQUALS: >= {}
+GT_GT: >> {}
+GT_GT_EQUALS: >>= {}
+ARROW: \-> {}
+SQBRACE_OPEN: \[ {}
+SQBRACE_CLOSE: \] {}
+CARET: \^ {}
+CARET_EQUALS: \^= {}
+CUBRACE_OPEN: \{ {}
+CUBRACE_CLOSE: \} {}
+BAR: \| {}
+BAR_EQUALS: \|= {}
+BAR_BAR: \|\| {}
+QUESTION_MARK: \? {}
+
+INTEGER_LIT: [1-9] [0-9] *(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+INTEGER_LIT: 0[0-7]*(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+INTEGER_LIT: 0[xX][0-9a-fA-F]+(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+INTEGER_LIT: 0[bB][01]+(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+
+FLOAT_LIT: ([0-9]+\.)|([0-9]*\.[0-9]+)([eE][\+\-]?[0-9]+)?[flFL]? {}
+FLOAT_LIT: [0-9] +[eE][\+\-]?[0-9]+[flFL]? {}
+
+STRING_LIT: L?"(\\.|[^"\\])*" {}
+CHAR_LIT: L?'(\\.|[^'\\])*' {}
+
+IDENT: [a-zA-Z_] [0-9a-zA-Z_]* {
+  $$ = $text;
+}
+
+SPECIAL_IDENT: \$[0-9a-zA-Z_]*{}
+SPECIAL_IDENT: \$\${}
+
+%grammar%
+
+%nt grammar
+%nt rule tile tile-args tile-arg-list tile-arg opt-snippet snippet non-brace-token
+
+%class IDENT: std::string
+
+$: {
+  // Merge the situs from all matched productions
+  size_t n;
+  if ($len) {
+    for (n = 0; n < $len; n++) {
+      $.concat(&${n});
+    }
+  }
+  else {
+    // Empty production
+  }
+}
+
+grammar: ;
+grammar: grammar rule;
+
+/* ident: tile [{cost snippet}] = [{action snippet}] */
+rule: IDENT COLON tile opt-snippet EQUALS opt-snippet {
+  // Use the spans of the cost and action snippets to find the
+  // source file byte-ranges of those snippets.
+  size_t cost_start, cost_end;
+  size_t action_start, action_end;
+  ${3}.get_byte_range(&cost_start, &cost_end);
+  ${5}.get_byte_range(&action_start, &action_end);
+  Situs cost_snippet;
+  cost_snippet.clone_as_single_span_all_gaps_filled(&${3});
+  Situs action_snippet;
+  action_snippet.clone_as_single_span_all_gaps_filled(&${5});
+
+  tp.add_tile(${0}, $0.c_str(), $2, cost_snippet, cost_start, cost_end, action_snippet, action_start, action_end);
+}
+
+%class tile tile-arg: std::unique_ptr<ASTNode>
+
+tile: IDENT {
+  $$ = std::make_unique<ASTNode>();
+  $$->situs_ = ${0};
+  $$->ident_ = std::move($0);
+}
+
+tile: IDENT PAR_OPEN tile-args PAR_CLOSE {
+  $$ = std::make_unique<ASTNode>();
+  $$->situs_ = ${0};
+  $$->ident_ = std::move($0);
+  $$->children_ = std::move($2);
+}
+
+%class tile-args tile-arg-list: std::vector<std::unique_ptr<ASTNode> >
+
+tile-args: {
+}
+
+tile-args: tile-arg-list {
+  $$ = std::move($0);
+}
+
+tile-arg-list: tile-arg {
+  $$.push_back(std::move($0));
+}
+
+tile-arg-list: tile-arg-list COMMA tile-arg {
+  $$ = std::move($0);
+  $$.push_back(std::move($2));
+}
+
+tile-arg: tile {
+  $$ = std::move($0);
+}
+
+opt-snippet: CUBRACE_OPEN snippet CUBRACE_CLOSE {
+}
+
+opt-snippet: {
+}
+
+snippet: ;
+snippet: snippet non-brace-token;
+snippet: snippet CUBRACE_OPEN snippet CUBRACE_CLOSE;
+snippet: snippet PAR_OPEN snippet PAR_CLOSE;
+snippet: snippet SQBRACE_OPEN snippet SQBRACE_CLOSE;
+
+non-brace-token: BANG;
+non-brace-token: TILDE;
+non-brace-token: PERCENT;
+non-brace-token: PERCENT_EQUALS;
+non-brace-token: AMPERSAND;
+non-brace-token: AMPERSAND_AMPERSAND;
+non-brace-token: AMPERSAND_EQUALS;
+non-brace-token: ASTERISK;
+non-brace-token: ASTERISK_EQUALS;
+non-brace-token: PLUS;
+non-brace-token: PLUS_PLUS;
+non-brace-token: COMMA;
+non-brace-token: MINUS;
+non-brace-token: MINUS_MINUS;
+non-brace-token: MINUS_EQUALS;
+non-brace-token: DOT;
+non-brace-token: DOT_DOT_DOT;
+non-brace-token: SLASH;
+non-brace-token: SLASH_EQUALS;
+non-brace-token: COLON;
+non-brace-token: SEMICOLON;
+non-brace-token: LT;
+non-brace-token: LT_LT;
+non-brace-token: LT_LT_EQUALS;
+non-brace-token: LT_EQUALS;
+non-brace-token: EQUALS;
+non-brace-token: EQUALS_EQUALS;
+non-brace-token: BANG_EQUALS;
+non-brace-token: GT;
+non-brace-token: GT_EQUALS;
+non-brace-token: GT_GT;
+non-brace-token: GT_GT_EQUALS;
+non-brace-token: ARROW;
+non-brace-token: CARET;
+non-brace-token: CARET_EQUALS;
+non-brace-token: BAR;
+non-brace-token: BAR_EQUALS;
+non-brace-token: BAR_BAR;
+non-brace-token: QUESTION_MARK;
+non-brace-token: INTEGER_LIT;
+non-brace-token: FLOAT_LIT;
+non-brace-token: STRING_LIT;
+non-brace-token: CHAR_LIT;
+non-brace-token: IDENT;
+non-brace-token: SPECIAL_IDENT;
+

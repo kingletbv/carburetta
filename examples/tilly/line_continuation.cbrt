@@ -1,0 +1,66 @@
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef VECTOR_INCLUDED
+#define VECTOR_INCLUDED
+#include <vector>
+#endif
+
+#ifndef LINE_CONTINUATION_DEFS_H_INCLUDED
+#define LINE_CONTINUATION_DEFS_H_INCLUDED
+#include "line_continuation_defs.h"
+#endif
+
+#ifndef LINE_CONTINUATION_H_INCLUDED
+#define LINE_CONTINUATION_H_INCLUDED
+#include "line_continuation.h" // include this so we grab the extern "C" on declarations
+#endif
+
+#ifndef SITUS_H_INCLUDED
+#define SITUS_H_INCLUDED
+#include "situs.h"
+#endif
+
+%scanner%
+%prefix lc_
+%externc
+
+%common_class Situs
+
+%params const char *filename, std::vector<uint8_t> &output, Situs &output_situs
+
+$: {
+  $.num_spans_ = 1;
+  $.u_.one_.filename_ = filename;
+  $.u_.one_.is_substitution_ = 0;
+  $.u_.one_.num_bytes_ = $len;
+  $.u_.one_.start_ = $offset;
+  $.u_.one_.end_ = $endoffset;
+  $.u_.one_.start_line_ = $line;
+  $.u_.one_.start_col_ = $column;
+  $.u_.one_.end_line_ = $endline;
+  $.u_.one_.end_col_ = $endcolumn;
+}
+
+: \\\r\n|\\\n {
+  // Line continuation - we remove these from the stream by taking no action; we 
+  // record this as a substitution for nothing.
+  $.convert_to_substitution(0);
+  output_situs.concat(&$);
+}
+
+: \r\n|\n {
+  // Regular new line
+  output_situs.concat(&$);
+  output.insert(output.end(), $text, $text  + $len);
+  return LC_LINE_AVAILABLE;
+}
+
+: . {
+  // Anything else.
+  output_situs.concat(&$);
+  output.insert(output.end(), $text, $text  + $len);
+}

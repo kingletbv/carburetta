@@ -1,0 +1,11 @@
+#ifndef LINE_CONTINUATION_DEFS_H
+#define LINE_CONTINUATION_DEFS_H
+
+#ifndef SITUS_H_INCLUDED
+#define SITUS_H_INCLUDED
+#include "situs.h"
+#endif
+
+#define LC_LINE_AVAILABLE -1
+
+#endif /* LINE_CONTINUATION_DEFS_H */

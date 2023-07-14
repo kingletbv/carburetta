@@ -1,0 +1,11 @@
+#ifndef MULTI_LINE_COMMENTS_DEFS_H
+#define MULTI_LINE_COMMENTS_DEFS_H
+
+#ifndef SITUS_H_INCLUDED
+#define SITUS_H_INCLUDED
+#include "situs.h"
+#endif
+
+#define MLC_LINE_AVAILABLE -1
+
+#endif /* MULTI_LINE_COMMENTS_DEFS_H */

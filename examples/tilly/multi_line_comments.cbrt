@@ -1,0 +1,76 @@
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef VECTOR_INCLUDED
+#define VECTOR_INCLUDED
+#include <vector>
+#endif
+
+#ifndef MULTI_LINE_COMMENTS_DEFS_H_INCLUDED
+#define MULTI_LINE_COMMENTS_DEFS_H_INCLUDED
+#include "multi_line_comments_defs.h"
+#endif
+
+#ifndef MULTI_LINE_COMMENTS_H_INCLUDED
+#define MULTI_LINE_COMMENTS_H_INCLUDED
+#include "multi_line_comments.h"
+#endif
+
+#ifndef LINE_CONTINUATION_H_INCLUDED
+#define LINE_CONTINUATION_H_INCLUDED
+#include "line_continuation.h" // include this so we grab the extern "C" on declarations
+#endif
+
+#ifndef SITUS_H_INCLUDED
+#define SITUS_H_INCLUDED
+#include "situs.h"
+#endif
+
+%scanner%
+%prefix mlc_
+
+%common_class Situs
+
+%params Situs &input_situs, std::vector<uint8_t> &output, Situs &output_situs
+
+$: {
+  // Move Situs from the input to the current match
+  $.move_range(&input_situs, $endoffset - $offset, $text);
+}
+
+: / /.* {
+  // C++ comment up to, but not including the newline ('.' excludes newlines.)
+  // The C++ comment is eaten whole - record this as a substitution for nothing - newline remains.
+  $.convert_to_substitution(0);
+  output_situs.concat(&$);
+}
+
+: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
+  // C-style comment, replace with a single space.
+  $.convert_to_substitution(1);
+  output.push_back(' ');
+  output_situs.move_range(&$, 1, " ");
+}
+
+: \r\n|\n {
+  // Regular new line
+  output_situs.concat(&$);
+  output.insert(output.end(), $text, $text  + $len);
+  return MLC_LINE_AVAILABLE;
+}
+
+: . \Z {
+  // Character before the end.
+  output_situs.concat(&$);
+  output.insert(output.end(), $text, $text  + $len);
+  return MLC_LINE_AVAILABLE;
+}
+: . {
+  // Anything else.
+  output_situs.concat(&$);
+  output.insert(output.end(), $text, $text  + $len);
+}
+

@@ -1,0 +1,330 @@
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef VECTOR_INCLUDED
+#define VECTOR_INCLUDED
+#include <vector>
+#endif
+
+#ifndef STRING_INCLUDED
+#define STRING_INCLUDED
+#include <string>
+#endif
+
+#ifndef MEMORY_INCLUDED
+#define MEMORY_INCLUDED
+#include <memory>
+#endif
+
+#ifndef TILLY_PARSER_H_INCLUDED
+#define TILLY_PARSER_H_INCLUDED
+#include "tilly_parser.h"
+#endif
+
+#ifndef SITUS_H_INCLUDED
+#define SITUS_H_INCLUDED
+#include "situs.h"
+#endif
+
+#ifndef TILES_H_INCLUDED
+#define TILES_H_INCLUDED
+#include "tiles.h"   // include this so we grab the extern "C" on declarations
+#endif
+
+#ifndef SNIPPETS_H_INCLUDED
+#define SNIPPETS_H_INCLUDED
+#include "snippets.h"
+#endif
+
+%scanner%
+%prefix snippets_
+
+%common_class Situs
+
+%params TillyParser &tp, Situs &input_situs, ASTTile *tile, FILE *fpout
+
+%token BANG TILDE PERCENT PERCENT_EQUALS AMPERSAND AMPERSAND_AMPERSAND
+%token AMPERSAND_EQUALS PAR_OPEN PAR_CLOSE ASTERISK ASTERISK_EQUALS PLUS PLUS_PLUS
+%token COMMA MINUS MINUS_MINUS MINUS_EQUALS DOT DOT_DOT_DOT SLASH SLASH_EQUALS
+%token COLON COLON_COLON SEMICOLON LT LT_LT LT_LT_EQUALS LT_EQUALS EQUALS EQUALS_EQUALS
+%token BANG_EQUALS GT GT_EQUALS GT_GT GT_GT_EQUALS ARROW SQBRACE_OPEN SQBRACE_CLOSE
+%token CARET CARET_EQUALS CUBRACE_OPEN CUBRACE_CLOSE BAR BAR_EQUALS BAR_BAR QUESTION_MARK
+%token INTEGER_LIT FLOAT_LIT STRING_LIT CHAR_LIT IDENT DOLLAR
+%token WHITESPACE
+
+$: {
+  // Move Situs from the input to the current match
+  $.move_range(&input_situs, $len, $text);
+}
+
+%mode NO_FLOAT
+
+<DEFAULT, NO_FLOAT> {
+
+WHITESPACE: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
+  /* C-Style comment */
+}
+
+WHITESPACE: / /.* {
+  // C++ style comment
+}
+
+WHITESPACE: [\x9\xb\xc\xd]+ {
+  // Whitespace..
+}
+
+WHITESPACE: (\r\n|\n) {
+  // Newline (whitespace)
+}
+
+WHITESPACE: [\ \t\v\r\n]+ {
+  // Whitespace
+}
+
+BANG: ! {}
+TILDE: ~ {}
+PERCENT: % {}
+PERCENT_EQUALS: %= {}
+AMPERSAND: & {}
+AMPERSAND_AMPERSAND: && {}
+AMPERSAND_EQUALS: &= {}
+PAR_OPEN: \( {}
+PAR_CLOSE: \) {}
+ASTERISK: \* {}
+ASTERISK_EQUALS: \*= {}
+PLUS: \+ {}
+PLUS_PLUS: \+\+ {}
+COMMA: \, {}
+MINUS: \- {}
+MINUS_MINUS: \-\- {}
+
+ASTERISK: \* {}
+ASTERISK_EQUALS: \*= {}
+PLUS: \+ {}
+PLUS_PLUS: \+\+ {}
+COMMA: \, {}
+MINUS: \- {}
+MINUS_MINUS: \-\- {}
+MINUS_EQUALS: \-= {}
+DOT: \. {}
+DOT_DOT_DOT: \.\.\. {}
+SLASH: / {}
+SLASH_EQUALS: /= {}
+COLON: \: {}
+COLON_COLON: \:\: {}
+SEMICOLON: \; {}
+LT: < {}
+LT_LT: << {}
+LT_LT_EQUALS: <<= {}
+LT_EQUALS: <= {}
+EQUALS: = {}
+EQUALS_EQUALS: == {}
+BANG_EQUALS: != {}
+GT: > {}
+GT_EQUALS: >= {}
+GT_GT: >> {}
+GT_GT_EQUALS: >>= {}
+ARROW: \-> {}
+SQBRACE_OPEN: \[ {}
+SQBRACE_CLOSE: \] {}
+CARET: \^ {}
+CARET_EQUALS: \^= {}
+CUBRACE_OPEN: \{ {}
+CUBRACE_CLOSE: \} {}
+BAR: \| {}
+BAR_EQUALS: \|= {}
+BAR_BAR: \|\| {}
+QUESTION_MARK: \? {}
+
+%type INTEGER_LIT: uint64_t
+%constructor $$ = 0;
+INTEGER_LIT: [1-9] [0-9] *(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? { $$ = atoi($text); }
+INTEGER_LIT: 0[0-7]*(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? { $$ = 0; }
+INTEGER_LIT: 0[xX][0-9a-fA-F]+(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+INTEGER_LIT: 0[bB][01]+(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+
+STRING_LIT: L?"(\\.|[^"\\])*" {}
+CHAR_LIT: L?'(\\.|[^'\\])*' {}
+
+IDENT: [a-zA-Z_] [0-9a-zA-Z_]* {
+  $$ = $text;
+}
+
+DOLLAR: \$ {}
+} // mode <DEFAULT, NO_FLOAT>
+
+<DEFAULT> {
+// Excluding float literals when the mode is NO_FLOAT, this allows the grammar
+// to ignore floats and interpret $1.2.4$ as a node-path instead of a float
+FLOAT_LIT: ([0-9]+\.)|([0-9]*\.[0-9]+)([eE][\+\-]?[0-9]+)?[flFL]? {}
+FLOAT_LIT: [0-9] +[eE][\+\-]?[0-9]+[flFL]? {}
+}
+
+%grammar%
+
+%nt grammar token-list token node-spec node-path
+
+// non-terminals to switch the scanner to different modes at opportune times
+%nt switch-to-nofloat-mode switch-to-default-mode
+
+%class IDENT: std::string
+
+$: {
+  // Merge the situs from all matched productions
+  size_t n;
+  if ($len) {
+    for (n = 0; n < $len; n++) {
+      $.concat(&${n});
+    }
+  }
+  else {
+    // Empty production
+  }
+}
+
+grammar: token-list;
+
+token-list: ;
+token-list: token-list token {
+  size_t start, end;
+  ${1}.get_byte_range(&start, &end);
+  fwrite(tp.total_input_.data() + start, 1, end - start, fpout);
+}
+token-list: token-list node-spec;
+
+// Node specification of the form $0.1.2$ (selecting the first child (0), then its
+// second child (1), then its third child (2)) - a problem here is that $0.1.2$ by
+// default is tokenized as DOLLAR FLOAT_LIT DOT INTEGER_LIT DOLLAR tokens (i.e. the
+// 0.1 is a float) - we don't want this. By inserting a switch-to-nofloat-mode before
+// the DOLLAR token, the scanner will switch to the NO_FLOAT mode when the lookahead
+// is DOLLAR, and switch back to default after parsing the path (and the lookahead is
+// once more, DOLLAR.) Thus, when the scanner gets to node-path (after giving the 
+// parser DOLLAR), the scanner is in NO_FLOAT mode, and will not tokenize the 0.1 as
+// a FLOAT_LIT (because it is excluded from mode NO_FLOAT,) but as INTEGER_LIT DOT
+// INTEGER_LIT. This allows the node-path grammar to do its thing.
+node-spec: switch-to-nofloat-mode DOLLAR node-path switch-to-default-mode DOLLAR {
+  if ($2.node_) {
+    fprintf(fpout, "(%s)", $2.path_.c_str());
+  }
+  else {
+    fprintf(fpout, "(error on parsing node-path at %s(%d))", ${2}.filename(), ${2}.line());
+  }
+}
+
+// Here are the mode switching non-terminals. They are empty (no symbols on the 
+// productions) and just switch the mode when reduced.
+switch-to-nofloat-mode: {
+  $set_mode(NO_FLOAT);
+}
+
+switch-to-default-mode: {
+  $set_mode(DEFAULT);
+}
+
+%class node-path: struct { std::string path_; ASTNode *node_=nullptr; }
+
+node-path: INTEGER_LIT {
+  ASTNode *node = tile->root_.get();
+  if (!node) {
+    fprintf(stderr, "%s(%d,%d): Tile has no root\n", ${0}.filename(), ${0}.line(), ${0}.col());
+    tp.set_failure();
+  }
+  else {
+    if (node->children_.size() <= $0) {
+      fprintf(stderr, "%s(%d,%d): Tile root has no child %d\n", ${0}.filename(), ${0}.line(), ${0}.col(), (int)$0);
+      tp.set_failure();
+    }
+    else {
+      node = node->children_[$0].get();
+      if (!node) {
+        fprintf(stderr, "%s(%d,%d): Tile root is missing expected child %d\n", ${0}.filename(), ${0}.line(), ${0}.col(), (int)$0);
+        tp.set_failure();
+      }
+      else {
+        $$.node_ = node;
+        $$.path_ = "sn->children_[" + std::to_string($0) + "]";
+      }
+    }
+  }
+}
+
+node-path: node-path DOT INTEGER_LIT {
+  if ($0.node_) {
+    ASTNode *node = $0.node_;
+    if (node->children_.size() <= $2) {
+      fprintf(stderr, "%s(%d,%d): Node has no child %d\n", ${2}.filename(), ${2}.line(), ${2}.col(), (int)$2);
+      tp.set_failure();
+    }
+    else {
+      node = node->children_[$2].get();
+      if (!node) {
+        fprintf(stderr, "%s(%d,%d): Node is missing expected child %d\n", ${0}.filename(), ${0}.line(), ${0}.col(), (int)$2);
+        tp.set_failure();
+      }
+      else {
+        $$.node_ = node;
+        $$.path_ = $0.path_ + "->children_[" + std::to_string($2) + "]";
+      }
+    }
+  }
+  else {
+    // error already reported, safe to cascade up silently...
+  }
+}
+
+token: CUBRACE_OPEN;
+token: CUBRACE_CLOSE;
+token: PAR_OPEN;
+token: PAR_CLOSE;
+token: SQBRACE_OPEN;
+token: SQBRACE_CLOSE;
+
+token: BANG;
+token: TILDE;
+token: PERCENT;
+token: PERCENT_EQUALS;
+token: AMPERSAND;
+token: AMPERSAND_AMPERSAND;
+token: AMPERSAND_EQUALS;
+token: ASTERISK;
+token: ASTERISK_EQUALS;
+token: PLUS;
+token: PLUS_PLUS;
+token: COMMA;
+token: MINUS;
+token: MINUS_MINUS;
+token: MINUS_EQUALS;
+token: DOT;
+token: DOT_DOT_DOT;
+token: SLASH;
+token: SLASH_EQUALS;
+token: COLON;
+token: COLON_COLON;
+token: SEMICOLON;
+token: LT;
+token: LT_LT;
+token: LT_LT_EQUALS;
+token: LT_EQUALS;
+token: EQUALS;
+token: EQUALS_EQUALS;
+token: BANG_EQUALS;
+token: GT;
+token: GT_EQUALS;
+token: GT_GT;
+token: GT_GT_EQUALS;
+token: ARROW;
+token: CARET;
+token: CARET_EQUALS;
+token: BAR;
+token: BAR_EQUALS;
+token: BAR_BAR;
+token: QUESTION_MARK;
+token: INTEGER_LIT;
+token: FLOAT_LIT;
+token: STRING_LIT;
+token: CHAR_LIT;
+token: IDENT;
+token: WHITESPACE;

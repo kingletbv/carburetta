@@ -1,0 +1,240 @@
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef VECTOR_INCLUDED
+#define VECTOR_INCLUDED
+#include <vector>
+#endif
+
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
+#include <string>
+#endif
+
+#ifndef STDEXCEPT_INCLUDED
+#define STDEXCEPT_INCLUDED
+#include <stdexcept>
+#endif
+
+#ifndef TILLY_PARSER_H_INCLUDED
+#define TILLY_PARSER_H_INCLUDED
+#include "tilly_parser.h"
+#endif
+
+#ifndef SITUS_H_INCLUDED
+#define SITUS_H_INCLUDED
+#include "situs.h"
+#endif
+
+#ifndef DIRECTIVES_DEFS_H_INCLUDED
+#define DIRECTIVES_DEFS_H_INCLUDED
+#include "directives_defs.h"
+#endif
+
+#ifndef DIRECTIVES_H_INCLUDED
+#define DIRECTIVES_H_INCLUDED
+#include "directives.h"   // include this so we grab the extern "C" on declarations
+#endif
+
+%scanner%
+%prefix directives_
+
+%common_class Situs
+
+%params TillyParser &tp, Situs &input_situs
+
+%token BANG TILDE PERCENT PERCENT_EQUALS AMPERSAND AMPERSAND_AMPERSAND
+%token AMPERSAND_EQUALS PAR_OPEN PAR_CLOSE ASTERISK ASTERISK_EQUALS PLUS PLUS_PLUS
+%token COMMA MINUS MINUS_MINUS MINUS_EQUALS DOT DOT_DOT_DOT SLASH SLASH_EQUALS
+%token COLON SEMICOLON LT LT_LT LT_LT_EQUALS LT_EQUALS EQUALS EQUALS_EQUALS
+%token BANG_EQUALS GT GT_EQUALS GT_GT GT_GT_EQUALS ARROW SQBRACE_OPEN SQBRACE_CLOSE
+%token CARET CARET_EQUALS CUBRACE_OPEN CUBRACE_CLOSE BAR BAR_EQUALS BAR_BAR QUESTION_MARK
+%token INTEGER_LIT FLOAT_LIT STRING_LIT CHAR_LIT IDENT SPECIAL_IDENT WHITESPACE
+%token LABELS SYMBOLS
+
+%nt value
+
+%class INTEGER_LIT value: int
+
+$: {
+  // Move Situs from the input to the current match
+  $.move_range(&input_situs, $endoffset - $offset, $text);
+}
+
+WHITESPACE: /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ {
+  /* C-Style comment (ignored) */
+}
+
+: / /.* {
+  // C++ style comment
+}
+
+: [\x9\xb\xc\xd]+ {
+  // Whitespace..
+}
+
+: (\r\n|\n) {
+  // Newline (whitespace)
+}
+
+: [\ \t\v\r\n]+ {
+  // Whitespace
+}
+
+LABELS: labels {}
+SYMBOLS: symbols {}
+
+BANG: ! {}
+TILDE: ~ {}
+PERCENT: % {}
+PERCENT_EQUALS: %= {}
+AMPERSAND: & {}
+AMPERSAND_AMPERSAND: && {}
+AMPERSAND_EQUALS: &= {}
+PAR_OPEN: \( {}
+PAR_CLOSE: \) {}
+ASTERISK: \* {}
+ASTERISK_EQUALS: \*= {}
+PLUS: \+ {}
+PLUS_PLUS: \+\+ {}
+COMMA: \, {}
+MINUS: \- {}
+MINUS_MINUS: \-\- {}
+
+ASTERISK: \* {}
+ASTERISK_EQUALS: \*= {}
+PLUS: \+ {}
+PLUS_PLUS: \+\+ {}
+COMMA: \, {}
+MINUS: \- {}
+MINUS_MINUS: \-\- {}
+MINUS_EQUALS: \-= {}
+DOT: \. {}
+DOT_DOT_DOT: \.\.\. {}
+SLASH: / {}
+SLASH_EQUALS: /= {}
+COLON: \: {}
+SEMICOLON: \; {}
+LT: < {}
+LT_LT: << {}
+LT_LT_EQUALS: <<= {}
+LT_EQUALS: <= {}
+EQUALS: = {}
+EQUALS_EQUALS: == {}
+BANG_EQUALS: != {}
+GT: > {}
+GT_EQUALS: >= {}
+GT_GT: >> {}
+GT_GT_EQUALS: >>= {}
+ARROW: \-> {}
+SQBRACE_OPEN: \[ {}
+SQBRACE_CLOSE: \] {}
+CARET: \^ {}
+CARET_EQUALS: \^= {}
+CUBRACE_OPEN: \{ {}
+CUBRACE_CLOSE: \} {}
+BAR: \| {}
+BAR_EQUALS: \|= {}
+BAR_BAR: \|\| {}
+QUESTION_MARK: \? {}
+
+INTEGER_LIT: [1-9] [0-9] *(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+INTEGER_LIT: 0[0-7]*(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+INTEGER_LIT: 0[xX][0-9a-fA-F]+(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+INTEGER_LIT: 0[bB][01]+(((U|u)(L|l|LL|ll)?)|((L|l|LL|ll)(U|u)?))? {}
+
+FLOAT_LIT: ([0-9]+\.)|([0-9]*\.[0-9]+)([eE][\+\-]?[0-9]+)?[flFL]? {}
+FLOAT_LIT: [0-9] +[eE][\+\-]?[0-9]+[flFL]? {}
+
+STRING_LIT: L?"(\\.|[^"\\])*" {}
+CHAR_LIT: L?'(\\.|[^'\\])*' {}
+
+%class IDENT: std::string
+
+IDENT: [a-zA-Z_] [0-9a-zA-Z_]* {
+  // Identifier
+  $$ = $text;
+}
+
+SPECIAL_IDENT: \$[0-9a-zA-Z_]*{}
+SPECIAL_IDENT: \$\${}
+
+
+%grammar%
+%nt directive label-list symbol-list grammar
+
+grammar: ;
+grammar: grammar directive;
+
+directive: PERCENT PERCENT {
+  // %% means we switch from literal C code to whatever is the current mode; or back.
+  return DIR_TOGGLE_CODE_SECTION;
+}
+
+directive: PERCENT LABELS label-list {
+}
+
+label-list: IDENT {
+  if (std::find(tp.labels_.begin(), tp.labels_.end(), $0) != tp.labels_.end()) {
+    // Duplicate identifier
+    fprintf(stderr, "%s(%d): Duplicate label: %s\n", ${0}.filename(), ${0}.line(), $0.c_str());
+  }
+  else if (std::find(tp.symbols_.begin(), tp.symbols_.end(), $0) != tp.symbols_.end()) {
+    // Duplicate identifier
+    fprintf(stderr, "%s(%d): Label already exists as symbol: %s\n", ${0}.filename(), ${0}.line(), $0.c_str());
+  }
+  else {
+    tp.labels_.push_back(std::move($0));
+  }
+}
+
+label-list: label-list IDENT {
+  if (std::find(tp.labels_.begin(), tp.labels_.end(), $1) != tp.labels_.end()) {
+    // Duplicate identifier
+    fprintf(stderr, "%s(%d): Duplicate label: %s\n", ${1}.filename(), ${1}.line(), $1.c_str());
+  }
+  else if (std::find(tp.symbols_.begin(), tp.symbols_.end(), $1) != tp.symbols_.end()) {
+    // Duplicate identifier
+    fprintf(stderr, "%s(%d): Label already exists as symbol: %s\n", ${1}.filename(), ${1}.line(), $1.c_str());
+  }
+  else {
+    tp.labels_.push_back(std::move($1));
+  }
+}
+
+directive: PERCENT SYMBOLS symbol-list {
+}
+
+symbol-list: IDENT {
+  if (std::find(tp.symbols_.begin(), tp.symbols_.end(), $0) != tp.symbols_.end()) {
+    // Duplicate identifier
+    fprintf(stderr, "%s(%d): Duplicate label: %s\n", ${0}.filename(), ${0}.line(), $0.c_str());
+  }
+  else if (std::find(tp.labels_.begin(), tp.labels_.end(), $0) != tp.labels_.end()) {
+    // Duplicate identifier
+    fprintf(stderr, "%s(%d): Symbol already exists as label: %s\n", ${0}.filename(), ${0}.line(), $0.c_str());
+  }
+  else {
+    tp.symbols_.push_back(std::move($0));
+  }
+}
+
+symbol-list: symbol-list IDENT {
+  if (std::find(tp.symbols_.begin(), tp.symbols_.end(), $1) != tp.symbols_.end()) {
+    // Duplicate identifier
+    fprintf(stderr, "%s(%d): Duplicate label: %s\n", ${1}.filename(), ${1}.line(), $1.c_str());
+  }
+  else if (std::find(tp.labels_.begin(), tp.labels_.end(), $1) != tp.labels_.end()) {
+    // Duplicate identifier
+    fprintf(stderr, "%s(%d): Symbol already exists as label: %s\n", ${1}.filename(), ${1}.line(), $1.c_str());
+  }
+  else {
+    tp.symbols_.push_back(std::move($1));
+  }
+}
+
+value: INTEGER_LIT { $$ = $0; }
+

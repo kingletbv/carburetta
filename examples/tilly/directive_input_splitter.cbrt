@@ -1,0 +1,57 @@
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef VECTOR_INCLUDED
+#define VECTOR_INCLUDED
+#include <vector>
+#endif
+
+#ifndef DIRECTIVE_INPUT_SPLITTER_DEFS_H_INCLUDED
+#define DIRECTIVE_INPUT_SPLITTER_DEFS_H_INCLUDED
+#include "directive_input_splitter_defs.h"
+#endif
+
+#ifndef DIRECTIVE_INPUT_SPLITTER_H_INCLUDED
+#define DIRECTIVE_INPUT_SPLITTER_H_INCLUDED
+#include "directive_input_splitter.h"
+#endif
+
+%header%
+// Are you picking this up???
+%header%
+%%
+
+#ifndef SITUS_H_INCLUDED
+#define SITUS_H_INCLUDED
+#include "situs.h"
+#endif
+
+%scanner%
+%prefix dis_
+
+%common_class Situs
+%externc
+
+%params Situs &input_situs, std::vector<uint8_t> &output, Situs &output_situs
+
+$: {
+  // Move Situs from the input to the current match
+  $.move_range(&input_situs, $endoffset - $offset, $text);
+}
+
+: [\ \t\v]* % .* (\r\n|\n)? {
+  // A directive line
+  output_situs.concat(&$);
+  output.insert(output.end(), $text, $text  + $len);
+  return DIS_DIRECTIVE_LINE_AVAILABLE;
+}
+
+: .* (\r\n|\n)? {
+  // Anything else; part of whatever the current section is.
+  output_situs.concat(&$);
+  output.insert(output.end(), $text, $text  + $len);
+  return DIS_SECTION_LINE_AVAILABLE;
+}
