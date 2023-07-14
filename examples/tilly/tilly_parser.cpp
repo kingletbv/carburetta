@@ -28,6 +28,11 @@
 #include <stdexcept>
 #endif
 
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
+#include <string.h>
+#endif
+
 #ifndef TILLY_PARSER_H_INCLUDED
 #define TILLY_PARSER_H_INCLUDED
 #include "tilly_parser.h"
@@ -809,7 +814,6 @@ void TillyParser::emit_snippet(FILE *fp, ASTTile *tile, bool emit_cost_tile_othe
     // XXX: This snippets_stack_reset() is called so the reset doesn't occur inside snippets_scan(). If it were to
     //      occur in snippets_scan(), we'd lose the location information we set with snippets_set_location().
     snippets_stack_reset(&snip);
-    size_t input_len = snippet_end - snippet_start;
     snippets_set_input(&snip, (const char *)total_input_.data() + snippet_start, snippet_end - snippet_start, 1);
     snippets_set_location(&snip, snippet.line(), snippet.col(), snippet_start);
     int r;

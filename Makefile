@@ -14,8 +14,14 @@ TESTS_C = $(patsubst tester/%.cbrt,$(INTERMEDIATE)/tester/%.c,$(TESTS_SRC))
 TESTS_CPP = $(patsubst tester/cpp/%.cbrt,$(INTERMEDIATE)/tester/cpp/%.cpp,$(TESTS_CPP_SRC))
 TESTS_CPP_OBJ = $(patsubst tester/cpp/%.cbrt,$(INTERMEDIATE)/tester/cpp/%.o,$(TESTS_CPP_SRC))
 
+TILLY_CBRT_SRC = $(wildcard examples/tilly/*.cbrt)
+TILLY_CPP_SRC = $(wildcard examples/tilly/*.cpp)
+TILLY_CBRT_CPP_SRC = $(patsubst examples/tilly/%.cbrt,$(INTERMEDIATE)/tilly/%.cpp,$(TILLY_CBRT_SRC))
+TILLY_CBRT_CPP_OBJ = $(patsubst examples/tilly/%.cbrt,$(INTERMEDIATE)/tilly/%.o,$(TILLY_CBRT_SRC))
+TILLY_CPP_OBJ = $(patsubst examples/tilly/%.cpp,$(INTERMEDIATE)/tilly/%.o,$(TILLY_CPP_SRC))
+
 .PHONY: all
-all: $(OUT)/carburetta $(OUT)/calc $(OUT)/template_scan $(OUT)/inireader $(OUT)/tester
+all: $(OUT)/carburetta $(OUT)/calc $(OUT)/template_scan $(OUT)/inireader $(OUT)/tilly $(OUT)/tester
 
 $(INTERMEDIATE)/%.o: $(SRC)/%.c
 	@mkdir -p $(@D)
@@ -63,6 +69,21 @@ $(INTERMEDIATE)/tester/cpp/%.o: $(INTERMEDIATE)/tester/cpp/%.cpp
 	$(CC) $(CXXFLAGS) -c $^ -o $@
 
 $(OUT)/tester: $(TESTS_C) $(TESTS_CPP_OBJ) tester/tester.c
+	$(CC) -o $@ $^ -lstdc++
+
+  
+.PRECIOUS: $(INTERMEDIATE)/tilly/%.cpp
+$(INTERMEDIATE)/tilly/%.cpp: examples/tilly/%.cbrt
+	mkdir -p $(@D)
+	$(OUT)/carburetta --x-utf8 $< --c $@ --h
+
+$(INTERMEDIATE)/tilly/%.o: $(INTERMEDIATE)/tilly/%.cpp $(TILLY_CBRT_CPP_SRC)
+	$(CC) $(CXXFLAGS) -c $< -o $@ -lstdc++ -I examples/tilly/ -I $(INTERMEDIATE)/tilly/
+
+$(INTERMEDIATE)/tilly/%.o: examples/tilly/%.cpp $(TILLY_CBRT_CPP_SRC)
+	$(CC) $(CXXFLAGS) -c $< -o $@ -lstdc++ -I examples/tilly/ -I $(INTERMEDIATE)/tilly/
+
+$(OUT)/tilly: $(TILLY_CPP_OBJ) $(TILLY_CBRT_CPP_OBJ)
 	$(CC) -o $@ $^ -lstdc++
 
 .PHONY: clean

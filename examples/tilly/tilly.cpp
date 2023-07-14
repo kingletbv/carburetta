@@ -3,12 +3,15 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
+#include <string.h>
 
 #include <map>
 #include <memory>
 #include <vector>
 #include <system_error>
 #include <stdexcept>
+#include <algorithm>
 
 #include "tilly_parser.h"
 
@@ -210,7 +213,7 @@ void subject_node::visit() {
 void subject_node::post_process() {
   bool first = true;
   for (auto &child: children_) {
-    for (int n = 0; n < sizeof(matches_) / sizeof(*matches_); ++n) {
+    for (size_t n = 0; n < sizeof(matches_) / sizeof(*matches_); ++n) {
       if (first) {
         matches_[n] = child->matches_[n] >> 1;
       }
@@ -228,7 +231,7 @@ void subject_node::post_process() {
 }
 
 void subject_node::do_reduce() {
-  for (int n = 0; n < sizeof(matches_) / sizeof(*matches_); ++n) {
+  for (size_t n = 0; n < sizeof(matches_) / sizeof(*matches_); ++n) {
     if (matches_[n] & 1) {
       int computed_cost = INT_MAX;
       // Compute costs, note that, at this point, the tiles already
@@ -259,7 +262,7 @@ void subject_node::do_reduce() {
       int pre_existing_cost = non_terminal_cost_.count(symbol_reduced_to) ? non_terminal_cost_[symbol_reduced_to] : INT_MAX;
       if (pre_existing_cost > computed_cost) {
         non_terminal_cost_[symbol_reduced_to] = computed_cost;
-        non_terminal_match_[symbol_reduced_to] = n;
+        non_terminal_match_[symbol_reduced_to] = (int)n;
 
         // Find the new state we arrive at on transitioning from the parent state through the symbol_reduced_to
         // state. Check if it is accepting and, if so, make sure the appropriate bits are cascaded up.
@@ -600,8 +603,6 @@ int main(int argc, char **argv) {
 
   auto *xp = x.get();
   xp->visit();
-
-  auto *p = automaton_nodes_[0].get();
 
   return r;
 }

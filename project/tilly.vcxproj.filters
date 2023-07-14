@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="..\examples\tilly\directives_defs.h" />
+    <ClInclude Include="..\examples\tilly\directive_input_splitter_defs.h" />
+    <ClInclude Include="..\examples\tilly\line_continuation_defs.h" />
+    <ClInclude Include="..\examples\tilly\multi_line_comments_defs.h" />
+    <ClInclude Include="..\examples\tilly\situs.h" />
+    <ClInclude Include="..\examples\tilly\tiles_defs.h" />
+    <ClInclude Include="..\examples\tilly\tilly_parser.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\examples\tilly\situs.cpp" />
+    <ClCompile Include="..\examples\tilly\tilly.cpp" />
+    <ClCompile Include="..\examples\tilly\tilly_parser.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\examples\tilly\directives.cbrt" />
+    <CustomBuild Include="..\examples\tilly\directive_input_splitter.cbrt" />
+    <CustomBuild Include="..\examples\tilly\line_continuation.cbrt" />
+    <CustomBuild Include="..\examples\tilly\multi_line_comments.cbrt" />
+    <CustomBuild Include="..\examples\tilly\snippets.cbrt" />
+    <CustomBuild Include="..\examples\tilly\tiles.cbrt" />
+  </ItemGroup>
+</Project>

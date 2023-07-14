@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #endif
 
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
+#include <stdint.h>
+#endif
+
 #ifndef VECTOR_INCLUDED
 #define VECTOR_INCLUDED
 #include <vector>
@@ -22,6 +27,12 @@
 #ifndef SITUS_H_INCLUDED
 #define SITUS_H_INCLUDED
 #include "situs.h"
+#endif
+
+%header%
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
+#include <stdint.h> /* uint8_t */
 #endif
 
 %scanner%

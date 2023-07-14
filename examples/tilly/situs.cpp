@@ -55,7 +55,7 @@ void Situs::reset() {
   num_spans_ = 0;
 }
 
-__declspec(noinline) int Situs::move_range(Situs *from, size_t byte_length, const char *text) {
+int Situs::move_range(Situs *from, size_t byte_length, const char *text) {
   Situs chop;
 
   while (byte_length) {
