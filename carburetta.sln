@@ -28,6 +28,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tester", "project\tester.vc
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tilly", "project\tilly.vcxproj", "{0DE9970F-4A07-4E77-A6FD-232BA8CA256E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BF90520E-4A1A-4AF7-B778-8041EFA5693D} = {BF90520E-4A1A-4AF7-B778-8041EFA5693D}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
