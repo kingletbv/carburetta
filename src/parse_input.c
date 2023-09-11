@@ -1456,21 +1456,12 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
             have_error = 1;
             break;
           case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
-            /* Finish up */
-            r = pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
-
             where_are_we = default_mode = SCANNER;
             break;
           case LD_CARBURETTA_HEADER_SECTION_DELIMETER:
-            /* Finish up */
-            r = pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
-
             where_are_we = HEADER;
             break;
           case LD_CARBURETTA_SECTION_DELIMITER:
-            /* Finish up */
-            r = pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
-
             where_are_we = EPILOGUE;
             break;
           case LD_REGULAR:
@@ -1501,21 +1492,12 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
             have_error = 1;
             break;
           case LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER:
-            /* Finish up */
-            r = pi_process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, prdg, &cc->symtab_);
-
             where_are_we = default_mode = GRAMMAR;
             break;
           case LD_CARBURETTA_HEADER_SECTION_DELIMETER:
-            /* Finish up */
-            r = pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
-
             where_are_we = HEADER;
             break;
           case LD_CARBURETTA_SECTION_DELIMITER:
-            /* Finish up */
-            r = pi_process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, prdg, &cc->symtab_);
-
             where_are_we = EPILOGUE;
             break;
           case LD_REGULAR:
@@ -1609,21 +1591,13 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
   } while (num_bytes_read);
 
   /* Process the End of Input */
-  if ((where_are_we == PROLOGUE) || (where_are_we == HEADER)) {
-    /* No parsing to finish (prologue and header are user code) */
-  }
-  else if (where_are_we == GRAMMAR) {
-    /* Finish grammar parsing (is_final == 1) */
-    pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
-  }
-  else if (where_are_we == SCANNER) {
-    /* Finish scanner parsing (is_final == 1) */
-    pi_process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, prdg, &cc->symtab_);
-  }
-  else /* (where_are_we == EPILOGUE) */ {
-    /* No parsing to finish (epilogue is also user code) */
-  }
-    
+
+  /* Finish grammar parsing (is_final == 1) */
+  pi_process_grammar_tokens(&tkr_tokens, &token_buf, 1, &prds, prdg, &cc->symtab_);
+
+  /* Finish scanner parsing (is_final == 1) */
+  pi_process_scanner_tokens(&tkr_tokens, &token_buf, 1, &rxgs, prdg, &cc->symtab_);
+   
   /* Finished parsing */
   if (prdg->have_errors_ || have_error) {
     r = 1;
