@@ -204,7 +204,8 @@ struct cli_args {
   { 'v', "version", NULL, "Print version information.", 0 },
   { 'c', "c", "[<c_filename>]", "Generate a C file and output it to c_filename. If no filename is specified, then output will be to stdout.", 1 },
   { 'h', "h", "[<h_filename>]", "Generate a C header file and output it to h_filename. If no filename is present, a c_filename must be present as it will then be used to derive a filename for the header file.", 1},
-  { '8', "x-utf8", NULL, "Generate a parser that reads input as UTF-8", 0}
+  { '8', "x-utf8", NULL, "Generate a parser that reads input as UTF-8 (default)", 0},
+  { 'r', "x-raw", NULL, "Generate a parser that reads input as raw (latin-1) bytes", 0}
 };
 
 int process_option(int argc, const char **argv, int *arg_index, int permit_default_arg) {
@@ -404,7 +405,13 @@ int main(int argc, char **argv) {
         }
         break;
       case '8':
+        if (cc.utf8_experimental_) {
+          re_error_nowhere("Deprecated: --x-utf8 not necessary, UTF-8 is now the default");
+        }
         cc.utf8_experimental_ = 1;
+        break;
+      case 'r':
+        cc.utf8_experimental_ = 0;
         break;
       case '?':
         print_usage(stdout);

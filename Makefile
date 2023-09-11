@@ -54,16 +54,16 @@ $(OUT)/template_scan: $(INTERMEDIATE)/template_scan/template_scan.c
 .PRECIOUS: $(INTERMEDIATE)/tester/%.c
 $(INTERMEDIATE)/tester/%.c: tester/%.cbrt
 	mkdir -p $(@D)
-	$(OUT)/carburetta --x-utf8 $< --c $@ --h
+	$(OUT)/carburetta $< --c $@ --h
 
 $(INTERMEDIATE)/tester/t3.c: tester/t3.cbrt
 	mkdir -p $(@D)
-	$(OUT)/carburetta $< --c $@ --h
+	$(OUT)/carburetta --x-raw $< --c $@ --h
 
 .PRECIOUS: $(INTERMEDIATE)/tester/cpp/%.cpp
 $(INTERMEDIATE)/tester/cpp/%.cpp: tester/cpp/%.cbrt
 	mkdir -p $(@D)
-	$(OUT)/carburetta --x-utf8 $< --c $@ --h
+	$(OUT)/carburetta $< --c $@ --h
 
 $(INTERMEDIATE)/tester/cpp/%.o: $(INTERMEDIATE)/tester/cpp/%.cpp
 	$(CC) $(CXXFLAGS) -c $^ -o $@
@@ -75,7 +75,7 @@ $(OUT)/tester: $(TESTS_C) $(TESTS_CPP_OBJ) tester/tester.c
 .PRECIOUS: $(INTERMEDIATE)/tilly/%.cpp
 $(INTERMEDIATE)/tilly/%.cpp: examples/tilly/%.cbrt
 	mkdir -p $(@D)
-	$(OUT)/carburetta --x-utf8 $< --c $@ --h
+	$(OUT)/carburetta $< --c $@ --h
 
 $(INTERMEDIATE)/tilly/%.o: $(INTERMEDIATE)/tilly/%.cpp $(TILLY_CBRT_CPP_SRC)
 	$(CC) $(CXXFLAGS) -c $< -o $@ -lstdc++ -I examples/tilly/ -I $(INTERMEDIATE)/tilly/

@@ -23,16 +23,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
     </CustomBuild>
@@ -42,16 +42,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
     </CustomBuild>
@@ -61,16 +61,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
     </CustomBuild>
@@ -80,16 +80,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
     </CustomBuild>
@@ -99,16 +99,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
     </CustomBuild>
@@ -118,16 +118,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe --x-utf8 %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --x-utf8 --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe %(FullPath) --c $(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp --h</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\tilly\obj\%(Filename).cpp</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
     </CustomBuild>
