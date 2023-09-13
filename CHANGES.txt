@@ -1,3 +1,39 @@
+0.8.18 - 2023-09-13
+
+ - IMPORTANT: UTF-8 is now the default encoding. This is a breaking change.
+   To specify the old RAW behavior, use the new --x-raw flag.
+   The --x-utf8 flag is now deprecated and will be removed in a future
+   release; for now it will issue a deprecation warning message.
+   Please see the https://carburetta.com/manual.html#unicode-support section
+   of the manual, in particular "Future direction" for the intended
+   future of raw mode (the way it handles line endings will change.)
+
+ - Fix for plain %type with no %constructor, %destructor or %move, the
+   data would not have been moved correctly internally from the generated 
+   scanner to the generated parser. Work-around is easy (use %class if on
+   C++ or add any of %constructor, %destructor and %move if on C) but the
+   tragedy is you'd hit this on the simplest of examples, and not know
+   what's going on.
+
+ - Allow %% .. %% code snippet sections when inside a scanner section's 
+   <MODE> { ... } -- this was always the intent, however, the "%%" section
+   delimiter was (like all section delimiters) seen as the end of the 
+   preceeding section, implying that the grammar of that preceeding section
+   must have completed (i.e. no open braces, no open parentheses, etc.)
+   Fixed by leaving grammar and scanner sections open until the end of the 
+   file.
+
+ - New "Tilly" example, this is a work in progress. Tilly is a tile matching
+   engine which is useful if you're implementing a compiler backend and have
+   to select machine instructions to match your expression trees, especially
+   for CISC type architectures. The Tilly example is a work in progress, it
+   implements the algorithm from the 1989 paper:
+   "Code Generation Using Tree Matching and Dynamic Programming"
+   by Alfred V. Aho, Mahadevan Ganapathi and Steven W.K. Tjiang.
+   It will take a while for this example to mature (and clean up) - for now
+   it is a good example of how to use Carburetta to implement a more complex
+   multi-stage parser.
+
 0.8.16 - 2023-07-14
 
 - Critical fixes as per below, please upgrade.
