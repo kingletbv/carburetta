@@ -1,3 +1,9 @@
+0.8.20 - 2023-09-14
+
+ - For std::move generated code, don't rely on #include <type_traits> but
+   specifically #include <utility> (fixes compile failure on later
+   gcc compilers.)
+
 0.8.18 - 2023-09-13
 
  - IMPORTANT: UTF-8 is now the default encoding. This is a breaking change.
