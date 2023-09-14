@@ -5506,6 +5506,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     ip_printf(ip, "#else\n");
     ip_printf(ip, "#include <type_traits> // std::enable_if<>\n");
     ip_printf(ip, "#include <new>         // placement new\n");
+    ip_printf(ip, "#include <utility>     // std::move<>\n");
     ip_printf(ip, "#endif\n");
     ip_printf(ip, "\n");
     ip_printf(ip, "template<typename T>\n"
