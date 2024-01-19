@@ -106,14 +106,20 @@
 
 #ifdef _MSC_VER
 static char *memvasprintf(const char *format, va_list args) {
-  char *p = (char *)malloc(_vscprintf(format, args) + 1);
-  vsprintf(p, format, args);
+  int len = _vscprintf(format, args);
+  if (len < 0) return NULL;
+  char *p = (char *)malloc(len + 1);
+  if (!p) return NULL;
+  if (0 > vsprintf(p, format, args)) {
+    free(p);
+    return NULL;
+  }
   return p;
 }
 #else
 char *memvasprintf(const char *format, va_list args) {
   char *p;
-  vasprintf(&p, format, args);
+  if (-1 == vasprintf(&p, format, args)) return NULL;
   return p;
 }
 #endif
@@ -173,6 +179,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
   int had_syntax_error = 0;
   snippet_init(&dir_snippet);
   enum {
+    PCD_DIRECTIVE_NOT_SET,
     PCD_NT_DIRECTIVE,
     PCD_TOKEN_DIRECTIVE,
     PCD_TOKEN_TYPE_DIRECTIVE,
@@ -203,7 +210,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_MODE,
     PCD_EXTERNC,
     PCD_NO_EXTERNC
-  } directive;
+  } directive = PCD_DIRECTIVE_NOT_SET;
   tok_switch_to_nonterminal_idents(tkr_tokens);
 
   r = tkr_tokenizer_inputx(tkr_tokens, directive_line_match, 1);
