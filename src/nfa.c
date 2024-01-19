@@ -64,6 +64,9 @@
 #include "xlalr.h"
 #endif
 
+#define USE_PRECOMPILED_PARSETABLE 1
+#define WRITE_PARSETABLE_TO_FILE 0
+
 #define DEF_SYMS     \
   xx(NT_END)         \
   xx(RULE_END)       \
@@ -132,17 +135,12 @@ struct sym_stack {
 
 static void make_empty_trans(struct nfa *nfa, size_t from, size_t to);
 static void make_trans(struct nfa *nfa, size_t from, char c, size_t to);
-static void free_node(struct nfa *nfa, size_t node_index);
 static size_t make_node(struct nfa *nfa);
 static void *arealloc(void *mem, size_t count, size_t size);
 static int is_in_set(char c, const char *str);
 
-static const char *sym_ids[] = {
-#define xx(s) #s,
-  DEF_SYMS
-#undef xx
-};
-
+/* grammar[]  are only used when generating new tables */
+#if !USE_PRECOMPILED_PARSETABLE
 static int grammar[] = {
   REG_EXP, NT_END, REG_TERM, RULE_END,
   REG_EXP, NT_END, REG_EXP, SYM_BAR, REG_TERM, RULE_END,
@@ -171,6 +169,7 @@ static int grammar[] = {
 
   GRAMMAR_END
 };
+#endif
 
 static int reduce(struct nfa_parse_context *ctx, int production, union sym_data_union *syms) {
   size_t i, f;
@@ -351,28 +350,6 @@ static size_t make_node(struct nfa *nfa) {
   }
   memset(nfa->nfa_nodes + node, 0, sizeof(struct nfa_node));
   return node;
-}
-
-static void free_node(struct nfa *nfa, size_t node_index) {
-  size_t n;
-  struct nfa_node *node = nfa->nfa_nodes + node_index;
-  if (nfa->free_nfa == ~(size_t)0) {
-    /* Buffer up node as first to be reserved, this helps
-     * reduce allocations when chaining up sequences of
-     * sub-NFA's */
-    nfa->free_nfa = node_index;
-  }
-  for (n = 0; n < 257; ++n) {
-    struct nfa_trans *trans = (n != 256) ? node->moves[n] : node->empty_move;
-    if (trans) {
-      do {
-        struct nfa_trans *trans_to_free = trans;
-        trans = trans->next_trans;
-
-        free(trans_to_free);
-      } while (trans);
-    }
-  }
 }
 
 static void make_trans(struct nfa *nfa, size_t from, char c, size_t to) {
@@ -667,9 +644,6 @@ int nfa_merge_nfas(struct nfa *dst, struct nfa *src, size_t *new_src_end_node) {
   return 0;
 }
 
-#define USE_PRECOMPILED_PARSETABLE 1
-#define WRITE_PARSETABLE_TO_FILE 0
-
 #if !USE_PRECOMPILED_PARSETABLE
 static int nfa_get_parsetable(int **parse_table, size_t **production_lengths, int **production_syms,
                               int *minimum_sym, size_t *num_columns, size_t *num_rows, size_t *num_productions) {
@@ -713,8 +687,6 @@ static int nfa_get_parsetable(int **parse_table, size_t **production_lengths, in
   FILE *fp = fopen("parsetable.c", "wb");
   fprintf(fp, "static int minimum_sym = %d;\n", *minimum_sym);
   fprintf(fp, "static size_t num_columns = %u;\n", (unsigned int)(*num_columns));
-  fprintf(fp, "static size_t num_rows = %u;\n", (unsigned int)(*num_rows));
-  fprintf(fp, "static size_t num_productions = %u;\n", (unsigned int)(*num_productions));
   fprintf(fp, "static int parse_table[] = {\n");
   for (row = 0; row < *num_rows; ++row) {
     for (col = 0; col < *num_columns; ++col) {
@@ -757,8 +729,6 @@ static int nfa_release_parsetable(int **parse_table, size_t **production_lengths
 #else
 static int minimum_sym = 3;
 static size_t num_columns = 21;
-static size_t num_rows = 28;
-static size_t num_productions = 20;
 static int parse_table[] = {
   -4, -4, 0, -4, 0, -4, -4, -4, 0, -4, 0, 0, 0, -4, 2, 3, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0,
