@@ -3011,7 +3011,6 @@ static int check_have_sym_types(struct carburetta_context *cc) {
     struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
     struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
     size_t n;
-    int have_some = 0;
     for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
       struct symbol *sym = the_syms[n];
       if (sym) {
@@ -3988,7 +3987,6 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
     struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
     size_t n;
-    int have_some = 0;
     for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
       struct symbol *sym = the_syms[n];
       if (sym) {
@@ -4271,7 +4269,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   emit_push_state(ip, cc, prdg, lalr, state_syms, "action");
 
   ip_printf(ip, "\n");
-  int need_sym_data = 0;
+
   ip_printf(ip, "        stack->sym_data_ = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
   ip_printf(ip, "        stack->top_of_stack_has_sym_data_ = 0;\n");
   if (cc->common_data_assigned_type_) {
@@ -4298,7 +4296,6 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   int have_token_actions = 0;
   size_t ts_idx;
   for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
-    int found_matching_terms = 0;
     struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
     struct symbol *term = cc->symtab_.terminals_;
     if (term) {
@@ -4943,8 +4940,6 @@ int encode_utf8_code_units(struct rex_scanner *rex, size_t num_digits, uint8_t *
       needs[n + 1] = RANGE;
     }
   }
-
-  int node_idx = 0;
 
   if (needs[num_digits] == EXACT) {
     nodes[num_digits].mid = to_nfa;
@@ -5631,29 +5626,6 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
       ip_printf(ip, "};\n");
       ip_printf(ip, "static const size_t %snum_scan_table_grouped_columns_ = %zu;\n", cc_prefix(cc), num_columns);
 
-      /* Raw encoding map */
-      int srmap[256] = {0};
-      struct rex_symbol_group *sg =rex->dfa_.symbol_groups_;
-      if (sg) {
-        do {
-          sg = sg->chain_;
-
-          struct rex_symbol_range *sr = sg->ranges_;
-          if (sr) {
-            do {
-              sr = sr->chain_;
-
-              uint32_t sym;
-              for (sym = sr->symbol_start_; sym != sr->symbol_end_; ++sym) {
-                if (sym < 256) {
-                  srmap[sym] = sg->ordinal_;
-                }
-              }
-            } while (sr != sg->ranges_);
-          }
-        } while (sg != rex->dfa_.symbol_groups_);
-      }
-
       /* UTF-8 encoding map */
       struct rex_scanner utf8_scanner;
       rex_init(&utf8_scanner);
@@ -5667,7 +5639,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
         goto cleanup_exit;
       }
 
-      sg = rex->dfa_.symbol_groups_;
+      struct rex_symbol_group *sg =rex->dfa_.symbol_groups_;
       if (sg) {
         do {
           sg = sg->chain_;
