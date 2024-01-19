@@ -64,6 +64,10 @@ typedef enum dct_token {
 
 static struct sc_scanner g_dct_scanner_;
 
+#if __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
 static const struct sc_scan_rule g_dct_scanner_rules_[] = {
 #define xx(regex, line_type) { regex, line_type, line_type },
 #define xz(line_type)
@@ -71,7 +75,9 @@ ENUM_DCT_TOKENS
 #undef xz
 #undef xx
 };
-
+#if __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 int dct_init(void) {
   int r;
