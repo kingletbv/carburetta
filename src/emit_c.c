@@ -911,31 +911,6 @@ static int emit_token_action_snippet(struct indented_printer *ip, struct carbure
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
-static int emit_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts, int retry_on_exit) {
-  struct snippet_emission se = { 0 };
-  if (!ts) return 0;
-  se.code_ = &ts->constructor_snippet_;
-  se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
-  se.dest_typestr_ = ts;
-  se.dest_fmt_ = "((stack->stack_ + %ssym_idx)->v_.uv%d_)";
-  se.sym_type_ = SEST_NONE;
-  se.common_type_ = SECT_NONE;
-  se.common_dest_type_ = SECDT_FMT_PREFIX;
-  se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
-  se.setmode_type_ = SESMT_VALID;
-  se.chgterm_type_ = SECTT_NONE;
-  se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDIT_NONE;
-  se.text_type_ = SETT_NONE;
-  se.line_type_ = SELIT_NONE;
-  se.col_type_ = SECOT_NONE;
-  se.offset_type_ = SEOT_NONE;
-  se.end_line_type_ = SEELIT_NONE;
-  se.end_col_type_ = SEECOT_NONE;
-  se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
-}
-
 static int emit_constructor_top_of_stack_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
@@ -947,31 +922,6 @@ static int emit_constructor_top_of_stack_snippet(struct indented_printer *ip, st
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT;
   se.common_dest_fmt_ = "((stack->stack_ + stack->pos_ - 1)->common_)";
-  se.setmode_type_ = SESMT_VALID;
-  se.chgterm_type_ = SECTT_NONE;
-  se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDIT_NONE;
-  se.text_type_ = SETT_NONE;
-  se.line_type_ = SELIT_NONE;
-  se.col_type_ = SECOT_NONE;
-  se.offset_type_ = SEOT_NONE;
-  se.end_line_type_ = SEELIT_NONE;
-  se.end_col_type_ = SEECOT_NONE;
-  se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
-}
-
-static int emit_constructor_snippet_array_p_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts, int retry_on_exit) {
-  struct snippet_emission se = { 0 };
-  if (!ts) return 0;
-  se.code_ = &ts->constructor_snippet_;
-  se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
-  se.dest_typestr_ = ts;
-  se.dest_fmt_ = "(((struct %ssym_data *)p) + n)->v_.uv%d_";
-  se.sym_type_ = SEST_NONE;
-  se.common_type_ = SECT_NONE;
-  se.common_dest_type_ = SECDT_FMT_PREFIX;
-  se.common_dest_fmt_ = "(((struct %ssym_data *)p) + n)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
   se.len_type_ = SELT_NONE;
@@ -1009,33 +959,6 @@ static int emit_newbuf_constructor_snippet_newbuf_indexed_by_nbspp(struct indent
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
-}
-
-static int emit_move_snippet_array_p_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
-  struct snippet_emission se = { 0 };
-  if (!ts) return 0;
-  se.code_ = &ts->move_snippet_;
-  se.dest_type_ = SEDT_FMT_PREFIX_TYPESTR_ORDINAL;
-  se.dest_typestr_ = ts;
-  se.dest_fmt_ = "(((struct %ssym_data *)p) + n)->v_.uv%d_";
-  se.sym_type_ = SEST_FMT_FIXED_INDEX_0_ORDINAL;
-  se.sym_fmt_ = "(stack->stack_[n].v_.uv%d_)";
-  se.fixed_sym_0_ = ts;
-  se.common_type_ = SECT_NONE;
-  se.common_dest_type_ = SECDT_FMT_PREFIX;
-  se.common_dest_fmt_ = "(((struct %ssym_data *)p) + n)->common_)";
-  se.setmode_type_ = SESMT_VALID;
-  se.chgterm_type_ = SECTT_NONE;
-  se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDIT_NONE;
-  se.text_type_ = SETT_NONE;
-  se.line_type_ = SELIT_NONE;
-  se.col_type_ = SECOT_NONE;
-  se.offset_type_ = SEOT_NONE;
-  se.end_line_type_ = SEELIT_NONE;
-  se.end_col_type_ = SEECOT_NONE;
-  se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, ts->is_raii_constructor_);
 }
 
 static int emit_move_snippet_newbuf_indexed_by_nbspp(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
@@ -1219,30 +1142,6 @@ static int emit_dst_sym_constructor_snippet(struct indented_printer *ip, struct 
   return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
 }
 
-static int emit_common_constructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, int retry_on_exit) {
-  struct snippet_emission se = { 0 };
-  if (!cc->common_data_assigned_type_) return 0;
-  se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
-  se.dest_type_ = SEDT_FMT_PREFIX;
-  se.dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
-  se.sym_type_ = SEST_NONE;
-  se.common_type_ = SECT_NONE;
-  se.common_dest_type_ = SECDT_FMT_PREFIX;
-  se.common_dest_fmt_ = "((stack->stack_ + %ssym_idx)->common_)";
-  se.setmode_type_ = SESMT_VALID;
-  se.chgterm_type_ = SECTT_NONE;
-  se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDIT_NONE;
-  se.text_type_ = SETT_NONE;
-  se.line_type_ = SELIT_NONE;
-  se.col_type_ = SECOT_NONE;
-  se.offset_type_ = SEOT_NONE;
-  se.end_line_type_ = SEELIT_NONE;
-  se.end_col_type_ = SEECOT_NONE;
-  se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
-}
-
 static int emit_common_constructor_top_of_stack_snippet(struct indented_printer *ip, struct carburetta_context *cc, int retry_on_exit) {
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
@@ -1253,29 +1152,6 @@ static int emit_common_constructor_top_of_stack_snippet(struct indented_printer 
   se.common_type_ = SECT_NONE;
   se.common_dest_type_ = SECDT_FMT_PREFIX;
   se.common_dest_fmt_ = "((stack->stack_ + stack->pos_ - 1)->common_)";
-  se.setmode_type_ = SESMT_VALID;
-  se.chgterm_type_ = SECTT_NONE;
-  se.len_type_ = SELT_NONE;
-  se.discard_type_ = SEDIT_NONE;
-  se.text_type_ = SETT_NONE;
-  se.line_type_ = SELIT_NONE;
-  se.col_type_ = SECOT_NONE;
-  se.offset_type_ = SEOT_NONE;
-  se.end_line_type_ = SEELIT_NONE;
-  se.end_col_type_ = SEECOT_NONE;
-  se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, retry_on_exit);
-}
-
-static int emit_common_constructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, int retry_on_exit) {
-  struct snippet_emission se = { 0 };
-  se.code_ = &cc->common_data_assigned_type_->constructor_snippet_;
-  se.dest_type_ = SEDT_FMT;
-  se.dest_fmt_ = "((stack->stack_ + n)->common_)";
-  se.sym_type_ = SEST_NONE;
-  se.common_type_ = SECT_NONE;
-  se.common_dest_type_ = SECDT_FMT;
-  se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
   se.len_type_ = SELT_NONE;
