@@ -80,6 +80,11 @@ typedef enum las_mlc_token {
 static struct sc_scanner g_las_lc_scanner_;
 static struct sc_scanner g_las_mlc_scanner_;
 
+#if __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
 static const struct sc_scan_rule g_las_lc_scanner_rules_[] = {
 #define xx(regex, line_type) { regex, line_type, line_type },
 #define xz(line_type)
@@ -95,6 +100,10 @@ ENUM_MLC_TOKENS
 #undef xz
 #undef xx
 };
+
+#if __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 
 int las_init(void) {

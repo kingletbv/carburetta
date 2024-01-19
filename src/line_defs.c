@@ -43,6 +43,11 @@
 #include "line_defs.h"
 #endif
 
+#if __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
 static const struct sc_scan_rule g_scanner_rules_[] = {
 #define xx(regex, line_type) { regex, line_type, line_type },
 #define xz(line_type)
@@ -50,6 +55,10 @@ ENUM_LINE_DEFS
 #undef xz
 #undef xx
 };
+
+#if __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 static struct sc_scanner g_ldl_scanner_;
 
