@@ -339,11 +339,6 @@ int main(int argc, char **argv) {
   struct rex_scanner rex;
   rex_init(&rex);
 
-  char **cpv = argv + 1;
-  int cr = argc - 1;
-  int expecting_inputfile = 1;
-  int expecting_hfile = 0;
-  int expecting_cfile = 0;
   int generate_cfile = 1;
   int generate_hfile = 0;
   char *input_filename = NULL;
@@ -552,8 +547,7 @@ int main(int argc, char **argv) {
   }
 
   /* Number all symbols */
-  int NT_END, RULE_END, GRAMMAR_END;
-  NT_END = 0;
+  int RULE_END, GRAMMAR_END;
   RULE_END = 1;
   GRAMMAR_END = 2;
   int next_ordinal;
