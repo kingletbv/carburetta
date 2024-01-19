@@ -87,7 +87,10 @@ void dfa_cleanup(struct dfa *dfa) {
 
 static struct dfa_node *dfa_make_node(struct dfa *dfa) {
   struct dfa_node *dfa_node = (struct dfa_node *)arealloc(NULL, 1, sizeof(struct dfa_node) + sizeof(uint64_t) * (((dfa->num_nfa_nodes + 63) / 64) - 1));
-  memset(dfa_node->moves, 0, sizeof(struct dfa_node *) * 256);
+  size_t n;
+  for (n = 0; n < 256; ++n) {
+    dfa_node->moves[n] = NULL;
+  }
   memset(dfa_node->nfa_map, 0, sizeof(uint64_t) * ((dfa->num_nfa_nodes + 63) / 64));
   dfa_node->next_dfa = NULL;
   dfa_node->num = 0;
