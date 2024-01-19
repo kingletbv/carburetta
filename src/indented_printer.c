@@ -154,7 +154,7 @@ static int ip_dst_write_spaces(struct indented_printer *ip, int num_spaces) {
     return 0;
   }
   if (0 > fprintf(ip->outfp_, "%*s", num_spaces, "")) {
-    int err = errno;
+    return errno;
   }
   return 0;
 }
@@ -162,7 +162,7 @@ static int ip_dst_write_spaces(struct indented_printer *ip, int num_spaces) {
 void ip_write_no_indent(struct indented_printer *ip, const char *s, size_t len) {
   if (ip_dst_write(ip, s, len)) {
     int err = errno;
-    if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(errno));
+    if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(err));
     ip->had_error_ = 1;
   }
   if (len && (s[len - 1] == '\n')) ip->at_start_of_line_ = 1;
@@ -174,7 +174,6 @@ void ip_puts_no_indent(struct indented_printer *ip, const char *s) {
 
 void ip_puts(struct indented_printer *ip, const char *s) {
   while (*s) {
-    const char *start_of_line = s;
     int opening_cubraces = 0, closing_cubraces = 0;
     const char *p = s;
     while ((*p != '\n') && (*p != '\0')) {
@@ -197,7 +196,7 @@ void ip_puts(struct indented_printer *ip, const char *s) {
       while (*s == ' ') s++;
       if (ip_dst_write_spaces(ip, ip->indentation_)) {
         int err = errno;
-        if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(errno));
+        if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(err));
         ip->had_error_ = 1;
       }
       ip->at_start_of_line_ = 0;
@@ -217,7 +216,7 @@ void ip_puts(struct indented_printer *ip, const char *s) {
     len = end_of_line - s;
     if (ip_dst_write(ip, s, len)) {
       int err = errno;
-      if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(errno));
+      if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(err));
       ip->had_error_ = 1;
     }
 
@@ -228,7 +227,7 @@ void ip_puts(struct indented_printer *ip, const char *s) {
 void ip_force_indent_print(struct indented_printer *ip) {
   if (ip_dst_write_spaces(ip, ip->indentation_)) {
     int err = errno;
-    if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(errno));
+    if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(err));
     ip->had_error_ = 1;
   }
   ip->at_start_of_line_ = 0;
