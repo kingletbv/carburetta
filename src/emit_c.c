@@ -1355,6 +1355,9 @@ static int emit_pattern_token_constructor_snippet(struct indented_printer *ip, s
 }
 
 static int emit_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
@@ -1376,10 +1379,15 @@ static int emit_destructor_snippet(struct indented_printer *ip, struct carburett
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_destructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
@@ -1401,10 +1409,15 @@ static int emit_destructor_snippet_indexed_by_n(struct indented_printer *ip, str
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_newbuf_destructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
@@ -1426,10 +1439,15 @@ static int emit_newbuf_destructor_snippet_indexed_by_n(struct indented_printer *
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 int emit_destructor_snippet_indexed_by_nbspp(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
@@ -1451,10 +1469,15 @@ int emit_destructor_snippet_indexed_by_nbspp(struct indented_printer *ip, struct
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_destructor_snippet_indexed_by_0(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
@@ -1476,10 +1499,15 @@ static int emit_destructor_snippet_indexed_by_0(struct indented_printer *ip, str
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_destructor_snippet_indexed_by_1(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!ts) return 0;
   se.code_ = &ts->destructor_snippet_;
@@ -1501,10 +1529,15 @@ static int emit_destructor_snippet_indexed_by_1(struct indented_printer *ip, str
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_common_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1525,10 +1558,15 @@ static int emit_common_destructor_snippet(struct indented_printer *ip, struct ca
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_pattern_token_common_destructor_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1549,10 +1587,15 @@ static int emit_pattern_token_common_destructor_snippet(struct indented_printer 
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_common_destructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1573,10 +1616,15 @@ static int emit_common_destructor_snippet_indexed_by_n(struct indented_printer *
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_newbuf_common_destructor_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1597,10 +1645,15 @@ static int emit_newbuf_common_destructor_snippet_indexed_by_n(struct indented_pr
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_common_destructor_snippet_indexed_by_nbspp(struct indented_printer *ip, struct carburetta_context *cc) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1621,10 +1674,15 @@ static int emit_common_destructor_snippet_indexed_by_nbspp(struct indented_print
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_common_destructor_snippet_index_0(struct indented_printer *ip, struct carburetta_context *cc) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1645,10 +1703,15 @@ static int emit_common_destructor_snippet_index_0(struct indented_printer *ip, s
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_common_destructor_snippet_index_1(struct indented_printer *ip, struct carburetta_context *cc) {
+  /* No continuations for destructors */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
   struct snippet_emission se = { 0 };
   if (!cc->common_data_assigned_type_) return 0;
   se.code_ = &cc->common_data_assigned_type_->destructor_snippet_;
@@ -1669,7 +1732,9 @@ static int emit_common_destructor_snippet_index_1(struct indented_printer *ip, s
   se.end_line_type_ = SEELIT_NONE;
   se.end_col_type_ = SEECOT_NONE;
   se.end_offset_type_ = SEEOT_NONE;
-  return emit_snippet_code_emission(ip, cc, &se, 0);
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
 }
 
 static int emit_pattern_common_action_snippet(struct indented_printer *ip, struct carburetta_context *cc, struct prd_pattern *pat) {
