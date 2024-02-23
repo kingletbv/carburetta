@@ -4029,6 +4029,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "            if (err_action > 0) {\n");
   ip_printf(ip, "              /* Does the resulting state accept the current symbol? */\n"
                 "              int err_sym_action;\n"
+                "              sym = stack->current_sym_; /* recover on the edge case we exited while moving data */\n"
                 "              err_sym_action = %sparse_table[%snum_columns * err_action + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "              if (err_sym_action) {\n"
                 "                /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
@@ -4529,6 +4530,7 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip, "          if (err_action > 0) {\n");
   ip_printf(ip, "            /* Does the resulting state accept the current symbol? */\n"
                 "            int err_sym_action;\n"
+                "            sym = stack->current_sym_; /* recover on the edge case we exited while moving data */\n"
                 "            err_sym_action = %sparse_table[%snum_columns * err_action + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "            if (err_sym_action) {\n"
                 "              /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
