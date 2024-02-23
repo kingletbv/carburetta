@@ -2970,7 +2970,8 @@ static int check_have_sym_types(struct carburetta_context *cc) {
 
 static void emit_push_state(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms, const char *action) {
   ip_printf(ip, "  if (stack->num_stack_allocated_ == stack->pos_) {\n"
-                "    size_t new_num_allocated;\n"
+                "    stack->action_preservation_ = %s;", action);
+  ip_printf(ip, "    size_t new_num_allocated;\n"
                 "    if (stack->num_stack_allocated_) {\n"
                 "      new_num_allocated = stack->num_stack_allocated_ * 2;\n"
                 "      if (new_num_allocated <= stack->num_stack_allocated_) {\n");
@@ -3253,9 +3254,10 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
     ip_printf(ip, "    stack->new_buf_sym_partial_pos_ = 0;\n");
     ip_printf(ip, "    stack->new_buf_ = NULL;\n");
   }
-  ip_printf(ip, "    stack->num_stack_allocated_ = stack->new_buf_num_allocated_;\n"
-                "  }\n"
-                "  stack->stack_[stack->pos_++].state_ = %s;\n", action);
+  ip_printf(ip, "    stack->num_stack_allocated_ = stack->new_buf_num_allocated_;\n");
+  ip_printf(ip, "    %s = stack->action_preservation_;\n", action);
+  ip_printf(ip, "  }\n");
+  ip_printf(ip, "  stack->stack_[stack->pos_++].state_ = %s;\n", action);
   ip_printf(ip, "  stack->top_of_stack_has_sym_data_ = 0;\n");
   ip_printf(ip, "  stack->top_of_stack_has_common_data_ = 0;\n");
 }
@@ -4724,6 +4726,7 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
                   "  int slot_0_has_common_data_:1;\n"
                   "  int current_sym_;\n"
                   "  int current_err_action_;\n"
+                  "  int action_preservation_;\n"
                   "  size_t input_size_;\n"
                   "  const char *input_;\n");
   }
@@ -6308,7 +6311,8 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   if (prdg->num_patterns_) {
     ip_printf(ip, "  stack->need_sym_ = 1;\n"
                   "  stack->current_sym_ = 0;\n"
-                  "  stack->current_err_action_ = 0;\n");
+                  "  stack->current_err_action_ = 0;\n"
+                  "  stack->action_preservation_ = 0;\n");
   }
   ip_printf(ip, "  stack->continue_at_ = 0;\n");
   ip_printf(ip, "  stack->mute_error_turns_ = 0;\n");
