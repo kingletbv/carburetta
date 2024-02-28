@@ -77,21 +77,29 @@
 
 
 /* --------- START OF GENERATED CODE ------------ */
+#if defined(__clang__)
+#elif defined(__GNUC__) && defined(__cplusplus)
+/* don't warn on realloc, memcpy, memset on C++ classes */
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
 #include <stdlib.h> /* realloc(), free(), NULL, size_t */
 #include <string.h> /* memcpy() */
 #include <stddef.h> /* size_t */
 #include <stdint.h> /* SIZE_MAX */
 struct prd_sym_data {
+  #ifdef __cplusplus
+  // clear destructor in case C++ symbol types have non-trivial destructors
+  // (we invoke their destructors explicitly)
+  ~prd_sym_data() = delete;
+  #endif
   int state_;
   union {
-    struct { token_type_t match_ ; token_type_t variant_ ; struct xlts text_ ; } uv0_;
+    struct {   token_type_t match_;   token_type_t variant_;   struct xlts text_; } uv0_;
     struct prd_production uv1_;
   } v_;
 };
 static const int prd_minimum_sym = 3;
 static const size_t prd_num_columns = 22;
-static const size_t prd_num_rows = 54;
-static const size_t prd_num_productions = 31;
 static const int prd_parse_table[] = {
    -2,  0,  0,  0,  0,  0,  0,  0,  0, -2, 0,-2,53, 0, 0, 0, 0, 0, 0, 0, 0, 0,
    -3,  0,  0,  0,  0,  0,  0,  0,  0, -3, 0,-3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -215,7 +223,7 @@ static const int prd_production_syms[] = {
   22
 };
 
-#ifndef CARB_PRD_CCARBURETTASRCPRD_GRAMMAR_H_INCLUDED
+#ifndef CARB_PRD_PRD_GRAMMAR_H_INCLUDED
 struct prd_stack {
   int error_recovery_:1;
   int pending_reset_:1;
@@ -224,14 +232,24 @@ struct prd_stack {
   int slot_1_has_common_data_:1;
   int top_of_stack_has_sym_data_:1;
   int top_of_stack_has_common_data_:1;
+  int newbuf_pos_has_common_data_:1;
+  int newbuf_pos_has_sym_data_:1;
+  int stack_newbuf_pos_has_common_data_:1;
+  int stack_newbuf_pos_has_sym_data_:1;
+  int action_preservation_;
+  int current_err_action_;
   int slot_1_sym_;
   int continue_at_;
   int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
   struct prd_sym_data *stack_;
   struct prd_sym_data *sym_data_;
+  struct prd_sym_data *new_buf_;
+  size_t new_buf_num_allocated_;
+  size_t new_buf_sym_partial_pos_;
   size_t current_production_length_;
   int current_production_nonterminal_;
+  size_t sym_idx_;
 };
 #define _PRD_FINISH 0
 #define _PRD_MATCH 1
@@ -267,7 +285,7 @@ struct prd_stack {
 #define PRD_COMMON_ACTION 23
 
 
-#endif /* CARB_PRD_CCARBURETTASRCPRD_GRAMMAR_H_INCLUDED */
+#endif /* CARB_PRD_PRD_GRAMMAR_H_INCLUDED */
 
 void prd_stack_init(struct prd_stack *stack) {
   stack->error_recovery_ = 0;
@@ -276,20 +294,91 @@ void prd_stack_init(struct prd_stack *stack) {
   stack->slot_1_has_sym_data_ = stack->slot_1_has_common_data_ = 0;
   stack->slot_1_sym_ = 0;
   stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 0;
+  stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+  stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 0;
   stack->continue_at_ = 0;
   stack->mute_error_turns_ = 0;
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
   stack->stack_ = NULL;
   stack->sym_data_ = NULL;
+  stack->new_buf_ = NULL;
+  stack->new_buf_num_allocated_ = 0;
+  stack->new_buf_sym_partial_pos_ = 0;
   stack->current_production_length_ = 0;
   stack->current_production_nonterminal_ = 0;
+  stack->sym_idx_ = 0;
 }
 
 void prd_stack_cleanup(struct prd_stack *stack) {
   size_t n;
-  for (n = 2; n < stack->pos_; ++n) {
-    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_sym_data_) {
+  if (!stack->new_buf_) n = 0;
+  else {
+    n = stack->new_buf_sym_partial_pos_;
+  }
+  for (; n < stack->pos_; ++n) {
+    int need_state_deconstruct = 0;
+    if ((n == 0) || (n == 1)) {
+      int need_sym_deconstruct = 0;
+      int sym_to_deconstruct;
+      need_state_deconstruct = 0;
+      if (n == 0) {
+        /* slot 0 goes unused in scannerless operation */
+        need_sym_deconstruct = 0;
+      }
+      else if (n == 1) {
+        sym_to_deconstruct = stack->slot_1_sym_;
+        need_sym_deconstruct = stack->slot_1_has_sym_data_;
+      }
+      if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {
+        need_sym_deconstruct = need_sym_deconstruct && stack->stack_newbuf_pos_has_sym_data_;
+      }
+      if (need_sym_deconstruct) {
+        switch (sym_to_deconstruct) {
+          case PRD_IDENT:
+          case PRD_COLON:
+          case PRD_EQUALS:
+          case PRD_SEMICOLON:
+          case PRD_TOKEN:
+          case PRD_PAR_OPEN:
+          case PRD_PAR_CLOSE:
+          case PRD_CUBRACE_OPEN:
+          case PRD_CUBRACE_CLOSE:
+          case PRD_DOLLAR:
+          {
+            {
+              xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+            }
+            
+          }
+          break;
+          case PRD_RULE:
+          case PRD_PRODUCTION:
+          case PRD_ACTION_SEQUENCE:
+          case PRD_STMT_ACTION:
+          {
+            {
+              prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+            }
+            
+          }
+          break;
+        }
+      }
+    }
+    else if (n == (stack->pos_ - 1)) {
+      need_state_deconstruct = stack->top_of_stack_has_sym_data_;
+      if (n == stack->new_buf_sym_partial_pos_) {
+        need_state_deconstruct = need_state_deconstruct && stack->stack_newbuf_pos_has_sym_data_;
+      }
+    }
+    else if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {
+      need_state_deconstruct = stack->stack_newbuf_pos_has_sym_data_;
+    }
+    else {
+      need_state_deconstruct = 1;
+    }
+    if (need_state_deconstruct) {
       switch (stack->stack_[n].state_) {
         case 2: /* semicolon */
         case 3: /* semicolon */
@@ -325,7 +414,7 @@ void prd_stack_cleanup(struct prd_stack *stack) {
         case 52: /* dollar */
         {
           {
-             xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+            xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
           }
           
         }
@@ -342,7 +431,7 @@ void prd_stack_cleanup(struct prd_stack *stack) {
         case 47: /* action-sequence */
         {
           {
-             prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+            prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
           }
           
         }
@@ -350,50 +439,430 @@ void prd_stack_cleanup(struct prd_stack *stack) {
       } /* switch */
     }
   }
-  if (stack->slot_1_has_sym_data_) {
-    switch (stack->slot_1_sym_) {
-      case 3:
-      case 4:
-      case 5:
-      case 6:
-      case 7:
-      case 8:
-      case 9:
-      case 10:
-      case 11:
-      case 12:
-      {
-        {
-           xlts_cleanup(&(stack->stack_[1].v_.uv0_).text_);
+  if (stack->new_buf_) {
+    /* same deconstructors as above, but now for stack->new_buf_ -- stack->new_buf_ only
+    * exists for a brief period time when we resize stack->stack_, however, because
+    * constructors and moves are allowed to throw, or otherwise return and fail, it is
+    * required that we deconstruct the stack->new_buf_ elements cleanly. */
+    for (n = 0; n <= stack->new_buf_sym_partial_pos_; ++n) {
+      int need_state_deconstruct = 0;
+      if ((n == 0) || (n == 1)) {
+        int need_sym_deconstruct = 0;
+        int sym_to_deconstruct;
+        need_state_deconstruct = 0;
+        if (n == 0) {
+          /* slot 0 goes unused in scannerless operation */
+          need_sym_deconstruct = 0;
         }
-        
-      }
-      break;
-      case 16:
-      case 17:
-      case 18:
-      case 19:
-      {
-        {
-           prd_prod_cleanup(&(stack->stack_[1].v_.uv1_));
+        else if (n == 1) {
+          sym_to_deconstruct = stack->slot_1_sym_;
+          need_sym_deconstruct = stack->slot_1_has_sym_data_;
         }
-        
+        if (n == stack->new_buf_sym_partial_pos_) {
+          need_sym_deconstruct = need_sym_deconstruct && stack->newbuf_pos_has_sym_data_;
+        }
+        if (need_sym_deconstruct) {
+          switch (sym_to_deconstruct) {
+            case PRD_IDENT:
+            case PRD_COLON:
+            case PRD_EQUALS:
+            case PRD_SEMICOLON:
+            case PRD_TOKEN:
+            case PRD_PAR_OPEN:
+            case PRD_PAR_CLOSE:
+            case PRD_CUBRACE_OPEN:
+            case PRD_CUBRACE_CLOSE:
+            case PRD_DOLLAR:
+            {
+              {
+                xlts_cleanup(&((stack->new_buf_ + n)->v_.uv0_).text_);
+              }
+              
+            }
+            break;
+            case PRD_RULE:
+            case PRD_PRODUCTION:
+            case PRD_ACTION_SEQUENCE:
+            case PRD_STMT_ACTION:
+            {
+              {
+                prd_prod_cleanup(&((stack->new_buf_ + n)->v_.uv1_));
+              }
+              
+            }
+            break;
+          }
+        }
       }
-      break;
-    } /* switch */
+      else if (n == (stack->pos_ - 1)) {
+        need_state_deconstruct = stack->top_of_stack_has_sym_data_;
+        if (n == stack->new_buf_sym_partial_pos_) {
+          need_state_deconstruct = need_state_deconstruct && stack->newbuf_pos_has_sym_data_;
+        }
+      }
+      else if (n == stack->new_buf_sym_partial_pos_) {
+        need_state_deconstruct = stack->newbuf_pos_has_sym_data_;
+      }
+      else {
+        need_state_deconstruct = 1;
+      }
+      if (need_state_deconstruct) {
+        switch (stack->stack_[n].state_) {
+          case 2: /* semicolon */
+          case 3: /* semicolon */
+          case 6: /* cubrace-close */
+          case 9: /* cubrace-open */
+          case 12: /* ident */
+          case 14: /* colon */
+          case 15: /* ident */
+          case 17: /* semicolon */
+          case 19: /* ident */
+          case 20: /* colon */
+          case 21: /* equals */
+          case 22: /* token */
+          case 23: /* dollar */
+          case 24: /* par-close */
+          case 26: /* par-open */
+          case 27: /* cubrace-close */
+          case 29: /* cubrace-open */
+          case 32: /* equals */
+          case 33: /* cubrace-close */
+          case 35: /* ident */
+          case 36: /* colon */
+          case 37: /* equals */
+          case 38: /* semicolon */
+          case 39: /* token */
+          case 40: /* dollar */
+          case 41: /* par-close */
+          case 43: /* par-open */
+          case 44: /* cubrace-close */
+          case 46: /* cubrace-open */
+          case 48: /* cubrace-open */
+          case 51: /* colon */
+          case 52: /* dollar */
+          {
+            {
+              xlts_cleanup(&((stack->new_buf_ + n)->v_.uv0_).text_);
+            }
+            
+          }
+          break;
+          case 1: /* production */
+          case 5: /* stmt-action */
+          case 8: /* action-sequence */
+          case 13: /* rule */
+          case 25: /* action-sequence */
+          case 28: /* action-sequence */
+          case 30: /* stmt-action */
+          case 42: /* action-sequence */
+          case 45: /* action-sequence */
+          case 47: /* action-sequence */
+          {
+            {
+              prd_prod_cleanup(&((stack->new_buf_ + n)->v_.uv1_));
+            }
+            
+          }
+          break;
+        } /* switch */
+      }
+    }
+    free(stack->new_buf_);
+    stack->new_buf_ = NULL;
   }
-  
   if (stack->stack_) free(stack->stack_);
 }
 
-static int prd_push_state(struct prd_stack *stack, int state) {
-  if (stack->num_stack_allocated_ == stack->pos_) {
-    size_t new_num_allocated = 0;
+int prd_stack_reset(struct prd_stack *stack) {
+  stack->pending_reset_ = 0;
+  stack->discard_remaining_actions_ = 0;
+  size_t n;
+  if (!stack->new_buf_) n = 0;
+  else {
+    n = stack->new_buf_sym_partial_pos_;
+  }
+  for (; n < stack->pos_; ++n) {
+    int need_state_deconstruct = 0;
+    if ((n == 0) || (n == 1)) {
+      int need_sym_deconstruct = 0;
+      int sym_to_deconstruct;
+      need_state_deconstruct = 0;
+      if (n == 0) {
+        /* slot 0 goes unused in scannerless operation */
+        need_sym_deconstruct = 0;
+      }
+      else if (n == 1) {
+        sym_to_deconstruct = stack->slot_1_sym_;
+        need_sym_deconstruct = stack->slot_1_has_sym_data_;
+      }
+      if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {
+        need_sym_deconstruct = need_sym_deconstruct && stack->stack_newbuf_pos_has_sym_data_;
+      }
+      if (need_sym_deconstruct) {
+        switch (sym_to_deconstruct) {
+          case PRD_IDENT:
+          case PRD_COLON:
+          case PRD_EQUALS:
+          case PRD_SEMICOLON:
+          case PRD_TOKEN:
+          case PRD_PAR_OPEN:
+          case PRD_PAR_CLOSE:
+          case PRD_CUBRACE_OPEN:
+          case PRD_CUBRACE_CLOSE:
+          case PRD_DOLLAR:
+          {
+            {
+              xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+            }
+            
+          }
+          break;
+          case PRD_RULE:
+          case PRD_PRODUCTION:
+          case PRD_ACTION_SEQUENCE:
+          case PRD_STMT_ACTION:
+          {
+            {
+              prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+            }
+            
+          }
+          break;
+        }
+      }
+    }
+    else if (n == (stack->pos_ - 1)) {
+      need_state_deconstruct = stack->top_of_stack_has_sym_data_;
+      if (n == stack->new_buf_sym_partial_pos_) {
+        need_state_deconstruct = need_state_deconstruct && stack->stack_newbuf_pos_has_sym_data_;
+      }
+    }
+    else if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {
+      need_state_deconstruct = stack->stack_newbuf_pos_has_sym_data_;
+    }
+    else {
+      need_state_deconstruct = 1;
+    }
+    if (need_state_deconstruct) {
+      switch (stack->stack_[n].state_) {
+        case 2: /* semicolon */
+        case 3: /* semicolon */
+        case 6: /* cubrace-close */
+        case 9: /* cubrace-open */
+        case 12: /* ident */
+        case 14: /* colon */
+        case 15: /* ident */
+        case 17: /* semicolon */
+        case 19: /* ident */
+        case 20: /* colon */
+        case 21: /* equals */
+        case 22: /* token */
+        case 23: /* dollar */
+        case 24: /* par-close */
+        case 26: /* par-open */
+        case 27: /* cubrace-close */
+        case 29: /* cubrace-open */
+        case 32: /* equals */
+        case 33: /* cubrace-close */
+        case 35: /* ident */
+        case 36: /* colon */
+        case 37: /* equals */
+        case 38: /* semicolon */
+        case 39: /* token */
+        case 40: /* dollar */
+        case 41: /* par-close */
+        case 43: /* par-open */
+        case 44: /* cubrace-close */
+        case 46: /* cubrace-open */
+        case 48: /* cubrace-open */
+        case 51: /* colon */
+        case 52: /* dollar */
+        {
+          {
+            xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
+          }
+          
+        }
+        break;
+        case 1: /* production */
+        case 5: /* stmt-action */
+        case 8: /* action-sequence */
+        case 13: /* rule */
+        case 25: /* action-sequence */
+        case 28: /* action-sequence */
+        case 30: /* stmt-action */
+        case 42: /* action-sequence */
+        case 45: /* action-sequence */
+        case 47: /* action-sequence */
+        {
+          {
+            prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
+          }
+          
+        }
+        break;
+      } /* switch */
+    }
+  }
+  if (stack->new_buf_) {
+    /* same deconstructors as above, but now for stack->new_buf_ -- stack->new_buf_ only
+    * exists for a brief period time when we resize stack->stack_, however, because
+    * constructors and moves are allowed to throw, or otherwise return and fail, it is
+    * required that we deconstruct the stack->new_buf_ elements cleanly. */
+    for (n = 0; n <= stack->new_buf_sym_partial_pos_; ++n) {
+      int need_state_deconstruct = 0;
+      if ((n == 0) || (n == 1)) {
+        int need_sym_deconstruct = 0;
+        int sym_to_deconstruct;
+        need_state_deconstruct = 0;
+        if (n == 0) {
+          /* slot 0 goes unused in scannerless operation */
+          need_sym_deconstruct = 0;
+        }
+        else if (n == 1) {
+          sym_to_deconstruct = stack->slot_1_sym_;
+          need_sym_deconstruct = stack->slot_1_has_sym_data_;
+        }
+        if (n == stack->new_buf_sym_partial_pos_) {
+          need_sym_deconstruct = need_sym_deconstruct && stack->newbuf_pos_has_sym_data_;
+        }
+        if (need_sym_deconstruct) {
+          switch (sym_to_deconstruct) {
+            case PRD_IDENT:
+            case PRD_COLON:
+            case PRD_EQUALS:
+            case PRD_SEMICOLON:
+            case PRD_TOKEN:
+            case PRD_PAR_OPEN:
+            case PRD_PAR_CLOSE:
+            case PRD_CUBRACE_OPEN:
+            case PRD_CUBRACE_CLOSE:
+            case PRD_DOLLAR:
+            {
+              {
+                xlts_cleanup(&((stack->new_buf_ + n)->v_.uv0_).text_);
+              }
+              
+            }
+            break;
+            case PRD_RULE:
+            case PRD_PRODUCTION:
+            case PRD_ACTION_SEQUENCE:
+            case PRD_STMT_ACTION:
+            {
+              {
+                prd_prod_cleanup(&((stack->new_buf_ + n)->v_.uv1_));
+              }
+              
+            }
+            break;
+          }
+        }
+      }
+      else if (n == (stack->pos_ - 1)) {
+        need_state_deconstruct = stack->top_of_stack_has_sym_data_;
+        if (n == stack->new_buf_sym_partial_pos_) {
+          need_state_deconstruct = need_state_deconstruct && stack->newbuf_pos_has_sym_data_;
+        }
+      }
+      else if (n == stack->new_buf_sym_partial_pos_) {
+        need_state_deconstruct = stack->newbuf_pos_has_sym_data_;
+      }
+      else {
+        need_state_deconstruct = 1;
+      }
+      if (need_state_deconstruct) {
+        switch (stack->stack_[n].state_) {
+          case 2: /* semicolon */
+          case 3: /* semicolon */
+          case 6: /* cubrace-close */
+          case 9: /* cubrace-open */
+          case 12: /* ident */
+          case 14: /* colon */
+          case 15: /* ident */
+          case 17: /* semicolon */
+          case 19: /* ident */
+          case 20: /* colon */
+          case 21: /* equals */
+          case 22: /* token */
+          case 23: /* dollar */
+          case 24: /* par-close */
+          case 26: /* par-open */
+          case 27: /* cubrace-close */
+          case 29: /* cubrace-open */
+          case 32: /* equals */
+          case 33: /* cubrace-close */
+          case 35: /* ident */
+          case 36: /* colon */
+          case 37: /* equals */
+          case 38: /* semicolon */
+          case 39: /* token */
+          case 40: /* dollar */
+          case 41: /* par-close */
+          case 43: /* par-open */
+          case 44: /* cubrace-close */
+          case 46: /* cubrace-open */
+          case 48: /* cubrace-open */
+          case 51: /* colon */
+          case 52: /* dollar */
+          {
+            {
+              xlts_cleanup(&((stack->new_buf_ + n)->v_.uv0_).text_);
+            }
+            
+          }
+          break;
+          case 1: /* production */
+          case 5: /* stmt-action */
+          case 8: /* action-sequence */
+          case 13: /* rule */
+          case 25: /* action-sequence */
+          case 28: /* action-sequence */
+          case 30: /* stmt-action */
+          case 42: /* action-sequence */
+          case 45: /* action-sequence */
+          case 47: /* action-sequence */
+          {
+            {
+              prd_prod_cleanup(&((stack->new_buf_ + n)->v_.uv1_));
+            }
+            
+          }
+          break;
+        } /* switch */
+      }
+    }
+    free(stack->new_buf_);
+    stack->new_buf_ = NULL;
+  }
+  stack->slot_1_has_sym_data_ = stack->slot_1_has_common_data_ = 0;
+  stack->slot_1_sym_ = 0;
+  stack->top_of_stack_has_sym_data_ = 0;
+  stack->top_of_stack_has_common_data_ = 0;
+  stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+  stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 0;
+  stack->sym_data_ = NULL;
+  stack->current_production_length_ = 0;
+  stack->current_production_nonterminal_ = 0;
+  stack->sym_idx_ = 0;
+  stack->pos_ = 0;
+  stack->error_recovery_ = 0;
+  stack->continue_at_ = 0;
+  stack->mute_error_turns_ = 0;
+  /* reserve slots [0] and [1] for temporary storage of inflight syms and tokens.
+  * note that initialization and lifetime of these slots is controlled by
+  * flags, so no sym data constructors are called here. */
+  if (stack->num_stack_allocated_ <= (stack->pos_ + 1)) {
+    size_t new_num_allocated;
     if (stack->num_stack_allocated_) {
       new_num_allocated = stack->num_stack_allocated_ * 2;
       if (new_num_allocated <= stack->num_stack_allocated_) {
         /* Overflow in allocation */
-        return _PRD_OVERFLOW;
+        stack->continue_at_ = 0;
+        {
+          re_error_nowhere("Error: internal error\n"); return PRD_INTERNAL_ERROR;
+          
+        }
       }
     }
     else {
@@ -402,153 +871,28 @@ static int prd_push_state(struct prd_stack *stack, int state) {
     
     if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
       /* Overflow in allocation */
-      return _PRD_OVERFLOW;
+      stack->continue_at_ = 0;
+      {
+        re_error_nowhere("Error: internal error\n"); return PRD_INTERNAL_ERROR;
+        
+      }
     }
     
     void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct prd_sym_data));
     if (!p) {
       /* Out of memory */
-      return _PRD_NO_MEMORY;
+      stack->continue_at_ = 0;
+      {
+        re_error_nowhere("Error: no memory"); return PRD_INTERNAL_ERROR;
+        
+      }
     }
     stack->stack_ = (struct prd_sym_data *)p;
     stack->num_stack_allocated_ = new_num_allocated;
   }
-  stack->stack_[stack->pos_++].state_ = state;
-  return 0;
-}
-
-int prd_stack_reset(struct prd_stack *stack) {
-  size_t n;
-  stack->pending_reset_ = 0;
-  stack->discard_remaining_actions_ = 0;
-  for (n = 2; n < stack->pos_; ++n) {
-    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_sym_data_) {
-      switch (stack->stack_[n].state_) {
-        case 2: /* semicolon */
-        case 3: /* semicolon */
-        case 6: /* cubrace-close */
-        case 9: /* cubrace-open */
-        case 12: /* ident */
-        case 14: /* colon */
-        case 15: /* ident */
-        case 17: /* semicolon */
-        case 19: /* ident */
-        case 20: /* colon */
-        case 21: /* equals */
-        case 22: /* token */
-        case 23: /* dollar */
-        case 24: /* par-close */
-        case 26: /* par-open */
-        case 27: /* cubrace-close */
-        case 29: /* cubrace-open */
-        case 32: /* equals */
-        case 33: /* cubrace-close */
-        case 35: /* ident */
-        case 36: /* colon */
-        case 37: /* equals */
-        case 38: /* semicolon */
-        case 39: /* token */
-        case 40: /* dollar */
-        case 41: /* par-close */
-        case 43: /* par-open */
-        case 44: /* cubrace-close */
-        case 46: /* cubrace-open */
-        case 48: /* cubrace-open */
-        case 51: /* colon */
-        case 52: /* dollar */
-        {
-          {
-             xlts_cleanup(&((stack->stack_ + n)->v_.uv0_).text_);
-          }
-          
-        }
-        break;
-        case 1: /* production */
-        case 5: /* stmt-action */
-        case 8: /* action-sequence */
-        case 13: /* rule */
-        case 25: /* action-sequence */
-        case 28: /* action-sequence */
-        case 30: /* stmt-action */
-        case 42: /* action-sequence */
-        case 45: /* action-sequence */
-        case 47: /* action-sequence */
-        {
-          {
-             prd_prod_cleanup(&((stack->stack_ + n)->v_.uv1_));
-          }
-          
-        }
-        break;
-      } /* switch */
-    }
-  }
-  if (stack->slot_1_has_sym_data_) {
-    switch (stack->slot_1_sym_) {
-      case 3:
-      case 4:
-      case 5:
-      case 6:
-      case 7:
-      case 8:
-      case 9:
-      case 10:
-      case 11:
-      case 12:
-      {
-        {
-           xlts_cleanup(&(stack->stack_[1].v_.uv0_).text_);
-        }
-        
-      }
-      break;
-      case 16:
-      case 17:
-      case 18:
-      case 19:
-      {
-        {
-           prd_prod_cleanup(&(stack->stack_[1].v_.uv1_));
-        }
-        
-      }
-      break;
-    } /* switch */
-  }
-  stack->slot_1_has_sym_data_ = stack->slot_1_has_common_data_ = 0;
-  stack->slot_1_sym_ = 0;
-  stack->top_of_stack_has_sym_data_ = 0;
-  stack->top_of_stack_has_common_data_ = 0;
-  stack->sym_data_ = NULL;
-  stack->current_production_length_ = 0;
-  stack->current_production_nonterminal_ = 0;
-  stack->pos_ = 0;
-  stack->error_recovery_ = 0;
-  stack->continue_at_ = 0;
-  stack->mute_error_turns_ = 0;
-  /* reserve slot [0] for the token sym data */
-  switch (prd_push_state(stack, 0)) {
-    case _PRD_OVERFLOW:{
-      return _PRD_OVERFLOW;
-    }
-    break;
-    case _PRD_NO_MEMORY: {
-      return _PRD_NO_MEMORY;
-    }
-    break;
-  }
-  /* reserve slot [1] for the initial state 0, corresponding to the synthetic S production
-  ** sym_data in slot [1] is used for temporary nonterminal data storage */
-  switch (prd_push_state(stack, 0)) {
-    case _PRD_OVERFLOW:{
-      return _PRD_OVERFLOW;
-    }
-    break;
-    case _PRD_NO_MEMORY: {
-      return _PRD_NO_MEMORY;
-    }
-    break;
-  }
+  stack->stack_[0].state_ = 0;
+  stack->stack_[1].state_ = 0;
+  stack->pos_ = 2;
   return 0;
 }
 
@@ -623,30 +967,189 @@ int prd_parse(struct prd_stack *stack, int sym, struct prd_grammar *g, struct tk
     case 53: goto C53;
     case 54: goto C54;
     case 55: goto C55;
+    case 56: goto C56;
+    case 57: goto C57;
+    case 58: goto C58;
+    case 59: goto C59;
+    case 60: goto C60;
+    case 61: goto C61;
+    case 62: goto C62;
+    case 63: goto C63;
   } /* continuation switch */
 if (stack->mute_error_turns_) stack->mute_error_turns_--;
   for (;;) {
     if (!stack->error_recovery_) {
-      int action = prd_parse_table[prd_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - prd_minimum_sym)];
+      int action;
+      action = prd_parse_table[prd_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - prd_minimum_sym)];
       if (action > 0) {
-        switch (prd_push_state(stack, action)) {
-          case _PRD_OVERFLOW: {
-            stack->continue_at_ = 0;
-            {
-              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
-              
+        if (stack->num_stack_allocated_ == stack->pos_) {
+          stack->action_preservation_ = action;
+          size_t new_num_allocated;
+          if (stack->num_stack_allocated_) {
+            new_num_allocated = stack->num_stack_allocated_ * 2;
+            if (new_num_allocated <= stack->num_stack_allocated_) {
+              /* Overflow in allocation */
+              return _PRD_OVERFLOW;
             }
           }
-          break;
-          case _PRD_NO_MEMORY: {
-            stack->continue_at_ = 0;
-            {
-              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
-              
+          else {
+            new_num_allocated = 16;
+          }
+          
+          if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
+            /* Overflow in allocation */
+            return _PRD_OVERFLOW;
+          }
+          
+          stack->new_buf_ = (struct prd_sym_data *)malloc(new_num_allocated * sizeof(struct prd_sym_data));
+          if (!stack->new_buf_) {
+            /* Out of memory */
+            return _PRD_NO_MEMORY;
+          }
+          stack->new_buf_num_allocated_ = new_num_allocated;
+          for (stack->new_buf_sym_partial_pos_ = 0; stack->new_buf_sym_partial_pos_ < stack->pos_; ++stack->new_buf_sym_partial_pos_) {
+            stack->new_buf_[stack->new_buf_sym_partial_pos_].state_ = stack->stack_[stack->new_buf_sym_partial_pos_].state_;
+            stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+            stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 1;
+            if ((stack->new_buf_sym_partial_pos_ == 0) || (stack->new_buf_sym_partial_pos_ == 1)) {
+              int need_sym_move;
+              int sym_to_move;
+              sym_to_move = 0; /* silence a waring with this explicit initialization */
+              need_sym_move = 0;
+              if (stack->new_buf_sym_partial_pos_ == 0) {
+                /* slot 0 goes unused in scannerless operation */
+                need_sym_move = 0;
+              }
+              else if (stack->new_buf_sym_partial_pos_ == 1) {
+                need_sym_move = stack->slot_1_has_sym_data_;
+                sym_to_move = stack->slot_1_sym_;
+              }
+              if (need_sym_move) {
+                switch (sym_to_move) {
+                  case PRD_IDENT:
+                  case PRD_COLON:
+                  case PRD_EQUALS:
+                  case PRD_SEMICOLON:
+                  case PRD_TOKEN:
+                  case PRD_PAR_OPEN:
+                  case PRD_PAR_CLOSE:
+                  case PRD_CUBRACE_OPEN:
+                  case PRD_CUBRACE_CLOSE:
+                  case PRD_DOLLAR:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 1;
+                  {
+                    stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (token_type_t)0; \
+             xlts_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_);
+                  }
+                  C1:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  {
+                    xlts_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv0_).text_);
+                  }
+                  
+                  break;
+                  case PRD_RULE:
+                  case PRD_PRODUCTION:
+                  case PRD_ACTION_SEQUENCE:
+                  case PRD_STMT_ACTION:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 2;
+                  {
+                    prd_prod_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv1_);
+                  }
+                  C2:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  {
+                    prd_prod_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv1_));
+                  }
+                  
+                  break;
+                }
+              }
+            }
+            else /* not 0 or 1, but >= 2 state derived sym */ {
+              switch (stack->stack_[stack->new_buf_sym_partial_pos_].state_) {
+                case 2: /* semicolon */
+                case 3: /* semicolon */
+                case 6: /* cubrace-close */
+                case 9: /* cubrace-open */
+                case 12: /* ident */
+                case 14: /* colon */
+                case 15: /* ident */
+                case 17: /* semicolon */
+                case 19: /* ident */
+                case 20: /* colon */
+                case 21: /* equals */
+                case 22: /* token */
+                case 23: /* dollar */
+                case 24: /* par-close */
+                case 26: /* par-open */
+                case 27: /* cubrace-close */
+                case 29: /* cubrace-open */
+                case 32: /* equals */
+                case 33: /* cubrace-close */
+                case 35: /* ident */
+                case 36: /* colon */
+                case 37: /* equals */
+                case 38: /* semicolon */
+                case 39: /* token */
+                case 40: /* dollar */
+                case 41: /* par-close */
+                case 43: /* par-open */
+                case 44: /* cubrace-close */
+                case 46: /* cubrace-open */
+                case 48: /* cubrace-open */
+                case 51: /* colon */
+                case 52: /* dollar */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 3;
+                {
+                  stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (token_type_t)0; \
+             xlts_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_);
+                }
+                C3:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                {
+                  xlts_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv0_).text_);
+                }
+                
+                break;
+                case 1: /* production */
+                case 5: /* stmt-action */
+                case 8: /* action-sequence */
+                case 13: /* rule */
+                case 25: /* action-sequence */
+                case 28: /* action-sequence */
+                case 30: /* stmt-action */
+                case 42: /* action-sequence */
+                case 45: /* action-sequence */
+                case 47: /* action-sequence */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 4;
+                {
+                  prd_prod_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv1_);
+                }
+                C4:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                {
+                  prd_prod_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv1_));
+                }
+                
+                break;
+              } /* switch */
             }
           }
-          break;
-        } /* switch */
+          if (stack->stack_) free(stack->stack_);
+          stack->stack_ = stack->new_buf_;
+          stack->new_buf_sym_partial_pos_ = 0;
+          stack->new_buf_ = NULL;
+          stack->num_stack_allocated_ = stack->new_buf_num_allocated_;
+          action = stack->action_preservation_;
+        }
+        stack->stack_[stack->pos_++].state_ = action;
+        stack->top_of_stack_has_sym_data_ = 0;
+        stack->top_of_stack_has_common_data_ = 0;
         
         stack->sym_data_ = stack->stack_ + stack->pos_ - 1;
         stack->top_of_stack_has_sym_data_ = 0;
@@ -662,19 +1165,19 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
           case PRD_CUBRACE_CLOSE:
           case PRD_DOLLAR:
           stack->top_of_stack_has_sym_data_ = 1;
-          stack->continue_at_ = 1;
+          stack->continue_at_ = 5;
           {
-             (stack->sym_data_->v_.uv0_).match_ = (stack->sym_data_->v_.uv0_).variant_ = (token_type_t)0; \
+            (stack->sym_data_->v_.uv0_).match_ = (stack->sym_data_->v_.uv0_).variant_ = (token_type_t)0; \
              xlts_init(&(stack->sym_data_->v_.uv0_).text_);
           }
-          C1:;
-          stack->continue_at_ = 2;
+          C5:;
+          stack->continue_at_ = 6;
           {
-             (stack->sym_data_->v_.uv0_).match_ = (token_type_t)tkr->best_match_action_; \
+            (stack->sym_data_->v_.uv0_).match_ = (token_type_t)tkr->best_match_action_; \
               (stack->sym_data_->v_.uv0_).variant_ = (token_type_t)tkr->best_match_variant_; \
 			  xlts_append(&(stack->sym_data_->v_.uv0_).text_, &tkr->xmatch_);
           }
-          C2:;
+          C6:;
           break;
         } /* switch */
         stack->continue_at_ = 0;
@@ -684,7 +1187,8 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
         }
       } /* action > 0 */
       else if (action < 0) {
-        int production = -action - 1;
+        int production;
+        production = -action - 1;
         stack->discard_remaining_actions_ = 0;
         stack->current_production_length_ = prd_production_lengths[production];
         stack->current_production_nonterminal_ = prd_production_syms[production];
@@ -701,16 +1205,16 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
           switch (production) {
             /* grammar: */
             case 1: {
-              stack->continue_at_ = 3;
+              stack->continue_at_ = 7;
               {
                 { }
               }
-              C3:;
+              C7:;
             }
             break;
             /* grammar: grammar production */
             case 2: {
-              stack->continue_at_ = 4;
+              stack->continue_at_ = 8;
               {
                 {
 	/* Store the PRD_PRODUCTION in the prd_grammar->productions_ array */
@@ -723,30 +1227,30 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   if (r) return r;
 }
               }
-              C4:;
+              C8:;
             }
             break;
             /* grammar: grammar common-action */
             case 3: {
-              stack->continue_at_ = 5;
+              stack->continue_at_ = 9;
               {
                 {
   /* Common actions are recorded in their own productions */
 }
               }
-              C5:;
+              C9:;
             }
             break;
             /* production: IDENT COLON rule SEMICOLON */
             case 4: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_PRODUCTION;
-              stack->continue_at_ = 6;
+              stack->continue_at_ = 10;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C6:;
-              stack->continue_at_ = 7;
+              C10:;
+              stack->continue_at_ = 11;
               {
                 {
 	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[2].v_.uv1_));
@@ -754,19 +1258,19 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
 	xlts_append(&pd->nt_.id_, &(stack->sym_data_[0].v_.uv0_).text_);
 }
               }
-              C7:;
+              C11:;
             }
             break;
             /* production: IDENT COLON rule start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
             case 5: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_PRODUCTION;
-              stack->continue_at_ = 8;
+              stack->continue_at_ = 12;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C8:;
-              stack->continue_at_ = 9;
+              C12:;
+              stack->continue_at_ = 13;
               {
                 {
 	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[2].v_.uv1_));
@@ -782,19 +1286,19 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
 	if (r) return r;
 }
               }
-              C9:;
+              C13:;
             }
             break;
             /* production: IDENT COLON rule start-c-tokenizer accept-whitespace CUBRACE_OPEN action-sequence end-c-tokenizer CUBRACE_CLOSE */
             case 6: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_PRODUCTION;
-              stack->continue_at_ = 10;
+              stack->continue_at_ = 14;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C10:;
-              stack->continue_at_ = 11;
+              C14:;
+              stack->continue_at_ = 15;
               {
                 {
 	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[2].v_.uv1_));
@@ -815,12 +1319,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
 	if (r) return r;
 }
               }
-              C11:;
+              C15:;
             }
             break;
             /* common-action: DOLLAR COLON start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
             case 7: {
-              stack->continue_at_ = 12;
+              stack->continue_at_ = 16;
               {
                 {
   /* Analogous to regular production actions, except we're moving it into the grammar's
@@ -836,12 +1340,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   if (r) return r;
 }
               }
-              C12:;
+              C16:;
             }
             break;
             /* common-action: DOLLAR COLON start-c-tokenizer accept-whitespace CUBRACE_OPEN action-sequence end-c-tokenizer CUBRACE_CLOSE */
             case 8: {
-              stack->continue_at_ = 13;
+              stack->continue_at_ = 17;
               {
                 {
   /* Analogous to regular production actions, except we're moving it into the grammar's
@@ -862,30 +1366,30 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   }
 }
               }
-              C13:;
+              C17:;
             }
             break;
             /* rule: */
             case 9: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_RULE;
-              stack->continue_at_ = 14;
+              stack->continue_at_ = 18;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C14:;
+              C18:;
             }
             break;
             /* rule: rule IDENT */
             case 10: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_RULE;
-              stack->continue_at_ = 15;
+              stack->continue_at_ = 19;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C15:;
-              stack->continue_at_ = 16;
+              C19:;
+              stack->continue_at_ = 20;
               {
                 {
 	/* Grab ident from position 1, reduce */
@@ -901,69 +1405,27 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
 	if (r) return PRD_INTERNAL_ERROR;
 }
               }
-              C16:;
+              C20:;
             }
             break;
             /* stmt-action: EQUALS accept-whitespace */
             case 11: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_STMT_ACTION;
-              stack->continue_at_ = 17;
+              stack->continue_at_ = 21;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C17:;
+              C21:;
             }
             break;
             /* stmt-action: stmt-action IDENT */
             case 12: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_STMT_ACTION;
-              stack->continue_at_ = 18;
-              {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
-              }
-              C18:;
-              stack->continue_at_ = 19;
-              {
-                {
-	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
-	pd = &(stack->stack_[1].v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (stack->sym_data_[1].v_.uv0_).match_, (stack->sym_data_[1].v_.uv0_).variant_, &(stack->sym_data_[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-              }
-              C19:;
-            }
-            break;
-            /* stmt-action: stmt-action COLON */
-            case 13: {
-              stack->slot_1_has_sym_data_ = 1;
-              stack->slot_1_sym_ = PRD_STMT_ACTION;
-              stack->continue_at_ = 20;
-              {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
-              }
-              C20:;
-              stack->continue_at_ = 21;
-              {
-                {
-	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
-	pd = &(stack->stack_[1].v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (stack->sym_data_[1].v_.uv0_).match_, (stack->sym_data_[1].v_.uv0_).variant_, &(stack->sym_data_[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-              }
-              C21:;
-            }
-            break;
-            /* stmt-action: stmt-action EQUALS */
-            case 14: {
-              stack->slot_1_has_sym_data_ = 1;
-              stack->slot_1_sym_ = PRD_STMT_ACTION;
               stack->continue_at_ = 22;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
               C22:;
               stack->continue_at_ = 23;
@@ -978,13 +1440,13 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
               C23:;
             }
             break;
-            /* stmt-action: stmt-action TOKEN */
-            case 15: {
+            /* stmt-action: stmt-action COLON */
+            case 13: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_STMT_ACTION;
               stack->continue_at_ = 24;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
               C24:;
               stack->continue_at_ = 25;
@@ -999,16 +1461,58 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
               C25:;
             }
             break;
-            /* stmt-action: stmt-action DOLLAR */
-            case 16: {
+            /* stmt-action: stmt-action EQUALS */
+            case 14: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_STMT_ACTION;
               stack->continue_at_ = 26;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
               C26:;
               stack->continue_at_ = 27;
+              {
+                {
+	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
+	pd = &(stack->stack_[1].v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (stack->sym_data_[1].v_.uv0_).match_, (stack->sym_data_[1].v_.uv0_).variant_, &(stack->sym_data_[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+              }
+              C27:;
+            }
+            break;
+            /* stmt-action: stmt-action TOKEN */
+            case 15: {
+              stack->slot_1_has_sym_data_ = 1;
+              stack->slot_1_sym_ = PRD_STMT_ACTION;
+              stack->continue_at_ = 28;
+              {
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
+              }
+              C28:;
+              stack->continue_at_ = 29;
+              {
+                {
+	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
+	pd = &(stack->stack_[1].v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (stack->sym_data_[1].v_.uv0_).match_, (stack->sym_data_[1].v_.uv0_).variant_, &(stack->sym_data_[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+              }
+              C29:;
+            }
+            break;
+            /* stmt-action: stmt-action DOLLAR */
+            case 16: {
+              stack->slot_1_has_sym_data_ = 1;
+              stack->slot_1_sym_ = PRD_STMT_ACTION;
+              stack->continue_at_ = 30;
+              {
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
+              }
+              C30:;
+              stack->continue_at_ = 31;
               {
                 {
   prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
@@ -1017,19 +1521,19 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   if (r) return PRD_INTERNAL_ERROR;
 }
               }
-              C27:;
+              C31:;
             }
             break;
             /* stmt-action: stmt-action PAR_OPEN action-sequence PAR_CLOSE */
             case 17: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_STMT_ACTION;
-              stack->continue_at_ = 28;
+              stack->continue_at_ = 32;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C28:;
-              stack->continue_at_ = 29;
+              C32:;
+              stack->continue_at_ = 33;
               {
                 {
 	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
@@ -1048,19 +1552,19 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
 	if (r) return r;
 }
               }
-              C29:;
+              C33:;
             }
             break;
             /* stmt-action: stmt-action CUBRACE_OPEN action-sequence CUBRACE_CLOSE */
             case 18: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_STMT_ACTION;
-              stack->continue_at_ = 30;
+              stack->continue_at_ = 34;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C30:;
-              stack->continue_at_ = 31;
+              C34:;
+              stack->continue_at_ = 35;
               {
                 {
 	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
@@ -1078,69 +1582,27 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
 	if (r) return r;
 }
               }
-              C31:;
+              C35:;
             }
             break;
             /* action-sequence: */
             case 19: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
-              stack->continue_at_ = 32;
+              stack->continue_at_ = 36;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C32:;
+              C36:;
             }
             break;
             /* action-sequence: action-sequence IDENT */
             case 20: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
-              stack->continue_at_ = 33;
-              {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
-              }
-              C33:;
-              stack->continue_at_ = 34;
-              {
-                {
-	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
-	pd = &(stack->stack_[1].v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (stack->sym_data_[1].v_.uv0_).match_, (stack->sym_data_[1].v_.uv0_).variant_, &(stack->sym_data_[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-              }
-              C34:;
-            }
-            break;
-            /* action-sequence: action-sequence COLON */
-            case 21: {
-              stack->slot_1_has_sym_data_ = 1;
-              stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
-              stack->continue_at_ = 35;
-              {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
-              }
-              C35:;
-              stack->continue_at_ = 36;
-              {
-                {
-	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
-	pd = &(stack->stack_[1].v_.uv1_);
-	r = snippet_append(&pd->action_sequence_, (stack->sym_data_[1].v_.uv0_).match_, (stack->sym_data_[1].v_.uv0_).variant_, &(stack->sym_data_[1].v_.uv0_).text_);
-	if (r) return PRD_INTERNAL_ERROR;
-}
-              }
-              C36:;
-            }
-            break;
-            /* action-sequence: action-sequence EQUALS */
-            case 22: {
-              stack->slot_1_has_sym_data_ = 1;
-              stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
               stack->continue_at_ = 37;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
               C37:;
               stack->continue_at_ = 38;
@@ -1155,13 +1617,13 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
               C38:;
             }
             break;
-            /* action-sequence: action-sequence SEMICOLON */
-            case 23: {
+            /* action-sequence: action-sequence COLON */
+            case 21: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
               stack->continue_at_ = 39;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
               C39:;
               stack->continue_at_ = 40;
@@ -1176,13 +1638,13 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
               C40:;
             }
             break;
-            /* action-sequence: action-sequence TOKEN */
-            case 24: {
+            /* action-sequence: action-sequence EQUALS */
+            case 22: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
               stack->continue_at_ = 41;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
               C41:;
               stack->continue_at_ = 42;
@@ -1197,13 +1659,13 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
               C42:;
             }
             break;
-            /* action-sequence: action-sequence DOLLAR */
-            case 25: {
+            /* action-sequence: action-sequence SEMICOLON */
+            case 23: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
               stack->continue_at_ = 43;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
               C43:;
               stack->continue_at_ = 44;
@@ -1218,16 +1680,58 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
               C44:;
             }
             break;
-            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
-            case 26: {
+            /* action-sequence: action-sequence TOKEN */
+            case 24: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
               stack->continue_at_ = 45;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
               C45:;
               stack->continue_at_ = 46;
+              {
+                {
+	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
+	pd = &(stack->stack_[1].v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (stack->sym_data_[1].v_.uv0_).match_, (stack->sym_data_[1].v_.uv0_).variant_, &(stack->sym_data_[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+              }
+              C46:;
+            }
+            break;
+            /* action-sequence: action-sequence DOLLAR */
+            case 25: {
+              stack->slot_1_has_sym_data_ = 1;
+              stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
+              stack->continue_at_ = 47;
+              {
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
+              }
+              C47:;
+              stack->continue_at_ = 48;
+              {
+                {
+	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
+	pd = &(stack->stack_[1].v_.uv1_);
+	r = snippet_append(&pd->action_sequence_, (stack->sym_data_[1].v_.uv0_).match_, (stack->sym_data_[1].v_.uv0_).variant_, &(stack->sym_data_[1].v_.uv0_).text_);
+	if (r) return PRD_INTERNAL_ERROR;
+}
+              }
+              C48:;
+            }
+            break;
+            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
+            case 26: {
+              stack->slot_1_has_sym_data_ = 1;
+              stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
+              stack->continue_at_ = 49;
+              {
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
+              }
+              C49:;
+              stack->continue_at_ = 50;
               {
                 {
 	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
@@ -1245,19 +1749,19 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
 	if (r) return r;
 }
               }
-              C46:;
+              C50:;
             }
             break;
             /* action-sequence: action-sequence CUBRACE_OPEN action-sequence CUBRACE_CLOSE */
             case 27: {
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = PRD_ACTION_SEQUENCE;
-              stack->continue_at_ = 47;
+              stack->continue_at_ = 51;
               {
-                 prd_prod_init(&(stack->stack_[1].v_.uv1_));
+                prd_prod_init(&(stack->stack_[1].v_.uv1_));
               }
-              C47:;
-              stack->continue_at_ = 48;
+              C51:;
+              stack->continue_at_ = 52;
               {
                 {
 	prd_prod_swap(&(stack->stack_[1].v_.uv1_), &(stack->sym_data_[0].v_.uv1_));
@@ -1275,33 +1779,33 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
 	if (r) return r;
 }
               }
-              C48:;
+              C52:;
             }
             break;
             /* start-c-tokenizer: */
             case 28: {
-              stack->continue_at_ = 49;
+              stack->continue_at_ = 53;
               {
                 tok_switch_to_c_idents(tkr);
               }
-              C49:;
+              C53:;
             }
             break;
             /* end-c-tokenizer: */
             case 29: {
-              stack->continue_at_ = 50;
+              stack->continue_at_ = 54;
               {
                 {
 	tok_switch_to_nonterminal_idents(tkr);
 	g->accept_whitespace_ = 0; /* Reset to normal tokens */
 }
               }
-              C50:;
+              C54:;
             }
             break;
             /* accept-whitespace: */
             case 30: {
-              stack->continue_at_ = 51;
+              stack->continue_at_ = 55;
               {
                 {
 	/* Welcome whitespace from this point. Note that this point is *after* the lookahead at the point
@@ -1310,7 +1814,7 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
 	g->accept_whitespace_ = 1;
 }
               }
-              C51:;
+              C55:;
             }
             break;
           } /* switch */
@@ -1318,9 +1822,8 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
         
         /* Free symdata for every symbol in the production, including the first slot where we will soon
         * push nonterminal_data_reduced_to */
-        size_t prd_sym_idx;
-        for (prd_sym_idx = stack->pos_ - stack->current_production_length_; prd_sym_idx < stack->pos_; ++prd_sym_idx) {
-          switch (stack->stack_[prd_sym_idx].state_) {
+        for (stack->sym_idx_ = stack->pos_ - stack->current_production_length_; stack->sym_idx_ < stack->pos_; ++stack->sym_idx_) {
+          switch (stack->stack_[stack->sym_idx_].state_) {
             case 2: /* semicolon */
             case 3: /* semicolon */
             case 6: /* cubrace-close */
@@ -1353,11 +1856,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
             case 48: /* cubrace-open */
             case 51: /* colon */
             case 52: /* dollar */
-            stack->continue_at_ = 52;
             {
-               xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
+              {
+                xlts_cleanup(&((stack->stack_ + stack->sym_idx_)->v_.uv0_).text_);
+              }
+              
             }
-            C52:;
             break;
             case 1: /* production */
             case 5: /* stmt-action */
@@ -1369,43 +1873,195 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
             case 42: /* action-sequence */
             case 45: /* action-sequence */
             case 47: /* action-sequence */
-            stack->continue_at_ = 53;
             {
-               prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
+              {
+                prd_prod_cleanup(&((stack->stack_ + stack->sym_idx_)->v_.uv1_));
+              }
+              
             }
-            C53:;
             break;
           } /* switch */
         } /* for */
         stack->pos_ -= stack->current_production_length_;
+        stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 1;
         action = prd_parse_table[prd_num_columns * stack->stack_[stack->pos_ - 1].state_ + (stack->current_production_nonterminal_ - prd_minimum_sym)];
         if (action <= 0) {
           stack->continue_at_ = 0;
           {
-            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            re_error_nowhere("Error: internal error\n"); return PRD_INTERNAL_ERROR;
             
           }
         }
-        switch (prd_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
-          case _PRD_OVERFLOW: {
-            stack->continue_at_ = 0;
-            {
-              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
-              
+        if (stack->num_stack_allocated_ == stack->pos_) {
+          stack->action_preservation_ = action /* action for a "goto" shift is the ordinal */;
+          size_t new_num_allocated;
+          if (stack->num_stack_allocated_) {
+            new_num_allocated = stack->num_stack_allocated_ * 2;
+            if (new_num_allocated <= stack->num_stack_allocated_) {
+              /* Overflow in allocation */
+              return _PRD_OVERFLOW;
             }
           }
-          break;
-          case _PRD_NO_MEMORY: {
-            stack->continue_at_ = 0;
-            {
-              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
-              
+          else {
+            new_num_allocated = 16;
+          }
+          
+          if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
+            /* Overflow in allocation */
+            return _PRD_OVERFLOW;
+          }
+          
+          stack->new_buf_ = (struct prd_sym_data *)malloc(new_num_allocated * sizeof(struct prd_sym_data));
+          if (!stack->new_buf_) {
+            /* Out of memory */
+            return _PRD_NO_MEMORY;
+          }
+          stack->new_buf_num_allocated_ = new_num_allocated;
+          for (stack->new_buf_sym_partial_pos_ = 0; stack->new_buf_sym_partial_pos_ < stack->pos_; ++stack->new_buf_sym_partial_pos_) {
+            stack->new_buf_[stack->new_buf_sym_partial_pos_].state_ = stack->stack_[stack->new_buf_sym_partial_pos_].state_;
+            stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+            stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 1;
+            if ((stack->new_buf_sym_partial_pos_ == 0) || (stack->new_buf_sym_partial_pos_ == 1)) {
+              int need_sym_move;
+              int sym_to_move;
+              sym_to_move = 0; /* silence a waring with this explicit initialization */
+              need_sym_move = 0;
+              if (stack->new_buf_sym_partial_pos_ == 0) {
+                /* slot 0 goes unused in scannerless operation */
+                need_sym_move = 0;
+              }
+              else if (stack->new_buf_sym_partial_pos_ == 1) {
+                need_sym_move = stack->slot_1_has_sym_data_;
+                sym_to_move = stack->slot_1_sym_;
+              }
+              if (need_sym_move) {
+                switch (sym_to_move) {
+                  case PRD_IDENT:
+                  case PRD_COLON:
+                  case PRD_EQUALS:
+                  case PRD_SEMICOLON:
+                  case PRD_TOKEN:
+                  case PRD_PAR_OPEN:
+                  case PRD_PAR_CLOSE:
+                  case PRD_CUBRACE_OPEN:
+                  case PRD_CUBRACE_CLOSE:
+                  case PRD_DOLLAR:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 56;
+                  {
+                    stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (token_type_t)0; \
+             xlts_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_);
+                  }
+                  C56:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  {
+                    xlts_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv0_).text_);
+                  }
+                  
+                  break;
+                  case PRD_RULE:
+                  case PRD_PRODUCTION:
+                  case PRD_ACTION_SEQUENCE:
+                  case PRD_STMT_ACTION:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 57;
+                  {
+                    prd_prod_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv1_);
+                  }
+                  C57:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  {
+                    prd_prod_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv1_));
+                  }
+                  
+                  break;
+                }
+              }
+            }
+            else /* not 0 or 1, but >= 2 state derived sym */ {
+              switch (stack->stack_[stack->new_buf_sym_partial_pos_].state_) {
+                case 2: /* semicolon */
+                case 3: /* semicolon */
+                case 6: /* cubrace-close */
+                case 9: /* cubrace-open */
+                case 12: /* ident */
+                case 14: /* colon */
+                case 15: /* ident */
+                case 17: /* semicolon */
+                case 19: /* ident */
+                case 20: /* colon */
+                case 21: /* equals */
+                case 22: /* token */
+                case 23: /* dollar */
+                case 24: /* par-close */
+                case 26: /* par-open */
+                case 27: /* cubrace-close */
+                case 29: /* cubrace-open */
+                case 32: /* equals */
+                case 33: /* cubrace-close */
+                case 35: /* ident */
+                case 36: /* colon */
+                case 37: /* equals */
+                case 38: /* semicolon */
+                case 39: /* token */
+                case 40: /* dollar */
+                case 41: /* par-close */
+                case 43: /* par-open */
+                case 44: /* cubrace-close */
+                case 46: /* cubrace-open */
+                case 48: /* cubrace-open */
+                case 51: /* colon */
+                case 52: /* dollar */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 58;
+                {
+                  stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (token_type_t)0; \
+             xlts_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_);
+                }
+                C58:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                {
+                  xlts_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv0_).text_);
+                }
+                
+                break;
+                case 1: /* production */
+                case 5: /* stmt-action */
+                case 8: /* action-sequence */
+                case 13: /* rule */
+                case 25: /* action-sequence */
+                case 28: /* action-sequence */
+                case 30: /* stmt-action */
+                case 42: /* action-sequence */
+                case 45: /* action-sequence */
+                case 47: /* action-sequence */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 59;
+                {
+                  prd_prod_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv1_);
+                }
+                C59:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                {
+                  prd_prod_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv1_));
+                }
+                
+                break;
+              } /* switch */
             }
           }
-          break;
-        } /* switch */
+          if (stack->stack_) free(stack->stack_);
+          stack->stack_ = stack->new_buf_;
+          stack->new_buf_sym_partial_pos_ = 0;
+          stack->new_buf_ = NULL;
+          stack->num_stack_allocated_ = stack->new_buf_num_allocated_;
+          action /* action for a "goto" shift is the ordinal */ = stack->action_preservation_;
+        }
+        stack->stack_[stack->pos_++].state_ = action /* action for a "goto" shift is the ordinal */;
+        stack->top_of_stack_has_sym_data_ = 0;
+        stack->top_of_stack_has_common_data_ = 0;
         struct prd_sym_data *sd = stack->stack_ + stack->pos_ - 1;
-        *sd = stack->stack_[1];
+        memcpy(sd, stack->stack_+1, sizeof(*sd));
         sd->state_ = action;
         stack->slot_1_has_common_data_ = 0;
         stack->slot_1_has_sym_data_ = 0;
@@ -1416,8 +2072,8 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
         /* check if we can recover using an error token. */
         size_t n;
         for (n = 0; n < stack->pos_; ++n) {
-          int err_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (13 /* error token */ - prd_minimum_sym)];
-          if (err_action > 0) {
+          stack->current_err_action_ = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (13 /* error token */ - prd_minimum_sym)];
+          if (stack->current_err_action_ > 0) {
             /* we can transition on the error token somewhere on the stack */
             break;
           }
@@ -1463,16 +2119,16 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
         do {
           --n;
           /* Can we shift an error token? */
-          int err_action = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (13 /* error token */ - prd_minimum_sym)];
-          if (err_action > 0) {
+          stack->current_err_action_ = prd_parse_table[prd_num_columns * stack->stack_[n].state_ + (13 /* error token */ - prd_minimum_sym)];
+          if (stack->current_err_action_ > 0) {
             /* Does the resulting state accept the current symbol? */
-            int err_sym_action = prd_parse_table[prd_num_columns * err_action + (sym - prd_minimum_sym)];
+            int err_sym_action;
+            err_sym_action = prd_parse_table[prd_num_columns * stack->current_err_action_ + (sym - prd_minimum_sym)];
             if (err_sym_action) {
               /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */
               /* Free symdata for every symbol up to the state where we will shift the error token */
-              size_t prd_sym_idx;
-              for (prd_sym_idx = n + 1; prd_sym_idx < stack->pos_; ++prd_sym_idx) {
-                switch (stack->stack_[prd_sym_idx].state_) {
+              for (stack->sym_idx_ = n + 1; stack->sym_idx_ < stack->pos_; ++stack->sym_idx_) {
+                switch (stack->stack_[stack->sym_idx_].state_) {
                   case 2: /* semicolon */
                   case 3: /* semicolon */
                   case 6: /* cubrace-close */
@@ -1505,11 +2161,9 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                   case 48: /* cubrace-open */
                   case 51: /* colon */
                   case 52: /* dollar */
-                  stack->continue_at_ = 54;
                   {
-                     xlts_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv0_).text_);
+                    xlts_cleanup(&((stack->stack_ + stack->sym_idx_)->v_.uv0_).text_);
                   }
-                  C54:;
                   break;
                   case 1: /* production */
                   case 5: /* stmt-action */
@@ -1521,39 +2175,188 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                   case 42: /* action-sequence */
                   case 45: /* action-sequence */
                   case 47: /* action-sequence */
-                  stack->continue_at_ = 55;
                   {
-                     prd_prod_cleanup(&((stack->stack_ + prd_sym_idx)->v_.uv1_));
+                    prd_prod_cleanup(&((stack->stack_ + stack->sym_idx_)->v_.uv1_));
                   }
-                  C55:;
                   break;
                 } /* switch */
               } /* for */
               stack->pos_ = n + 1;
+              stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 1;
               /* Push the state of the error transition */
-              switch (prd_push_state(stack, err_action)) {
-                case _PRD_OVERFLOW: {
-                  stack->continue_at_ = 0;
-                  {
-                    re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
-                    
+              if (stack->num_stack_allocated_ == stack->pos_) {
+                stack->action_preservation_ = stack->current_err_action_;
+                size_t new_num_allocated;
+                if (stack->num_stack_allocated_) {
+                  new_num_allocated = stack->num_stack_allocated_ * 2;
+                  if (new_num_allocated <= stack->num_stack_allocated_) {
+                    /* Overflow in allocation */
+                    return _PRD_OVERFLOW;
                   }
                 }
-                break;
-                case _PRD_NO_MEMORY: {
-                  stack->continue_at_ = 0;
-                  {
-                    re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
-                    
+                else {
+                  new_num_allocated = 16;
+                }
+                
+                if (new_num_allocated > (SIZE_MAX / sizeof(struct prd_sym_data))) {
+                  /* Overflow in allocation */
+                  return _PRD_OVERFLOW;
+                }
+                
+                stack->new_buf_ = (struct prd_sym_data *)malloc(new_num_allocated * sizeof(struct prd_sym_data));
+                if (!stack->new_buf_) {
+                  /* Out of memory */
+                  return _PRD_NO_MEMORY;
+                }
+                stack->new_buf_num_allocated_ = new_num_allocated;
+                for (stack->new_buf_sym_partial_pos_ = 0; stack->new_buf_sym_partial_pos_ < stack->pos_; ++stack->new_buf_sym_partial_pos_) {
+                  stack->new_buf_[stack->new_buf_sym_partial_pos_].state_ = stack->stack_[stack->new_buf_sym_partial_pos_].state_;
+                  stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+                  stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 1;
+                  if ((stack->new_buf_sym_partial_pos_ == 0) || (stack->new_buf_sym_partial_pos_ == 1)) {
+                    int need_sym_move;
+                    int sym_to_move;
+                    sym_to_move = 0; /* silence a waring with this explicit initialization */
+                    need_sym_move = 0;
+                    if (stack->new_buf_sym_partial_pos_ == 0) {
+                      /* slot 0 goes unused in scannerless operation */
+                      need_sym_move = 0;
+                    }
+                    else if (stack->new_buf_sym_partial_pos_ == 1) {
+                      need_sym_move = stack->slot_1_has_sym_data_;
+                      sym_to_move = stack->slot_1_sym_;
+                    }
+                    if (need_sym_move) {
+                      switch (sym_to_move) {
+                        case PRD_IDENT:
+                        case PRD_COLON:
+                        case PRD_EQUALS:
+                        case PRD_SEMICOLON:
+                        case PRD_TOKEN:
+                        case PRD_PAR_OPEN:
+                        case PRD_PAR_CLOSE:
+                        case PRD_CUBRACE_OPEN:
+                        case PRD_CUBRACE_CLOSE:
+                        case PRD_DOLLAR:
+                        stack->newbuf_pos_has_sym_data_ = 1;
+                        stack->continue_at_ = 60;
+                        {
+                          stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (token_type_t)0; \
+             xlts_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_);
+                        }
+                        C60:;
+                        memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                        {
+                          xlts_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv0_).text_);
+                        }
+                        
+                        break;
+                        case PRD_RULE:
+                        case PRD_PRODUCTION:
+                        case PRD_ACTION_SEQUENCE:
+                        case PRD_STMT_ACTION:
+                        stack->newbuf_pos_has_sym_data_ = 1;
+                        stack->continue_at_ = 61;
+                        {
+                          prd_prod_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv1_);
+                        }
+                        C61:;
+                        memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                        {
+                          prd_prod_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv1_));
+                        }
+                        
+                        break;
+                      }
+                    }
+                  }
+                  else /* not 0 or 1, but >= 2 state derived sym */ {
+                    switch (stack->stack_[stack->new_buf_sym_partial_pos_].state_) {
+                      case 2: /* semicolon */
+                      case 3: /* semicolon */
+                      case 6: /* cubrace-close */
+                      case 9: /* cubrace-open */
+                      case 12: /* ident */
+                      case 14: /* colon */
+                      case 15: /* ident */
+                      case 17: /* semicolon */
+                      case 19: /* ident */
+                      case 20: /* colon */
+                      case 21: /* equals */
+                      case 22: /* token */
+                      case 23: /* dollar */
+                      case 24: /* par-close */
+                      case 26: /* par-open */
+                      case 27: /* cubrace-close */
+                      case 29: /* cubrace-open */
+                      case 32: /* equals */
+                      case 33: /* cubrace-close */
+                      case 35: /* ident */
+                      case 36: /* colon */
+                      case 37: /* equals */
+                      case 38: /* semicolon */
+                      case 39: /* token */
+                      case 40: /* dollar */
+                      case 41: /* par-close */
+                      case 43: /* par-open */
+                      case 44: /* cubrace-close */
+                      case 46: /* cubrace-open */
+                      case 48: /* cubrace-open */
+                      case 51: /* colon */
+                      case 52: /* dollar */
+                      stack->newbuf_pos_has_sym_data_ = 1;
+                      stack->continue_at_ = 62;
+                      {
+                        stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (token_type_t)0; \
+             xlts_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_);
+                      }
+                      C62:;
+                      memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                      {
+                        xlts_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv0_).text_);
+                      }
+                      
+                      break;
+                      case 1: /* production */
+                      case 5: /* stmt-action */
+                      case 8: /* action-sequence */
+                      case 13: /* rule */
+                      case 25: /* action-sequence */
+                      case 28: /* action-sequence */
+                      case 30: /* stmt-action */
+                      case 42: /* action-sequence */
+                      case 45: /* action-sequence */
+                      case 47: /* action-sequence */
+                      stack->newbuf_pos_has_sym_data_ = 1;
+                      stack->continue_at_ = 63;
+                      {
+                        prd_prod_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv1_);
+                      }
+                      C63:;
+                      memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                      {
+                        prd_prod_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv1_));
+                      }
+                      
+                      break;
+                    } /* switch */
                   }
                 }
-                break;
-              } /* switch */
+                if (stack->stack_) free(stack->stack_);
+                stack->stack_ = stack->new_buf_;
+                stack->new_buf_sym_partial_pos_ = 0;
+                stack->new_buf_ = NULL;
+                stack->num_stack_allocated_ = stack->new_buf_num_allocated_;
+                stack->current_err_action_ = stack->action_preservation_;
+              }
+              stack->stack_[stack->pos_++].state_ = stack->current_err_action_;
+              stack->top_of_stack_has_sym_data_ = 0;
+              stack->top_of_stack_has_common_data_ = 0;
               stack->error_recovery_ = 0;
               /* Break out of do { .. } while loop, we've recovered */
               break;
             } /* if (err_sym_action) (if the current sym can continue after an error transition) */
-          } /* if (err_action) (if the state at position 'n' can accept an error transition) */
+          } /* if (stack->current_err_action_) (if the state at position 'n' can accept an error transition) */
         } while (n);
       }
       if (stack->error_recovery_) {
