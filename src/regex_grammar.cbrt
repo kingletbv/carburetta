@@ -215,6 +215,7 @@ grammar: grammar mode pattern {
 %type mode mode-list: struct regex_mode_list
 %constructor regex_mode_list_init(&$$);
 %destructor regex_mode_list_cleanup(&$$);
+%move regex_mode_list_move(&$$, &$0);
 
 mode: LESS_THAN mode-list GREATER_THAN { regex_mode_list_move(&$$, &$1); }
 
