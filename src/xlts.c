@@ -73,6 +73,12 @@ void xlts_reset(struct xlts *x) {
   x->num_chunks_ = 0;
 }
 
+void xlts_move(struct xlts *dst, struct xlts *src) {
+  xlts_cleanup(dst);
+  *dst = *src;
+  xlts_init(src);
+}
+
 static int xlts_append_strings(size_t *num, size_t *num_allocated, char **p, size_t num_bytes, const char *bytes) {
   size_t size_needed = *num + num_bytes;
   if (size_needed < num_bytes) {

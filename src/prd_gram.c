@@ -63,6 +63,16 @@ void prd_prod_reset(struct prd_production *ppd) {
   snippet_clear(&ppd->action_sequence_);
 }
 
+void prd_prod_move(struct prd_production *dst, struct prd_production *src) {
+  prd_prod_cleanup(dst);
+  *dst = *src;
+  src->syms_ = NULL;
+  src->num_syms_ = 0;
+  src->num_syms_allocated_ = 0;
+  snippet_init(&src->common_action_sequence_);
+  snippet_init(&src->action_sequence_);
+}
+
 void prd_prod_cleanup(struct prd_production *ppd) {
   size_t n;
   prd_production_sym_cleanup(&ppd->nt_);

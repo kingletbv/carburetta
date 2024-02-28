@@ -81,6 +81,7 @@
 %constructor $$.match_ = $$.variant_ = (token_type_t)0; \
              xlts_init(&$$.text_);
 %destructor xlts_cleanup(&$$.text_);
+%move xlts_move(&$$.text_, &$0.text_);
 
 %token_action $$.match_ = (token_type_t)tkr->best_match_action_; \
               $$.variant_ = (token_type_t)tkr->best_match_variant_; \
@@ -89,6 +90,7 @@
 %type rule production action-sequence stmt-action: struct prd_production
 %constructor prd_prod_init(&$$);
 %destructor prd_prod_cleanup(&$$);
+%move prd_prod_move(&$$, &$0);
 
 %params struct prd_grammar *g, struct tkr_tokenizer *tkr, struct symbol_table *st
 %locals int r; \

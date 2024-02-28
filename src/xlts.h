@@ -83,6 +83,7 @@ struct xlts {
 void xlts_init(struct xlts *x);
 void xlts_cleanup(struct xlts *x);
 void xlts_reset(struct xlts *x);
+void xlts_move(struct xlts *dst, struct xlts *src);
 
 int xlts_append_xlat(struct xlts *x, size_t num_bytes, const char *bytes);
 int xlts_append_equal(struct xlts *x, const char *filename, int line, int col, size_t offset, size_t num_bytes, const char *bytes);

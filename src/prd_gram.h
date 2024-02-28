@@ -161,6 +161,7 @@ void prd_production_sym_init(struct prd_production_sym *pps);
 void prd_production_sym_cleanup(struct prd_production_sym *pps);
 void prd_prod_init(struct prd_production *ppd);
 void prd_prod_reset(struct prd_production *ppd);
+void prd_prod_move(struct prd_production *dst, struct prd_production *src);
 void prd_prod_cleanup(struct prd_production *ppd);
 void prd_pattern_init(struct prd_pattern *pat);
 void prd_pattern_cleanup(struct prd_pattern *pat);
