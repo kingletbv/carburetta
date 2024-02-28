@@ -66,14 +66,24 @@ extern "C" {
     int current_sym_;
     size_t input_size_;
     const char *input_;
+    int newbuf_pos_has_common_data_:1;
+    int newbuf_pos_has_sym_data_:1;
+    int stack_newbuf_pos_has_common_data_:1;
+    int stack_newbuf_pos_has_sym_data_:1;
+    int action_preservation_;
+    int current_err_action_;
     int slot_1_sym_;
     int continue_at_;
     int mute_error_turns_;
     size_t pos_, num_stack_allocated_;
     struct rex_sym_data *stack_;
     struct rex_sym_data *sym_data_;
+    struct rex_sym_data *new_buf_;
+    size_t new_buf_num_allocated_;
+    size_t new_buf_sym_partial_pos_;
     size_t current_production_length_;
     int current_production_nonterminal_;
+    size_t sym_idx_;
     size_t scan_state_;
     size_t current_mode_start_state_;
     size_t match_index_;
@@ -120,6 +130,7 @@ extern "C" {
   int rex_endline(struct rex_stack *stack);
   int rex_endcolumn(struct rex_stack *stack);
   size_t rex_endoffset(struct rex_stack *stack);
+  void *rex_token_common_data(struct rex_stack *stack);
   int rex_lex(struct rex_stack *stack);
   int rex_parse(struct rex_stack *stack, int sym, struct rex_nfa *nfa, size_t *pstart, size_t *pend);
   
