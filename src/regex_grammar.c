@@ -151,23 +151,31 @@ void regex_mode_list_move(struct regex_mode_list *dst, struct regex_mode_list *s
 }
 
 /* --------- START OF GENERATED CODE ------------ */
+#if defined(__clang__)
+#elif defined(__GNUC__) && defined(__cplusplus)
+/* don't warn on realloc, memcpy, memset on C++ classes */
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
 #include <stdlib.h> /* realloc(), free(), NULL, size_t */
 #include <string.h> /* memcpy() */
 #include <stddef.h> /* size_t */
 #include <stdint.h> /* SIZE_MAX */
 struct rxg_sym_data {
+  #ifdef __cplusplus
+  // clear destructor in case C++ symbol types have non-trivial destructors
+  // (we invoke their destructors explicitly)
+  ~rxg_sym_data() = delete;
+  #endif
   int state_;
-  struct snippet common_;
+  struct   snippet common_;
   union {
     size_t uv0_;
     struct regex_mode_list uv2_;
-    struct { size_t start_ , end_ ; } uv3_;
+    struct { size_t start_, end_; } uv3_;
   } v_;
 };
 static const int rxg_minimum_sym = 3;
 static const size_t rxg_num_columns = 48;
-static const size_t rxg_num_rows = 111;
-static const size_t rxg_num_productions = 70;
 static const int rxg_parse_table[] = {
     0, -2,  0,  0,  0,  0, -2,  0,  0,  0,  0, -2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -2,  0,  0,  0, 0, -2, 0, 0, 0, 0, 0, 0,110, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0, 0,
     0, -3,  0,  0,  0,  0, -3,  0,  0,  0,  0, -3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -3,  0,  0,  0, 0, -3, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0, 0, 0,
@@ -435,14 +443,24 @@ struct rxg_stack {
   int slot_1_has_common_data_:1;
   int top_of_stack_has_sym_data_:1;
   int top_of_stack_has_common_data_:1;
+  int newbuf_pos_has_common_data_:1;
+  int newbuf_pos_has_sym_data_:1;
+  int stack_newbuf_pos_has_common_data_:1;
+  int stack_newbuf_pos_has_sym_data_:1;
+  int action_preservation_;
+  int current_err_action_;
   int slot_1_sym_;
   int continue_at_;
   int mute_error_turns_;
   size_t pos_, num_stack_allocated_;
   struct rxg_sym_data *stack_;
   struct rxg_sym_data *sym_data_;
+  struct rxg_sym_data *new_buf_;
+  size_t new_buf_num_allocated_;
+  size_t new_buf_sym_partial_pos_;
   size_t current_production_length_;
   int current_production_nonterminal_;
+  size_t sym_idx_;
 };
 #define _RXG_FINISH 0
 #define _RXG_MATCH 1
@@ -513,74 +531,407 @@ void rxg_stack_init(struct rxg_stack *stack) {
   stack->slot_1_has_sym_data_ = stack->slot_1_has_common_data_ = 0;
   stack->slot_1_sym_ = 0;
   stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 0;
+  stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+  stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 0;
   stack->continue_at_ = 0;
   stack->mute_error_turns_ = 0;
   stack->pos_ = 0;
   stack->num_stack_allocated_ = 0;
   stack->stack_ = NULL;
   stack->sym_data_ = NULL;
+  stack->new_buf_ = NULL;
+  stack->new_buf_num_allocated_ = 0;
+  stack->new_buf_sym_partial_pos_ = 0;
   stack->current_production_length_ = 0;
   stack->current_production_nonterminal_ = 0;
+  stack->sym_idx_ = 0;
 }
 
 void rxg_stack_cleanup(struct rxg_stack *stack) {
   size_t n;
-  for (n = 2; n < stack->pos_; ++n) {
-    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_sym_data_) {
+  if (!stack->new_buf_) n = 0;
+  else {
+    n = stack->new_buf_sym_partial_pos_;
+  }
+  for (; n < stack->pos_; ++n) {
+    int need_common_deconstruct = 0;
+    int need_state_deconstruct = 0;
+    if ((n == 0) || (n == 1)) {
+      int need_sym_deconstruct = 0;
+      int sym_to_deconstruct;
+      need_state_deconstruct = 0;
+      if (n == 0) {
+        /* slot 0 goes unused in scannerless operation */
+        need_common_deconstruct = 0;
+        need_sym_deconstruct = 0;
+      }
+      else if (n == 1) {
+        sym_to_deconstruct = stack->slot_1_sym_;
+        need_sym_deconstruct = stack->slot_1_has_sym_data_;
+        need_common_deconstruct = stack->slot_1_has_common_data_;
+      }
+      if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {
+        need_sym_deconstruct = need_sym_deconstruct && stack->stack_newbuf_pos_has_sym_data_;
+        need_common_deconstruct = need_common_deconstruct && stack->stack_newbuf_pos_has_common_data_;
+      }
+      if (need_sym_deconstruct) {
+        switch (sym_to_deconstruct) {
+          case RXG_PATTERN:
+          {
+            
+          }
+          break;
+          case RXG_MODE:
+          case RXG_MODE_LIST:
+          {
+            {
+              regex_mode_list_cleanup(&((stack->stack_ + n)->v_.uv2_));
+            }
+            
+          }
+          break;
+          case RXG_PATTERN_LIST:
+          {
+            
+          }
+          break;
+        }
+      }
+    }
+    else if (n == (stack->pos_ - 1)) {
+      need_common_deconstruct = stack->top_of_stack_has_common_data_;
+      need_state_deconstruct = stack->top_of_stack_has_sym_data_;
+      if (n == stack->new_buf_sym_partial_pos_) {
+        need_common_deconstruct = need_common_deconstruct && stack->stack_newbuf_pos_has_common_data_;
+        need_state_deconstruct = need_state_deconstruct && stack->stack_newbuf_pos_has_sym_data_;
+      }
+    }
+    else if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {
+      need_common_deconstruct = stack->stack_newbuf_pos_has_common_data_;
+      need_state_deconstruct = stack->stack_newbuf_pos_has_sym_data_;
+    }
+    else {
+      need_common_deconstruct = 1;
+      need_state_deconstruct = 1;
+    }
+    if (need_state_deconstruct) {
       switch (stack->stack_[n].state_) {
         case 103: /* mode */
         case 107: /* mode-list */
         {
           {
-             regex_mode_list_cleanup(&((stack->stack_ + n)->v_.uv2_));
+            regex_mode_list_cleanup(&((stack->stack_ + n)->v_.uv2_));
           }
           
         }
         break;
       } /* switch */
     }
-    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_common_data_) {
+    if (need_common_deconstruct) {
       {
-         snippet_cleanup(&((stack->stack_ + n)->common_));
+        snippet_cleanup(&((stack->stack_ + n)->common_));
       }
       
     }
   }
-  if (stack->slot_1_has_sym_data_) {
-    switch (stack->slot_1_sym_) {
-      case 38:
-      break;
-      case 46:
-      case 47:
-      {
+  if (stack->new_buf_) {
+    /* same deconstructors as above, but now for stack->new_buf_ -- stack->new_buf_ only
+    * exists for a brief period time when we resize stack->stack_, however, because
+    * constructors and moves are allowed to throw, or otherwise return and fail, it is
+    * required that we deconstruct the stack->new_buf_ elements cleanly. */
+    for (n = 0; n <= stack->new_buf_sym_partial_pos_; ++n) {
+      int need_common_deconstruct = 0;
+      int need_state_deconstruct = 0;
+      if ((n == 0) || (n == 1)) {
+        int need_sym_deconstruct = 0;
+        int sym_to_deconstruct;
+        need_state_deconstruct = 0;
+        if (n == 0) {
+          /* slot 0 goes unused in scannerless operation */
+          need_common_deconstruct = 0;
+          need_sym_deconstruct = 0;
+        }
+        else if (n == 1) {
+          sym_to_deconstruct = stack->slot_1_sym_;
+          need_sym_deconstruct = stack->slot_1_has_sym_data_;
+          need_common_deconstruct = stack->slot_1_has_common_data_;
+        }
+        if (n == stack->new_buf_sym_partial_pos_) {
+          need_sym_deconstruct = need_sym_deconstruct && stack->newbuf_pos_has_sym_data_;
+          need_common_deconstruct = need_common_deconstruct && stack->newbuf_pos_has_common_data_;
+        }
+        if (need_sym_deconstruct) {
+          switch (sym_to_deconstruct) {
+            case RXG_PATTERN:
+            {
+              
+            }
+            break;
+            case RXG_MODE:
+            case RXG_MODE_LIST:
+            {
+              {
+                regex_mode_list_cleanup(&((stack->new_buf_ + n)->v_.uv2_));
+              }
+              
+            }
+            break;
+            case RXG_PATTERN_LIST:
+            {
+              
+            }
+            break;
+          }
+        }
+      }
+      else if (n == (stack->pos_ - 1)) {
+        need_common_deconstruct = stack->top_of_stack_has_common_data_;
+        need_state_deconstruct = stack->top_of_stack_has_sym_data_;
+        if (n == stack->new_buf_sym_partial_pos_) {
+          need_common_deconstruct = need_common_deconstruct && stack->newbuf_pos_has_common_data_;
+          need_state_deconstruct = need_state_deconstruct && stack->newbuf_pos_has_sym_data_;
+        }
+      }
+      else if (n == stack->new_buf_sym_partial_pos_) {
+        need_common_deconstruct = stack->newbuf_pos_has_common_data_;
+        need_state_deconstruct = stack->newbuf_pos_has_sym_data_;
+      }
+      else {
+        need_common_deconstruct = 1;
+        need_state_deconstruct = 1;
+      }
+      if (need_state_deconstruct) {
+        switch (stack->stack_[n].state_) {
+          case 103: /* mode */
+          case 107: /* mode-list */
+          {
+            {
+              regex_mode_list_cleanup(&((stack->new_buf_ + n)->v_.uv2_));
+            }
+            
+          }
+          break;
+        } /* switch */
+      }
+      if (need_common_deconstruct) {
         {
-           regex_mode_list_cleanup(&(stack->stack_[1].v_.uv2_));
+          snippet_cleanup(&((stack->new_buf_ + n)->common_));
         }
         
       }
-      break;
-      case 49:
-      break;
-    } /* switch */
-  }
-  if (stack->slot_1_has_common_data_) {
-    {
-       snippet_cleanup(&(stack->stack_[1].common_));
     }
-    
+    free(stack->new_buf_);
+    stack->new_buf_ = NULL;
   }
-  
   if (stack->stack_) free(stack->stack_);
 }
 
-static int rxg_push_state(struct rxg_stack *stack, int state) {
-  if (stack->num_stack_allocated_ == stack->pos_) {
-    size_t new_num_allocated = 0;
+int rxg_stack_reset(struct rxg_stack *stack) {
+  stack->pending_reset_ = 0;
+  stack->discard_remaining_actions_ = 0;
+  size_t n;
+  if (!stack->new_buf_) n = 0;
+  else {
+    n = stack->new_buf_sym_partial_pos_;
+  }
+  for (; n < stack->pos_; ++n) {
+    int need_common_deconstruct = 0;
+    int need_state_deconstruct = 0;
+    if ((n == 0) || (n == 1)) {
+      int need_sym_deconstruct = 0;
+      int sym_to_deconstruct;
+      need_state_deconstruct = 0;
+      if (n == 0) {
+        /* slot 0 goes unused in scannerless operation */
+        need_common_deconstruct = 0;
+        need_sym_deconstruct = 0;
+      }
+      else if (n == 1) {
+        sym_to_deconstruct = stack->slot_1_sym_;
+        need_sym_deconstruct = stack->slot_1_has_sym_data_;
+        need_common_deconstruct = stack->slot_1_has_common_data_;
+      }
+      if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {
+        need_sym_deconstruct = need_sym_deconstruct && stack->stack_newbuf_pos_has_sym_data_;
+        need_common_deconstruct = need_common_deconstruct && stack->stack_newbuf_pos_has_common_data_;
+      }
+      if (need_sym_deconstruct) {
+        switch (sym_to_deconstruct) {
+          case RXG_PATTERN:
+          {
+            
+          }
+          break;
+          case RXG_MODE:
+          case RXG_MODE_LIST:
+          {
+            {
+              regex_mode_list_cleanup(&((stack->stack_ + n)->v_.uv2_));
+            }
+            
+          }
+          break;
+          case RXG_PATTERN_LIST:
+          {
+            
+          }
+          break;
+        }
+      }
+    }
+    else if (n == (stack->pos_ - 1)) {
+      need_common_deconstruct = stack->top_of_stack_has_common_data_;
+      need_state_deconstruct = stack->top_of_stack_has_sym_data_;
+      if (n == stack->new_buf_sym_partial_pos_) {
+        need_common_deconstruct = need_common_deconstruct && stack->stack_newbuf_pos_has_common_data_;
+        need_state_deconstruct = need_state_deconstruct && stack->stack_newbuf_pos_has_sym_data_;
+      }
+    }
+    else if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {
+      need_common_deconstruct = stack->stack_newbuf_pos_has_common_data_;
+      need_state_deconstruct = stack->stack_newbuf_pos_has_sym_data_;
+    }
+    else {
+      need_common_deconstruct = 1;
+      need_state_deconstruct = 1;
+    }
+    if (need_state_deconstruct) {
+      switch (stack->stack_[n].state_) {
+        case 103: /* mode */
+        case 107: /* mode-list */
+        {
+          {
+            regex_mode_list_cleanup(&((stack->stack_ + n)->v_.uv2_));
+          }
+          
+        }
+        break;
+      } /* switch */
+    }
+    if (need_common_deconstruct) {
+      {
+        snippet_cleanup(&((stack->stack_ + n)->common_));
+      }
+      
+    }
+  }
+  if (stack->new_buf_) {
+    /* same deconstructors as above, but now for stack->new_buf_ -- stack->new_buf_ only
+    * exists for a brief period time when we resize stack->stack_, however, because
+    * constructors and moves are allowed to throw, or otherwise return and fail, it is
+    * required that we deconstruct the stack->new_buf_ elements cleanly. */
+    for (n = 0; n <= stack->new_buf_sym_partial_pos_; ++n) {
+      int need_common_deconstruct = 0;
+      int need_state_deconstruct = 0;
+      if ((n == 0) || (n == 1)) {
+        int need_sym_deconstruct = 0;
+        int sym_to_deconstruct;
+        need_state_deconstruct = 0;
+        if (n == 0) {
+          /* slot 0 goes unused in scannerless operation */
+          need_common_deconstruct = 0;
+          need_sym_deconstruct = 0;
+        }
+        else if (n == 1) {
+          sym_to_deconstruct = stack->slot_1_sym_;
+          need_sym_deconstruct = stack->slot_1_has_sym_data_;
+          need_common_deconstruct = stack->slot_1_has_common_data_;
+        }
+        if (n == stack->new_buf_sym_partial_pos_) {
+          need_sym_deconstruct = need_sym_deconstruct && stack->newbuf_pos_has_sym_data_;
+          need_common_deconstruct = need_common_deconstruct && stack->newbuf_pos_has_common_data_;
+        }
+        if (need_sym_deconstruct) {
+          switch (sym_to_deconstruct) {
+            case RXG_PATTERN:
+            {
+              
+            }
+            break;
+            case RXG_MODE:
+            case RXG_MODE_LIST:
+            {
+              {
+                regex_mode_list_cleanup(&((stack->new_buf_ + n)->v_.uv2_));
+              }
+              
+            }
+            break;
+            case RXG_PATTERN_LIST:
+            {
+              
+            }
+            break;
+          }
+        }
+      }
+      else if (n == (stack->pos_ - 1)) {
+        need_common_deconstruct = stack->top_of_stack_has_common_data_;
+        need_state_deconstruct = stack->top_of_stack_has_sym_data_;
+        if (n == stack->new_buf_sym_partial_pos_) {
+          need_common_deconstruct = need_common_deconstruct && stack->newbuf_pos_has_common_data_;
+          need_state_deconstruct = need_state_deconstruct && stack->newbuf_pos_has_sym_data_;
+        }
+      }
+      else if (n == stack->new_buf_sym_partial_pos_) {
+        need_common_deconstruct = stack->newbuf_pos_has_common_data_;
+        need_state_deconstruct = stack->newbuf_pos_has_sym_data_;
+      }
+      else {
+        need_common_deconstruct = 1;
+        need_state_deconstruct = 1;
+      }
+      if (need_state_deconstruct) {
+        switch (stack->stack_[n].state_) {
+          case 103: /* mode */
+          case 107: /* mode-list */
+          {
+            {
+              regex_mode_list_cleanup(&((stack->new_buf_ + n)->v_.uv2_));
+            }
+            
+          }
+          break;
+        } /* switch */
+      }
+      if (need_common_deconstruct) {
+        {
+          snippet_cleanup(&((stack->new_buf_ + n)->common_));
+        }
+        
+      }
+    }
+    free(stack->new_buf_);
+    stack->new_buf_ = NULL;
+  }
+  stack->slot_1_has_sym_data_ = stack->slot_1_has_common_data_ = 0;
+  stack->slot_1_sym_ = 0;
+  stack->top_of_stack_has_sym_data_ = 0;
+  stack->top_of_stack_has_common_data_ = 0;
+  stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+  stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 0;
+  stack->sym_data_ = NULL;
+  stack->current_production_length_ = 0;
+  stack->current_production_nonterminal_ = 0;
+  stack->sym_idx_ = 0;
+  stack->pos_ = 0;
+  stack->error_recovery_ = 0;
+  stack->continue_at_ = 0;
+  stack->mute_error_turns_ = 0;
+  /* reserve slots [0] and [1] for temporary storage of inflight syms and tokens.
+  * note that initialization and lifetime of these slots is controlled by
+  * flags, so no sym data constructors are called here. */
+  if (stack->num_stack_allocated_ <= (stack->pos_ + 1)) {
+    size_t new_num_allocated;
     if (stack->num_stack_allocated_) {
       new_num_allocated = stack->num_stack_allocated_ * 2;
       if (new_num_allocated <= stack->num_stack_allocated_) {
         /* Overflow in allocation */
-        return _RXG_OVERFLOW;
+        stack->continue_at_ = 0;
+        {
+          re_error_nowhere("Error: internal error\n"); return PRD_INTERNAL_ERROR;
+          
+        }
       }
     }
     else {
@@ -589,103 +940,28 @@ static int rxg_push_state(struct rxg_stack *stack, int state) {
     
     if (new_num_allocated > (SIZE_MAX / sizeof(struct rxg_sym_data))) {
       /* Overflow in allocation */
-      return _RXG_OVERFLOW;
+      stack->continue_at_ = 0;
+      {
+        re_error_nowhere("Error: internal error\n"); return PRD_INTERNAL_ERROR;
+        
+      }
     }
     
     void *p = realloc(stack->stack_, new_num_allocated * sizeof(struct rxg_sym_data));
     if (!p) {
       /* Out of memory */
-      return _RXG_NO_MEMORY;
+      stack->continue_at_ = 0;
+      {
+        re_error_nowhere("Error: no memory"); return PRD_INTERNAL_ERROR;
+        
+      }
     }
     stack->stack_ = (struct rxg_sym_data *)p;
     stack->num_stack_allocated_ = new_num_allocated;
   }
-  stack->stack_[stack->pos_++].state_ = state;
-  return 0;
-}
-
-int rxg_stack_reset(struct rxg_stack *stack) {
-  size_t n;
-  stack->pending_reset_ = 0;
-  stack->discard_remaining_actions_ = 0;
-  for (n = 2; n < stack->pos_; ++n) {
-    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_sym_data_) {
-      switch (stack->stack_[n].state_) {
-        case 103: /* mode */
-        case 107: /* mode-list */
-        {
-          {
-             regex_mode_list_cleanup(&((stack->stack_ + n)->v_.uv2_));
-          }
-          
-        }
-        break;
-      } /* switch */
-    }
-    if ((n != (stack->pos_ - 1)) || stack->top_of_stack_has_common_data_) {
-      {
-         snippet_cleanup(&((stack->stack_ + n)->common_));
-      }
-      
-    }
-  }
-  if (stack->slot_1_has_sym_data_) {
-    switch (stack->slot_1_sym_) {
-      case 38:
-      break;
-      case 46:
-      case 47:
-      {
-        {
-           regex_mode_list_cleanup(&(stack->stack_[1].v_.uv2_));
-        }
-        
-      }
-      break;
-      case 49:
-      break;
-    } /* switch */
-  }
-  if (stack->slot_1_has_common_data_) {
-    {
-       snippet_cleanup(&(stack->stack_[1].common_));
-    }
-    
-  }
-  stack->slot_1_has_sym_data_ = stack->slot_1_has_common_data_ = 0;
-  stack->slot_1_sym_ = 0;
-  stack->top_of_stack_has_sym_data_ = 0;
-  stack->top_of_stack_has_common_data_ = 0;
-  stack->sym_data_ = NULL;
-  stack->current_production_length_ = 0;
-  stack->current_production_nonterminal_ = 0;
-  stack->pos_ = 0;
-  stack->error_recovery_ = 0;
-  stack->continue_at_ = 0;
-  stack->mute_error_turns_ = 0;
-  /* reserve slot [0] for the token sym data */
-  switch (rxg_push_state(stack, 0)) {
-    case _RXG_OVERFLOW:{
-      return _RXG_OVERFLOW;
-    }
-    break;
-    case _RXG_NO_MEMORY: {
-      return _RXG_NO_MEMORY;
-    }
-    break;
-  }
-  /* reserve slot [1] for the initial state 0, corresponding to the synthetic S production
-  ** sym_data in slot [1] is used for temporary nonterminal data storage */
-  switch (rxg_push_state(stack, 0)) {
-    case _RXG_OVERFLOW:{
-      return _RXG_OVERFLOW;
-    }
-    break;
-    case _RXG_NO_MEMORY: {
-      return _RXG_NO_MEMORY;
-    }
-    break;
-  }
+  stack->stack_[0].state_ = 0;
+  stack->stack_[1].state_ = 0;
+  stack->pos_ = 2;
   return 0;
 }
 
@@ -858,46 +1134,220 @@ int rxg_parse(struct rxg_stack *stack, int sym, struct prd_grammar *g, struct tk
     case 151: goto C151;
     case 152: goto C152;
     case 153: goto C153;
+    case 154: goto C154;
+    case 155: goto C155;
+    case 156: goto C156;
+    case 157: goto C157;
+    case 158: goto C158;
+    case 159: goto C159;
+    case 160: goto C160;
+    case 161: goto C161;
+    case 162: goto C162;
+    case 163: goto C163;
+    case 164: goto C164;
+    case 165: goto C165;
+    case 166: goto C166;
+    case 167: goto C167;
+    case 168: goto C168;
+    case 169: goto C169;
+    case 170: goto C170;
+    case 171: goto C171;
+    case 172: goto C172;
+    case 173: goto C173;
+    case 174: goto C174;
+    case 175: goto C175;
+    case 176: goto C176;
+    case 177: goto C177;
+    case 178: goto C178;
+    case 179: goto C179;
   } /* continuation switch */
 if (stack->mute_error_turns_) stack->mute_error_turns_--;
   for (;;) {
     if (!stack->error_recovery_) {
-      int action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - rxg_minimum_sym)];
+      int action;
+      action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (sym - rxg_minimum_sym)];
       if (action > 0) {
-        switch (rxg_push_state(stack, action)) {
-          case _RXG_OVERFLOW: {
-            stack->continue_at_ = 0;
-            {
-              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
-              
+        if (stack->num_stack_allocated_ == stack->pos_) {
+          stack->action_preservation_ = action;
+          size_t new_num_allocated;
+          if (stack->num_stack_allocated_) {
+            new_num_allocated = stack->num_stack_allocated_ * 2;
+            if (new_num_allocated <= stack->num_stack_allocated_) {
+              /* Overflow in allocation */
+              return _RXG_OVERFLOW;
             }
           }
-          break;
-          case _RXG_NO_MEMORY: {
-            stack->continue_at_ = 0;
-            {
-              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
-              
+          else {
+            new_num_allocated = 16;
+          }
+          
+          if (new_num_allocated > (SIZE_MAX / sizeof(struct rxg_sym_data))) {
+            /* Overflow in allocation */
+            return _RXG_OVERFLOW;
+          }
+          
+          stack->new_buf_ = (struct rxg_sym_data *)malloc(new_num_allocated * sizeof(struct rxg_sym_data));
+          if (!stack->new_buf_) {
+            /* Out of memory */
+            return _RXG_NO_MEMORY;
+          }
+          stack->new_buf_num_allocated_ = new_num_allocated;
+          for (stack->new_buf_sym_partial_pos_ = 0; stack->new_buf_sym_partial_pos_ < stack->pos_; ++stack->new_buf_sym_partial_pos_) {
+            stack->new_buf_[stack->new_buf_sym_partial_pos_].state_ = stack->stack_[stack->new_buf_sym_partial_pos_].state_;
+            stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+            stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 1;
+            if ((stack->new_buf_sym_partial_pos_ == 0) || (stack->new_buf_sym_partial_pos_ == 1)) {
+              int need_common_move;
+              need_common_move = 0;
+              int need_sym_move;
+              int sym_to_move;
+              sym_to_move = 0; /* silence a waring with this explicit initialization */
+              need_sym_move = 0;
+              if (stack->new_buf_sym_partial_pos_ == 0) {
+                /* slot 0 goes unused in scannerless operation */
+                need_common_move = 0;
+                need_sym_move = 0;
+              }
+              else if (stack->new_buf_sym_partial_pos_ == 1) {
+                need_common_move = stack->slot_1_has_common_data_;
+                need_sym_move = stack->slot_1_has_sym_data_;
+                sym_to_move = stack->slot_1_sym_;
+              }
+              if (need_common_move) {
+                stack->newbuf_pos_has_common_data_ = 1;
+                stack->continue_at_ = 1;
+                {
+                  snippet_init(&((stack->new_buf_ + stack->new_buf_sym_partial_pos_)->common_));
+                }
+                C1:;
+                stack->continue_at_ = 2;
+                {
+                  snippet_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, &(stack->stack_[stack->new_buf_sym_partial_pos_].common_));
+                }
+                C2:;
+                {
+                  snippet_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->common_));
+                }
+              }
+              if (need_sym_move) {
+                switch (sym_to_move) {
+                  case RXG_PATTERN:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 3;
+                  {
+                    stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_ = SIZE_MAX;
+                  }
+                  C3:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  
+                  break;
+                  case RXG_MODE:
+                  case RXG_MODE_LIST:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 4;
+                  {
+                    regex_mode_list_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv2_);
+                  }
+                  C4:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  {
+                    regex_mode_list_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv2_));
+                  }
+                  
+                  break;
+                  case RXG_PATTERN_LIST:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 5;
+                  {
+                    stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.start_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.end_ = SIZE_MAX;
+                  }
+                  C5:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  
+                  break;
+                }
+              }
+            }
+            else /* not 0 or 1, but >= 2 state derived sym */ {
+              stack->newbuf_pos_has_common_data_ = 1;
+              stack->continue_at_ = 6;
+              {
+                snippet_init(&((stack->new_buf_ + stack->new_buf_sym_partial_pos_)->common_));
+              }
+              C6:;
+              stack->continue_at_ = 7;
+              {
+                snippet_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, &(stack->stack_[stack->new_buf_sym_partial_pos_].common_));
+              }
+              C7:;
+              {
+                snippet_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->common_));
+              }
+              switch (stack->stack_[stack->new_buf_sym_partial_pos_].state_) {
+                case 1: /* pattern */
+                case 3: /* pattern */
+                case 6: /* pattern */
+                case 8: /* pattern */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 8;
+                {
+                  stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_ = SIZE_MAX;
+                }
+                C8:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                
+                break;
+                case 103: /* mode */
+                case 107: /* mode-list */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 9;
+                {
+                  regex_mode_list_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv2_);
+                }
+                C9:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                {
+                  regex_mode_list_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv2_));
+                }
+                
+                break;
+                case 7: /* pattern_list */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 10;
+                {
+                  stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.start_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.end_ = SIZE_MAX;
+                }
+                C10:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                
+                break;
+              } /* switch */
             }
           }
-          break;
-        } /* switch */
+          if (stack->stack_) free(stack->stack_);
+          stack->stack_ = stack->new_buf_;
+          stack->new_buf_sym_partial_pos_ = 0;
+          stack->new_buf_ = NULL;
+          stack->num_stack_allocated_ = stack->new_buf_num_allocated_;
+          action = stack->action_preservation_;
+        }
+        stack->stack_[stack->pos_++].state_ = action;
+        stack->top_of_stack_has_sym_data_ = 0;
+        stack->top_of_stack_has_common_data_ = 0;
         
         stack->sym_data_ = stack->stack_ + stack->pos_ - 1;
         stack->top_of_stack_has_sym_data_ = 0;
         stack->top_of_stack_has_common_data_ = 1;
-        stack->continue_at_ = 1;
+        stack->continue_at_ = 11;
         {
-           snippet_init(&(stack->sym_data_->common_));
+          snippet_init(&(stack->sym_data_->common_));
         }
-        C1:;
-        stack->continue_at_ = 2;
+        C11:;
+        stack->continue_at_ = 12;
         {
-           snippet_append_tkr(&(stack->sym_data_->common_), tkr);
+          snippet_append_tkr(&(stack->sym_data_->common_), tkr);
         }
-        C2:;
-        switch (sym) {
-        } /* switch */
+        C12:;
         stack->continue_at_ = 0;
         {
           return PRD_NEXT;
@@ -905,7 +1355,8 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
         }
       } /* action > 0 */
       else if (action < 0) {
-        int production = -action - 1;
+        int production;
+        production = -action - 1;
         stack->discard_remaining_actions_ = 0;
         stack->current_production_length_ = rxg_production_lengths[production];
         stack->current_production_nonterminal_ = rxg_production_syms[production];
@@ -923,42 +1374,42 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
             /* grammar: */
             case 1: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 3;
+              stack->continue_at_ = 13;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C3:;
+              C13:;
             }
             break;
             /* grammar: grammar pattern */
             case 2: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 4;
+              stack->continue_at_ = 14;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C4:;
+              C14:;
             }
             break;
             /* grammar: grammar mode-group */
             case 3: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 5;
+              stack->continue_at_ = 15;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C5:;
+              C15:;
             }
             break;
             /* grammar: grammar mode pattern */
             case 4: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 6;
+              stack->continue_at_ = 16;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C6:;
-              stack->continue_at_ = 7;
+              C16:;
+              stack->continue_at_ = 17;
               {
                 {
   r = prd_grammar_check_mode_group_reserve(g);
@@ -984,89 +1435,89 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   }
 }
               }
-              C7:;
+              C17:;
             }
             break;
             /* mode: LESS_THAN mode-list GREATER_THAN */
             case 5: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 8;
+              stack->continue_at_ = 18;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C8:;
+              C18:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_MODE;
-              stack->continue_at_ = 9;
+              stack->continue_at_ = 19;
               {
-                 regex_mode_list_init(&(stack->stack_[1].v_.uv2_));
+                regex_mode_list_init(&(stack->stack_[1].v_.uv2_));
               }
-              C9:;
-              stack->continue_at_ = 10;
+              C19:;
+              stack->continue_at_ = 20;
               {
                 { regex_mode_list_move(&(stack->stack_[1].v_.uv2_), &(stack->sym_data_[1].v_.uv2_)); }
               }
-              C10:;
+              C20:;
             }
             break;
             /* mode-list: IDENT */
             case 6: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 11;
+              stack->continue_at_ = 21;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C11:;
+              C21:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_MODE_LIST;
-              stack->continue_at_ = 12;
+              stack->continue_at_ = 22;
               {
-                 regex_mode_list_init(&(stack->stack_[1].v_.uv2_));
+                regex_mode_list_init(&(stack->stack_[1].v_.uv2_));
               }
-              C12:;
-              stack->continue_at_ = 13;
+              C22:;
+              stack->continue_at_ = 23;
               {
                 {
   regex_mode_list_append_mode(&(stack->stack_[1].v_.uv2_), &(stack->sym_data_[0].common_));
 }
               }
-              C13:;
+              C23:;
             }
             break;
             /* mode-list: mode-list COMMA IDENT */
             case 7: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 14;
+              stack->continue_at_ = 24;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C14:;
+              C24:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_MODE_LIST;
-              stack->continue_at_ = 15;
+              stack->continue_at_ = 25;
               {
-                 regex_mode_list_init(&(stack->stack_[1].v_.uv2_));
+                regex_mode_list_init(&(stack->stack_[1].v_.uv2_));
               }
-              C15:;
-              stack->continue_at_ = 16;
+              C25:;
+              stack->continue_at_ = 26;
               {
                 {
   regex_mode_list_move(&(stack->stack_[1].v_.uv2_), &(stack->sym_data_[0].v_.uv2_));
   regex_mode_list_append_mode(&(stack->stack_[1].v_.uv2_), &(stack->sym_data_[2].common_));
 }
               }
-              C16:;
+              C26:;
             }
             break;
             /* mode-group: mode CUR_OPEN CUR_CLOSE */
             case 8: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 17;
+              stack->continue_at_ = 27;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C17:;
-              stack->continue_at_ = 18;
+              C27:;
+              stack->continue_at_ = 28;
               {
                 {
   r = prd_grammar_check_mode_group_reserve(g);
@@ -1087,18 +1538,18 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   }
 }
               }
-              C18:;
+              C28:;
             }
             break;
             /* mode-group: mode CUR_OPEN pattern-list CUR_CLOSE */
             case 9: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 19;
+              stack->continue_at_ = 29;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C19:;
-              stack->continue_at_ = 20;
+              C29:;
+              stack->continue_at_ = 30;
               {
                 {
   r = prd_grammar_check_mode_group_reserve(g);
@@ -1121,25 +1572,25 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   mg->pattern_end_index_ = (stack->sym_data_[2].v_.uv3_).end_;
 }
               }
-              C20:;
+              C30:;
             }
             break;
             /* pattern-list: pattern */
             case 10: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 21;
+              stack->continue_at_ = 31;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C21:;
+              C31:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_PATTERN_LIST;
-              stack->continue_at_ = 22;
+              stack->continue_at_ = 32;
               {
-                 (stack->stack_[1].v_.uv3_).start_ = (stack->stack_[1].v_.uv3_).end_ = SIZE_MAX;
+                (stack->stack_[1].v_.uv3_).start_ = (stack->stack_[1].v_.uv3_).end_ = SIZE_MAX;
               }
-              C22:;
-              stack->continue_at_ = 23;
+              C32:;
+              stack->continue_at_ = 33;
               {
                 { 
   if ((stack->sym_data_[0].v_.uv0_) != SIZE_MAX) {
@@ -1148,25 +1599,25 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   }
 }
               }
-              C23:;
+              C33:;
             }
             break;
             /* pattern-list: pattern-list pattern */
             case 11: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 24;
+              stack->continue_at_ = 34;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C24:;
+              C34:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_PATTERN_LIST;
-              stack->continue_at_ = 25;
+              stack->continue_at_ = 35;
               {
-                 (stack->stack_[1].v_.uv3_).start_ = (stack->stack_[1].v_.uv3_).end_ = SIZE_MAX;
+                (stack->stack_[1].v_.uv3_).start_ = (stack->stack_[1].v_.uv3_).end_ = SIZE_MAX;
               }
-              C25:;
-              stack->continue_at_ = 26;
+              C35:;
+              stack->continue_at_ = 36;
               {
                 { 
   if ((stack->sym_data_[1].v_.uv0_) != SIZE_MAX) {
@@ -1184,25 +1635,25 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   }
 }
               }
-              C26:;
+              C36:;
             }
             break;
             /* pattern: IDENT start-regex COLON exp end-regex SEMICOLON */
             case 12: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 27;
+              stack->continue_at_ = 37;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C27:;
+              C37:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_PATTERN;
-              stack->continue_at_ = 28;
+              stack->continue_at_ = 38;
               {
-                 (stack->stack_[1].v_.uv0_) = SIZE_MAX;
+                (stack->stack_[1].v_.uv0_) = SIZE_MAX;
               }
-              C28:;
-              stack->continue_at_ = 29;
+              C38:;
+              stack->continue_at_ = 39;
               {
                 {
   r = prd_grammar_check_pattern_reserve(g);
@@ -1221,25 +1672,25 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   if (r) return r;
 }
               }
-              C29:;
+              C39:;
             }
             break;
             /* pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE */
             case 13: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 30;
+              stack->continue_at_ = 40;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C30:;
+              C40:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_PATTERN;
-              stack->continue_at_ = 31;
+              stack->continue_at_ = 41;
               {
-                 (stack->stack_[1].v_.uv0_) = SIZE_MAX;
+                (stack->stack_[1].v_.uv0_) = SIZE_MAX;
               }
-              C31:;
-              stack->continue_at_ = 32;
+              C41:;
+              stack->continue_at_ = 42;
               {
                 {
   r = prd_grammar_check_pattern_reserve(g);
@@ -1260,25 +1711,25 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   if (r) return r;
 }
               }
-              C32:;
+              C42:;
             }
             break;
             /* pattern: IDENT start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
             case 14: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 33;
+              stack->continue_at_ = 43;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C33:;
+              C43:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_PATTERN;
-              stack->continue_at_ = 34;
+              stack->continue_at_ = 44;
               {
-                 (stack->stack_[1].v_.uv0_) = SIZE_MAX;
+                (stack->stack_[1].v_.uv0_) = SIZE_MAX;
               }
-              C34:;
-              stack->continue_at_ = 35;
+              C44:;
+              stack->continue_at_ = 45;
               {
                 {
   r = prd_grammar_check_pattern_reserve(g);
@@ -1303,25 +1754,25 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   if (r) return r;
 }
               }
-              C35:;
+              C45:;
             }
             break;
             /* pattern: start-regex COLON exp end-regex SEMICOLON */
             case 15: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 36;
+              stack->continue_at_ = 46;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C36:;
+              C46:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_PATTERN;
-              stack->continue_at_ = 37;
+              stack->continue_at_ = 47;
               {
-                 (stack->stack_[1].v_.uv0_) = SIZE_MAX;
+                (stack->stack_[1].v_.uv0_) = SIZE_MAX;
               }
-              C37:;
-              stack->continue_at_ = 38;
+              C47:;
+              stack->continue_at_ = 48;
               {
                 {
   r = prd_grammar_check_pattern_reserve(g);
@@ -1338,25 +1789,25 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   if (r) return r;
 }
               }
-              C38:;
+              C48:;
             }
             break;
             /* pattern: start-regex COLON exp end-regex start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE */
             case 16: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 39;
+              stack->continue_at_ = 49;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C39:;
+              C49:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_PATTERN;
-              stack->continue_at_ = 40;
+              stack->continue_at_ = 50;
               {
-                 (stack->stack_[1].v_.uv0_) = SIZE_MAX;
+                (stack->stack_[1].v_.uv0_) = SIZE_MAX;
               }
-              C40:;
-              stack->continue_at_ = 41;
+              C50:;
+              stack->continue_at_ = 51;
               {
                 {
   r = prd_grammar_check_pattern_reserve(g);
@@ -1375,25 +1826,25 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   if (r) return r;
 }
               }
-              C41:;
+              C51:;
             }
             break;
             /* pattern: start-regex COLON exp end-regex start-c-tokenizer stmt-action end-c-tokenizer SEMICOLON */
             case 17: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 42;
+              stack->continue_at_ = 52;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C42:;
+              C52:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_PATTERN;
-              stack->continue_at_ = 43;
+              stack->continue_at_ = 53;
               {
-                 (stack->stack_[1].v_.uv0_) = SIZE_MAX;
+                (stack->stack_[1].v_.uv0_) = SIZE_MAX;
               }
-              C43:;
-              stack->continue_at_ = 44;
+              C53:;
+              stack->continue_at_ = 54;
               {
                 {
   r = prd_grammar_check_pattern_reserve(g);
@@ -1416,25 +1867,25 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   if (r) return r;
 }
               }
-              C44:;
+              C54:;
             }
             break;
             /* pattern: DOLLAR COLON start-c-tokenizer accept-whitespace CUR_OPEN action-sequence end-c-tokenizer CUR_CLOSE */
             case 18: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 45;
+              stack->continue_at_ = 55;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C45:;
+              C55:;
               stack->slot_1_has_sym_data_ = 1;
               stack->slot_1_sym_ = RXG_PATTERN;
-              stack->continue_at_ = 46;
+              stack->continue_at_ = 56;
               {
-                 (stack->stack_[1].v_.uv0_) = SIZE_MAX;
+                (stack->stack_[1].v_.uv0_) = SIZE_MAX;
               }
-              C46:;
-              stack->continue_at_ = 47;
+              C56:;
+              stack->continue_at_ = 57;
               {
                 {
   /* Analogous to regular pattern actions, except we're moving it into the grammar's
@@ -1449,125 +1900,15 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
   }
 }
               }
-              C47:;
+              C57:;
             }
             break;
             /* exp: term */
             case 19: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 48;
-              {
-                 snippet_init(&(stack->stack_[1].common_));
-              }
-              C48:;
-              stack->continue_at_ = 49;
-              {
-                {
-  size_t n;
-  for (n = 0; n < (stack->current_production_length_); ++n) {
-    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
-  }
-}
-              }
-              C49:;
-              if (!stack->discard_remaining_actions_) {
-                            }
-            }
-            break;
-            /* exp: exp BAR term */
-            case 20: {
-              stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 50;
-              {
-                 snippet_init(&(stack->stack_[1].common_));
-              }
-              C50:;
-              stack->continue_at_ = 51;
-              {
-                {
-  size_t n;
-  for (n = 0; n < (stack->current_production_length_); ++n) {
-    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
-  }
-}
-              }
-              C51:;
-              if (!stack->discard_remaining_actions_) {
-                            }
-            }
-            break;
-            /* term: */
-            case 21: {
-              stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 52;
-              {
-                 snippet_init(&(stack->stack_[1].common_));
-              }
-              C52:;
-              stack->continue_at_ = 53;
-              {
-                {
-  size_t n;
-  for (n = 0; n < (stack->current_production_length_); ++n) {
-    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
-  }
-}
-              }
-              C53:;
-              if (!stack->discard_remaining_actions_) {
-                            }
-            }
-            break;
-            /* term: term elm */
-            case 22: {
-              stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 54;
-              {
-                 snippet_init(&(stack->stack_[1].common_));
-              }
-              C54:;
-              stack->continue_at_ = 55;
-              {
-                {
-  size_t n;
-  for (n = 0; n < (stack->current_production_length_); ++n) {
-    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
-  }
-}
-              }
-              C55:;
-              if (!stack->discard_remaining_actions_) {
-                            }
-            }
-            break;
-            /* elm: sym */
-            case 23: {
-              stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 56;
-              {
-                 snippet_init(&(stack->stack_[1].common_));
-              }
-              C56:;
-              stack->continue_at_ = 57;
-              {
-                {
-  size_t n;
-  for (n = 0; n < (stack->current_production_length_); ++n) {
-    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
-  }
-}
-              }
-              C57:;
-              if (!stack->discard_remaining_actions_) {
-                            }
-            }
-            break;
-            /* elm: sym ASTERISK */
-            case 24: {
-              stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 58;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C58:;
               stack->continue_at_ = 59;
@@ -1584,12 +1925,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* elm: sym PLUS */
-            case 25: {
+            /* exp: exp BAR term */
+            case 20: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 60;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C60:;
               stack->continue_at_ = 61;
@@ -1606,12 +1947,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* elm: sym QUESTION_MARK */
-            case 26: {
+            /* term: */
+            case 21: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 62;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C62:;
               stack->continue_at_ = 63;
@@ -1628,12 +1969,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: CHAR */
-            case 27: {
+            /* term: term elm */
+            case 22: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 64;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C64:;
               stack->continue_at_ = 65;
@@ -1650,12 +1991,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: DOT */
-            case 28: {
+            /* elm: sym */
+            case 23: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 66;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C66:;
               stack->continue_at_ = 67;
@@ -1672,12 +2013,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: CARET */
-            case 29: {
+            /* elm: sym ASTERISK */
+            case 24: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 68;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C68:;
               stack->continue_at_ = 69;
@@ -1694,12 +2035,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: DOLLAR */
-            case 30: {
+            /* elm: sym PLUS */
+            case 25: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 70;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C70:;
               stack->continue_at_ = 71;
@@ -1716,12 +2057,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: START_OF_INPUT_ESC */
-            case 31: {
+            /* elm: sym QUESTION_MARK */
+            case 26: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 72;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C72:;
               stack->continue_at_ = 73;
@@ -1738,12 +2079,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: END_OF_INPUT_ESC */
-            case 32: {
+            /* sym: CHAR */
+            case 27: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 74;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C74:;
               stack->continue_at_ = 75;
@@ -1760,12 +2101,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: PAR_OPEN exp PAR_CLOSE */
-            case 33: {
+            /* sym: DOT */
+            case 28: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 76;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C76:;
               stack->continue_at_ = 77;
@@ -1782,12 +2123,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: SQ_OPEN range SQ_CLOSE */
-            case 34: {
+            /* sym: CARET */
+            case 29: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 78;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C78:;
               stack->continue_at_ = 79;
@@ -1804,12 +2145,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: SQ_OPEN CARET range SQ_CLOSE */
-            case 35: {
+            /* sym: DOLLAR */
+            case 30: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 80;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C80:;
               stack->continue_at_ = 81;
@@ -1826,12 +2167,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* sym: CATEGORY */
-            case 36: {
+            /* sym: START_OF_INPUT_ESC */
+            case 31: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 82;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C82:;
               stack->continue_at_ = 83;
@@ -1848,12 +2189,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* range: range range-elm */
-            case 37: {
+            /* sym: END_OF_INPUT_ESC */
+            case 32: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 84;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C84:;
               stack->continue_at_ = 85;
@@ -1870,12 +2211,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* range: range-elm */
-            case 38: {
+            /* sym: PAR_OPEN exp PAR_CLOSE */
+            case 33: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 86;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C86:;
               stack->continue_at_ = 87;
@@ -1892,12 +2233,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* range-elm: CHAR */
-            case 39: {
+            /* sym: SQ_OPEN range SQ_CLOSE */
+            case 34: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 88;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C88:;
               stack->continue_at_ = 89;
@@ -1914,12 +2255,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* range-elm: CATEGORY */
-            case 40: {
+            /* sym: SQ_OPEN CARET range SQ_CLOSE */
+            case 35: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 90;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C90:;
               stack->continue_at_ = 91;
@@ -1936,12 +2277,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* range-elm: CHAR DASH CHAR */
-            case 41: {
+            /* sym: CATEGORY */
+            case 36: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 92;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C92:;
               stack->continue_at_ = 93;
@@ -1958,12 +2299,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: */
-            case 42: {
+            /* range: range range-elm */
+            case 37: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 94;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C94:;
               stack->continue_at_ = 95;
@@ -1980,12 +2321,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence CHAR */
-            case 43: {
+            /* range: range-elm */
+            case 38: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 96;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C96:;
               stack->continue_at_ = 97;
@@ -2002,12 +2343,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence CATEGORY */
-            case 44: {
+            /* range-elm: CHAR */
+            case 39: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 98;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C98:;
               stack->continue_at_ = 99;
@@ -2024,12 +2365,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence IDENT */
-            case 45: {
+            /* range-elm: CATEGORY */
+            case 40: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 100;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C100:;
               stack->continue_at_ = 101;
@@ -2046,12 +2387,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence COLON */
-            case 46: {
+            /* range-elm: CHAR DASH CHAR */
+            case 41: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 102;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C102:;
               stack->continue_at_ = 103;
@@ -2068,12 +2409,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence SEMICOLON */
-            case 47: {
+            /* action-sequence: */
+            case 42: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 104;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C104:;
               stack->continue_at_ = 105;
@@ -2090,12 +2431,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence SQ_OPEN */
-            case 48: {
+            /* action-sequence: action-sequence CHAR */
+            case 43: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 106;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C106:;
               stack->continue_at_ = 107;
@@ -2112,12 +2453,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence SQ_CLOSE */
-            case 49: {
+            /* action-sequence: action-sequence CATEGORY */
+            case 44: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 108;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C108:;
               stack->continue_at_ = 109;
@@ -2134,12 +2475,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence DOT */
-            case 50: {
+            /* action-sequence: action-sequence IDENT */
+            case 45: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 110;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C110:;
               stack->continue_at_ = 111;
@@ -2156,12 +2497,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence COMMA */
-            case 51: {
+            /* action-sequence: action-sequence COLON */
+            case 46: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 112;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C112:;
               stack->continue_at_ = 113;
@@ -2178,12 +2519,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence LESS_THAN */
-            case 52: {
+            /* action-sequence: action-sequence SEMICOLON */
+            case 47: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 114;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C114:;
               stack->continue_at_ = 115;
@@ -2200,12 +2541,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence GREATER_THAN */
-            case 53: {
+            /* action-sequence: action-sequence SQ_OPEN */
+            case 48: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 116;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C116:;
               stack->continue_at_ = 117;
@@ -2222,12 +2563,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence DOLLAR */
-            case 54: {
+            /* action-sequence: action-sequence SQ_CLOSE */
+            case 49: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 118;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C118:;
               stack->continue_at_ = 119;
@@ -2244,12 +2585,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence CARET */
-            case 55: {
+            /* action-sequence: action-sequence DOT */
+            case 50: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 120;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C120:;
               stack->continue_at_ = 121;
@@ -2266,12 +2607,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence DASH */
-            case 56: {
+            /* action-sequence: action-sequence COMMA */
+            case 51: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 122;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C122:;
               stack->continue_at_ = 123;
@@ -2288,12 +2629,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence BAR */
-            case 57: {
+            /* action-sequence: action-sequence LESS_THAN */
+            case 52: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 124;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C124:;
               stack->continue_at_ = 125;
@@ -2310,12 +2651,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence ASTERISK */
-            case 58: {
+            /* action-sequence: action-sequence GREATER_THAN */
+            case 53: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 126;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C126:;
               stack->continue_at_ = 127;
@@ -2332,12 +2673,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence PLUS */
-            case 59: {
+            /* action-sequence: action-sequence DOLLAR */
+            case 54: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 128;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C128:;
               stack->continue_at_ = 129;
@@ -2354,12 +2695,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence QUESTION_MARK */
-            case 60: {
+            /* action-sequence: action-sequence CARET */
+            case 55: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 130;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C130:;
               stack->continue_at_ = 131;
@@ -2376,12 +2717,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence TOKEN */
-            case 61: {
+            /* action-sequence: action-sequence DASH */
+            case 56: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 132;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C132:;
               stack->continue_at_ = 133;
@@ -2398,12 +2739,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence WHITESPACE */
-            case 62: {
+            /* action-sequence: action-sequence BAR */
+            case 57: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 134;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C134:;
               stack->continue_at_ = 135;
@@ -2420,12 +2761,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
-            case 63: {
+            /* action-sequence: action-sequence ASTERISK */
+            case 58: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 136;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C136:;
               stack->continue_at_ = 137;
@@ -2442,12 +2783,12 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
-            case 64: {
+            /* action-sequence: action-sequence PLUS */
+            case 59: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 138;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C138:;
               stack->continue_at_ = 139;
@@ -2464,90 +2805,200 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                             }
             }
             break;
-            /* start-regex: */
-            case 65: {
+            /* action-sequence: action-sequence QUESTION_MARK */
+            case 60: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 140;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C140:;
               stack->continue_at_ = 141;
               {
                 {
-  tok_switch_to_regex(tkr);
+  size_t n;
+  for (n = 0; n < (stack->current_production_length_); ++n) {
+    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
+  }
 }
               }
               C141:;
+              if (!stack->discard_remaining_actions_) {
+                            }
             }
             break;
-            /* end-regex: */
-            case 66: {
+            /* action-sequence: action-sequence TOKEN */
+            case 61: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 142;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C142:;
               stack->continue_at_ = 143;
               {
                 {
-  tok_switch_to_nonterminal_idents(tkr);
+  size_t n;
+  for (n = 0; n < (stack->current_production_length_); ++n) {
+    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
+  }
 }
               }
               C143:;
+              if (!stack->discard_remaining_actions_) {
+                            }
             }
             break;
-            /* start-c-tokenizer: */
-            case 67: {
+            /* action-sequence: action-sequence WHITESPACE */
+            case 62: {
               stack->slot_1_has_common_data_ = 1;
               stack->continue_at_ = 144;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
               C144:;
               stack->continue_at_ = 145;
               {
                 {
-  tok_switch_to_c_idents(tkr);
+  size_t n;
+  for (n = 0; n < (stack->current_production_length_); ++n) {
+    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
+  }
 }
               }
               C145:;
+              if (!stack->discard_remaining_actions_) {
+                            }
+            }
+            break;
+            /* action-sequence: action-sequence PAR_OPEN action-sequence PAR_CLOSE */
+            case 63: {
+              stack->slot_1_has_common_data_ = 1;
+              stack->continue_at_ = 146;
+              {
+                snippet_init(&(stack->stack_[1].common_));
+              }
+              C146:;
+              stack->continue_at_ = 147;
+              {
+                {
+  size_t n;
+  for (n = 0; n < (stack->current_production_length_); ++n) {
+    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
+  }
+}
+              }
+              C147:;
+              if (!stack->discard_remaining_actions_) {
+                            }
+            }
+            break;
+            /* action-sequence: action-sequence CUR_OPEN action-sequence CUR_CLOSE */
+            case 64: {
+              stack->slot_1_has_common_data_ = 1;
+              stack->continue_at_ = 148;
+              {
+                snippet_init(&(stack->stack_[1].common_));
+              }
+              C148:;
+              stack->continue_at_ = 149;
+              {
+                {
+  size_t n;
+  for (n = 0; n < (stack->current_production_length_); ++n) {
+    snippet_append_snippet(&(stack->stack_[1].common_), &(stack->sym_data_[n].common_));
+  }
+}
+              }
+              C149:;
+              if (!stack->discard_remaining_actions_) {
+                            }
+            }
+            break;
+            /* start-regex: */
+            case 65: {
+              stack->slot_1_has_common_data_ = 1;
+              stack->continue_at_ = 150;
+              {
+                snippet_init(&(stack->stack_[1].common_));
+              }
+              C150:;
+              stack->continue_at_ = 151;
+              {
+                {
+  tok_switch_to_regex(tkr);
+}
+              }
+              C151:;
+            }
+            break;
+            /* end-regex: */
+            case 66: {
+              stack->slot_1_has_common_data_ = 1;
+              stack->continue_at_ = 152;
+              {
+                snippet_init(&(stack->stack_[1].common_));
+              }
+              C152:;
+              stack->continue_at_ = 153;
+              {
+                {
+  tok_switch_to_nonterminal_idents(tkr);
+}
+              }
+              C153:;
+            }
+            break;
+            /* start-c-tokenizer: */
+            case 67: {
+              stack->slot_1_has_common_data_ = 1;
+              stack->continue_at_ = 154;
+              {
+                snippet_init(&(stack->stack_[1].common_));
+              }
+              C154:;
+              stack->continue_at_ = 155;
+              {
+                {
+  tok_switch_to_c_idents(tkr);
+}
+              }
+              C155:;
             }
             break;
             /* end-c-tokenizer: */
             case 68: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 146;
+              stack->continue_at_ = 156;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C146:;
-              stack->continue_at_ = 147;
+              C156:;
+              stack->continue_at_ = 157;
               {
                 {
   g->accept_whitespace_ = 0; /* ignore whitespace */
   tok_switch_to_nonterminal_idents(tkr);
 }
               }
-              C147:;
+              C157:;
             }
             break;
             /* accept-whitespace: */
             case 69: {
               stack->slot_1_has_common_data_ = 1;
-              stack->continue_at_ = 148;
+              stack->continue_at_ = 158;
               {
-                 snippet_init(&(stack->stack_[1].common_));
+                snippet_init(&(stack->stack_[1].common_));
               }
-              C148:;
-              stack->continue_at_ = 149;
+              C158:;
+              stack->continue_at_ = 159;
               {
                 {
   g->accept_whitespace_ = 1;
 }
               }
-              C149:;
+              C159:;
             }
             break;
           } /* switch */
@@ -2555,53 +3006,201 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
         
         /* Free symdata for every symbol in the production, including the first slot where we will soon
         * push nonterminal_data_reduced_to */
-        size_t rxg_sym_idx;
-        for (rxg_sym_idx = stack->pos_ - stack->current_production_length_; rxg_sym_idx < stack->pos_; ++rxg_sym_idx) {
-          switch (stack->stack_[rxg_sym_idx].state_) {
+        for (stack->sym_idx_ = stack->pos_ - stack->current_production_length_; stack->sym_idx_ < stack->pos_; ++stack->sym_idx_) {
+          switch (stack->stack_[stack->sym_idx_].state_) {
             case 103: /* mode */
             case 107: /* mode-list */
-            stack->continue_at_ = 150;
             {
-               regex_mode_list_cleanup(&((stack->stack_ + rxg_sym_idx)->v_.uv2_));
+              {
+                regex_mode_list_cleanup(&((stack->stack_ + stack->sym_idx_)->v_.uv2_));
+              }
+              
             }
-            C150:;
             break;
           } /* switch */
-          stack->continue_at_ = 151;
           {
-             snippet_cleanup(&((stack->stack_ + rxg_sym_idx)->common_));
+            snippet_cleanup(&((stack->stack_ + stack->sym_idx_)->common_));
           }
-          C151:;
         } /* for */
         stack->pos_ -= stack->current_production_length_;
+        stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 1;
         action = rxg_parse_table[rxg_num_columns * stack->stack_[stack->pos_ - 1].state_ + (stack->current_production_nonterminal_ - rxg_minimum_sym)];
         if (action <= 0) {
           stack->continue_at_ = 0;
           {
-            re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+            re_error_nowhere("Error: internal error\n"); return PRD_INTERNAL_ERROR;
             
           }
         }
-        switch (rxg_push_state(stack, action /* action for a "goto" shift is the ordinal */)) {
-          case _RXG_OVERFLOW: {
-            stack->continue_at_ = 0;
-            {
-              re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
-              
+        if (stack->num_stack_allocated_ == stack->pos_) {
+          stack->action_preservation_ = action /* action for a "goto" shift is the ordinal */;
+          size_t new_num_allocated;
+          if (stack->num_stack_allocated_) {
+            new_num_allocated = stack->num_stack_allocated_ * 2;
+            if (new_num_allocated <= stack->num_stack_allocated_) {
+              /* Overflow in allocation */
+              return _RXG_OVERFLOW;
             }
           }
-          break;
-          case _RXG_NO_MEMORY: {
-            stack->continue_at_ = 0;
-            {
-              re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
-              
+          else {
+            new_num_allocated = 16;
+          }
+          
+          if (new_num_allocated > (SIZE_MAX / sizeof(struct rxg_sym_data))) {
+            /* Overflow in allocation */
+            return _RXG_OVERFLOW;
+          }
+          
+          stack->new_buf_ = (struct rxg_sym_data *)malloc(new_num_allocated * sizeof(struct rxg_sym_data));
+          if (!stack->new_buf_) {
+            /* Out of memory */
+            return _RXG_NO_MEMORY;
+          }
+          stack->new_buf_num_allocated_ = new_num_allocated;
+          for (stack->new_buf_sym_partial_pos_ = 0; stack->new_buf_sym_partial_pos_ < stack->pos_; ++stack->new_buf_sym_partial_pos_) {
+            stack->new_buf_[stack->new_buf_sym_partial_pos_].state_ = stack->stack_[stack->new_buf_sym_partial_pos_].state_;
+            stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+            stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 1;
+            if ((stack->new_buf_sym_partial_pos_ == 0) || (stack->new_buf_sym_partial_pos_ == 1)) {
+              int need_common_move;
+              need_common_move = 0;
+              int need_sym_move;
+              int sym_to_move;
+              sym_to_move = 0; /* silence a waring with this explicit initialization */
+              need_sym_move = 0;
+              if (stack->new_buf_sym_partial_pos_ == 0) {
+                /* slot 0 goes unused in scannerless operation */
+                need_common_move = 0;
+                need_sym_move = 0;
+              }
+              else if (stack->new_buf_sym_partial_pos_ == 1) {
+                need_common_move = stack->slot_1_has_common_data_;
+                need_sym_move = stack->slot_1_has_sym_data_;
+                sym_to_move = stack->slot_1_sym_;
+              }
+              if (need_common_move) {
+                stack->newbuf_pos_has_common_data_ = 1;
+                stack->continue_at_ = 160;
+                {
+                  snippet_init(&((stack->new_buf_ + stack->new_buf_sym_partial_pos_)->common_));
+                }
+                C160:;
+                stack->continue_at_ = 161;
+                {
+                  snippet_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, &(stack->stack_[stack->new_buf_sym_partial_pos_].common_));
+                }
+                C161:;
+                {
+                  snippet_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->common_));
+                }
+              }
+              if (need_sym_move) {
+                switch (sym_to_move) {
+                  case RXG_PATTERN:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 162;
+                  {
+                    stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_ = SIZE_MAX;
+                  }
+                  C162:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  
+                  break;
+                  case RXG_MODE:
+                  case RXG_MODE_LIST:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 163;
+                  {
+                    regex_mode_list_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv2_);
+                  }
+                  C163:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  {
+                    regex_mode_list_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv2_));
+                  }
+                  
+                  break;
+                  case RXG_PATTERN_LIST:
+                  stack->newbuf_pos_has_sym_data_ = 1;
+                  stack->continue_at_ = 164;
+                  {
+                    stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.start_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.end_ = SIZE_MAX;
+                  }
+                  C164:;
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  
+                  break;
+                }
+              }
+            }
+            else /* not 0 or 1, but >= 2 state derived sym */ {
+              stack->newbuf_pos_has_common_data_ = 1;
+              stack->continue_at_ = 165;
+              {
+                snippet_init(&((stack->new_buf_ + stack->new_buf_sym_partial_pos_)->common_));
+              }
+              C165:;
+              stack->continue_at_ = 166;
+              {
+                snippet_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, &(stack->stack_[stack->new_buf_sym_partial_pos_].common_));
+              }
+              C166:;
+              {
+                snippet_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->common_));
+              }
+              switch (stack->stack_[stack->new_buf_sym_partial_pos_].state_) {
+                case 1: /* pattern */
+                case 3: /* pattern */
+                case 6: /* pattern */
+                case 8: /* pattern */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 167;
+                {
+                  stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_ = SIZE_MAX;
+                }
+                C167:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                
+                break;
+                case 103: /* mode */
+                case 107: /* mode-list */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 168;
+                {
+                  regex_mode_list_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv2_);
+                }
+                C168:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                {
+                  regex_mode_list_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv2_));
+                }
+                
+                break;
+                case 7: /* pattern_list */
+                stack->newbuf_pos_has_sym_data_ = 1;
+                stack->continue_at_ = 169;
+                {
+                  stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.start_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.end_ = SIZE_MAX;
+                }
+                C169:;
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                
+                break;
+              } /* switch */
             }
           }
-          break;
-        } /* switch */
+          if (stack->stack_) free(stack->stack_);
+          stack->stack_ = stack->new_buf_;
+          stack->new_buf_sym_partial_pos_ = 0;
+          stack->new_buf_ = NULL;
+          stack->num_stack_allocated_ = stack->new_buf_num_allocated_;
+          action /* action for a "goto" shift is the ordinal */ = stack->action_preservation_;
+        }
+        stack->stack_[stack->pos_++].state_ = action /* action for a "goto" shift is the ordinal */;
+        stack->top_of_stack_has_sym_data_ = 0;
+        stack->top_of_stack_has_common_data_ = 0;
         struct rxg_sym_data *sd = stack->stack_ + stack->pos_ - 1;
-        *sd = stack->stack_[1];
+        memcpy(sd, stack->stack_+1, sizeof(*sd));
         sd->state_ = action;
         stack->slot_1_has_common_data_ = 0;
         stack->slot_1_has_sym_data_ = 0;
@@ -2612,8 +3211,8 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
         /* check if we can recover using an error token. */
         size_t n;
         for (n = 0; n < stack->pos_; ++n) {
-          int err_action = rxg_parse_table[rxg_num_columns * stack->stack_[n].state_ + (29 /* error token */ - rxg_minimum_sym)];
-          if (err_action > 0) {
+          stack->current_err_action_ = rxg_parse_table[rxg_num_columns * stack->stack_[n].state_ + (29 /* error token */ - rxg_minimum_sym)];
+          if (stack->current_err_action_ > 0) {
             /* we can transition on the error token somewhere on the stack */
             break;
           }
@@ -2659,56 +3258,202 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
         do {
           --n;
           /* Can we shift an error token? */
-          int err_action = rxg_parse_table[rxg_num_columns * stack->stack_[n].state_ + (29 /* error token */ - rxg_minimum_sym)];
-          if (err_action > 0) {
+          stack->current_err_action_ = rxg_parse_table[rxg_num_columns * stack->stack_[n].state_ + (29 /* error token */ - rxg_minimum_sym)];
+          if (stack->current_err_action_ > 0) {
             /* Does the resulting state accept the current symbol? */
-            int err_sym_action = rxg_parse_table[rxg_num_columns * err_action + (sym - rxg_minimum_sym)];
+            int err_sym_action;
+            err_sym_action = rxg_parse_table[rxg_num_columns * stack->current_err_action_ + (sym - rxg_minimum_sym)];
             if (err_sym_action) {
               /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */
               /* Free symdata for every symbol up to the state where we will shift the error token */
-              size_t rxg_sym_idx;
-              for (rxg_sym_idx = n + 1; rxg_sym_idx < stack->pos_; ++rxg_sym_idx) {
-                switch (stack->stack_[rxg_sym_idx].state_) {
+              for (stack->sym_idx_ = n + 1; stack->sym_idx_ < stack->pos_; ++stack->sym_idx_) {
+                switch (stack->stack_[stack->sym_idx_].state_) {
                   case 103: /* mode */
                   case 107: /* mode-list */
-                  stack->continue_at_ = 152;
                   {
-                     regex_mode_list_cleanup(&((stack->stack_ + rxg_sym_idx)->v_.uv2_));
+                    regex_mode_list_cleanup(&((stack->stack_ + stack->sym_idx_)->v_.uv2_));
                   }
-                  C152:;
                   break;
                 } /* switch */
-                stack->continue_at_ = 153;
                 {
-                   snippet_cleanup(&((stack->stack_ + rxg_sym_idx)->common_));
+                  snippet_cleanup(&((stack->stack_ + stack->sym_idx_)->common_));
                 }
-                C153:;
               } /* for */
               stack->pos_ = n + 1;
+              stack->top_of_stack_has_sym_data_ = stack->top_of_stack_has_common_data_ = 1;
               /* Push the state of the error transition */
-              switch (rxg_push_state(stack, err_action)) {
-                case _RXG_OVERFLOW: {
-                  stack->continue_at_ = 0;
-                  {
-                    re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
-                    
+              if (stack->num_stack_allocated_ == stack->pos_) {
+                stack->action_preservation_ = stack->current_err_action_;
+                size_t new_num_allocated;
+                if (stack->num_stack_allocated_) {
+                  new_num_allocated = stack->num_stack_allocated_ * 2;
+                  if (new_num_allocated <= stack->num_stack_allocated_) {
+                    /* Overflow in allocation */
+                    return _RXG_OVERFLOW;
                   }
                 }
-                break;
-                case _RXG_NO_MEMORY: {
-                  stack->continue_at_ = 0;
-                  {
-                    re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
-                    
+                else {
+                  new_num_allocated = 16;
+                }
+                
+                if (new_num_allocated > (SIZE_MAX / sizeof(struct rxg_sym_data))) {
+                  /* Overflow in allocation */
+                  return _RXG_OVERFLOW;
+                }
+                
+                stack->new_buf_ = (struct rxg_sym_data *)malloc(new_num_allocated * sizeof(struct rxg_sym_data));
+                if (!stack->new_buf_) {
+                  /* Out of memory */
+                  return _RXG_NO_MEMORY;
+                }
+                stack->new_buf_num_allocated_ = new_num_allocated;
+                for (stack->new_buf_sym_partial_pos_ = 0; stack->new_buf_sym_partial_pos_ < stack->pos_; ++stack->new_buf_sym_partial_pos_) {
+                  stack->new_buf_[stack->new_buf_sym_partial_pos_].state_ = stack->stack_[stack->new_buf_sym_partial_pos_].state_;
+                  stack->newbuf_pos_has_common_data_ = stack->newbuf_pos_has_sym_data_ = 0;
+                  stack->stack_newbuf_pos_has_common_data_ = stack->stack_newbuf_pos_has_sym_data_ = 1;
+                  if ((stack->new_buf_sym_partial_pos_ == 0) || (stack->new_buf_sym_partial_pos_ == 1)) {
+                    int need_common_move;
+                    need_common_move = 0;
+                    int need_sym_move;
+                    int sym_to_move;
+                    sym_to_move = 0; /* silence a waring with this explicit initialization */
+                    need_sym_move = 0;
+                    if (stack->new_buf_sym_partial_pos_ == 0) {
+                      /* slot 0 goes unused in scannerless operation */
+                      need_common_move = 0;
+                      need_sym_move = 0;
+                    }
+                    else if (stack->new_buf_sym_partial_pos_ == 1) {
+                      need_common_move = stack->slot_1_has_common_data_;
+                      need_sym_move = stack->slot_1_has_sym_data_;
+                      sym_to_move = stack->slot_1_sym_;
+                    }
+                    if (need_common_move) {
+                      stack->newbuf_pos_has_common_data_ = 1;
+                      stack->continue_at_ = 170;
+                      {
+                        snippet_init(&((stack->new_buf_ + stack->new_buf_sym_partial_pos_)->common_));
+                      }
+                      C170:;
+                      stack->continue_at_ = 171;
+                      {
+                        snippet_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, &(stack->stack_[stack->new_buf_sym_partial_pos_].common_));
+                      }
+                      C171:;
+                      {
+                        snippet_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->common_));
+                      }
+                    }
+                    if (need_sym_move) {
+                      switch (sym_to_move) {
+                        case RXG_PATTERN:
+                        stack->newbuf_pos_has_sym_data_ = 1;
+                        stack->continue_at_ = 172;
+                        {
+                          stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_ = SIZE_MAX;
+                        }
+                        C172:;
+                        memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                        
+                        break;
+                        case RXG_MODE:
+                        case RXG_MODE_LIST:
+                        stack->newbuf_pos_has_sym_data_ = 1;
+                        stack->continue_at_ = 173;
+                        {
+                          regex_mode_list_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv2_);
+                        }
+                        C173:;
+                        memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                        {
+                          regex_mode_list_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv2_));
+                        }
+                        
+                        break;
+                        case RXG_PATTERN_LIST:
+                        stack->newbuf_pos_has_sym_data_ = 1;
+                        stack->continue_at_ = 174;
+                        {
+                          stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.start_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.end_ = SIZE_MAX;
+                        }
+                        C174:;
+                        memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                        
+                        break;
+                      }
+                    }
+                  }
+                  else /* not 0 or 1, but >= 2 state derived sym */ {
+                    stack->newbuf_pos_has_common_data_ = 1;
+                    stack->continue_at_ = 175;
+                    {
+                      snippet_init(&((stack->new_buf_ + stack->new_buf_sym_partial_pos_)->common_));
+                    }
+                    C175:;
+                    stack->continue_at_ = 176;
+                    {
+                      snippet_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, &(stack->stack_[stack->new_buf_sym_partial_pos_].common_));
+                    }
+                    C176:;
+                    {
+                      snippet_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->common_));
+                    }
+                    switch (stack->stack_[stack->new_buf_sym_partial_pos_].state_) {
+                      case 1: /* pattern */
+                      case 3: /* pattern */
+                      case 6: /* pattern */
+                      case 8: /* pattern */
+                      stack->newbuf_pos_has_sym_data_ = 1;
+                      stack->continue_at_ = 177;
+                      {
+                        stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_ = SIZE_MAX;
+                      }
+                      C177:;
+                      memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                      
+                      break;
+                      case 103: /* mode */
+                      case 107: /* mode-list */
+                      stack->newbuf_pos_has_sym_data_ = 1;
+                      stack->continue_at_ = 178;
+                      {
+                        regex_mode_list_init(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv2_);
+                      }
+                      C178:;
+                      memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                      {
+                        regex_mode_list_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv2_));
+                      }
+                      
+                      break;
+                      case 7: /* pattern_list */
+                      stack->newbuf_pos_has_sym_data_ = 1;
+                      stack->continue_at_ = 179;
+                      {
+                        stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.start_ = stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv3_.end_ = SIZE_MAX;
+                      }
+                      C179:;
+                      memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                      
+                      break;
+                    } /* switch */
                   }
                 }
-                break;
-              } /* switch */
+                if (stack->stack_) free(stack->stack_);
+                stack->stack_ = stack->new_buf_;
+                stack->new_buf_sym_partial_pos_ = 0;
+                stack->new_buf_ = NULL;
+                stack->num_stack_allocated_ = stack->new_buf_num_allocated_;
+                stack->current_err_action_ = stack->action_preservation_;
+              }
+              stack->stack_[stack->pos_++].state_ = stack->current_err_action_;
+              stack->top_of_stack_has_sym_data_ = 0;
+              stack->top_of_stack_has_common_data_ = 0;
               stack->error_recovery_ = 0;
               /* Break out of do { .. } while loop, we've recovered */
               break;
             } /* if (err_sym_action) (if the current sym can continue after an error transition) */
-          } /* if (err_action) (if the state at position 'n' can accept an error transition) */
+          } /* if (stack->current_err_action_) (if the state at position 'n' can accept an error transition) */
         } while (n);
       }
       if (stack->error_recovery_) {

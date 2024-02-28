@@ -79,6 +79,12 @@ void snippet_cleanup(struct snippet *s) {
   }
 }
 
+void snippet_move(struct snippet *dst, struct snippet *src) {
+  snippet_cleanup(dst);
+  *dst = *src;
+  snippet_init(src);
+}
+
 void snippet_clear(struct snippet *s) {
   size_t n;
   for (n = 0; n < s->num_tokens_; ++n) {

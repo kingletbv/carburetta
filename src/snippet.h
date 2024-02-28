@@ -55,6 +55,7 @@ struct snippet {
 
 void snippet_init(struct snippet *s);
 void snippet_cleanup(struct snippet *s);
+void snippet_move(struct snippet *dst, struct snippet *src);
 void snippet_clear(struct snippet *s);
 int snippet_append(struct snippet *s, uintptr_t match, uintptr_t variant, struct xlts *token);
 int snippet_append_tkr(struct snippet *s, struct tkr_tokenizer *tkr);

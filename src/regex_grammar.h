@@ -1,18 +1,3 @@
-/* Copyright 2020-2024 Kinglet B.V.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #ifndef CARB_RXG_REGEX_GRAMMAR_H_INCLUDED
 #define CARB_RXG_REGEX_GRAMMAR_H_INCLUDED
 
@@ -90,14 +75,24 @@ extern "C" {
     int slot_1_has_common_data_:1;
     int top_of_stack_has_sym_data_:1;
     int top_of_stack_has_common_data_:1;
+    int newbuf_pos_has_common_data_:1;
+    int newbuf_pos_has_sym_data_:1;
+    int stack_newbuf_pos_has_common_data_:1;
+    int stack_newbuf_pos_has_sym_data_:1;
+    int action_preservation_;
+    int current_err_action_;
     int slot_1_sym_;
     int continue_at_;
     int mute_error_turns_;
     size_t pos_, num_stack_allocated_;
     struct rxg_sym_data *stack_;
     struct rxg_sym_data *sym_data_;
+    struct rxg_sym_data *new_buf_;
+    size_t new_buf_num_allocated_;
+    size_t new_buf_sym_partial_pos_;
     size_t current_production_length_;
     int current_production_nonterminal_;
+    size_t sym_idx_;
   };
   
   void rxg_stack_init(struct rxg_stack *stack);

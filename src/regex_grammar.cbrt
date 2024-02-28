@@ -101,12 +101,13 @@
 %common_type struct snippet
 %constructor snippet_init(&$);
 %destructor snippet_cleanup(&$);
+%move snippet_move(&$$, &$0);
 %token_action snippet_append_tkr(&$, tkr);
 
 %on_finish         return PRD_SUCCESS;
 %on_syntax_error   re_error_tkr(tkr, "Syntax error"); return PRD_SYNTAX_ERROR;
-%on_alloc_error    re_error_tkr(tkr, "Error: no memory"); return PRD_INTERNAL_ERROR;
-%on_internal_error re_error_tkr(tkr, "Error: internal error\n"); return PRD_INTERNAL_ERROR;
+%on_alloc_error    re_error_nowhere("Error: no memory"); return PRD_INTERNAL_ERROR;
+%on_internal_error re_error_nowhere("Error: internal error\n"); return PRD_INTERNAL_ERROR;
 %on_next_token     return PRD_NEXT;
 
 %on_syntax_error /* Syntax error */ \
