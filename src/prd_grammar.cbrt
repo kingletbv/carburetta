@@ -86,7 +86,7 @@
               $$.variant_ = (token_type_t)tkr->best_match_variant_; \
 			  xlts_append(&$$.text_, &tkr->xmatch_);
 
-%nt_type rule production action-sequence stmt-action: struct prd_production
+%type rule production action-sequence stmt-action: struct prd_production
 %constructor prd_prod_init(&$$);
 %destructor prd_prod_cleanup(&$$);
 
