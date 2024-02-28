@@ -293,6 +293,7 @@ sym: PAR_OPEN exp PAR_CLOSE { $$ = $1; }
 %type range range-elm: struct rex_set_range 
 %constructor rex_set_range_init(&$$);
 %destructor rex_set_range_cleanup(&$$);
+%move rex_set_range_swap(&$$, &$0);
 
 sym: SQBRACE_OPEN range SQBRACE_CLOSE {
   size_t i = rex_nfa_make_node(nfa);
