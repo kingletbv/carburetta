@@ -2970,7 +2970,7 @@ static int check_have_sym_types(struct carburetta_context *cc) {
 
 static void emit_push_state(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms, const char *action) {
   ip_printf(ip, "  if (stack->num_stack_allocated_ == stack->pos_) {\n"
-                "    stack->action_preservation_ = %s;", action);
+                "    stack->action_preservation_ = %s;\n", action);
   ip_printf(ip, "    size_t new_num_allocated;\n"
                 "    if (stack->num_stack_allocated_) {\n"
                 "      new_num_allocated = stack->num_stack_allocated_ * 2;\n"
@@ -4028,9 +4028,9 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "            stack->current_err_action_ = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
   ip_printf(ip, "            if (stack->current_err_action_ > 0) {\n");
   ip_printf(ip, "              /* Does the resulting state accept the current symbol? */\n"
-                "              int err_sym_action;\n"
-                "              sym = stack->current_sym_; /* recover on the edge case we exited while moving data */\n"
-                "              err_sym_action = %sparse_table[%snum_columns * stack->current_err_action_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                "              int err_sym_action;\n");
+  ip_printf(ip, "              sym = stack->current_sym_; /* recover on the edge case we exited while moving data */\n");
+  ip_printf(ip, "              err_sym_action = %sparse_table[%snum_columns * stack->current_err_action_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "              if (err_sym_action) {\n"
                 "                /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
@@ -4527,9 +4527,8 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
   ip_printf(ip, "          stack->current_err_action_ = %sparse_table[%snum_columns * stack->stack_[n].state_ + (%d /* error token */ - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc->error_sym_->ordinal_, cc_prefix(cc));
   ip_printf(ip, "          if (stack->current_err_action_ > 0) {\n");
   ip_printf(ip, "            /* Does the resulting state accept the current symbol? */\n"
-                "            int err_sym_action;\n"
-                "            sym = stack->current_sym_; /* recover on the edge case we exited while moving data */\n"
-                "            err_sym_action = %sparse_table[%snum_columns * stack->current_err_action_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
+                "            int err_sym_action;\n");
+  ip_printf(ip, "            err_sym_action = %sparse_table[%snum_columns * stack->current_err_action_ + (sym - %sminimum_sym)];\n", cc_prefix(cc), cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "            if (err_sym_action) {\n"
                 "              /* Current symbol is accepted, recover error condition by shifting the error token and then process the symbol as usual */\n");
 
@@ -4725,8 +4724,6 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
                   "  int slot_0_has_current_sym_data_:1;\n"
                   "  int slot_0_has_common_data_:1;\n"
                   "  int current_sym_;\n"
-                  "  int current_err_action_;\n"
-                  "  int action_preservation_;\n"
                   "  size_t input_size_;\n"
                   "  const char *input_;\n");
   }
@@ -4734,6 +4731,8 @@ int emit_stack_struct_decl(struct indented_printer *ip, struct carburetta_contex
   ip_printf(ip, "  int newbuf_pos_has_sym_data_:1;\n");
   ip_printf(ip, "  int stack_newbuf_pos_has_common_data_:1;\n");
   ip_printf(ip, "  int stack_newbuf_pos_has_sym_data_:1;\n");
+  ip_printf(ip, "  int action_preservation_;\n");
+  ip_printf(ip, "  int current_err_action_;\n");
   ip_printf(ip, "  int slot_1_sym_;\n");
 
   ip_printf(ip, "  int continue_at_;\n");
