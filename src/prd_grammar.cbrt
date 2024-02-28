@@ -81,7 +81,9 @@
 %constructor $$.match_ = $$.variant_ = (token_type_t)0; \
              xlts_init(&$$.text_);
 %destructor xlts_cleanup(&$$.text_);
-%move xlts_move(&$$.text_, &$0.text_);
+%move xlts_move(&$$.text_, &$0.text_); \
+      $$.match_ = $0.match_; \
+      $$.variant_ = $0.variant_;
 
 %token_action $$.match_ = (token_type_t)tkr->best_match_action_; \
               $$.variant_ = (token_type_t)tkr->best_match_variant_; \

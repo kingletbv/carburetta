@@ -1057,7 +1057,9 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                   C1:;
                   stack->continue_at_ = 2;
                   {
-                    xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_);
+                    xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_); \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).match_; \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).variant_;
                   }
                   C2:;
                   {
@@ -1131,7 +1133,9 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                 C5:;
                 stack->continue_at_ = 6;
                 {
-                  xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_);
+                  xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_); \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).match_; \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).variant_;
                 }
                 C6:;
                 {
@@ -1983,7 +1987,9 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                   C60:;
                   stack->continue_at_ = 61;
                   {
-                    xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_);
+                    xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_); \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).match_; \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).variant_;
                   }
                   C61:;
                   {
@@ -2057,7 +2063,9 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                 C64:;
                 stack->continue_at_ = 65;
                 {
-                  xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_);
+                  xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_); \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).match_; \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).variant_;
                 }
                 C65:;
                 {
@@ -2291,7 +2299,9 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                         C68:;
                         stack->continue_at_ = 69;
                         {
-                          xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_);
+                          xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_); \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).match_; \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).variant_;
                         }
                         C69:;
                         {
@@ -2365,7 +2375,9 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                       C72:;
                       stack->continue_at_ = 73;
                       {
-                        xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_);
+                        xlts_move(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.text_, &(stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).text_); \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.match_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).match_; \
+      stack->new_buf_[stack->new_buf_sym_partial_pos_].v_.uv0_.variant_ = (stack->stack_[stack->new_buf_sym_partial_pos_].v_.uv0_).variant_;
                       }
                       C73:;
                       {
