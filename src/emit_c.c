@@ -4464,13 +4464,121 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
 
   emit_push_state(ip, cc, prdg, lalr, state_syms, "action /* action for a \"goto\" shift is the ordinal */");
 
-  ip_printf(ip, "        struct %ssym_data *sd = stack->stack_ + stack->pos_ - 1;\n", cc_prefix(cc));
-  ip_printf(ip, "        memcpy(sd, stack->stack_+1, sizeof(*sd));\n");
-  ip_printf(ip, "        sd->state_ = action;\n");
-  ip_printf(ip, "        stack->slot_1_has_common_data_ = 0;\n");
-  ip_printf(ip, "        stack->slot_1_has_sym_data_ = 0;\n");
-  ip_printf(ip, "        stack->top_of_stack_has_common_data_ = 1;\n");
-  ip_printf(ip, "        stack->top_of_stack_has_sym_data_ = 1;\n");
+  if (cc->common_data_assigned_type_) {
+    if (!cc->common_data_assigned_type_->is_raii_constructor_) {
+      ip_printf(ip, "          stack->top_of_stack_has_common_data_ = 1;\n");
+    }
+    if (cc->common_data_assigned_type_->constructor_snippet_.num_tokens_) {
+      emit_common_constructor_top_of_stack_snippet(ip, cc, cc->common_data_assigned_type_->is_raii_constructor_);
+    }
+    else if (cc->common_data_assigned_type_->move_snippet_.num_tokens_) {
+      /* clear to 0 if a move is defined. */
+      ip_printf(ip, "          memset(&stack->stack_[stack->pos_ - 1].common_, 0, sizeof(stack->stack_->common_));\n");
+    }
+    if (cc->common_data_assigned_type_->is_raii_constructor_) {
+      ip_printf(ip, "          stack->top_of_stack_has_common_data_ = 1;\n");
+    }
+
+    if (cc->common_data_assigned_type_->move_snippet_.num_tokens_) {
+      emit_common_move_to_top_of_stack_from_slot_1_snippet(ip, cc);
+    }
+    else {
+      ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].common_, &stack->stack_[1].common_, sizeof(stack->stack_->common_));\n");
+    }
+
+    if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+      emit_common_destructor_snippet_index_1(ip, cc);
+    }
+    ip_printf(ip, "          stack->slot_1_has_common_data_ = 0;\n");
+  }
+  if (cc->have_typed_symbols_) {
+    int have_any_cases = 0;
+    size_t typestr_idx;
+    for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+      struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+      if (ts->constructor_snippet_.num_tokens_ ||
+          ts->destructor_snippet_.num_tokens_ ||
+          ts->move_snippet_.num_tokens_) {
+        size_t state_idx;
+        for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+          struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+          if (sym && sym->assigned_type_ == ts) {
+            have_any_cases = 1;
+            break;
+          }
+        }
+        if (have_any_cases) break;
+      }
+    }
+
+    if (!have_any_cases) {
+      ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[1].v_, sizeof(stack->stack_->v_));\n");
+    }
+    else {
+      ip_printf(ip, "          switch(stack->stack_[stack->pos_ - 1].state_) {\n");
+      for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+        int have_cases = 0; /* always true if all types are always used */
+        /* Type has a constructor associated.. Find all state for whose corresponding symbol has the associated type */
+        size_t state_idx;
+        for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+          struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+          if (!sym) continue;
+          if (sym->assigned_type_ == ts) {
+            ip_printf(ip, "    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+            have_cases = 1;
+          }
+        }
+        if (have_cases) {
+          if (ts->constructor_snippet_.num_tokens_ ||
+              ts->destructor_snippet_.num_tokens_ ||
+              ts->move_snippet_.num_tokens_) {
+            if (!ts->is_raii_constructor_) {
+              ip_printf(ip, "      stack->top_of_stack_has_sym_data_ = 1;\n");
+            }
+            if (ts->constructor_snippet_.num_tokens_) {
+              if (emit_constructor_top_of_stack_snippet(ip, cc, ts, ts->is_raii_constructor_)) {
+                ip->had_error_ = 1;
+                return;
+              }
+            }
+            else if (ts->move_snippet_.num_tokens_) {
+              /* clear to 0 if a move is defined but no constructor. */
+              ip_printf(ip, "      memset(&stack->stack_[stack->pos_ - 1].v_, 0, sizeof(stack->stack_->v_));\n");
+            }
+            if (ts->is_raii_constructor_) {
+              ip_printf(ip, "      stack->top_of_stack_has_sym_data_ = 1;\n");
+            }
+            if (ts->move_snippet_.num_tokens_) {
+              if (emit_move_to_top_of_stack_from_slot_1_snippet(ip, cc, ts)) {
+                ip->had_error_ = 1;
+                return;
+              }
+            }
+            else {
+              ip_printf(ip, "    memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[1].v_, sizeof(stack->stack_->v_));\n");
+            }
+
+            if (ts->destructor_snippet_.num_tokens_) {
+              if (emit_destructor_snippet_indexed_by_1(ip, cc, ts)) {
+                ip->had_error_ = 1;
+                return;
+              }
+            }
+          }
+          else {
+            /* No %constructor, %destructor or %move defined. Just copy the value. */
+            ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[1].v_, sizeof(stack->stack_->v_));\n");
+          }
+          ip_printf(ip, "break;\n");
+        }
+      }
+      ip_printf(ip, "          } /* switch (top of stack state) */\n");
+    }
+  }
+
+  ip_printf(ip, "          stack->slot_1_has_sym_data_ = 0;\n");
+
   ip_printf(ip, "      } /* action < 0 */\n"
                 "      else /* action == 0 */ {\n");
   ip_printf(ip, "        /* check if we can recover using an error token. */\n"
