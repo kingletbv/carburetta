@@ -1,10 +1,14 @@
-CC=gcc
-#CC=clang
-CXXFLAGS=-Wall
+CC ?= gcc
+CFLAGS ?= -Wall
+CXXFLAGS ?= -Wall
+CXXLDFLAGS ?= -lstdc++
+LDFLAGS ?=
+DESTDIR ?= /usr/local
+PREFIX ?=
 
-OUT = build/linux
+OUT = build
 SRC = src
-INTERMEDIATE = build/linux/objs
+INTERMEDIATE = build/objs
 
 SOURCES = $(filter-out src/tokens_generated_scanners.c,$(wildcard $(SRC)/*.c))
 OBJECTS = $(patsubst $(SRC)/%.c,$(INTERMEDIATE)/%.o,$(SOURCES))
@@ -25,10 +29,10 @@ all: $(OUT)/carburetta $(OUT)/calc $(OUT)/template_scan $(OUT)/inireader $(OUT)/
 
 $(INTERMEDIATE)/%.o: $(SRC)/%.c
 	@mkdir -p $(@D)
-	$(CC) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OUT)/carburetta: $(OBJECTS)
-	$(CC) -o $(OUT)/carburetta $(OBJECTS)
+	$(CC) -o $(OUT)/carburetta $(OBJECTS) $(LDFLAGS)
 
 $(INTERMEDIATE)/calc/calc.c: $(OUT)/carburetta examples/calc/calc.cbrt
 	mkdir -p $(@D)
@@ -43,13 +47,13 @@ $(INTERMEDIATE)/template_scan/template_scan.c: $(OUT)/carburetta examples/templa
 	$(OUT)/carburetta examples/template_scan/template_scan.cbrt --c $(INTERMEDIATE)/template_scan/template_scan.c
 
 $(OUT)/calc: $(INTERMEDIATE)/calc/calc.c
-	$(CC) -o $(OUT)/calc $(INTERMEDIATE)/calc/calc.c
+	$(CC) $(CFLAGS) -o $(OUT)/calc $(INTERMEDIATE)/calc/calc.c $(LDFLAGS)
 
 $(OUT)/inireader: $(INTERMEDIATE)/inireader/iniparser.c examples/inireader/main.c
-	$(CC) -o $(OUT)/inireader -I$(INTERMEDIATE)/inireader -Iexamples/inireader $(INTERMEDIATE)/inireader/iniparser.c examples/inireader/main.c
+	$(CC) $(CFLAGS) -o $(OUT)/inireader -I$(INTERMEDIATE)/inireader -Iexamples/inireader $(INTERMEDIATE)/inireader/iniparser.c examples/inireader/main.c $(LDFLAGS)
 
 $(OUT)/template_scan: $(INTERMEDIATE)/template_scan/template_scan.c
-	$(CC) -o $(OUT)/template_scan $(INTERMEDIATE)/template_scan/template_scan.c
+	$(CC) $(CFLAGS) -o $(OUT)/template_scan $(INTERMEDIATE)/template_scan/template_scan.c $(LDFLAGS)
 
 .PRECIOUS: $(INTERMEDIATE)/tester/%.c
 $(INTERMEDIATE)/tester/%.c: tester/%.cbrt
@@ -69,7 +73,7 @@ $(INTERMEDIATE)/tester/cpp/%.o: $(INTERMEDIATE)/tester/cpp/%.cpp
 	$(CC) $(CXXFLAGS) -c $^ -o $@
 
 $(OUT)/tester: $(TESTS_C) $(TESTS_CPP_OBJ) tester/tester.c
-	$(CC) -o $@ $^ -lstdc++
+	$(CC) $(CFLAGS) -o $@ $^ $(CXXLDFLAGS)
 
   
 .PRECIOUS: $(INTERMEDIATE)/tilly/%.cpp
@@ -78,13 +82,13 @@ $(INTERMEDIATE)/tilly/%.cpp: examples/tilly/%.cbrt
 	$(OUT)/carburetta $< --c $@ --h
 
 $(INTERMEDIATE)/tilly/%.o: $(INTERMEDIATE)/tilly/%.cpp $(TILLY_CBRT_CPP_SRC)
-	$(CC) $(CXXFLAGS) -c $< -o $@ -lstdc++ -I examples/tilly/ -I $(INTERMEDIATE)/tilly/
+	$(CC) $(CXXFLAGS) -c $< -o $@ -I examples/tilly/ -I $(INTERMEDIATE)/tilly/
 
 $(INTERMEDIATE)/tilly/%.o: examples/tilly/%.cpp $(TILLY_CBRT_CPP_SRC)
-	$(CC) $(CXXFLAGS) -c $< -o $@ -lstdc++ -I examples/tilly/ -I $(INTERMEDIATE)/tilly/
+	$(CC) $(CXXFLAGS) -c $< -o $@ -I examples/tilly/ -I $(INTERMEDIATE)/tilly/
 
 $(OUT)/tilly: $(TILLY_CPP_OBJ) $(TILLY_CBRT_CPP_OBJ)
-	$(CC) -o $@ $^ -lstdc++
+	$(CC) -o $@ $^ $(CXXLDFLAGS)
 
 .PHONY: clean
 clean:
@@ -92,12 +96,13 @@ clean:
 
 .PHONY: install
 install: all
-	install $(OUT)/carburetta /usr/local/bin
+	install $(OUT)/carburetta $(DESTDIR)$(PREFIX)/bin
 
 .PHONY: uninstall
 uninstall:
-	rm /usr/local/bin/carburetta
+	rm $(DESTDIR)$(PREFIX)/bin/carburetta
 
 .PHONY: test
 test: all
 	$(OUT)/tester
+
