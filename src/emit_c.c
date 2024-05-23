@@ -3084,13 +3084,14 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
 
       if (cc->common_data_assigned_type_->move_snippet_.num_tokens_) {
         emit_common_move_snippet_indexed_by_nbspp(ip, cc);
+        if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+          emit_common_destructor_snippet_indexed_by_nbspp(ip, cc);
+        }
       }
       else {
         ip_printf(ip, "      memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, &stack->stack_[stack->new_buf_sym_partial_pos_].common_, sizeof(stack->stack_->common_));\n");
       }
-      if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-        emit_common_destructor_snippet_indexed_by_nbspp(ip, cc);
-      }
+      ip_printf(ip, "          stack->stack_newbuf_pos_has_common_data_ = 0;\n");
       ip_printf(ip, "        }\n");
     }
     if (have_sym_types) {
@@ -3142,17 +3143,18 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
               ip->had_error_ = 1;
               return;
             }
+            if (ts->destructor_snippet_.num_tokens_) {
+              if (emit_destructor_snippet_indexed_by_nbspp(ip, cc, ts)) {
+                ip->had_error_ = 1;
+                return;
+              }
+            }
           }
           else {
             ip_printf(ip, "    memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));\n");
-          }
 
-          if (ts->destructor_snippet_.num_tokens_) {
-            if (emit_destructor_snippet_indexed_by_nbspp(ip, cc, ts)) {
-              ip->had_error_ = 1;
-              return;
-            }
           }
+          ip_printf(ip, "    stack->stack_newbuf_pos_has_sym_data_ = 0;\n");
           ip_printf(ip, "\n    break;\n");
         }
       }
@@ -3179,13 +3181,14 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
 
       if (cc->common_data_assigned_type_->move_snippet_.num_tokens_) {
         emit_common_move_snippet_indexed_by_nbspp(ip, cc);
+        if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+          emit_common_destructor_snippet_indexed_by_nbspp(ip, cc);
+        }
       }
       else {
         ip_printf(ip, "      memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].common_, &stack->stack_[stack->new_buf_sym_partial_pos_].common_, sizeof(stack->stack_->common_));\n");
       }
-      if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-        emit_common_destructor_snippet_indexed_by_nbspp(ip, cc);
-      }
+      ip_printf(ip, "          stack->stack_newbuf_pos_has_common_data_ = 0;\n");
     }
 
     if (have_any_cases) {
@@ -3230,17 +3233,18 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
                 ip->had_error_ = 1;
                 return;
               }
+
+              if (ts->destructor_snippet_.num_tokens_) {
+                if (emit_destructor_snippet_indexed_by_nbspp(ip, cc, ts)) {
+                  ip->had_error_ = 1;
+                  return;
+                }
+              }
             }
             else {
               ip_printf(ip, "    memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));\n");
             }
-
-            if (ts->destructor_snippet_.num_tokens_) {
-              if (emit_destructor_snippet_indexed_by_nbspp(ip, cc, ts)) {
-                ip->had_error_ = 1;
-                return;
-              }
-            }
+            ip_printf(ip, "    stack->stack_newbuf_pos_has_sym_data_ = 0;\n");
             ip_printf(ip, "\n    break;\n");
           }
         }
@@ -3512,13 +3516,12 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
 
     if (cc->common_data_assigned_type_->move_snippet_.num_tokens_) {
       emit_common_move_to_top_of_stack_from_slot_0_snippet(ip, cc);
+      if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+        emit_common_destructor_snippet_index_0(ip, cc);
+      }
     }
     else {
-      ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].common_, &stack->stack_[0].common_, sizeof(stack->stack_[0].common_));\n");
-    }
-
-    if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-      emit_common_destructor_snippet_index_0(ip, cc);
+      ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].common_, &stack->stack_[0].common_, sizeof(stack->stack_[0].common_)); /*1*/\n");
     }
     ip_printf(ip, "          stack->slot_0_has_common_data_ = 0;\n");
   }
@@ -3585,21 +3588,20 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 ip->had_error_ = 1;
                 return;
               }
+              if (ts->destructor_snippet_.num_tokens_) {
+                if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
+                  ip->had_error_ = 1;
+                  return;
+                }
+              }
             }
             else {
-              ip_printf(ip, "    memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_));\n");
-            }
-
-            if (ts->destructor_snippet_.num_tokens_) {
-              if (emit_destructor_snippet_indexed_by_0(ip, cc, ts)) {
-                ip->had_error_ = 1;
-                return;
-              }
+              ip_printf(ip, "    memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_)); /*2*/\n");
             }
           }
           else {
             /* No %constructor, %destructor or %move defined. Just copy the value. */
-            ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_));\n");
+            ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_)); /*3*/\n");
           }
           ip_printf(ip, "break;\n");
         }
@@ -3800,13 +3802,12 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
 
     if (cc->common_data_assigned_type_->move_snippet_.num_tokens_) {
       emit_common_move_to_top_of_stack_from_slot_1_snippet(ip, cc);
+      if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+        emit_common_destructor_snippet_index_1(ip, cc);
+      }
     }
     else {
       ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].common_, &stack->stack_[1].common_, sizeof(stack->stack_->common_));\n");
-    }
-
-    if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-      emit_common_destructor_snippet_index_1(ip, cc);
     }
     ip_printf(ip, "          stack->slot_1_has_common_data_ = 0;\n");
   }
@@ -3873,16 +3874,15 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
                 ip->had_error_ = 1;
                 return;
               }
+              if (ts->destructor_snippet_.num_tokens_) {
+                if (emit_destructor_snippet_indexed_by_1(ip, cc, ts)) {
+                  ip->had_error_ = 1;
+                  return;
+                }
+              }
             }
             else {
               ip_printf(ip, "    memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[1].v_, sizeof(stack->stack_->v_));\n");
-            }
-
-            if (ts->destructor_snippet_.num_tokens_) {
-              if (emit_destructor_snippet_indexed_by_1(ip, cc, ts)) {
-                ip->had_error_ = 1;
-                return;
-              }
             }
           }
           else {
@@ -4481,13 +4481,12 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
 
     if (cc->common_data_assigned_type_->move_snippet_.num_tokens_) {
       emit_common_move_to_top_of_stack_from_slot_1_snippet(ip, cc);
+      if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
+        emit_common_destructor_snippet_index_1(ip, cc);
+      }
     }
     else {
       ip_printf(ip, "          memcpy(&stack->stack_[stack->pos_ - 1].common_, &stack->stack_[1].common_, sizeof(stack->stack_->common_));\n");
-    }
-
-    if (cc->common_data_assigned_type_->destructor_snippet_.num_tokens_) {
-      emit_common_destructor_snippet_index_1(ip, cc);
     }
     ip_printf(ip, "          stack->slot_1_has_common_data_ = 0;\n");
   }
@@ -4554,16 +4553,15 @@ static void emit_parse_function(struct indented_printer *ip, struct carburetta_c
                 ip->had_error_ = 1;
                 return;
               }
+              if (ts->destructor_snippet_.num_tokens_) {
+                if (emit_destructor_snippet_indexed_by_1(ip, cc, ts)) {
+                  ip->had_error_ = 1;
+                  return;
+                }
+              }
             }
             else {
               ip_printf(ip, "    memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[1].v_, sizeof(stack->stack_->v_));\n");
-            }
-
-            if (ts->destructor_snippet_.num_tokens_) {
-              if (emit_destructor_snippet_indexed_by_1(ip, cc, ts)) {
-                ip->had_error_ = 1;
-                return;
-              }
             }
           }
           else {
