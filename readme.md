@@ -76,7 +76,8 @@ int main(int argc, char **argv) {
       break;
     }
     calc_stack_reset(&stack);
-    calc_scan(&stack, s, strlen(s), 1, &final_result);
+    calc_set_input(&stack, s, strlen(s), 1);
+    calc_scan(&stack, &final_result);
   } while (final_result != -1);
   calc_stack_cleanup(&stack);
 
