@@ -994,7 +994,7 @@ void TillyParser::write_output(FILE *fp) {
     }
   }
 
-  size_t num_match_words = (ast_tiles_.size() + 63) / 64;
+  size_t num_match_words = ast_tiles_.size();
 
   fprintf(fp, "struct subject_node {\n"
               "  size_t symbol_index_;\n"
