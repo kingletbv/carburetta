@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define TILLY_VERSION_STR "0.01"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -537,24 +538,179 @@ void add_tile_to_automaton(automaton_node *n, tile_node *t, int depth, int tile_
 }
 
 
+struct cli_args {
+  char short_;
+  const char *long_;
+  const char *arg_line_;
+  const char *description_;
+  int has_value_;
+} g_args_[] = {
+  { 'H', "help", NULL, "Print this help message.", 0 },
+  { 'v', "version", NULL, "Print version information.", 0 },
+  { 'c', "c", "[<c_filename>]", "Generate a C file and output it to c_filename. If no filename is specified, then output will be to stdout.", 1 },
+};
+
+int process_option(int argc, const char **argv, int *arg_index, int permit_default_arg) {
+  ++(*arg_index);
+  size_t n;
+  if ((*arg_index) == argc) {
+    return 0; // end reached.
+  }
+  const char *arg = argv[*arg_index];
+  for (n = 0; n < sizeof(g_args_) / sizeof(*g_args_); ++n) {
+    if (arg[0] == '-' && arg[1] == g_args_[n].short_ && !arg[2]) {
+      if (g_args_[n].has_value_) {
+        ++(*arg_index);
+      }
+      return g_args_[n].short_;
+    }
+    else if (arg[0] == '-' && arg[1] == '-' && !strcmp(arg + 2, g_args_[n].long_)) {
+      if (g_args_[n].has_value_) {
+        ++(*arg_index);
+      }
+      return g_args_[n].short_;
+    }
+  }
+  if (arg[0] != '-') {
+    // default argument
+    if (permit_default_arg) return '-';
+    else {
+      // Either default argument not permitted, or default argument already specified.
+      return -2;
+    }
+  }
+  else {
+    fprintf(stderr, "Invalid option %s\n", arg);
+    return -1;
+  }
+}
+
+static void puts_wrapped(FILE *fp, const char *str, int indent, size_t linesize) {
+  size_t len = strlen(str);
+  size_t line_start = 0;
+  size_t line_end = 0;
+  while (line_end < len) {
+    size_t line_scan = line_end;
+    while ((line_scan < len) && (str[line_scan] != '\n')) {
+      if (str[line_scan] == ' ') line_end = line_scan;
+      if ((line_scan - line_start) >= linesize) break;
+      line_scan++;
+    }
+    if (line_end == line_start) {
+      /* no progress made, force wrap in middle of word */
+      line_end = line_scan;
+    }
+    if (line_scan == len) {
+      line_end = line_scan;
+    }
+    fprintf(fp, "%*s%.*s\n", indent, "", (int)(line_end - line_start), str + line_start);
+    line_start = line_end;
+    if (str[line_start] == '\n') line_start++;
+    else if (str[line_start] == ' ') line_start++;
+    line_end = line_start;
+  }
+}
+
+static void print_usage(FILE *fp) {
+  fprintf(fp, "Tilly instruction tile pattern matcher generator (C) 2024 Kinglet B.V.\n"
+              "version " TILLY_VERSION_STR " \n"
+              "Tilly is one of the examples of the Carburetta scanner and parser generator.\n"
+              "https://carburetta.com/\n"
+              "\n"
+              "tilly <inputfile.tilly> <flags>\n"
+              "\n"
+              "<inputfile.tilly>\n"
+              "         the input file containing the pattern tiles (mandatory)\n"
+              "\n"
+              "<flags>\n"
+  );
+  size_t n;
+  for (n = 0; n < sizeof(g_args_) / sizeof(*g_args_); ++n) {
+    fprintf(fp, "%s-%c, --%s %s\n", n ? "\n" : "", g_args_[n].short_, g_args_[n].long_, g_args_[n].arg_line_ ? g_args_[n].arg_line_ : "");
+    puts_wrapped(fp, g_args_[n].description_, 9, 79 - 9);
+  }
+
+  fprintf(fp, "\nReport bugs to: carburetta@kinglet.nl\n"
+              "Sourcecode repository at: <https://github.com/kingletbv/carburetta>\n"
+  );
+
+}
+
+static void print_version(FILE *fp) {
+  fprintf(fp, "Tilly " TILLY_VERSION_STR "\n");
+}
+
 int main(int argc, char **argv) {
   int r = EXIT_SUCCESS;
 
-  const char *input_filename = "test_input.til";
-  const char *output_filename = "test_output.c";
+  const char *input_filename = NULL;
+  const char *output_filename = NULL;
 
   FILE *fp = NULL;
 
-  try {
-    if (input_filename) {
-      fp = fopen(input_filename, "rb");
-      if (!fp) {
-        fprintf(stderr, "Failed to open file \"%s\": %s\n", input_filename, strerror(errno));
-        throw std::system_error(errno, std::generic_category());
-      }
+  int option_index = 0;
+  int have_input_file = 0;
+  int option;
+  do {
+    option = process_option(argc, (const char **)argv, &option_index, !have_input_file);
+    switch (option) {
+      case 0:
+        break;
+      case 'H':
+        print_usage(stdout);
+        goto exit_program_success;
+      case 'v':
+        print_version(stdout);
+        goto exit_program_success;
+      case 'c':
+        if ((option_index < argc) && (argv[option_index])[0] != '-') {
+          /* filename specified */
+          if (output_filename) {
+            fprintf(stderr, "Error: only one C output file permitted\n");
+            print_usage(stderr);
+            goto exit_arg_eval;
+          }
+          output_filename = strdup(argv[option_index]);
+          if (!output_filename) {
+            fprintf(stderr, "Error: no memory\n");
+            goto exit_arg_eval;
+          }
+        }
+        else {
+          /* no filename specified, back up */
+          option_index--;
+        }
+        break;
+      case '?':
+        print_usage(stdout);
+        goto exit_program_success;
+      case '-':
+        /* default argument */
+        input_filename = strdup(argv[option_index]);
+        if (!input_filename) {
+          fprintf(stderr, "Error: no memory\n");
+          goto exit_arg_eval;
+        }
+        have_input_file = 1;
+        break;
+      default:
+        fprintf(stderr, "Error: unknown option\n");
+        print_usage(stderr);
+        goto exit_arg_eval;
     }
-    else {
-      fp = stdin;
+  } while (option);
+
+  if (!have_input_file) {
+    fprintf(stderr, "Error: expected input file\n");
+    print_usage(stderr);
+    goto exit_arg_eval;
+  }
+
+  try {
+    fp = fopen(input_filename, "rb");
+    if (!fp) {
+      fprintf(stderr, "Failed to open file \"%s\": %s\n", input_filename, strerror(errno));
+      throw std::system_error(errno, std::generic_category());
     }
     TillyParser tp;
     tp.fp_ = fp;
@@ -566,13 +722,19 @@ int main(int argc, char **argv) {
     }
     else {
       // Produce output
-      FILE *output = fopen(output_filename, "wb");
-      if (!output) {
-        fprintf(stderr, "Failed to open file for output \"%s\": %s\n", output_filename, strerror(errno));
-        throw std::system_error(errno, std::generic_category());
+      FILE *output;
+      if (output_filename) {
+        output = fopen(output_filename, "wb");
+        if (!output) {
+          fprintf(stderr, "Failed to open file for output \"%s\": %s\n", output_filename, strerror(errno));
+          throw std::system_error(errno, std::generic_category());
+        }
+      }
+      else {
+        output = stdout;
       }
       tp.write_output(output);
-      fclose(output);
+      if (output != stdout) fclose(output);
       if (tp.had_failure) {
         r = EXIT_FAILURE;
       }
@@ -586,35 +748,14 @@ int main(int argc, char **argv) {
     fclose(fp);
   }
 
-
-  tile *t1, *t2, *t3;
-  tiles_.resize(3);
-  tiles_[0] = std::make_unique<tile>();
-  tiles_[1] = std::make_unique<tile>();
-  tiles_[2] = std::make_unique<tile>();
-  t1 = tiles_[0].get();
-  t2 = tiles_[1].get();
-  t3 = tiles_[2].get();
-  t1->root_ = make_tile_node('+', make_tile_node('r'), make_tile_node('i', make_tile_node('+', make_tile_node('c'), make_tile_node('r'))));
-  t2->root_ = make_tile_node('+', make_tile_node('r'), make_tile_node('r'));
-  t3->root_ = make_tile_node('c');
-
-  t1->reduces_to_symbol_ = t2->reduces_to_symbol_ = t3->reduces_to_symbol_ = 'r';
-
-  add_tile_to_automaton(nullptr, t1->root_.get(), 0, 0);
-  add_tile_to_automaton(nullptr, t2->root_.get(), 0, 1);
-  add_tile_to_automaton(nullptr, t3->root_.get(), 0, 2);
-
-  for (size_t n = 0; n < automaton_nodes_.size(); ++n) {
-    find_failure_function(n);
+  if (0) {
+  exit_program_success:
+    r = EXIT_SUCCESS;
+    goto exit_program;
+  exit_arg_eval:
+    r = EXIT_FAILURE;
+    goto exit_program;
   }
-
-  auto x = make_subject('+', make_subject('+', make_subject('c'), make_subject('c')), make_subject('i', make_subject('+', make_subject('c'), make_subject('c'))));
-  //auto x = make_subject('c');
-  //auto x = make_subject('+', make_subject('c'), make_subject('c'));
-
-  auto *xp = x.get();
-  xp->visit();
-
+  exit_program:
   return r;
 }
