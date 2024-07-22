@@ -241,6 +241,20 @@ switch-to-default-mode: {
 
 %class node-path: struct { std::string path_; ASTNode *node_=nullptr; }
 
+node-path: {
+  /* Empty node path of the form "$$" or of the form "$.0$" (the bit to the left of .)
+   * This is the root. For $.0$ we can say $0$ and the root is implied. */
+  ASTNode *node = tile->root_.get();
+  if (!node) {
+    fprintf(stderr, "%s(%d,%d): Tile has no root\n", ${ 0 }.filename(), ${ 0 }.line(), ${ 0 }.col());
+    tp.set_failure();
+  }
+  else {
+    $$.node_ = node;
+    $$.path_ = "sn";
+  }
+}
+
 node-path: INTEGER_LIT {
   ASTNode *node = tile->root_.get();
   if (!node) {
