@@ -81,6 +81,18 @@ $: {
   output_situs.move_range(&$, 1, " ");
 }
 
+: L?"(\\.|[^"\\])*" {
+  /* String literals should not have their contents examined for comments */
+  output_situs.concat(&$);
+  output.insert(output.end(), $text, $text  + $len);
+}
+
+: L?'(\\.|[^'\\])*' {
+  /* Char literals should not have their contents examined for comments */
+  output_situs.concat(&$);
+  output.insert(output.end(), $text, $text  + $len);
+}
+
 : \r\n|\n {
   // Regular new line
   output_situs.concat(&$);
