@@ -787,7 +787,7 @@ void TillyParser::dump_automaton(AutomatonNode *an, int indent) {
         // Child is label transition
         size_t label_index = child->index_ - symbols_.size();
         printf(" %s -> ", labels_[label_index].c_str());
-        int child_indent = indent + 3 + int(symbols_[label_index].size()) + 4;
+        int child_indent = indent + 3 + int(labels_[label_index].size()) + 4;
         dump_automaton(child, child_indent);
       }
     }
