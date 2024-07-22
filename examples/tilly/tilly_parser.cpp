@@ -450,6 +450,11 @@ void TillyParser::process_directives() {
         fprintf(stderr, "%s(%d): Lexical error at column %d: \"%s\"\n", dis_to_directives_situs_.filename(), dis_to_directives_situs_.line(), dis_to_directives_situs_.col(), directives_text(&directives_));
         break;
       case DIR_TOGGLE_CODE_SECTION:
+        if (emit_to_code_prologue_section_) {
+          /* Push last code to prologue */
+          code_prologue_section_.insert(code_prologue_section_.end(), current_code_section_.begin(), current_code_section_.end());
+          current_code_section_.resize(0);
+        }
         emit_to_code_prologue_section_ = !emit_to_code_prologue_section_;
         break;
     }
@@ -554,7 +559,8 @@ void TillyParser::process_dis() {
         fprintf(stdout, "<<<\n");
 #endif
         if (emit_to_code_prologue_section_) {
-          code_prologue_section_.insert(code_prologue_section_.end(), total_input_.begin() + start_offset, total_input_.begin() + end_offset);
+          current_code_section_.insert(current_code_section_.end(), total_input_.begin() + start_offset, total_input_.begin() + end_offset);
+          // code_prologue_section_.insert(code_prologue_section_.end(), total_input_.begin() + start_offset, total_input_.begin() + end_offset);
         }
         else {
           dis_to_tiles_section_.insert(dis_to_tiles_section_.end(), total_input_.begin() + start_offset, total_input_.begin() + end_offset);
@@ -1150,6 +1156,10 @@ void TillyParser::write_output(FILE *fp) {
               "      break;\n");
   fprintf(fp, "  }\n"
               "}\n");
+  if (current_code_section_.size() != fwrite(current_code_section_.data(), 1, current_code_section_.size(), fp)) {
+    fprintf(stderr, "Failed to write: %s\n", strerror(errno));
+    throw std::system_error(errno, std::generic_category());
+  }
 }
 
 void TillyParser::emit_tile_descendant_execution(FILE *fp, ASTTile &tile, ASTNode &node, std::string path_to_node) {

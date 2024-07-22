@@ -195,6 +195,7 @@ class TillyParser {
    * goes into tiles. Switches by the directives parser (process_directives()). */
   bool emit_to_code_prologue_section_ = true;
   std::vector<uint8_t> code_prologue_section_;
+  std::vector<uint8_t> current_code_section_;
 
   tiles_stack          tiles_parser_;
   bool                 have_tiles_data_to_process_ = false;
