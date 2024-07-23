@@ -36,6 +36,16 @@
 #include <memory>
 #endif
 
+#ifndef ALGORITHM_INCLUDED
+#define ALGORITHM_INCLUDED
+#include <algorithm>
+#endif
+
+#ifndef CCTYPE_INCLUDED
+#define CCTYPE_INCLUDED
+#include <cctype>
+#endif
+
 class TillyParser;
 
 #ifndef TILES_DEFS_H_INCLUDED
@@ -95,6 +105,21 @@ class ASTNode {
   std::vector<std::unique_ptr<ASTNode> > children_;
   
   void semantic_analysis(TillyParser &tp);
+
+  std::string cname() {
+    std::string name;
+    name = ident_;
+    for (char &c: name) c = toupper((unsigned char)c);
+    if (type_ == kSymbol) {
+      return "SYMBOL_" + name;
+    }
+    else if (type_ == kLabel) {
+      return "LABEL_" + name;
+    }
+    else {
+      return "? unknown ASTNode ?";
+    }
+  }
 
   enum {
     kUnknown,

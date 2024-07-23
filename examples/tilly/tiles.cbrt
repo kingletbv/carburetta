@@ -62,7 +62,7 @@
 %token COLON SEMICOLON LT LT_LT LT_LT_EQUALS LT_EQUALS EQUALS EQUALS_EQUALS
 %token BANG_EQUALS GT GT_EQUALS GT_GT GT_GT_EQUALS ARROW SQBRACE_OPEN SQBRACE_CLOSE
 %token CARET CARET_EQUALS CUBRACE_OPEN CUBRACE_CLOSE BAR BAR_EQUALS BAR_BAR QUESTION_MARK
-%token INTEGER_LIT FLOAT_LIT STRING_LIT CHAR_LIT IDENT SPECIAL_IDENT 
+%token INTEGER_LIT FLOAT_LIT STRING_LIT CHAR_LIT IDENT DOLLAR HASH AT
 
 $: {
   // Move Situs from the input to the current match
@@ -158,8 +158,10 @@ IDENT: [a-zA-Z_] [0-9a-zA-Z_]* {
   $$ = $text;
 }
 
-SPECIAL_IDENT: \$[0-9a-zA-Z_]*{}
-SPECIAL_IDENT: \$\${}
+DOLLAR: \$ {}
+
+HASH: # {}
+AT: @ {}
 
 %grammar%
 
@@ -293,5 +295,7 @@ non-brace-token: FLOAT_LIT;
 non-brace-token: STRING_LIT;
 non-brace-token: CHAR_LIT;
 non-brace-token: IDENT;
-non-brace-token: SPECIAL_IDENT;
+non-brace-token: DOLLAR;
+non-brace-token: HASH;
+non-brace-token: AT;
 

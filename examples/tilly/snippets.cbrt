@@ -67,7 +67,7 @@
 %token COLON COLON_COLON SEMICOLON LT LT_LT LT_LT_EQUALS LT_EQUALS EQUALS EQUALS_EQUALS
 %token BANG_EQUALS GT GT_EQUALS GT_GT GT_GT_EQUALS ARROW SQBRACE_OPEN SQBRACE_CLOSE
 %token CARET CARET_EQUALS CUBRACE_OPEN CUBRACE_CLOSE BAR BAR_EQUALS BAR_BAR QUESTION_MARK
-%token INTEGER_LIT FLOAT_LIT STRING_LIT CHAR_LIT IDENT DOLLAR
+%token INTEGER_LIT FLOAT_LIT STRING_LIT CHAR_LIT IDENT DOLLAR HASH AT
 %token WHITESPACE
 
 $: {
@@ -169,7 +169,11 @@ IDENT: [a-zA-Z_] [0-9a-zA-Z_]* {
 }
 
 DOLLAR: \$ {}
+HASH: # {}
+AT: @ {}
+
 } // mode <DEFAULT, NO_FLOAT>
+
 
 <DEFAULT> {
 // Excluding float literals when the mode is NO_FLOAT, this allows the grammar
@@ -180,7 +184,7 @@ FLOAT_LIT: [0-9] +[eE][\+\-]?[0-9]+[flFL]? {}
 
 %grammar%
 
-%nt grammar token-list token node-spec node-path
+%nt grammar token-list token node-spec cost-spec node-path
 
 // non-terminals to switch the scanner to different modes at opportune times
 %nt switch-to-nofloat-mode switch-to-default-mode
@@ -209,6 +213,7 @@ token-list: token-list token {
   fwrite(tp.total_input_.data() + start, 1, end - start, fpout);
 }
 token-list: token-list node-spec;
+token-list: token-list cost-spec;
 
 // Node specification of the form $0.1.2$ (selecting the first child (0), then its
 // second child (1), then its third child (2)) - a problem here is that $0.1.2$ by
@@ -226,6 +231,15 @@ node-spec: switch-to-nofloat-mode DOLLAR node-path switch-to-default-mode DOLLAR
   }
   else {
     fprintf(fpout, "(error on parsing node-path at %s(%d))", ${2}.filename(), ${2}.line());
+  }
+}
+
+cost-spec: switch-to-nofloat-mode DOLLAR AT node-path switch-to-default-mode DOLLAR {
+  if ($3.node_) {
+    fprintf(fpout, "(%s)->reduction_cost_[%s - NUM_SYMS]", $3.path_.c_str(), $3.node_->cname().c_str());
+  }
+  else {
+    fprintf(fpout, "(error on parsing node-path at %s(%d))", ${3}.filename(), ${3}.line());
   }
 }
 
@@ -357,3 +371,6 @@ token: STRING_LIT;
 token: CHAR_LIT;
 token: IDENT;
 token: WHITESPACE;
+token: HASH;
+token: AT;
+
