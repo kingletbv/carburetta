@@ -1103,7 +1103,7 @@ void TillyParser::write_output(FILE *fp) {
               "  /* do reduce */\n"
               "  for (n = 0; n < sizeof(sn->match_) / sizeof(*sn->match_); ++n) {\n"
               "    if (sn->match_[n] & 1) {\n"
-              "      int computed_cost = INT_MAX - 1;\n"
+              "      int cost = INT_MAX - 1;\n"
               "      switch (n) {\n"
               "        // cases here, index by tile index.\n");
   size_t tile_index;
@@ -1119,8 +1119,8 @@ void TillyParser::write_output(FILE *fp) {
               "      }\n"
               "      size_t index_of_label_reduced_to = index_of_label_tile_reduces_to_[n];\n"
               "      int pre_existing_cost = sn->reduction_cost_[index_of_label_reduced_to];\n"
-              "      if (pre_existing_cost > computed_cost) {\n"
-              "        sn->reduction_cost_[index_of_label_reduced_to] = computed_cost;\n"
+              "      if (pre_existing_cost > cost) {\n"
+              "        sn->reduction_cost_[index_of_label_reduced_to] = cost;\n"
               "        sn->reduction_tile_[index_of_label_reduced_to] = n;\n"
               "\n"
               "        /* Find the new state we arrive at on transitioning from the parent state through\n"
