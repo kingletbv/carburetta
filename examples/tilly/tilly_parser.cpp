@@ -564,7 +564,9 @@ void TillyParser::process_dis() {
         }
         else {
           dis_to_tiles_section_.insert(dis_to_tiles_section_.end(), total_input_.begin() + start_offset, total_input_.begin() + end_offset);
-          dis_to_tiles_situs_.concat(&dis_output_situs_);
+          Situs original_span;
+          original_span.clone_as_single_span_all_gaps_filled(&dis_output_situs_);
+          dis_to_tiles_situs_.concat(&original_span);
           tiles_set_input(&tiles_parser_, (const char *)dis_to_tiles_section_.data(), dis_to_tiles_section_.size(), /* is_final_input: */0);
           have_tiles_data_to_process_ = true;
         }
@@ -689,6 +691,7 @@ void TillyParser::process_lc() {
         // Specific value returned for each line, caller is to pop the input in lc_to_mc_data and
         // lc_to_mc_situs and pass to the multiline comment scanner.
         mlc_set_input(&mlc_, (const char *)lc_to_mlc_data_.data(), lc_to_mlc_data_.size(), 0);
+        have_mlc_data_to_process_ = true;
         return;
         // XXX: Who resets, and when ?
         //      MLC resets when have_mlc_data_to_process_ hits false.
