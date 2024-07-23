@@ -31,6 +31,11 @@
 #include <string>
 #endif
 
+#ifndef LIST_INCLUDED
+#define LIST_INCLUDED
+#include <list>
+#endif
+
 #ifndef MEMORY_INCLUDED
 #define MEMORY_INCLUDED
 #include <memory>
@@ -209,6 +214,7 @@ class TillyParser {
 
   std::vector<std::string> labels_;
   std::vector<std::string> symbols_;
+  std::list<std::pair<std::string, std::string> > label_types_; /* list and not map to keep the order of declaration intact */
 
   std::vector<std::unique_ptr<ASTTile> > ast_tiles_;
   
@@ -235,7 +241,6 @@ class TillyParser {
   bool                 have_dis_to_section_data_to_process = false;
   Situs                dis_to_section_situs_;
   std::vector<uint8_t> dis_to_section_data_; // this is the processed data, whereas the section should get the raw data.
-
 
   Situs                dis_output_situs_;
   std::vector<uint8_t> dis_output_data_;

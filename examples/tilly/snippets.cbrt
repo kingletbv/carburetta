@@ -184,7 +184,7 @@ FLOAT_LIT: [0-9] +[eE][\+\-]?[0-9]+[flFL]? {}
 
 %grammar%
 
-%nt grammar token-list token node-spec cost-spec node-path
+%nt grammar token-list token node-spec cost-spec data-spec node-path
 
 // non-terminals to switch the scanner to different modes at opportune times
 %nt switch-to-nofloat-mode switch-to-default-mode
@@ -213,7 +213,21 @@ token-list: token-list token {
   fwrite(tp.total_input_.data() + start, 1, end - start, fpout);
 }
 token-list: token-list node-spec;
+token-list: token-list data-spec;
 token-list: token-list cost-spec;
+token-list: token-list switch-to-nofloat-mode DOLLAR switch-to-default-mode BANG {
+  bool it_exists = false;
+  for (auto &ltp: tp.label_types_) {
+    if (ltp.first == tile->label_) {
+      it_exists = true;
+      break;
+    }
+  }
+  if (!it_exists) {
+    fprintf(stderr, "%s(%d) $! token accesses data for label %s, but no %%type has been defined for that label\n", ${ 2 }.filename(), ${ 2 }.line(), tile->label_.c_str());
+  }
+  fprintf(fpout, "(sn->v_.%s_)", tile->label_.c_str());
+}
 
 // Node specification of the form $0.1.2$ (selecting the first child (0), then its
 // second child (1), then its third child (2)) - a problem here is that $0.1.2$ by
@@ -225,12 +239,36 @@ token-list: token-list cost-spec;
 // parser DOLLAR), the scanner is in NO_FLOAT mode, and will not tokenize the 0.1 as
 // a FLOAT_LIT (because it is excluded from mode NO_FLOAT,) but as INTEGER_LIT DOT
 // INTEGER_LIT. This allows the node-path grammar to do its thing.
-node-spec: switch-to-nofloat-mode DOLLAR node-path switch-to-default-mode DOLLAR {
-  if ($2.node_) {
-    fprintf(fpout, "(%s)", $2.path_.c_str());
+node-spec: switch-to-nofloat-mode DOLLAR HASH node-path switch-to-default-mode DOLLAR {
+  if ($3.node_) {
+    fprintf(fpout, "(%s)", $3.path_.c_str());
   }
   else {
-    fprintf(fpout, "(error on parsing node-path at %s(%d))", ${2}.filename(), ${2}.line());
+    fprintf(stderr, "(error on parsing node-path at %s(%d))", ${3}.filename(), ${3}.line());
+  }
+}
+
+data-spec: switch-to-nofloat-mode DOLLAR node-path switch-to-default-mode DOLLAR {
+  if ($2.node_) {
+    if ($2.node_->type_ != ASTNode::kLabel) {
+      fprintf(stderr, "node-path at %s(%d) does not point to label", ${2}.filename(), ${2}.line());
+    }
+    else {
+      bool it_exists = false;
+      for (auto &ltp: tp.label_types_) {
+        if (ltp.first == $2.node_->ident_) {
+          it_exists = true;
+          break;
+        }
+      }
+      if (!it_exists) {
+        fprintf(stderr, "node-path at %s(%d) points to label %s, but no %%type has been defined for that label", ${ 2 }.filename(), ${ 2 }.line(), $2.node_->ident_.c_str());
+      }
+      fprintf(fpout, "((%s)->v_.%s_)", $2.path_.c_str(), $2.node_->ident_.c_str());
+    }
+  }
+  else {
+    fprintf(stderr, "(error on parsing node-path at %s(%d))", ${2}.filename(), ${2}.line());
   }
 }
 
@@ -239,7 +277,7 @@ cost-spec: switch-to-nofloat-mode DOLLAR AT node-path switch-to-default-mode DOL
     fprintf(fpout, "(%s)->reduction_cost_[%s - NUM_SYMS]", $3.path_.c_str(), $3.node_->cname().c_str());
   }
   else {
-    fprintf(fpout, "(error on parsing node-path at %s(%d))", ${3}.filename(), ${3}.line());
+    fprintf(stderr, "(error on parsing node-path at %s(%d))", ${3}.filename(), ${3}.line());
   }
 }
 

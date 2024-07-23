@@ -1013,8 +1013,15 @@ void TillyParser::write_output(FILE *fp) {
               "  size_t reduction_tile_[%zu];\n"
               "  struct subject_node *parent_;\n"
               "  struct subject_node *children_[%zu];\n"
-              "  struct automaton_node *state_;\n"
-              "};\n\n", num_match_words, labels_.size(), labels_.size(), max_num_operands);
+              "  struct automaton_node *state_;\n", num_match_words, labels_.size(), labels_.size(), max_num_operands);
+  if (label_types_.size()) {
+    fprintf(fp, "  struct {\n");
+    for (auto &ltp: label_types_) {
+      fprintf(fp, "    %s %s_;\n", ltp.second.c_str(), ltp.first.c_str());
+    }
+    fprintf(fp, "  } v_;\n");
+  }
+  fprintf(fp, "};\n\n");
 
   fprintf(fp, "size_t index_of_label_tile_reduces_to_[] = {\n");
   for (size_t n = 0; n < ast_tiles_.size(); ++n) {
