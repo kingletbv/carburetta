@@ -285,6 +285,7 @@ label-list: label-list IDENT {
     fprintf(stderr, "%s(%d): label \"%s\" not found (note that symbols can't have a type)\n", ${1}.filename(), ${1}.line(), $1.c_str());
   }
   else {
+    $$ = std::move($0);
     $$.push_back(std::move($1));
   }
 }
