@@ -294,8 +294,7 @@ directive: PERCENT TYPE label-list COLON any-token-list {
     size_t start_rng, end_rng;
     ${4}.get_byte_range(&start_rng, &end_rng);
     for (auto &label: $2) {
-      auto itr = tp.label_types_.begin();
-      while (itr != tp.label_types_.end()) {
+      for (auto itr = tp.label_types_.begin(); itr != tp.label_types_.end(); ++itr) {
         if (itr->first == label) {
           /* Already have a type declaration for this label, replace it */
           tp.label_types_.erase(itr);
