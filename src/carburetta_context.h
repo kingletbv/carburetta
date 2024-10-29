@@ -86,6 +86,7 @@ struct carburetta_context {
   struct snippet on_alloc_error_snippet_;
   struct snippet on_internal_error_snippet_;
   struct snippet on_next_token_snippet_;
+  struct snippet on_scan_token_snippet_;
   struct snippet on_feed_me_snippet_;
   struct symbol *input_end_sym_;
   struct symbol *error_sym_;

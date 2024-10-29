@@ -97,6 +97,11 @@ enum chgterm_type {
   SECTT_VALID
 };
 
+enum settoken_type {
+  SESTT_NONE,
+  SESTT_VALID
+};
+
 enum setmode_type {
   SESMT_NONE,
   SESMT_VALID
@@ -168,6 +173,8 @@ struct snippet_emission {
   const char *common_dest_fmt_;
 
   enum chgterm_type chgterm_type_;
+
+  enum settoken_type settoken_type_;
   
   enum setmode_type setmode_type_;
 
@@ -436,6 +443,25 @@ static int emit_chgterm(struct indented_printer *ip, struct carburetta_context *
   return 0;
 }
 
+static int emit_settoken(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st, struct xlts *term_tk) {
+  if (se->settoken_type_ == SESTT_NONE) {
+    re_error(&st->text_, "cannot use $set_token from here");
+    return TKR_SYNTAX_ERROR;
+  }
+  struct symbol *sym = symbol_find(&cc->symtab_, term_tk->translated_);
+  if (!sym) {
+    re_error(term_tk, "terminal not found");
+    return TKR_SYNTAX_ERROR;
+  }
+  if (sym->st_ != SYM_TERMINAL) {
+    re_error(term_tk, "%s is not a terminal", sym->def_.translated_);
+  }
+  ip_printf(ip, "do { stack->need_sym_ = 0; stack->current_sym_ = ");
+  print_sym_as_c_ident(ip, cc, sym);
+  ip_printf(ip, "; } while (0)");
+  return 0;
+}
+
 static int emit_len(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, struct snippet_token *st) {
   switch (se->len_type_) {
   case SELT_FMT:
@@ -639,7 +665,8 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
     else if ((se->code_->tokens_[col].match_ == TOK_SPECIAL_IDENT_STR) && 
              (!strcmp("$set_mode", se->code_->tokens_[col].text_.translated_) ||
               !strcmp("$is_mode", se->code_->tokens_[col].text_.translated_) ||
-              !strcmp("$chg_term", se->code_->tokens_[col].text_.translated_))) {
+              !strcmp("$chg_term", se->code_->tokens_[col].text_.translated_) ||
+              !strcmp("$set_token", se->code_->tokens_[col].text_.translated_))) {
       /* Special identifiers that take a single identifier argument between parentheses.
        * This identifier is case insensitive, and may include dashes. Consequently, we 
        * reconstruct the dash-inclusive identifier from multiple tokens if necessary, as the
@@ -702,6 +729,9 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
           }
           else if (!strcmp(op, "$chg_term")) {
             r = emit_chgterm(ip, cc, se, se->code_->tokens_ + op_at, &ident);
+          }
+          else if (!strcmp(op, "$set_token")) {
+            r = emit_settoken(ip, cc, se, se->code_->tokens_ + op_at, &ident);
           }
           else {
             /* What matches above should match to an action down here. */
@@ -842,6 +872,7 @@ static int emit_common_action_snippet(struct indented_printer *ip, struct carbur
   se.common_dest_fmt_ = "(stack->stack_[1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->current_production_length_)";
   se.discard_type_ = SEDIT_FMT;
@@ -873,6 +904,7 @@ static int emit_action_snippet(struct indented_printer *ip, struct carburetta_co
   se.common_dest_fmt_ = "(stack->stack_[1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(current_production_length_)";
   se.discard_type_ = SEDIT_NONE;
@@ -899,6 +931,7 @@ static int emit_token_action_snippet(struct indented_printer *ip, struct carbure
   se.common_dest_fmt_ = "(stack->sym_data_->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -924,6 +957,7 @@ static int emit_constructor_top_of_stack_snippet(struct indented_printer *ip, st
   se.common_dest_fmt_ = "((stack->stack_ + stack->pos_ - 1)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -949,6 +983,7 @@ static int emit_newbuf_constructor_snippet_newbuf_indexed_by_nbspp(struct indent
   se.common_dest_fmt_ = "(stack->new_buf_[stack->new_buf_sym_partial_pos_].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -976,6 +1011,7 @@ static int emit_move_snippet_newbuf_indexed_by_nbspp(struct indented_printer *ip
   se.common_dest_fmt_ = "(stack->new_buf_[stack->new_buf_sym_partial_pos_].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1003,6 +1039,7 @@ static int emit_move_to_top_of_stack_from_slot_0_snippet(struct indented_printer
   se.common_dest_fmt_ = "(stack->stack_[stack->pos_ - 1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1030,6 +1067,7 @@ static int emit_move_to_top_of_stack_from_slot_1_snippet(struct indented_printer
   se.common_dest_fmt_ = "(stack->stack_[stack->pos_ - 1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1055,6 +1093,7 @@ static int emit_common_move_snippet_indexed_by_nbspp(struct indented_printer *ip
   se.common_dest_fmt_ = "(stack->new_buf_[stack->new_buf_sym_partial_pos_].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1080,6 +1119,7 @@ static int emit_common_move_to_top_of_stack_from_slot_0_snippet(struct indented_
   se.common_dest_fmt_ = "(stack->stack_[stack->pos_ - 1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1105,6 +1145,7 @@ static int emit_common_move_to_top_of_stack_from_slot_1_snippet(struct indented_
   se.common_dest_fmt_ = "(stack->stack_[stack->pos_ - 1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1130,6 +1171,7 @@ static int emit_dst_sym_constructor_snippet(struct indented_printer *ip, struct 
   se.common_dest_fmt_ = "(stack->stack_[1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1154,6 +1196,7 @@ static int emit_common_constructor_top_of_stack_snippet(struct indented_printer 
   se.common_dest_fmt_ = "((stack->stack_ + stack->pos_ - 1)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1177,6 +1220,7 @@ static int emit_common_newbuf_constructor_snippet_indexed_by_nbspp(struct indent
   se.common_dest_fmt_ = "((stack->new_buf_ + stack->new_buf_sym_partial_pos_)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1204,6 +1248,7 @@ static int emit_dst_common_constructor_snippet(struct indented_printer *ip, stru
   se.common_dest_fmt_ = "(stack->stack_[1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1228,6 +1273,7 @@ static int emit_token_common_constructor_snippet(struct indented_printer *ip, st
   se.common_dest_fmt_ = "(stack->sym_data_->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1252,6 +1298,7 @@ static int emit_pattern_token_common_constructor_snippet(struct indented_printer
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->token_size_)";
   se.discard_type_ = SEDIT_NONE;
@@ -1284,6 +1331,7 @@ static int emit_token_common_action_snippet(struct indented_printer *ip, struct 
   se.common_dest_fmt_ = "(stack->sym_data_->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1309,6 +1357,7 @@ static int emit_token_constructor_snippet(struct indented_printer *ip, struct ca
   se.common_dest_fmt_ = "(stack->sym_data_->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1334,6 +1383,7 @@ static int emit_pattern_token_constructor_snippet(struct indented_printer *ip, s
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->token_size_)";
   se.discard_type_ = SEDIT_NONE;
@@ -1370,6 +1420,7 @@ static int emit_destructor_snippet(struct indented_printer *ip, struct carburett
   se.common_dest_fmt_ = "((stack->stack_ + stack->sym_idx_)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1400,6 +1451,7 @@ static int emit_destructor_snippet_indexed_by_n(struct indented_printer *ip, str
   se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1430,6 +1482,7 @@ static int emit_newbuf_destructor_snippet_indexed_by_n(struct indented_printer *
   se.common_dest_fmt_ = "((stack->new_buf_ + n)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1460,6 +1513,7 @@ int emit_destructor_snippet_indexed_by_nbspp(struct indented_printer *ip, struct
   se.common_dest_fmt_ = "((stack->stack_ + stack->new_buf_sym_partial_pos_)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1490,6 +1544,7 @@ static int emit_destructor_snippet_indexed_by_0(struct indented_printer *ip, str
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1520,6 +1575,7 @@ static int emit_destructor_snippet_indexed_by_1(struct indented_printer *ip, str
   se.common_dest_fmt_ = "(stack->stack_[1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1549,6 +1605,7 @@ static int emit_common_destructor_snippet(struct indented_printer *ip, struct ca
   se.common_dest_fmt_ = "((stack->stack_ + stack->sym_idx_)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1578,6 +1635,7 @@ static int emit_pattern_token_common_destructor_snippet(struct indented_printer 
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1607,6 +1665,7 @@ static int emit_common_destructor_snippet_indexed_by_n(struct indented_printer *
   se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1636,6 +1695,7 @@ static int emit_newbuf_common_destructor_snippet_indexed_by_n(struct indented_pr
   se.common_dest_fmt_ = "((stack->new_buf_ + n)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1665,6 +1725,7 @@ static int emit_common_destructor_snippet_indexed_by_nbspp(struct indented_print
   se.common_dest_fmt_ = "((stack->stack_ + stack->new_buf_sym_partial_pos_)->common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1694,6 +1755,7 @@ static int emit_common_destructor_snippet_index_0(struct indented_printer *ip, s
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1723,6 +1785,7 @@ static int emit_common_destructor_snippet_index_1(struct indented_printer *ip, s
   se.common_dest_fmt_ = "(stack->stack_[1].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_NONE;
   se.discard_type_ = SEDIT_NONE;
   se.text_type_ = SETT_NONE;
@@ -1750,6 +1813,7 @@ static int emit_pattern_common_action_snippet(struct indented_printer *ip, struc
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->token_size_)";
   se.discard_type_ = SEDIT_FMT;
@@ -1791,6 +1855,7 @@ static int emit_pattern_action_snippet(struct indented_printer *ip, struct carbu
   se.common_dest_fmt_ = "(stack->stack_[0].common_)";
   se.setmode_type_ = SESMT_VALID;
   se.chgterm_type_ = SECTT_VALID;
+  se.settoken_type_ = SESTT_NONE;
   se.len_type_ = SELT_FMT;
   se.len_fmt_ = "(stack->token_size_)";
   se.discard_type_ = SEDIT_FMT;
@@ -1809,6 +1874,30 @@ static int emit_pattern_action_snippet(struct indented_printer *ip, struct carbu
   se.end_col_fmt_ = "(stack->best_match_col_)";
   se.end_offset_type_ = SEEOT_FMT;
   se.end_offset_fmt_ = "(stack->best_match_offset_)";
+  return emit_snippet_code_emission(ip, cc, &se, 0);
+}
+
+static int emit_scan_token_snippet(struct indented_printer *ip, struct carburetta_context *cc) {
+  struct snippet_emission se = { 0 };
+  se.code_ = &cc->on_scan_token_snippet_;
+  se.dest_type_ = SEDT_NONE;
+  se.sym_type_ = SEST_NONE;
+  se.prod_ = NULL;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_NONE;
+  se.common_dest_fmt_ = "(stack->stack_[0].common_)";
+  se.setmode_type_ = SESMT_VALID;
+  se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_VALID;
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDIT_NONE;
+  se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
@@ -3344,6 +3433,13 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
 
   ip_printf(ip, "  for (;;) {\n");
   ip_printf(ip, "    stack->continue_at_ = 0;\n");
+
+  if (cc->on_scan_token_snippet_.num_tokens_) {
+    ip_printf(ip, "    if (stack->need_sym_) {\n");
+    emit_scan_token_snippet(ip, cc);
+    ip_printf(ip, "    }\n");
+  }
+
   ip_printf(ip, "    if (stack->need_sym_) {\n");
   ip_printf(ip, "      switch (%slex(stack)) {\n", cc_prefix(cc));
   ip_printf(ip, "        case _%sMATCH:\n", cc_PREFIX(cc));
@@ -3610,16 +3706,6 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
     }
   }
   ip_printf(ip, "          stack->slot_0_has_current_sym_data_ = 0;\n");
-
-  if (cc->on_next_token_snippet_.num_tokens_) {
-    ip_printf(ip, "          {\n"
-                  "            ");
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
-    }
-    ip_printf(ip, "          }\n");
-  }
 
   ip_printf(ip, "        } /* action > 0 */\n");
 
@@ -4114,12 +4200,7 @@ static void emit_scan_function(struct indented_printer *ip, struct carburetta_co
   ip_printf(ip, "          }\n");
 
   ip_printf(ip, "          stack->need_sym_ = 1;\n");
-  if (cc->on_next_token_snippet_.num_tokens_) {
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->on_next_token_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->on_next_token_snippet_.tokens_[token_idx].text_.original_);
-    }
-  }
+
   if (have_any_destructor_case) {
     ip_printf(ip, "          /* Deconstruct placeholder location for discarded symbol */\n");
     ip_printf(ip, "          switch (stack->current_sym_) {\n");
