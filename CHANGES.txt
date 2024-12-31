@@ -1,3 +1,64 @@
+0.8.22 - 2024-12-31
+
+ - Removed many warnings on both gcc, clang and msvc.
+
+ - Fixed problems with variables that were not generated in parser-only
+   situations.
+
+ - Fixed internal self-use of Carburetta, where %on_alloc_error and 
+   %on_internal_error assumed that user-defined parameters were available,
+   this is not the case when called from cleanup.
+
+ - Regenerate Carburetta self-use code. Resolve some issues with 
+   Carburetta's own use of itself (ouroboros) - you wouldn't ordinarily
+   run into these because Carburetta has its own self-generated code checked
+   in to prevent the bootstrap problem.
+
+ - Carburetta internal issues due to not correctly passing the match and
+   variant of tokens.
+
+ - Many issues where %move semantics inside Carburetta did not clear
+   source pointers to NULL causing destruction to be called twice. There
+   is a more permanent solution for this below.
+
+ - New %move semantics, when a %type does not have an explicit %move, then
+   we no longer destruct the source data, but assume that the source is
+   destructed when the copy is destructed. So, for instance, suppose we
+   have %type char*, a malloc'ed string, then previously, you needed to 
+   add an explicit %move that cleared the source to prevent the destructor
+   on the source from free'ing the pointer that was copied over.
+   The new behavior is that, when relying on the default %move (a memcpy),
+   the source is no longer destructed. This is very likely what users 
+   would expect and reduces the need for %move directives on everything.
+   C++ %class types are not affected as these always generate a default
+   and valid C++ style %move with appropriate destruction semantics.
+
+ - Substantial updates to the Tilly example. Tilly is a tiling engine
+   that is useful for generating machine code from expression trees.
+   The Tilly example is a work in progress, it implements the algorithm
+   from the 1989 paper: "Code Generation Using Tree Matching and Dynamic
+   Programming" by Alfred V. Aho, Mahadevan Ganapathi and Steven W.K. Tjiang.
+   The Tilly example is a good example of how to use Carburetta to implement
+   a more complex multi-stage parser.
+   It continues to be a work in progress and needs more documentation.
+
+ - t16 and t17 test the new %move semantics for %type scenarios.
+
+ - Addition of %on_scan_token and $set_token(token-id) for scanner.
+   The snippet for %on_scan_token is inserted in the scan function when a new
+   token is needed. The snippet can chose to do nothing (in which case the lexer
+   will execute on the input and determine a new token), or it can insert a
+   token in the stream using $set_token(token-id); the token-id must be a
+   terminal, and no data can be set for the terminal (so the terminal should not
+   have any associated type.)
+   %on_next_token is now only generated for parsers.
+
+ - Since the previous release, there is now a new example in the form of Aex-GL.
+   Aex-GL is a portable OpenGL ES 2.0 software implementation in C, using Carburetta 
+   to parse the GLSL ES 1.0 shader language. You can find the Aex-GL example in the
+   github repository at https://github.com/kingletbv/aex-gl
+
+
 0.8.20 - 2023-09-14
 
  - For std::move generated code, don't rely on #include <type_traits> but
