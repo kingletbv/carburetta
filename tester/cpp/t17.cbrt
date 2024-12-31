@@ -1,0 +1,101 @@
+/* Copyright 2020-2024 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// t17 - whereas t16 tests that we want a simple %type without %move to not call 
+// a destructor on the source material, with t17 we want to test that a simple
+// %type *with* a %move will still always call the destructor on the souce material.
+
+#include <stdio.h>  // fprintf, stderr
+#include <stdint.h> // SIZE_MAX
+#include <assert.h>
+#include <cstdlib> // atoi
+#include <exception> // std::exception
+
+namespace nt17 {
+
+int g_num_move_calls_open_ = 0;
+
+} // namespace nt17
+
+using namespace nt17;
+
+%scanner%
+%prefix t17_
+
+DIGIT: [0-9] { $$ = atoi($text); }
+
+: [\ \n] +; /* skip spaces and newlines */
+
+%token DIGIT
+%nt sequence result
+
+%grammar%
+
+/* We test a sequence of digits, a DIGIT is an int, it has a constructor and a destructor, but no %move,
+ * consequently, its destructor should not be called after the item has been moved (because the item is
+ * an implied memcpy.) */
+
+%type DIGIT sequence: int
+%constructor $$ = 0;
+%move $$ = $0; $0 = -1; g_num_move_calls_open_++;
+%destructor if ($$) { \
+  if ($$ == -1) --g_num_move_calls_open_; \
+}
+
+%params int &final_result
+
+result: sequence {
+  final_result = $0;
+  $0 = 0;
+}
+
+/* Sequence is just the addition of one or more digits, each production clears the digit and sequence used to 0,
+ * so there should not be any issue on the %destructor for them. */
+sequence: DIGIT { $$ = $0; $0 = 0; }
+sequence: sequence DIGIT { $$ = $0 + $1; $0 = $1 = 0; }
+
+%%
+
+extern "C" int t17() {
+  int rv = -1;
+  int r;
+
+  const char sum[] = "123";
+
+  struct t17_stack stack;
+  t17_stack_init(&stack);
+
+  t17_set_input(&stack, sum, sizeof(sum) - 1, 1);
+  int final_result = 0;
+  
+  r = t17_scan(&stack, final_result);
+  if (r != _T17_FINISH) {
+    rv = -1;
+    goto fail;
+  }
+
+  if (final_result != 6) {
+    /* 1 + 2 + 3 should equal 6 */
+    rv = -3;
+    goto fail;
+  }
+
+  rv = 0;
+
+fail:
+  t17_stack_cleanup(&stack);
+  return rv;
+}
+
