@@ -1,4 +1,4 @@
-/* Copyright 2020-2024 Kinglet B.V.
+/* Copyright 2020-2025 Kinglet B.V.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ extern "C" {
 #define CARBURETTA_VERSION_STR CARBURETTA_STRINGIFY(CARBURETTA_MAJOR_VER) "." CARBURETTA_STRINGIFY(CARBURETTA_MINOR_VER) "." CARBURETTA_STRINGIFY(CARBURETTA_PATCH_VER)
 #endif
 
-#define CARBURETTA_COPYRIGHT_STR "(C) 2020-2024 Kinglet B.V."
+#define CARBURETTA_COPYRIGHT_STR "(C) 2020-2025 Kinglet B.V."
 
 #ifdef __cplusplus
 } /* extern "C" */
