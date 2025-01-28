@@ -1814,16 +1814,19 @@ for (;;) {
                     case REX_SYM:
                     stack->newbuf_pos_has_sym_data_ = 1;
                     memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                    stack->stack_newbuf_pos_has_sym_data_ = 0;
                     
                     break;
                     case REX_CHAR:
                     stack->newbuf_pos_has_sym_data_ = 1;
                     memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                    stack->stack_newbuf_pos_has_sym_data_ = 0;
                     
                     break;
                     case REX_CATEGORY:
                     stack->newbuf_pos_has_sym_data_ = 1;
                     memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                    stack->stack_newbuf_pos_has_sym_data_ = 0;
                     
                     break;
                     case REX_RANGE_ELM:
@@ -1842,6 +1845,7 @@ for (;;) {
                     {
                       rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                     }
+                    stack->stack_newbuf_pos_has_sym_data_ = 0;
                     
                     break;
                   }
@@ -1867,7 +1871,22 @@ for (;;) {
                   {
                     rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                   }
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
+                  break;
                   
+                  case 2: /* exp */
+                  case 3: /* elm */
+                  case 7: /* sym */
+                  case 15: /* term */
+                  case 18: /* exp */
+                  case 32: /* term */
+                  case 8: /* CHAR */
+                  case 26: /* CHAR */
+                  case 28: /* CHAR */
+                  case 9: /* CATEGORY */
+                  case 29: /* CATEGORY */
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   break;
                 } /* switch */
               }
@@ -1892,16 +1911,16 @@ for (;;) {
             case 15: /* term */
             case 18: /* exp */
             case 32: /* term */
-            memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_));
+            memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_)); /*3*/
             break;
             case 8: /* CHAR */
             case 26: /* CHAR */
             case 28: /* CHAR */
-            memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_));
+            memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_)); /*3*/
             break;
             case 9: /* CATEGORY */
             case 29: /* CATEGORY */
-            memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_));
+            memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[0].v_, sizeof(stack->stack_->v_)); /*3*/
             break;
             case 21: /* range */
             case 23: /* range-elm */
@@ -2473,16 +2492,19 @@ for (;;) {
                     case REX_SYM:
                     stack->newbuf_pos_has_sym_data_ = 1;
                     memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                    stack->stack_newbuf_pos_has_sym_data_ = 0;
                     
                     break;
                     case REX_CHAR:
                     stack->newbuf_pos_has_sym_data_ = 1;
                     memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                    stack->stack_newbuf_pos_has_sym_data_ = 0;
                     
                     break;
                     case REX_CATEGORY:
                     stack->newbuf_pos_has_sym_data_ = 1;
                     memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                    stack->stack_newbuf_pos_has_sym_data_ = 0;
                     
                     break;
                     case REX_RANGE_ELM:
@@ -2501,6 +2523,7 @@ for (;;) {
                     {
                       rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                     }
+                    stack->stack_newbuf_pos_has_sym_data_ = 0;
                     
                     break;
                   }
@@ -2526,7 +2549,22 @@ for (;;) {
                   {
                     rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                   }
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
+                  break;
                   
+                  case 2: /* exp */
+                  case 3: /* elm */
+                  case 7: /* sym */
+                  case 15: /* term */
+                  case 18: /* exp */
+                  case 32: /* term */
+                  case 8: /* CHAR */
+                  case 26: /* CHAR */
+                  case 28: /* CHAR */
+                  case 9: /* CATEGORY */
+                  case 29: /* CATEGORY */
+                  memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   break;
                 } /* switch */
               }
@@ -2718,16 +2756,19 @@ for (;;) {
                           case REX_SYM:
                           stack->newbuf_pos_has_sym_data_ = 1;
                           memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                          stack->stack_newbuf_pos_has_sym_data_ = 0;
                           
                           break;
                           case REX_CHAR:
                           stack->newbuf_pos_has_sym_data_ = 1;
                           memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                          stack->stack_newbuf_pos_has_sym_data_ = 0;
                           
                           break;
                           case REX_CATEGORY:
                           stack->newbuf_pos_has_sym_data_ = 1;
                           memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                          stack->stack_newbuf_pos_has_sym_data_ = 0;
                           
                           break;
                           case REX_RANGE_ELM:
@@ -2746,6 +2787,7 @@ for (;;) {
                           {
                             rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                           }
+                          stack->stack_newbuf_pos_has_sym_data_ = 0;
                           
                           break;
                         }
@@ -2771,7 +2813,22 @@ for (;;) {
                         {
                           rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                         }
+                        stack->stack_newbuf_pos_has_sym_data_ = 0;
+                        break;
                         
+                        case 2: /* exp */
+                        case 3: /* elm */
+                        case 7: /* sym */
+                        case 15: /* term */
+                        case 18: /* exp */
+                        case 32: /* term */
+                        case 8: /* CHAR */
+                        case 26: /* CHAR */
+                        case 28: /* CHAR */
+                        case 9: /* CATEGORY */
+                        case 29: /* CATEGORY */
+                        memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                        stack->stack_newbuf_pos_has_sym_data_ = 0;
                         break;
                       } /* switch */
                     }
@@ -2892,16 +2949,19 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                   case REX_SYM:
                   stack->newbuf_pos_has_sym_data_ = 1;
                   memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   
                   break;
                   case REX_CHAR:
                   stack->newbuf_pos_has_sym_data_ = 1;
                   memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   
                   break;
                   case REX_CATEGORY:
                   stack->newbuf_pos_has_sym_data_ = 1;
                   memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   
                   break;
                   case REX_RANGE_ELM:
@@ -2916,6 +2976,7 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                   {
                     rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                   }
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   
                   break;
                 }
@@ -2937,7 +2998,22 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                 {
                   rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                 }
+                stack->stack_newbuf_pos_has_sym_data_ = 0;
+                break;
                 
+                case 2: /* exp */
+                case 3: /* elm */
+                case 7: /* sym */
+                case 15: /* term */
+                case 18: /* exp */
+                case 32: /* term */
+                case 8: /* CHAR */
+                case 26: /* CHAR */
+                case 28: /* CHAR */
+                case 9: /* CATEGORY */
+                case 29: /* CATEGORY */
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                stack->stack_newbuf_pos_has_sym_data_ = 0;
                 break;
               } /* switch */
             }
@@ -3458,16 +3534,19 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                   case REX_SYM:
                   stack->newbuf_pos_has_sym_data_ = 1;
                   memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   
                   break;
                   case REX_CHAR:
                   stack->newbuf_pos_has_sym_data_ = 1;
                   memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   
                   break;
                   case REX_CATEGORY:
                   stack->newbuf_pos_has_sym_data_ = 1;
                   memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   
                   break;
                   case REX_RANGE_ELM:
@@ -3482,6 +3561,7 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                   {
                     rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                   }
+                  stack->stack_newbuf_pos_has_sym_data_ = 0;
                   
                   break;
                 }
@@ -3503,7 +3583,22 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                 {
                   rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                 }
+                stack->stack_newbuf_pos_has_sym_data_ = 0;
+                break;
                 
+                case 2: /* exp */
+                case 3: /* elm */
+                case 7: /* sym */
+                case 15: /* term */
+                case 18: /* exp */
+                case 32: /* term */
+                case 8: /* CHAR */
+                case 26: /* CHAR */
+                case 28: /* CHAR */
+                case 9: /* CATEGORY */
+                case 29: /* CATEGORY */
+                memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                stack->stack_newbuf_pos_has_sym_data_ = 0;
                 break;
               } /* switch */
             }
@@ -3518,13 +3613,41 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
         stack->stack_[stack->pos_++].state_ = action /* action for a "goto" shift is the ordinal */;
         stack->top_of_stack_has_sym_data_ = 0;
         stack->top_of_stack_has_common_data_ = 0;
-        struct rex_sym_data *sd = stack->stack_ + stack->pos_ - 1;
-        memcpy(sd, stack->stack_+1, sizeof(*sd));
-        sd->state_ = action;
-        stack->slot_1_has_common_data_ = 0;
+        switch(stack->stack_[stack->pos_ - 1].state_) {
+          case 2: /* exp */
+          case 3: /* elm */
+          case 7: /* sym */
+          case 15: /* term */
+          case 18: /* exp */
+          case 32: /* term */
+          memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[1].v_, sizeof(stack->stack_->v_));
+          break;
+          case 8: /* CHAR */
+          case 26: /* CHAR */
+          case 28: /* CHAR */
+          memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[1].v_, sizeof(stack->stack_->v_));
+          break;
+          case 9: /* CATEGORY */
+          case 29: /* CATEGORY */
+          memcpy(&stack->stack_[stack->pos_ - 1].v_, &stack->stack_[1].v_, sizeof(stack->stack_->v_));
+          break;
+          case 21: /* range */
+          case 23: /* range-elm */
+          case 24: /* range */
+          case 25: /* range-elm */
+          stack->top_of_stack_has_sym_data_ = 1;
+          {
+            rex_set_range_init(&((stack->stack_ + stack->pos_ - 1)->v_.uv3_));
+          }
+          {
+            rex_set_range_swap(&stack->stack_[stack->pos_ - 1].v_.uv3_, &(stack->stack_[1].v_.uv3_));
+          }
+          {
+            rex_set_range_cleanup(&(stack->stack_[1].v_.uv3_));
+          }
+          break;
+        } /* switch (top of stack state) */
         stack->slot_1_has_sym_data_ = 0;
-        stack->top_of_stack_has_common_data_ = 1;
-        stack->top_of_stack_has_sym_data_ = 1;
       } /* action < 0 */
       else /* action == 0 */ {
         /* check if we can recover using an error token. */
@@ -3641,16 +3764,19 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                         case REX_SYM:
                         stack->newbuf_pos_has_sym_data_ = 1;
                         memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                        stack->stack_newbuf_pos_has_sym_data_ = 0;
                         
                         break;
                         case REX_CHAR:
                         stack->newbuf_pos_has_sym_data_ = 1;
                         memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                        stack->stack_newbuf_pos_has_sym_data_ = 0;
                         
                         break;
                         case REX_CATEGORY:
                         stack->newbuf_pos_has_sym_data_ = 1;
                         memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                        stack->stack_newbuf_pos_has_sym_data_ = 0;
                         
                         break;
                         case REX_RANGE_ELM:
@@ -3665,6 +3791,7 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                         {
                           rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                         }
+                        stack->stack_newbuf_pos_has_sym_data_ = 0;
                         
                         break;
                       }
@@ -3686,7 +3813,22 @@ if (stack->mute_error_turns_) stack->mute_error_turns_--;
                       {
                         rex_set_range_cleanup(&((stack->stack_ + stack->new_buf_sym_partial_pos_)->v_.uv3_));
                       }
+                      stack->stack_newbuf_pos_has_sym_data_ = 0;
+                      break;
                       
+                      case 2: /* exp */
+                      case 3: /* elm */
+                      case 7: /* sym */
+                      case 15: /* term */
+                      case 18: /* exp */
+                      case 32: /* term */
+                      case 8: /* CHAR */
+                      case 26: /* CHAR */
+                      case 28: /* CHAR */
+                      case 9: /* CATEGORY */
+                      case 29: /* CATEGORY */
+                      memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));
+                      stack->stack_newbuf_pos_has_sym_data_ = 0;
                       break;
                     } /* switch */
                   }

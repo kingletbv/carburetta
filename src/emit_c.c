@@ -3334,9 +3334,39 @@ static void emit_push_state(struct indented_printer *ip, struct carburetta_conte
               ip_printf(ip, "    memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));\n");
             }
             ip_printf(ip, "    stack->stack_newbuf_pos_has_sym_data_ = 0;\n");
-            ip_printf(ip, "\n    break;\n");
+            ip_printf(ip, "    break;\n\n");
           }
         }
+        else {
+          /* Type has no constructor/destructor/move snippets associated, however, we'll still need to move it
+           * We do this below in one swoop for all that don't have anything associated. */
+        }
+      }
+      int have_snippetless_cases = 0;
+      for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+        if (ts->constructor_snippet_.num_tokens_ ||
+            ts->destructor_snippet_.num_tokens_ ||
+            ts->move_snippet_.num_tokens_) {
+          /* Ok, already handled above */
+        }
+        else {
+          /* Not yet handled the move, gather up all cases */
+          size_t state_idx;
+          for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+            struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+            if (!sym) continue;
+            if (sym->assigned_type_ == ts) {
+              ip_printf(ip, "    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+              have_snippetless_cases = 1;
+            }
+          }
+        }
+      }
+      if (have_snippetless_cases) {
+        ip_printf(ip, "    memcpy(&stack->new_buf_[stack->new_buf_sym_partial_pos_].v_, &stack->stack_[stack->new_buf_sym_partial_pos_].v_, sizeof(stack->stack_->v_));\n");
+        ip_printf(ip, "    stack->stack_newbuf_pos_has_sym_data_ = 0;\n");
+        ip_printf(ip, "    break;\n");
       }
       ip_printf(ip, "      } /* switch */\n");
     }
