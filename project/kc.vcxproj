@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\examples\kc\helpers\cpp_helpers.cpp" />
+    <ClCompile Include="..\examples\kc\helpers\helpers.c" />
+    <ClCompile Include="..\examples\kc\helpers\klt_logger.c" />
+    <ClCompile Include="..\examples\kc\3rdparty\dtoa_david_m_gay\dtoa.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">IEEE_8087;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">IEEE_8087;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">IEEE_8087;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">IEEE_8087;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4996;4146;4703;4244;4334</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4996;4146;4703;4244;4334</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4996;4146;4703;4244;4334</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4996;4146;4703;4244;4334</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="..\examples\kc\src\c_compiler.c" />
+    <ClCompile Include="..\examples\kc\src\data_section.c" />
+    <ClCompile Include="..\examples\kc\src\decl.c" />
+    <ClCompile Include="..\examples\kc\src\dynamic_runtime_linking.c" />
+    <ClCompile Include="..\examples\kc\src\expr.c" />
+    <ClCompile Include="..\examples\kc\src\func_def.c" />
+    <ClCompile Include="..\examples\kc\src\input_file.c" />
+    <ClCompile Include="..\examples\kc\src\invoke_x64.c" />
+    <ClCompile Include="..\examples\kc\src\jitmem.c" />
+    <ClCompile Include="..\examples\kc\src\name_space.c" />
+    <ClCompile Include="..\examples\kc\src\partial_type_specifiers.c" />
+    <ClCompile Include="..\examples\kc\src\pp_tokens.c" />
+    <ClCompile Include="..\examples\kc\src\scan_helpers.c" />
+    <ClCompile Include="..\examples\kc\src\situs.c" />
+    <ClCompile Include="..\examples\kc\src\stmt.c" />
+    <ClCompile Include="..\examples\kc\src\switch.c" />
+    <ClCompile Include="..\examples\kc\src\symtab.c" />
+    <ClCompile Include="..\examples\kc\src\templ_parser.c" />
+    <ClCompile Include="..\examples\kc\src\types.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\examples\kc\helpers\helpers.h" />
+    <ClInclude Include="..\..\examples\kc\helpers\klt_logger.h" />
+    <ClInclude Include="..\examples\kc\src\c_compiler.h" />
+    <ClInclude Include="..\examples\kc\src\data_section.h" />
+    <ClInclude Include="..\examples\kc\src\decl.h" />
+    <ClInclude Include="..\examples\kc\src\dynamic_runtime_linking.h" />
+    <ClInclude Include="..\examples\kc\src\expr.h" />
+    <ClInclude Include="..\examples\kc\src\func_def.h" />
+    <ClInclude Include="..\examples\kc\src\input_file.h" />
+    <ClInclude Include="..\examples\kc\src\invoke_x64.h" />
+    <ClInclude Include="..\examples\kc\src\jitmem.h" />
+    <ClInclude Include="..\examples\kc\src\name_space.h" />
+    <ClInclude Include="..\examples\kc\src\partial_type_specifiers.h" />
+    <ClInclude Include="..\examples\kc\src\pp_tokens.h" />
+    <ClInclude Include="..\examples\kc\src\scan_helpers.h" />
+    <ClInclude Include="..\examples\kc\src\situs.h" />
+    <ClInclude Include="..\examples\kc\src\stmt.h" />
+    <ClInclude Include="..\examples\kc\src\switch.h" />
+    <ClInclude Include="..\examples\kc\src\symtab.h" />
+    <ClInclude Include="..\examples\kc\src\templ_parser.h" />
+    <ClInclude Include="..\examples\kc\src\types.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\examples\kc\src\c_parser.cbrt">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\examples\kc\src\pp_const_expr.cbrt">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\examples\kc\src\pp_line_directives.cbrt">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\examples\kc\src\pp_macro_expander.cbrt">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\examples\kc\src\pp_tokenizer.cbrt">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="..\examples\kc\src\invoke_call_x64.asm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\examples\kc\src\pp_trigraphs.cbrt">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\examples\kc\src\pp_line_continuations.cbrt">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(SolutionDir)build\Win_x86\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(SolutionDir)build\Win_amd64\$(Configuration)\carburetta.exe" "%(FullPath)" --c "$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c" --h</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\%(Filename).c</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
+    </CustomBuild>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{f955e56a-29dd-4df1-9949-0c46f04af743}</ProjectGuid>
+    <RootNamespace>kc</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir);$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\;$(SolutionDir)\examples\kc\helpers;$(SolutionDir)\examples\kc\src</IncludePath>
+    <OutDir>$(SolutionDir)\kclib\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\kclib\$(Platform)\$(Configuration)\build\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir);$(SolutionDir)build\Win_x86\$(Configuration)\kc\obj\;$(SolutionDir)\examples\kc\helpers;$(SolutionDir)\examples\kc\src</IncludePath>
+    <OutDir>$(SolutionDir)\kclib\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\kclib\$(Platform)\$(Configuration)\build\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir);$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj;$(SolutionDir)\examples\kc\helpers;$(SolutionDir)\examples\kc\src</IncludePath>
+    <IntDir>$(SolutionDir)\kclib\$(Platform)\$(Configuration)\build\</IntDir>
+    <OutDir>$(SolutionDir)\kclib\$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir);$(SolutionDir)build\Win_amd64\$(Configuration)\kc\obj\;$(SolutionDir)\examples\kc\helpers;$(SolutionDir)\examples\kc\src</IncludePath>
+    <IntDir>$(SolutionDir)\kclib\$(Platform)\$(Configuration)\build\</IntDir>
+    <OutDir>$(SolutionDir)\kclib\$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>$(SolutionDir)examples\kc\helpers</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>$(SolutionDir)examples\kc\helpers</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>$(SolutionDir)examples\kc\helpers</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>$(SolutionDir)examples\kc\helpers</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+</Project>

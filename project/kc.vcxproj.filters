@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\examples\kc\src\data_section.c" />
+    <ClCompile Include="..\examples\kc\src\decl.c" />
+    <ClCompile Include="..\examples\kc\src\expr.c" />
+    <ClCompile Include="..\examples\kc\src\func_def.c" />
+    <ClCompile Include="..\examples\kc\src\input_file.c" />
+    <ClCompile Include="..\examples\kc\src\c_compiler.c" />
+    <ClCompile Include="..\examples\kc\src\invoke_x64.c" />
+    <ClCompile Include="..\examples\kc\src\name_space.c" />
+    <ClCompile Include="..\examples\kc\src\partial_type_specifiers.c" />
+    <ClCompile Include="..\examples\kc\src\pp_tokens.c" />
+    <ClCompile Include="..\examples\kc\src\scan_helpers.c" />
+    <ClCompile Include="..\examples\kc\src\situs.c" />
+    <ClCompile Include="..\examples\kc\src\stmt.c" />
+    <ClCompile Include="..\examples\kc\src\switch.c" />
+    <ClCompile Include="..\examples\kc\src\symtab.c" />
+    <ClCompile Include="..\examples\kc\src\templ_parser.c" />
+    <ClCompile Include="..\examples\kc\src\types.c" />
+    <ClCompile Include="..\examples\kc\src\jitmem.c" />
+    <ClCompile Include="..\examples\kc\src\dynamic_runtime_linking.c" />
+    <ClCompile Include="..\examples\kc\helpers\cpp_helpers.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\examples\kc\helpers\helpers.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\examples\kc\helpers\klt_logger.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\examples\kc\3rdparty\dtoa_david_m_gay\dtoa.c">
+      <Filter>3rdparty\David M Gay - dtoa</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\examples\kc\src\data_section.h" />
+    <ClInclude Include="..\examples\kc\src\decl.h" />
+    <ClInclude Include="..\examples\kc\src\expr.h" />
+    <ClInclude Include="..\examples\kc\src\func_def.h" />
+    <ClInclude Include="..\examples\kc\src\input_file.h" />
+    <ClInclude Include="..\examples\kc\src\c_compiler.h" />
+    <ClInclude Include="..\examples\kc\src\invoke_x64.h" />
+    <ClInclude Include="..\examples\kc\src\name_space.h" />
+    <ClInclude Include="..\examples\kc\src\partial_type_specifiers.h" />
+    <ClInclude Include="..\examples\kc\src\pp_tokens.h" />
+    <ClInclude Include="..\examples\kc\src\scan_helpers.h" />
+    <ClInclude Include="..\examples\kc\src\situs.h" />
+    <ClInclude Include="..\examples\kc\src\stmt.h" />
+    <ClInclude Include="..\examples\kc\src\switch.h" />
+    <ClInclude Include="..\examples\kc\src\symtab.h" />
+    <ClInclude Include="..\examples\kc\src\templ_parser.h" />
+    <ClInclude Include="..\examples\kc\src\types.h" />
+    <ClInclude Include="..\examples\kc\src\jitmem.h" />
+    <ClInclude Include="..\examples\kc\src\dynamic_runtime_linking.h" />
+    <ClInclude Include="..\..\examples\kc\helpers\helpers.h" />
+    <ClInclude Include="..\..\examples\kc\helpers\klt_logger.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\examples\kc\src\c_parser.cbrt" />
+    <CustomBuild Include="..\examples\kc\src\pp_const_expr.cbrt" />
+    <CustomBuild Include="..\examples\kc\src\pp_line_directives.cbrt" />
+    <CustomBuild Include="..\examples\kc\src\pp_macro_expander.cbrt" />
+    <CustomBuild Include="..\examples\kc\src\pp_tokenizer.cbrt" />
+    <CustomBuild Include="..\examples\kc\src\pp_trigraphs.cbrt" />
+    <CustomBuild Include="..\examples\kc\src\pp_line_continuations.cbrt" />
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="..\examples\kc\src\invoke_call_x64.asm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="3rdparty">
+      <UniqueIdentifier>{04b3a326-2adc-41d1-85f2-57569560c9a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdparty\David M Gay - dtoa">
+      <UniqueIdentifier>{a6d6cf33-c777-4855-9885-3ad5236d6143}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="helpers">
+      <UniqueIdentifier>{bac2ac35-0ca0-4ce8-8bca-050096d213e3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
