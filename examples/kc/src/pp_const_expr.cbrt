@@ -1,0 +1,273 @@
+/* Copyright 2023-2025 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
+#include <stdint.h>
+#endif
+
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
+#include <assert.h>
+#endif
+
+#ifndef C_COMPILER_H_INCLUDED
+#define C_COMPILER_H_INCLUDED
+#include "c_compiler.h"
+#endif
+
+#ifndef SYMTAB_H_INCLUDED
+#define SYMTAB_H_INCLUDED
+#include "symtab.h"
+#endif
+
+#ifndef PP_TOKENS_H_INCLUDED
+#define PP_TOKENS_H_INCLUDED
+#include "pp_tokens.h"
+#endif
+
+#ifndef EXPR_H_INCLUDED
+#define EXPR_H_INCLUDED
+#include "expr.h"
+#endif
+
+#ifndef TYPES_H_INCLUDED
+#define TYPES_H_INCLUDES
+#include "types.h"
+#endif
+
+%grammar%
+
+%prefix ppce_
+
+%params struct c_compiler *cc, struct pptk **pp_current_tk, struct pptk *input_chain, int is_final, int64_t *presult, int *pis_unsigned
+
+%on_next_token \
+  do {                                               \
+    (*pp_current_tk) = (*pp_current_tk)->next_;      \
+    if ((*pp_current_tk) != input_chain) {           \
+      sym = g_pptk_to_ppce_[(*pp_current_tk)->tok_]; \
+    }                                                \
+    else {                                           \
+      if (is_final) {                                \
+        sym = PPCE_INPUT_END;                        \
+      }                                              \
+      else {                                         \
+        return _PPCE_FEED_ME;                        \
+      }                                              \
+    }                                                \
+  } while (sym == PPCE_WS);
+
+%token QUESTION_MARK COLON BAR_BAR AMPERSAND_AMPERSAND BAR CARET AMPERSAND BANG_EQUALS EQUALS_EQUALS GT_EQUALS LT_EQUALS GT LT GT_GT LT_LT MINUS PLUS PERCENT SLASH ASTERISK DEFINED PAR_OPEN IDENT PAR_CLOSE BANG TILDE MINUS_MINUS PLUS_PLUS CHAR_LIT INTEGER_LIT WS OTHER
+%token_type struct pptk *
+%constructor $$ = NULL;
+%token_action $$ = *pp_current_tk;
+
+%%
+struct ppce_value {
+  int is_unsigned_:1; 
+  union { 
+    uint64_t u_; 
+    int64_t i_;
+  } v_;
+};
+%%
+
+%nt constant-exp cond-exp log-or-exp log-and-exp or-exp xor-exp and-exp equ-exp rel-exp shift-exp add-exp mul-exp cast-exp unary-exp postfix-exp primary-exp
+%type constant-exp cond-exp log-or-exp log-and-exp or-exp xor-exp and-exp equ-exp rel-exp shift-exp add-exp mul-exp cast-exp unary-exp postfix-exp primary-exp: \
+  struct ppce_value
+
+constant-exp: cond-exp { 
+  $$ = $0;
+  *pis_unsigned = !!$0.is_unsigned_;
+  *presult = $0.v_.i_;
+}
+
+cond-exp: log-or-exp QUESTION_MARK constant-exp COLON cond-exp {
+  /* The signed'ness depends on the expression branch selected, that's curious, but it's the way MSVC seems to be doing, so we'll copy its behavior.. */
+  if ($0.v_.u_) {
+    $$ = $2;
+  }
+  else {
+    $$ = $4;
+  }
+}
+cond-exp: log-or-exp { $$ = $0; }
+
+log-or-exp: log-or-exp BAR_BAR log-and-exp { $$.is_unsigned_ = 0; $$.v_.u_ = ($0.v_.u_ || $2.v_.u_);}
+log-or-exp: log-and-exp { $$ = $0; }
+
+log-and-exp: log-and-exp AMPERSAND_AMPERSAND or-exp { $$.is_unsigned_ = 0; $$.v_.u_ = ($0.v_.u_ && $2.v_.u_);}
+log-and-exp: or-exp { $$ = $0; }
+
+or-exp: or-exp BAR xor-exp { $$.is_unsigned_ = $0.is_unsigned_ || $2.is_unsigned_; $$.v_.u_ = $0.v_.u_ | $2.v_.u_; }
+or-exp: xor-exp { $$ = $0; }
+
+xor-exp: xor-exp CARET and-exp { $$.is_unsigned_ = $0.is_unsigned_ || $2.is_unsigned_; $$.v_.u_ = $0.v_.u_ ^ $2.v_.u_; }
+xor-exp: and-exp { $$ = $0; }
+
+and-exp: and-exp AMPERSAND equ-exp { $$.is_unsigned_ = $0.is_unsigned_ || $2.is_unsigned_; $$.v_.u_ = $0.v_.u_ & $2.v_.u_; }
+and-exp: equ-exp { $$ = $0; }
+
+equ-exp: equ-exp BANG_EQUALS rel-exp   { $$.is_unsigned_ = 0; $$.v_.u_ = ($0.v_.u_ != $2.v_.u_);}
+equ-exp: equ-exp EQUALS_EQUALS rel-exp { $$.is_unsigned_ = 0; $$.v_.u_ = ($0.v_.u_ == $2.v_.u_);}
+equ-exp: rel-exp { $$ = $0; }
+
+rel-exp: rel-exp GT_EQUALS shift-exp {
+  $$.is_unsigned_ = 0;
+  if ($0.is_unsigned_ || $2.is_unsigned_) {
+    $$.v_.i_ = $0.v_.u_ >= $2.v_.u_;
+  }
+  else {
+    $$.v_.i_ = $0.v_.i_ >= $2.v_.i_;
+  }
+}
+rel-exp: rel-exp LT_EQUALS shift-exp {
+  $$.is_unsigned_ = 0;
+  if ($0.is_unsigned_ || $2.is_unsigned_) {
+    $$.v_.i_ = $0.v_.u_ <= $2.v_.u_;
+  }
+  else {
+    $$.v_.i_ = $0.v_.i_ <= $2.v_.i_;
+  }
+}
+rel-exp: rel-exp GT shift-exp {
+  $$.is_unsigned_ = 0;
+  if ($0.is_unsigned_ || $2.is_unsigned_) {
+    $$.v_.i_ = $0.v_.u_ > $2.v_.u_;
+  }
+  else {
+    $$.v_.i_ = $0.v_.i_ > $2.v_.i_;
+  }
+}
+rel-exp: rel-exp LT shift-exp {
+  $$.is_unsigned_ = 0;
+  if ($0.is_unsigned_ || $2.is_unsigned_) {
+    $$.v_.i_ = $0.v_.u_ < $2.v_.u_;
+  }
+  else {
+    $$.v_.i_ = $0.v_.i_ < $2.v_.i_;
+  }
+}
+rel-exp: shift-exp { $$ = $0; }
+
+shift-exp: shift-exp GT_GT add-exp { $$.is_unsigned_ = $0.is_unsigned_; $$.v_.u_ = $0.v_.u_ >> $2.v_.u_; }
+shift-exp: shift-exp LT_LT add-exp { $$.is_unsigned_ = $0.is_unsigned_; $$.v_.u_ = $0.v_.u_ << $2.v_.u_; }
+shift-exp: add-exp { $$ = $0; }
+
+add-exp: add-exp MINUS mul-exp { $$.is_unsigned_ = $0.is_unsigned_ || $2.is_unsigned_; $$.v_.u_ = $0.v_.u_ - $2.v_.u_; }
+add-exp: add-exp PLUS mul-exp { $$.is_unsigned_ = $0.is_unsigned_ || $2.is_unsigned_; $$.v_.u_ = $0.v_.u_ + $2.v_.u_; }
+add-exp: mul-exp { $$ = $0; }
+
+mul-exp: mul-exp PERCENT cast-exp {
+  int divzero = 0;
+  if ($0.is_unsigned_ || $2.is_unsigned_) {
+    $$.is_unsigned_ = 1;
+    if ($2.v_.u_) {
+      $$.v_.u_ = $0.v_.u_ % $2.v_.u_;
+    }
+    divzero = !$2.v_.u_;
+  }
+  else {
+    $$.is_unsigned_ = 0;
+    if ($2.v_.i_) {
+      $$.v_.i_ = $0.v_.i_ % $2.v_.i_;
+    }
+    divzero = !$2.v_.i_;
+  }
+  if (divzero) {
+    cc_printf(cc, "Error during preprocessor constant expression evaluation: division by zero\n");
+    $$.v_.u_ = 0;
+  }
+}
+mul-exp: mul-exp SLASH cast-exp {
+  int divzero = 0;
+  if ($0.is_unsigned_ || $2.is_unsigned_) {
+    $$.is_unsigned_ = 1;
+    if ($2.v_.u_) {
+      $$.v_.u_ = $0.v_.u_ / $2.v_.u_;
+    }
+    divzero = !$2.v_.u_;
+  }
+  else {
+    $$.is_unsigned_ = 0;
+    if ($2.v_.i_) {
+      $$.v_.i_ = $0.v_.i_ / $2.v_.i_;
+    }
+    divzero = !$2.v_.i_;
+  }
+  if (divzero) {
+    cc_printf(cc, "Error during preprocessor constant expression evaluation: division by zero\n");
+    $$.v_.u_ = 0;
+  }
+}
+mul-exp: mul-exp ASTERISK cast-exp { $$.is_unsigned_ = $0.is_unsigned_ || $2.is_unsigned_; $$.v_.u_ = $0.v_.u_ * $2.v_.u_; }
+mul-exp: cast-exp { $$ = $0; }
+
+cast-exp: unary-exp { $$ = $0; }
+
+/* XXX: defined operator... */
+unary-exp: DEFINED PAR_OPEN IDENT PAR_CLOSE;
+unary-exp: DEFINED IDENT;
+
+unary-exp: BANG cast-exp { $$ = $1; $$.v_.u_ = !$$.v_.u_; }
+unary-exp: TILDE cast-exp { $$ = $1; $$.v_.u_ = ~$$.v_.u_; }
+unary-exp: MINUS cast-exp { $$ = $1; $$.v_.i_ = -$$.v_.i_; }
+unary-exp: PLUS cast-exp { $$ = $1; }
+unary-exp: postfix-exp { $$ = $0; }
+
+postfix-exp: primary-exp { $$ = $0; }
+
+primary-exp: PAR_OPEN constant-exp PAR_CLOSE { $$ = $1; }
+
+%%
+static int ppce_int_const_expr_to_value(struct c_compiler *cc, struct ppce_value *v, struct expr *x) {
+  struct type_node *tn = expr_type(cc, x);
+  if (!tn) {
+    cc_printf(cc, "Error during preprocessor constant expression evaluation: unable to determine integer literal type\n");
+    return -1;
+  }
+  if (type_kind_is_signed(&cc->tb_, tn->kind_)) {
+    v->is_unsigned_ = 0;
+    v->v_.i_ = x->v_.i64_;
+  }
+  else {
+    v->is_unsigned_ = 1;
+    v->v_.u_ = x->v_.u64_;
+  }
+  return 0;
+}
+%%
+
+primary-exp: CHAR_LIT { 
+  if (ppce_int_const_expr_to_value(cc, &$$, $0->v_.expr_)) {
+    /* XXX: handle failure.. */
+  } 
+}
+primary-exp: INTEGER_LIT {
+  if (ppce_int_const_expr_to_value(cc, &$$, $0->v_.expr_)) {
+    /* XXX: handle failure.. */
+  }
+}
+primary-exp: IDENT {
+  $$.is_unsigned_ = 0;
+  $$.v_.i_ = 0;
+}
+

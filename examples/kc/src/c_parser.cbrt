@@ -1,0 +1,2889 @@
+/* Copyright 2023-2025 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef STDIO_H_INCLUDED
+#define STDIO_H_INCLUDED
+#include <stdio.h>
+#endif
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
+#include <stdint.h>
+#endif
+
+#ifndef ERRNO_H_INCLUDED
+#define ERRNO_H_INCLUDED
+#include <errno.h>
+#endif
+
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
+#include <assert.h>
+#endif
+
+#ifndef STMT_H_INCLUDED
+#define STMT_H_INCLUDED 
+#include "stmt.h"
+#endif
+
+#ifndef PARTIAL_TYPE_SPECIFIERS_H_INCLUDED
+#define PARTIAL_TYPE_SPECIFIERS_H_INCLUDED
+#include "partial_type_specifiers.h"
+#endif
+
+#ifndef EXPR_H_INCLUDED
+#define EXPR_H_INCLUDED
+#include "expr.h"
+#endif
+
+#ifndef TYPES_H_INCLUDED
+#define TYPES_H_INCLUDED
+#include "types.h"
+#endif
+
+#ifndef NAME_SPACE_H_INCLUDED
+#define NAME_SPACE_H_INCLUDED
+#include "name_space.h"
+#endif
+
+#ifndef DATA_SECTION_H_INCLUDED
+#define DATA_SECTION_H_INCLUDED
+#include "data_section.h"
+#endif
+
+#ifndef DECL_H_INCLUDED
+#define DECL_H_INCLUDED
+#include "decl.h"
+#endif
+
+#ifndef FUNC_DEF_H_INCLUDED
+#define FUNC_DEF_H_INCLUDED
+#include "func_def.h"
+#endif
+
+#ifndef TEMPL_PARSER_H_INCLUDED
+#define TEMPL_PARSER_H_INCLUDED
+#include "templ_parser.h"
+#endif
+
+#ifndef INVOKE_X64_H_INCLUDED
+#define INVOKE_X64_H_INCLUDED
+#include "invoke_x64.h"
+#endif
+
+#ifndef SWITCH_H_INCLUDED
+#define SWITCH_H_INCLUDED
+#include "switch.h"
+#endif
+
+#ifndef SCAN_HELPERS_H_INCLUDED
+#define SCAN_HELPERS_H_INCLUDED
+#include "scan_helpers.h"
+#endif
+
+#ifndef PP_TOKENS_H_INCLUDED
+#define PP_TOKENS_H_INCLUDED
+#include "pp_tokens.h"
+#endif
+
+#ifndef C_COMPILER_H_INCLUDED
+#define C_COMPILER_H_INCLUDED
+#include "c_compiler.h"
+#endif
+
+#ifndef PP_TOKENIZER_H_INCLUDED
+#define PP_TOKENIZER_H_INCLUDED
+#include "pp_tokenizer.h" /* NOTE: Generated from pptokenizer.cbrt */
+#endif
+
+#ifndef PP_LINE_DIRECTIVES_H_INCLUDED
+#define PP_LINE_DIRECTIVES_H_INCLUDED
+#include "pp_line_directives.h"
+#endif
+
+#ifndef PP_MACRO_EXPANDER_H_INCLUDED
+#define PP_MACRO_EXPANDER_H_INCLUDED
+#include "pp_macro_expander.h"
+#endif
+
+#ifndef HELPERS_H_INCLUDED
+#define HELPERS_H_INCLUDED
+#include "helpers.h"
+#endif
+
+/* Declare for David M Gay's dtoa.c -- we seek to use that one and not the Visual studio one. */
+double strtod_david_m_gay(const char *s00, char **se);
+
+%prefix cp_
+
+%params struct c_compiler *cc, struct pptk *input_chain
+
+%token BANG TILDE PERCENT PERCENT_EQUALS AMPERSAND AMPERSAND_AMPERSAND AMPERSAND_EQUALS PAR_OPEN PAR_CLOSE 
+%token ASTERISK ASTERISK_EQUALS PLUS PLUS_PLUS PLUS_EQUALS COMMA MINUS MINUS_MINUS MINUS_EQUALS
+%token DOT DOT_DOT_DOT SLASH SLASH_EQUALS COLON SEMICOLON LT LT_LT LT_LT_EQUALS LT_EQUALS
+%token EQUALS EQUALS_EQUALS BANG_EQUALS GT GT_EQUALS GT_GT GT_GT_EQUALS
+%token ARROW SQBRACE_OPEN SQBRACE_CLOSE CARET CARET_EQUALS CUBRACE_OPEN CUBRACE_CLOSE
+%token BAR BAR_EQUALS BAR_BAR QUESTION_MARK
+%token AUTO BREAK CASE CHAR CONST CONTINUE DEFAULT DO DOUBLE ELSE ENUM EXTERN FLOAT FOR GOTO IF INLINE INT LONG
+%token REGISTER RESTRICT RETURN SHORT SIGNED SIZEOF STATIC STRUCT SWITCH TYPEDEF UNION UNSIGNED VOID VOLATILE
+%token WHILE
+%token BOOL COMPLEX IMAGINARY
+%token INTEGER_LIT FLOAT_LIT STRING_LIT CHAR_LIT IDENT WHITESPACE
+%token TEMPLATE_LIT
+%token OTHER
+
+%common_type struct situs
+%constructor situs_init(&$$);
+%destructor situs_cleanup(&$$);
+%token_action if (input_chain) { \
+  if (situs_clone(&$, &input_chain->situs_)) { \
+    cc_no_memory(cc); \
+    return -1; \
+  } \
+}
+
+/* An IDENT can resolve to a TYPEDEF_NAME inside the scanner if a TYPEDEF_NAME is
+ * accepted by the parser and the identifier looks up as a typedef inside the
+ * symbol tables. */
+%token TYPEDEF_NAME
+%type TYPEDEF_NAME: struct type_node *
+%token_action $$ = input_chain->v_.type_;
+
+/* For IDENT, take out the char* and have the parser stack own the memory.
+ * TEMPLATE_LIT functions analogously to IDENT*/
+%type IDENT TEMPLATE_LIT: char *
+%constructor $$ = NULL;
+%destructor if ($$) free($$);
+%token_action $$ = input_chain->text_; input_chain->text_ = NULL;
+
+%type TEMPLATE_LIT: struct { size_t len_; char *text_; }
+%constructor $$.len_ = 0; $$.text_ = NULL;
+%destructor if ($$.text_) free($$.text_);
+%token_action $$.text_ = input_chain->text_; \
+              input_chain->text_ = NULL; \
+              $$.len_ = input_chain->text_len_;
+
+%grammar%
+
+%nt grammar exec_unit templ-unit stmt exp optional_exp
+%nt primary-exp postfix-exp arg-exp-list assignment-exp unary-exp cast-exp mul-exp add-exp shift-exp rel-exp
+%nt equ-exp and-exp xor-exp or-exp log-and-exp log-or-exp cond-exp constant-exp
+%nt labeled-stmt compound-stmt expr-stmt selection-stmt iter-stmt jump-stmt templ-stmt
+%nt block-item-list block-item string-lit-seq
+%nt type-name
+%nt function-definition function-definition-prolog declaration-list external-declaration
+
+%type INTEGER_LIT FLOAT_LIT CHAR_LIT \
+      exp optional_exp primary-exp postfix-exp arg-exp-list assignment-exp unary-exp cast-exp mul-exp add-exp shift-exp rel-exp \
+      equ-exp and-exp xor-exp or-exp log-and-exp log-or-exp cond-exp constant-exp : struct expr *
+%constructor $$ = NULL;
+%destructor if ($$) expr_free($$);
+%token_action $$ = input_chain->v_.expr_; if ($$) $$->refs_++;
+
+%type STRING_LIT string-lit-seq: struct { int wide_:1; void *data_; size_t len_; }
+%constructor $$.wide_ = 0; $$.data_ = NULL; $$.len_ = 0;
+%destructor if ($$.data_) free($$.data_);
+%token_action $$.data_ = input_chain->v_.string_.data_; \
+              input_chain->v_.string_.data_ = NULL; \
+              $$.len_ = input_chain->v_.string_.length_; \
+              $$.wide_ = input_chain->v_.string_.wide_;
+
+%token SCAN_MODE STMT_MODE EXPR_MODE EXTRN_MODE REPL_MODE TEMPL_MODE
+
+grammar: SCAN_MODE exec-unit;
+grammar: TEMPL_MODE templ-unit;
+grammar: STMT_MODE block-item {
+  if ($1) {
+    int r;
+    r = stmt_prepare(cc, $1);
+    if (r) {
+      return r;
+    }
+    r = stmt_exec(cc, $1, NULL, NULL, NULL);
+    if (r) {
+      /* Note that we do not fail wholly, for the caller would assume we need to exit.
+       * Instead, issue the error diagnostic and keep going */
+      cc_error_loc(cc, &$1->location_, "failed to execute statement\n");
+    }
+  }
+}
+grammar: EXPR_MODE exp;
+grammar: EXTRN_MODE external-declaration;
+grammar: REPL_MODE external-declaration;
+grammar: REPL_MODE stmt {
+  if ($1) {
+    int r;
+    r = decl_resolve_all_global_decl_relocs(cc);
+    if (r) {
+      return r;
+    }
+
+    r = stmt_prepare(cc, $1);
+    if (r) {
+      return r;
+    }
+    r = stmt_exec(cc, $1, NULL, NULL, NULL);
+    if (r) {
+      /* Note that we do not fail wholly, for the caller would assume we need to exit.
+       * Instead, issue the error diagnostic and keep going */
+      cc_error_loc(cc, &$1->location_, "failed to execute statement\n");
+    }
+  }
+}
+grammar: REPL_MODE; /* empty line is valid for REPL_MODE (e.g. a #define preprocessor line would cause this) */
+
+$: {
+  if ($len) {
+    size_t n;
+    size_t len = $len;
+    for (n = 0; n < len; ++n) {
+      if (situs_concat(&$, &${n})) {
+        cc_no_memory(cc);
+        return -1;
+      }
+    }
+  }
+}
+
+primary-exp: IDENT {
+  struct sym *s = ns_find_ordinary_ident(cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_, $0);
+  if (!s || ((struct decl *)s)->is_hidden_global_) {
+    cc_error_loc(cc, &${ 0 }, "unknown identifier \"%s\"\n", $0);
+  }
+  else {
+    struct decl *d = (struct decl *)s;
+    /* follow the forward. If there is one, this is an "extern" local variable. 
+     * see d->is_hidden_global_ comments for better understanding.. */
+    if (d->global_forward_) d = d->global_forward_; 
+    struct expr *x;
+    if (d->is_external_ || d->is_internal_) {
+      if (d->is_tentative_definition_) {
+        /* Process tentative definition: make it a final definition. */
+        if (decl_realize_global(cc, d, &cc->ds_)) {
+          cc_fatal_loc(cc, &${ 0 }, "failed to realize tentative definition of \"%s\"\n", $0);
+          return -1;
+        }
+        d->is_tentative_definition_ = 0;
+        d->is_definition_ = 1;
+      }
+      if (d->is_definition_) {
+        if (!d->dsp_) {
+          cc_fatal_loc(cc, &${ 0 }, "internal error: no storage allocated for defined external value.\n");
+          return -1;
+        }
+        x = expr_alloc(ET_ADDRESS_G);
+        if (x) {
+          x->dsp_ = d->dsp_;
+        }
+      }
+      else {
+        /* Late binding external.. */
+        x = expr_alloc(ET_ADDRESS_E);
+      }
+    }
+    else if (d->dsp_) {
+      /* Global variable. Should really have been caught by the other cases (is_external_ or is_internal_) ... */
+      x = expr_alloc(ET_ADDRESS_G);
+      if (x) {
+        x->dsp_ = d->dsp_;
+      }
+    }
+    else if (d->is_param_) {
+      x = expr_alloc(ET_ADDRESS_P);
+    }
+    else if (d->is_enum_) {
+      x = expr_alloc(ET_C_INT);
+      if (x) {
+        x->v_.i64_ = d->enum_value_;
+        $$ = x;
+      }
+    }
+    else if (d->is_local_) {
+      x = expr_alloc(ET_ADDRESS_L);
+    }
+    else {
+      cc_fatal_loc(cc, &${ 0 }, "internal error: unknown storage category for identifier \"%s\"\n", $0);
+      return -1;
+    }
+    if (!x) {
+      cc_no_memory(cc);
+      return -1;
+    }
+    x->decl_ = d;
+
+    if (!$$) {
+      /* Check for double-indirection if the value is passed by pointer */
+      if (d->is_passed_by_pointer_) {
+        struct expr *pbp = expr_alloc(ET_INDIRECTION_PTR);
+        if (!pbp) {
+          expr_free(x);
+          cc_no_memory(cc);
+          return -1;
+        }
+        pbp->children_[0] = x;
+        x = pbp;
+      }
+      x->decl_ = d;
+      $$ = expr_alloc(ET_INDIRECTION_PTR);
+      if (!$$) {
+        expr_free(x);
+        cc_no_memory(cc);
+        return -1;
+      }
+      else {
+        $$->children_[0] = x;
+      }
+    }
+  }
+}
+primary-exp: INTEGER_LIT {
+  $$ = $0; $0 = NULL;
+}
+primary-exp: FLOAT_LIT {
+  $$ = $0; $0 = NULL;
+}
+
+string-lit-seq: STRING_LIT {
+  $$ = $0; $0.data_ = NULL;
+}
+
+string-lit-seq: string-lit-seq STRING_LIT {
+  /* Concatenate the adjacent character string literals
+   * This is translation phase 6. (C99 6.4.5 paragraph 4) ... */
+  $$.wide_ = ($0.wide_ || $1.wide_);
+  size_t charsize = $$.wide_ ? sizeof(uint16_t) : sizeof(uint8_t);
+  size_t len = $0.len_ + $1.len_ + 1 /* null terminator */;
+  void *data = malloc(len * charsize);
+  if (!data) {
+    cc_no_memory(cc);
+    return -1;
+  }
+  size_t second_at = 0;
+  if ($$.wide_ && !$0.wide_) {
+    second_at = convert_utf8_to_utf16(len * charsize, data, (const char *)$0.data_, $0.len_);
+  }
+  else {
+    memcpy(data, $0.data_, $0.len_ * charsize);
+    second_at = $0.len_;
+  }
+  if ($$.wide_ && !$1.wide_) {
+    size_t second_end;
+    second_end = convert_utf8_to_utf16(len * charsize, ((uint16_t *)data) + second_at, (const char *)$1.data_, $1.len_);
+    ((uint16_t *)data)[second_at + second_end] = 0;
+    $$.len_ = second_at + second_end;
+  }
+  else {
+    memcpy((uint8_t *)data + second_at * charsize, $1.data_, $1.len_ * charsize);
+    /* set null terminator in charsize agnostic way */
+    memset((uint8_t *)data + (second_at + $1.len_) * charsize, 0, charsize);
+    $$.len_ = second_at + $1.len_;
+  }
+  $$.data_ = data;
+  
+}
+
+primary-exp: string-lit-seq {
+  /* ... And this is translation phase 7 (C99 6.4.5 paragraph 5) */
+  size_t charsize = $0.wide_ ? sizeof(uint16_t) : sizeof(uint8_t);
+  size_t bytesize_excl_terminator = $0.len_ * charsize;
+  size_t bytesize_incl_terminator = bytesize_excl_terminator + charsize;
+  struct ds_portion *dsp = ds_alloc_portion(&cc->ds_);
+  if (!dsp) {
+    cc_no_memory(cc);
+    return -1;
+  }
+  char *p = NULL;
+  if (ds_reserve(dsp, bytesize_incl_terminator, &p)) {
+    cc_no_memory(cc);
+    return -1;
+  }
+  memcpy(p, $0.data_, bytesize_excl_terminator);
+  /* set null terminator in charsize agnostic way */
+  memset(p + bytesize_excl_terminator, 0, charsize);
+  struct expr *x = expr_alloc($0.wide_ ? ET_C_STRING_LIT : ET_C_WIDE_STRING_LIT);
+  if (!x) {
+    cc_no_memory(cc);
+    return -1;
+  }
+  x->dsp_ = dsp;
+
+  /* String lit is an array, not a pointer to an array... Note that almost all
+   * expression operators will decay this to a "char *" pointer. */
+  $$ = expr_alloc(ET_INDIRECTION_PTR);
+  if (!$$) {
+    expr_free(x);
+    cc_no_memory(cc);
+    return -1;
+  }
+  $$->children_[0] = x;
+}
+
+primary-exp: CHAR_LIT {
+  $$ = $0; $0 = NULL;
+}
+primary-exp: PAR_OPEN exp PAR_CLOSE {
+  $$ = $1; $1 = NULL;
+}
+
+postfix-exp: primary-exp {
+  $$ = $0; $0 = NULL;
+}
+
+postfix-exp: postfix-exp SQBRACE_OPEN exp SQBRACE_CLOSE {
+  int r = expr_array_index(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+postfix-exp: postfix-exp PAR_OPEN arg-exp-list PAR_CLOSE {
+  int r = expr_function_call(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+postfix-exp: postfix-exp PAR_OPEN PAR_CLOSE {
+  int r = expr_function_call(cc, &$$, &${0}, &$0, &${1}, &${1}, NULL);
+  if (r) {
+    return r;
+  }
+}
+postfix-exp: postfix-exp DOT IDENT {
+  int r = expr_lvalue_member_access(cc, &$$, &${0}, &$0, &${1}, &${2}, $2);
+  if (r) {
+    return r;
+  }
+}
+postfix-exp: postfix-exp ARROW IDENT {
+  int r = expr_ptr_member_access(cc, &$$, &${0}, &$0, &${1}, &${2}, $2, "->");
+  if (r) {
+    return r;
+  }
+}
+
+postfix-exp: postfix-exp PLUS_PLUS {
+  int r = expr_post_inc(cc, &$$, &${1}, &${0}, &$0);
+  if (r) {
+    return r;
+  }
+}
+postfix-exp: postfix-exp MINUS_MINUS {
+  int r = expr_post_dec(cc, &$$, &${1}, &${0}, &$0);
+  if (r) {
+    return r;
+  }
+}
+
+/* XXX: handle postfix-exp of compound-literals */
+postfix-exp: PAR_OPEN type-name PAR_CLOSE CUBRACE_OPEN initializer-list CUBRACE_CLOSE {
+  cc_fatal_loc(cc, &${ 0 }, "compound literals not supported yet.\n");
+}
+
+postfix-exp: PAR_OPEN type-name PAR_CLOSE CUBRACE_OPEN initializer-list COMMA CUBRACE_CLOSE {
+  cc_fatal_loc(cc, &${ 0 }, "compound literals not supported yet.\n");
+}
+
+arg-exp-list: assignment-exp {
+  $$ = $0; $0 = NULL;
+}
+arg-exp-list: arg-exp-list COMMA assignment-exp {
+  $$ = expr_alloc(ET_FUNCTION_ARG_LIST);
+  if (!$$) {
+    cc_no_memory(cc);
+    return -1;
+  }
+
+  $$->children_[0] = $0;
+  $$->children_[1] = $2;
+  $0 = $2 = NULL;
+}
+
+unary-exp: postfix-exp {
+  $$ = $0; $0 = NULL;
+}
+unary-exp: PLUS_PLUS unary-exp {
+  int r = expr_pre_inc(cc, &$$, &${0}, &${1}, &$1);
+  if (r) {
+    return r;
+  }
+}
+
+unary-exp: MINUS_MINUS unary-exp {
+  int r = expr_pre_dec(cc, &$$, &${0}, &${1}, &$1);
+  if (r) {
+    return r;
+  }
+}
+
+unary-exp: AMPERSAND cast-exp {
+  int r = expr_address_of(cc, &$$, &${0}, &${1}, &$1);
+  if (r) {
+    return r;
+  }
+}
+unary-exp: ASTERISK cast-exp {
+  int r = expr_indirection(cc, &$$, &${0}, &${1}, &$1);
+  if (r) {
+    return r;
+  }
+}
+unary-exp: PLUS cast-exp {
+  int r = expr_unary_plus(cc, &$$, &${0}, &${1}, &$1);
+  if (r) {
+    return r;
+  }
+}
+unary-exp: MINUS cast-exp {
+  int r = expr_unary_minus(cc, &$$, &${0}, &${1}, &$1);
+  if (r) {
+    return r;
+  }
+}
+unary-exp: TILDE cast-exp {
+  int r = expr_bitwise_complement(cc, &$$, &${0}, &${1}, &$1);
+  if (r) {
+    return r;
+  }
+}
+unary-exp: BANG cast-exp {
+  int r = expr_logical_not(cc, &$$, &${0}, &${1}, &$1);
+  if (r) {
+    return r;
+  }
+}
+
+unary-exp: SIZEOF unary-exp {
+  struct type_node *et = expr_type(cc, $1);
+  if ($1 && !et) {
+    cc_error_loc(cc, &${ 1 }, "cannot determine type\n");
+  }
+  else if (et) {
+    $$ = type_node_size_expr(cc, et);
+  }
+}
+
+unary-exp: SIZEOF PAR_OPEN type-name PAR_CLOSE {
+  if ($2) {
+    $$ = type_node_size_expr(cc, $2);
+    if (!$$) {
+      cc_error_loc(cc, &${ 2 }, "cannot size type\n");
+    }
+  }
+}
+
+cast-exp: unary-exp {
+  $$ = $0; $0 = NULL;
+}
+cast-exp: PAR_OPEN type-name PAR_CLOSE cast-exp {
+  int r = expr_cast(cc, &$$, &${1}, $1, &${3}, &$3);
+  if (r) {
+    return r;
+  }
+}
+
+mul-exp: cast-exp {
+  $$ = $0; $0 = NULL;
+}
+
+mul-exp: mul-exp ASTERISK cast-exp {
+  int r = expr_mul(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+mul-exp: mul-exp SLASH cast-exp {
+  int r = expr_div(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+mul-exp: mul-exp PERCENT cast-exp {
+  int r = expr_rem(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+add-exp: mul-exp {
+  $$ = $0; $0 = NULL;
+}
+
+add-exp: add-exp PLUS mul-exp {
+  int r = expr_add(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+add-exp: add-exp MINUS mul-exp {
+  int r = expr_sub(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+shift-exp: add-exp {
+  $$ = $0; $0 = NULL;
+}
+
+shift-exp: shift-exp LT_LT add-exp {
+  int r = expr_shift_left(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+shift-exp: shift-exp GT_GT add-exp {
+  int r = expr_shift_right(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+rel-exp: shift-exp {
+  $$ = $0; $0 = NULL;
+}
+
+rel-exp: rel-exp LT shift-exp {
+  int r = expr_less_than(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+rel-exp: rel-exp GT shift-exp {
+  int r = expr_greater_than(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+rel-exp: rel-exp LT_EQUALS shift-exp {
+  int r = expr_less_than_or_equal(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+rel-exp: rel-exp GT_EQUALS shift-exp {
+  int r = expr_greater_than_or_equal(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+equ-exp: rel-exp {
+  $$ = $0; $0 = NULL;
+}
+
+equ-exp: equ-exp EQUALS_EQUALS rel-exp {
+  int r = expr_equality(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+equ-exp: equ-exp BANG_EQUALS rel-exp {
+  int r = expr_inequality(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+
+and-exp: equ-exp {
+  $$ = $0; $0 = NULL;
+}
+
+and-exp: and-exp AMPERSAND equ-exp {
+  int r = expr_bitwise_and(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+xor-exp: and-exp {
+  $$ = $0; $0 = NULL;
+}
+
+xor-exp: xor-exp CARET and-exp {
+  int r = expr_bitwise_xor(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+or-exp: xor-exp {
+  $$ = $0; $0 = NULL;
+}
+
+or-exp: or-exp BAR xor-exp {
+  int r = expr_bitwise_or(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+log-and-exp: or-exp {
+  $$ = $0; $0 = NULL;
+}
+
+log-and-exp: log-and-exp AMPERSAND_AMPERSAND or-exp {
+  int r = expr_logical_and(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+log-or-exp: log-and-exp {
+  $$ = $0; $0 = NULL;
+}
+
+log-or-exp: log-or-exp BAR_BAR log-and-exp {
+  int r = expr_logical_or(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+
+cond-exp: log-or-exp {
+  $$ = $0; $0 = NULL;
+}
+
+cond-exp: log-or-exp QUESTION_MARK exp COLON cond-exp {
+  int r = expr_condition(cc, &$$, &${0}, &$0, &${2}, &$2, &${4}, &$4);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: cond-exp {
+  $$ = $0; $0 = NULL;
+}
+
+assignment-exp: unary-exp EQUALS assignment-exp {
+  int r = expr_assign(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp ASTERISK_EQUALS assignment-exp {
+  int r = expr_assign_mul(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp SLASH_EQUALS assignment-exp {
+  int r = expr_assign_div(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp PERCENT_EQUALS assignment-exp {
+  int r = expr_assign_rem(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp PLUS_EQUALS assignment-exp {
+  int r = expr_assign_add(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp MINUS_EQUALS assignment-exp {
+  int r = expr_assign_sub(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp LT_LT_EQUALS assignment-exp {
+  int r = expr_assign_shift_left(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp GT_GT_EQUALS assignment-exp {
+  int r = expr_assign_shift_right(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp AMPERSAND_EQUALS assignment-exp {
+  int r = expr_assign_bitwise_and(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp CARET_EQUALS assignment-exp {
+  int r = expr_assign_bitwise_xor(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+assignment-exp: unary-exp BAR_EQUALS assignment-exp {
+  int r = expr_assign_bitwise_or(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+
+exp: assignment-exp {
+  $$ = $0; $0 = NULL;
+}
+
+exp: exp COMMA assignment-exp {
+  int r = expr_sequence(cc, &$$, &${0}, &$0, &${1}, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+}
+
+constant-exp: cond-exp {
+  if ($0) {
+    if (expr_is_constant($0)) {
+      $$ = $0; $0 = NULL;
+    }
+    else {
+      cc_error_loc(cc, &${ 0 }, "Constant expression expected\n");
+    }
+  }
+  else {
+    /* cond-exp is NULL, let previous error bubble up */
+  }
+}
+
+optional_exp: ;
+optional_exp: exp {
+  $$ = $0; $0 = NULL;
+}
+
+
+
+/* Statements */
+
+$: {
+  if ($len) {
+    size_t n;
+    size_t len = $len;
+    for (n = 0; n < len; ++n) {
+      if (situs_concat(&$, &${ n })) {
+        cc_no_memory(cc);
+        return -1;
+      }
+    }
+  }
+}
+
+
+%type stmt labeled-stmt compound-stmt expr-stmt selection-stmt iter-stmt jump-stmt templ-stmt block-item-list block-item: struct stmt *
+%constructor $$ = NULL;
+%destructor stmt_free($$);
+
+%%
+
+#define STMT_MOVE(dst, src) dst = src; src = NULL;
+#define STMT_MOVE_LABEL(dst, src) if (dst->label_) { free(dst->label_); dst->label_ = NULL; } dst->label_ = strdup(src); if (!dst->label_) { cc_no_memory(cc); return _CP_NO_MEMORY; }
+#define STMT_SET_CHILD0(dst, child) dst->child0_ = child; stmt_set_parent(child, dst); child = NULL;
+#define STMT_SET_CHILD1(dst, child) dst->child1_ = child; stmt_set_parent(child, dst); child = NULL;
+
+%%
+
+// compound-block-context non-terminal is used to build a block context before it is entered and
+// parsed and to store this block in cc->ctx_.block_; consequently the namespace for any statement in 
+// a compound-statement is already available when we parse, say, an expression of that statement. 
+// This is used both to perform lookups and to be able to initialize the block before we enter it
+// (e.g. to add parameter declarations to a function body prior to parsing that body.)
+// The type is a pointer to the context. Normally this would be available in %param cc->ctx_, but 
+// during cleanup, %params are unavailable to us. Consequently, we can perform cleanup even
+// from locations where we don't have access to the cc->ctx_ context (in the stack_cleanup and
+// stack_reset functions.)
+%nt compound-block-context
+%type compound-block-context: struct c_compiler *
+%constructor $$ = cc;
+%destructor if ($$) $$->ctx_.block_ = $$->ctx_.block_->parent_block_;
+
+compound-block-context: {
+  struct situs sit;
+  situs_init(&sit);
+  struct stmt *block = stmt_alloc(cc, ST_BLOCK, &sit);
+  if (!block) {
+    cc_no_memory(cc);
+    return -1;
+  }
+  if (cc->ctx_.block_) {
+    block->ns_->parent_ = cc->ctx_.block_->ns_;
+  }
+  else {
+    block->ns_->parent_ = &cc->global_ns_;
+  }
+  block->parent_block_ = cc->ctx_.block_;
+  cc->ctx_.block_ = block;
+}
+
+stmt: labeled-stmt   { STMT_MOVE($$, $0); }
+stmt: compound-block-context compound-stmt  { STMT_MOVE($$, $1); }
+stmt: expr-stmt      { STMT_MOVE($$, $0); }
+stmt: selection-stmt { STMT_MOVE($$, $0); }
+stmt: iter-stmt      { STMT_MOVE($$, $0); }
+stmt: jump-stmt      { STMT_MOVE($$, $0); }
+stmt: templ-stmt     { STMT_MOVE($$, $0); }
+
+labeled-stmt: IDENT COLON stmt {
+  if (cc->ctx_.current_func_) {
+    $$ = stmt_alloc(cc, ST_LABEL, &${ 0 });
+    if (!$$) return _CP_NO_MEMORY;
+    STMT_SET_CHILD0($$, $2);
+    STMT_MOVE_LABEL($$, $0);
+    situs_swap(&$$->label_range_, &${ 0 });
+
+    int is_new_label = 0;
+    struct ns_label_sym *ls = (struct ns_label_sym *)st_find_or_insert(&cc->ctx_.current_func_->body_->ns_->stmt_labels_, $$->label_, &is_new_label, sizeof(struct ns_label_sym));
+    if (!ls) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    if (!is_new_label) {
+      cc_error_loc(cc, &${ 0 }, "Label \"%s\" already declared (see line %d)\n", $$->label_, situs_line(&ls->labeled_stmt_->label_range_));
+    }
+    else {
+      ls->labeled_stmt_ = $$;
+    }
+  }
+  else {
+    cc_error_loc(cc, &${ 0 }, "Cannot declare label \"%s\" outside function scope\n", $0);
+  }
+}
+
+labeled-stmt: CASE constant-exp COLON stmt {
+  $$ = stmt_alloc(cc, ST_CASE, &${0});
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  STMT_SET_CHILD0($$, $3);
+  $$->expr0_ = $1; $1 = NULL;
+  struct stmt *sw = cc->ctx_.current_switch_parent_;
+  if (!sw) {
+    cc_error_loc(cc, &${ 0 }, "case statement outside switch\n");
+  }
+  else {
+    $$->parent_switch_ = sw;
+    /* Cast the case value to the type of the switch expression */
+    if (!sw->expr0_) {
+      /* Trouble on the original switch statement, ignore this at case statements */
+    }
+    else if ($$->expr0_) {
+      struct type_node *switch_tn = expr_type(cc, sw->expr0_);
+      if (!switch_tn) {
+        cc_no_memory(cc);
+        return _CP_NO_MEMORY;
+      }
+      struct type_node *expr_tn = expr_type(cc, $$->expr0_);
+      if (!type_node_is_integer_type(expr_tn)) {
+        cc_error_loc(cc, &${ 1 }, "Integer value expected\n");
+      }
+      else {
+        struct expr *converted = expr_convert_type(cc, switch_tn, $$->expr0_);
+        if (!converted) {
+          cc_error_loc(cc, &${ 1 }, "Failed to convert case expression to switch expression type\n");
+        }
+        else {
+          $$->expr0_ = converted;
+        }
+      }
+
+      int r;
+      struct expr_temp result;
+      expr_prepare($$->expr0_);
+      r = expr_constant_evaluation(cc, &result, $$->expr0_);
+      if (r) {
+        cc_error_loc(cc, &${ 1 }, "Failed to evaluate expression\n");
+        return r;
+      }
+
+      struct switch_case *sc = switch_alloc_case(&sw->cases_, $$, result.v_.u64_);
+      if (!sc) {
+        cc_no_memory(cc);
+        return _CP_NO_MEMORY;
+      }
+      if (sc->case_stmt_ != $$) {
+        cc_error_loc(cc, &${ 1 }, "Case value already used, see line %d\n", situs_line(&sc->case_stmt_->location_));
+      }
+    }
+  }
+}
+
+labeled-stmt: DEFAULT COLON stmt {
+  $$ = stmt_alloc(cc, ST_DEFAULT, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+  STMT_SET_CHILD0($$, $2);
+  if (!cc->ctx_.current_switch_parent_) {
+    cc_error_loc(cc, &${ 0 }, "default statement outside switch\n");
+  }
+  else {
+    $$->parent_switch_ = cc->ctx_.current_switch_parent_;
+
+    struct switch_case *sc = switch_alloc_default(&cc->ctx_.current_switch_parent_->cases_, $$);
+    if (!sc) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    if (sc->case_stmt_ != $$) {
+      cc_error_loc(cc, &${ 0 }, "Default already used, see line %d\n", situs_line(&sc->case_stmt_->location_));
+    }
+  }
+}
+
+compound-stmt: CUBRACE_OPEN block-item-list CUBRACE_CLOSE { STMT_MOVE($$, $1); }
+compound-stmt: CUBRACE_OPEN                 CUBRACE_CLOSE {
+  $$ = stmt_alloc(cc, ST_NOP, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+}
+
+block-item-list: block-item {
+  $$ = cc->ctx_.block_;
+  if ($0) {
+    STMT_SET_CHILD0($$, $0);
+  }
+}
+
+block-item-list: block-item-list block-item {
+  STMT_MOVE($$, $0);
+  if ($1) {
+    if ($$->child0_) {
+      $1->next_ = $$->child0_;
+      $1->prev_ = $$->child0_->prev_;
+      $1->next_->prev_ = $1;
+      $1->prev_->next_ = $1;
+    }
+    else {
+      $1->next_ = $1->prev_ = $1;
+      $$->child0_ = $1;
+    }
+    stmt_set_parent($1, $$);
+    $1 = NULL;
+  }
+}
+
+%%
+int cp_init_declarations_as_expr(struct c_compiler *cc, struct decl *d_list, struct situs *d_loc, struct expr **pp_expr) {
+  struct decl *d = d_list;
+  *pp_expr = NULL;
+  if (d) {
+    do {
+      d = d->chain_;
+
+      /* In rare circumstances, we might initialize a global with a runtime expression rather than
+       * a constant expression. This occurs when we run in REPL or templating mode, and the initializer
+       * is for a "semi local" variable, that is to say, a variable defined inside a block statement
+       * for code running at the file level. In this case, we'd like to execute the initializer every
+       * time we pass by the definition, but have the variable itself allocated as a global.
+       */
+      struct decl *dit = d;
+      if (dit->global_forward_) dit = dit->global_forward_;
+
+      struct expr *x;
+      /* Note that initializer is always on the forwarder (if any) - not the global. */
+      if (dit && dit->is_internal_ && !dit->dsp_) {
+        if (decl_realize_global(cc, dit, &cc->ds_)) {
+          cc_no_memory(cc);
+          return -1;
+        }
+      }
+
+      if (dit && d->init_) {
+        if (dit->is_external_) {
+          x = expr_alloc(ET_ADDRESS_E);
+        }
+        else if (dit->is_internal_) {
+          x = expr_alloc(ET_ADDRESS_G);
+          if (!dit->dsp_) {
+            cc_error_loc(cc, d_loc, "Internal error: internal at global scope should have allocated data section portion\n");
+            return -1;
+          }
+          x->dsp_ = dit->dsp_;
+        }
+        else if (dit->is_param_) {
+          x = expr_alloc(ET_ADDRESS_P);
+        }
+        else if (dit->is_local_) {
+          /* By process of elimination, d must be a local */
+          x = expr_alloc(ET_ADDRESS_L);
+        }
+        else {
+          cc_error_loc(cc, d_loc, "Internal error: Unknown storage class for declaration\n");
+          return -1;
+        }
+
+        if (x) {
+          x->decl_ = dit;
+          struct expr *ini_expr = NULL;
+          int r = decl_initializer_as_expr(cc, x, &ini_expr, d->init_);
+          expr_free(x);
+          if (r) {
+            expr_free(*pp_expr);
+            *pp_expr = NULL;
+            return r;
+          }
+          if (!*pp_expr) {
+            *pp_expr = ini_expr;
+          }
+          else {
+            /* Build ET_SEQ chain of previous init expressions */
+            x = expr_alloc(ET_SEQ);
+            if (!x) {
+              cc_no_memory(cc);
+              expr_free(*pp_expr);
+              *pp_expr = NULL;
+              return -1;
+            }
+            x->children_[0] = *pp_expr;
+            x->children_[1] = ini_expr;
+            *pp_expr = x;
+          }
+        }
+        else {
+          cc_no_memory(cc);
+          return -1;
+        }
+      }
+    } while (d != d_list);
+  }
+  return 0;
+}
+%%
+
+block-item: declaration {
+  struct expr *ini_expr = NULL;
+  struct expr *x = NULL;
+  struct decl *d = $0;
+  int r = cp_init_declarations_as_expr(cc, d, &${0}, &ini_expr);
+  if (r) {
+    return _CP_NO_MEMORY;
+  }
+  if (!ini_expr) {
+    /* No initializers */
+    $$ = NULL;
+  }
+  else {
+    $$ = stmt_alloc(cc, ST_EXPR, &${0});
+    if (!$$) {
+      cc_no_memory(cc);
+      expr_free(ini_expr);
+      return _CP_NO_MEMORY;
+    }
+    $$->expr0_ = ini_expr;
+  }
+}
+
+block-item: stmt { STMT_MOVE($$, $0); }
+
+expr-stmt:exp SEMICOLON {
+  /* Make sure points decay otherwise we may end up with an expression we can't
+   * execute (e.g. the expression `"hello";` is of array type, we cannot hold array
+   * values; only pointers to arrays.) */
+  if (!expr_pointer_decay(cc, &$0)) {
+    $$ = stmt_alloc(cc, ST_EXPR, &${0});
+    if (!$$) return _CP_NO_MEMORY;
+    $$->expr0_ = $0;
+    $0 = NULL;
+  }
+}
+
+expr-stmt:    SEMICOLON {
+  $$ = stmt_alloc(cc, ST_NOP, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+}
+
+selection-stmt: IF PAR_OPEN exp PAR_CLOSE stmt {
+  $$ = stmt_alloc(cc, ST_IF, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+  int r = expr_cond_is_true(cc, &$$->expr0_, &${ 2 }, &$2);
+  if (r) {
+    return r;
+  }
+  STMT_SET_CHILD0($$, $4);
+}
+
+selection-stmt: IF PAR_OPEN exp PAR_CLOSE stmt ELSE stmt {
+  $$ = stmt_alloc(cc, ST_IF_ELSE, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+  int r = expr_cond_is_true(cc, &$$->expr0_, &${ 2 }, &$2);
+  if (r) {
+    return r;
+  }
+  STMT_SET_CHILD0($$, $4);
+  STMT_SET_CHILD1($$, $6);
+}
+
+%prefer selection-stmt: IF PAR_OPEN exp PAR_CLOSE stmt * ELSE stmt
+%over selection-stmt: IF PAR_OPEN exp PAR_CLOSE stmt *
+
+
+%nt switch-prolog
+%type switch-prolog: struct { struct stmt *s_; struct c_compiler *cc_; }
+%constructor $$.s_ = NULL; $$.cc_ = cc;
+%destructor if ($$.cc_ && $$.s_) { \
+              $$.cc_->ctx_.current_switch_parent_ = $$.s_->parent_switch_; \
+              $$.cc_->ctx_.current_break_parent_ = $$.s_->break_parent_; } \
+            stmt_free($$.s_);
+
+switch-prolog: SWITCH PAR_OPEN exp PAR_CLOSE {
+  if ($2) {
+    struct type_node *tn = expr_type(cc, $2);
+    if (!tn) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    if (!type_node_is_integer_type(tn)) {
+      cc_error_loc(cc, &${ 2 }, "Expression of integer type expected\n");
+    }
+    else {
+      struct stmt *sw_stmt = stmt_alloc(cc, ST_SWITCH, &${0});
+      if (!sw_stmt) return _CP_NO_MEMORY;
+
+      sw_stmt->parent_switch_ = cc->ctx_.current_switch_parent_;
+      sw_stmt->break_parent_ = cc->ctx_.current_break_parent_;
+      cc->ctx_.current_switch_parent_ = sw_stmt;
+      cc->ctx_.current_break_parent_ = sw_stmt;
+      $$.s_ = sw_stmt;
+
+      sw_stmt->expr0_ = $2; $2 = NULL;
+      int r = expr_integer_promotions(cc, &sw_stmt->expr0_);
+      if (r) {
+        /* Integer type that won't pass integer promotions should not happen */
+        cc_error_loc(cc, &${ 2 }, "Internal error: integer type not passing integer promotions\n");
+        return r;
+      }
+    }
+  }
+}
+
+selection-stmt: switch-prolog stmt {
+  $$ = $0.s_; $0.s_ = NULL;
+  STMT_SET_CHILD0($$, $1); 
+}
+
+%nt for-prolog while-prolog do-while-prolog
+/* cc_->ctx_ is used to fix cc_->ctx_.current_break_parent_ and cc->ctx_.current_continue_parent_ -- we cannot otherwise access cx from the cleanup function.
+ * s_ is used to free the statement for premature cleanup. */
+%type for-prolog while-prolog do-while-prolog: struct { \
+  struct c_compiler *cc_; \
+  struct stmt *s_; \
+}
+%constructor \
+  $$.cc_ = cc; \
+  $$.s_ = NULL;
+%destructor \
+  if ($$.cc_) { \
+    if ($$.cc_->ctx_.current_break_parent_) { \
+      $$.cc_->ctx_.current_break_parent_ = $$.cc_->ctx_.current_break_parent_->break_parent_; \
+    } \
+    if ($$.cc_->ctx_.current_continue_parent_) { \
+      $$.cc_->ctx_.current_continue_parent_ = $$.cc_->ctx_.current_continue_parent_->continue_parent_; \
+    } \
+  } \
+  stmt_free($$.s_);
+
+do-while-prolog: DO {
+  $$.s_ = stmt_alloc(cc, ST_DO_WHILE, &${0});
+  if (!$$.s_) return _CP_NO_MEMORY;
+  /* Cannot fill out the expression because it follows the body */
+  $$.s_->break_parent_ = cc->ctx_.current_break_parent_;
+  cc->ctx_.current_break_parent_ = $$.s_;
+  $$.s_->continue_parent_ = cc->ctx_.current_continue_parent_;
+  cc->ctx_.current_continue_parent_ = $$.s_;
+}
+
+while-prolog: WHILE PAR_OPEN exp PAR_CLOSE {
+  $$.s_ = stmt_alloc(cc, ST_WHILE, &${0});
+  if (!$$.s_) return _CP_NO_MEMORY;
+  int r = expr_cond_is_true(cc, &$$.s_->expr0_, &${2}, &$2);
+  if (r) {
+    return r;
+  }
+  $$.s_->break_parent_ = cc->ctx_.current_break_parent_;
+  cc->ctx_.current_break_parent_ = $$.s_;
+  $$.s_->continue_parent_ = cc->ctx_.current_continue_parent_;
+  cc->ctx_.current_continue_parent_ = $$.s_;
+}
+
+for-prolog: FOR PAR_OPEN optional_exp SEMICOLON optional_exp SEMICOLON optional_exp PAR_CLOSE {
+  struct stmt *for_s;
+  for_s = stmt_alloc(cc, ST_FOR, &${0});
+  if (!for_s) return _CP_NO_MEMORY;
+  for_s->expr0_ = $2;
+  $2 = NULL;
+  if ($4) {
+    int r = expr_cond_is_true(cc, &for_s->expr1_, &${ 4 }, &$4);
+    if (r) {
+      stmt_free(for_s);
+      return r;
+    }
+  }
+  for_s->expr2_ = $6;
+  $6 = NULL;
+  for_s->break_parent_ = cc->ctx_.current_break_parent_;
+  cc->ctx_.current_break_parent_ = for_s;
+  for_s->continue_parent_ = cc->ctx_.current_continue_parent_;
+  cc->ctx_.current_continue_parent_ = for_s;
+  $$.s_ = for_s; 
+}
+
+/* (note that a declaration always ends in a semicolon) */
+for-prolog: FOR PAR_OPEN declaration optional_exp SEMICOLON optional_exp PAR_CLOSE {
+  struct stmt *for_s;
+  for_s = stmt_alloc(cc, ST_FOR, &${0});
+  if (!for_s) return _CP_NO_MEMORY;
+  if ($2 && $2->init_) {
+    int r = cp_init_declarations_as_expr(cc, $2, &${2}, &for_s->expr0_);
+    if (r) {
+      return _CP_NO_MEMORY;
+    }
+  }
+  if ($3) {
+    int r = expr_cond_is_true(cc, &for_s->expr1_, &${ 3 }, &$3);
+    if (r) {
+      stmt_free(for_s);
+      return r;
+    }
+  }
+  for_s->expr2_ = $5;
+  $5 = NULL;
+  for_s->break_parent_ = cc->ctx_.current_break_parent_;
+  cc->ctx_.current_break_parent_ = for_s;
+  for_s->continue_parent_ = cc->ctx_.current_continue_parent_;
+  cc->ctx_.current_continue_parent_ = for_s;
+  $$.s_ = for_s;
+}
+
+iter-stmt: while-prolog stmt {
+  $$ = $0.s_;
+  $0.s_ = NULL;
+  STMT_SET_CHILD0($$, $1);
+}
+
+iter-stmt: do-while-prolog stmt WHILE PAR_OPEN exp PAR_CLOSE SEMICOLON {
+  $$ = $0.s_;
+  $0.s_ = NULL;
+  int r = expr_cond_is_true(cc, &$$->expr0_, &${ 4 }, &$4);
+  if (r) {
+    return r;
+  }
+  STMT_SET_CHILD0($$, $1);
+}
+
+iter-stmt: compound-block-context for-prolog stmt {
+  if ($1.s_) {
+    /* block for scope contains the for-stmt, return it as the sibling in place of the for. 
+     * (The block is needed to capture declarations in the first for (del ;;) argument so
+     * they don't leake into the parent scope but are available in the for body.)
+     * Set parent of for-prolog to be the block.
+     * Set parent of stmt to be the for-prolog. */
+    $$ = cc->ctx_.block_;
+    STMT_SET_CHILD0($1.s_, $2);
+    STMT_SET_CHILD0($$, $1.s_);
+  }
+}
+
+jump-stmt: GOTO IDENT SEMICOLON {
+  $$ = stmt_alloc(cc, ST_GOTO, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+  STMT_MOVE_LABEL($$, $1);
+  situs_swap(&$$->label_range_, &${ 1 });
+}
+
+jump-stmt: CONTINUE SEMICOLON {
+  $$ = stmt_alloc(cc, ST_CONTINUE, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+  if (!cc->ctx_.current_continue_parent_) {
+    cc_error_loc(cc, &${ 0 }, "Continue not inside a loop body\n");
+  }
+  else {
+    $$->continue_parent_ = cc->ctx_.current_continue_parent_;
+  }
+}
+
+jump-stmt: BREAK SEMICOLON {
+  $$ = stmt_alloc(cc, ST_BREAK, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+  if (!cc->ctx_.current_break_parent_) {
+    cc_error_loc(cc, &${ 0 }, "Break not inside a loop or switch body\n");
+  }
+  else {
+    $$->break_parent_ = cc->ctx_.current_break_parent_;
+  }
+}
+
+jump-stmt: RETURN exp SEMICOLON {
+  /* Check all pointers before traversing them. */
+  if (!cc->ctx_.current_func_) {
+    /* Trying to return value without function */
+    cc_error_loc(cc, &${ 0 }, "cannot return outside a function\n");
+  }
+  else if (!cc->ctx_.current_func_->d_.type_) {
+    /* Declaration for the current function has no type, ignore silently and assume we're passing through an error. */
+  }
+  else if (!cc->ctx_.current_func_->d_.type_->derived_from_) {
+    /* Current function type has no returnvalue type - this is incorrect, there should be at least a tk_void, but ignore silently
+     * and assume it is a symptom of a problem reported elsewhere. */
+  }
+  else if (type_node_unqualified(cc->ctx_.current_func_->d_.type_->derived_from_)->kind_ == tk_void) {
+    cc_error_loc(cc, &${ 0 }, "cannot return a value from a void function\n");
+  }
+  else {
+    $$ = stmt_alloc(cc, ST_RETURN, &${0});
+    if (!$$) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+
+    struct expr *return_value_assignment_expr = NULL;
+    struct expr *return_value_ptr_expr = expr_alloc(ET_ADDRESS_R);
+    struct expr *return_value_expr = expr_alloc(ET_INDIRECTION_PTR);
+    if (!return_value_expr || !return_value_ptr_expr) {
+      stmt_free($$);
+      $$ = NULL;
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    return_value_ptr_expr->type_arg_ = cc->ctx_.current_func_->d_.type_->derived_from_;
+    return_value_expr->children_[0] = return_value_ptr_expr;
+  
+    int r = expr_assign(cc, &return_value_assignment_expr, &${0}, &return_value_expr, &${0}, &${1}, &$1);
+    expr_free(return_value_expr);
+    if (r) {
+      stmt_free($$);
+      $$ = NULL;
+      expr_free(return_value_assignment_expr);
+      return r;
+    }
+    $$->expr0_ = return_value_assignment_expr;
+  }
+}
+
+jump-stmt: RETURN SEMICOLON {
+  $$ = stmt_alloc(cc, ST_RETURN, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+  if (!cc->ctx_.current_func_) {
+    /* Trying to return value without function */
+    cc_error_loc(cc, &${ 0 }, "cannot return outside a function\n");
+  }
+  else if (!cc->ctx_.current_func_->d_.type_) {
+    /* Declaration for the current function has no type, ignore silently and assume we're passing through an error. */
+  }
+  else if (!cc->ctx_.current_func_->d_.type_->derived_from_) {
+    /* Current function type has no returnvalue type - this is incorrect, there should be at least a tk_void, but ignore silently
+     * and assume it is a symptom of a problem reported elsewhere. */
+  }
+  else {
+    if (type_node_unqualified(cc->ctx_.current_func_->d_.type_->derived_from_)->kind_ != tk_void) {
+      cc_error_loc(cc, &${ 0 }, "(warning) must return a value from a non-void function\n");
+    }
+    else {
+      $$ = stmt_alloc(cc, ST_RETURN, &${ 0 });
+      if (!$$) {
+        cc_no_memory(cc);
+        return _CP_NO_MEMORY;
+      }
+    }
+  }
+}
+
+templ-stmt: TEMPLATE_LIT {
+  int r = cc->template_handler_(cc, $0.text_, $0.len_, &$$, &${0});
+  if (r) return r;
+}
+
+%nt declaration declaration-specifier declaration-specifiers declaration-specifier-seq init-declarator-list init-declarator storage-class-specifier type-specifier 
+%nt struct-or-union-specifier-prolog struct-or-union-specifier struct-or-union struct-declaration-list struct-declaration specifier-qualifier-list
+%nt struct-declarator-list struct-declarator
+%nt enum-specifier enumerator-list enumerator
+%nt type-qualifier function-specifier declarator direct-declarator pointer type-qualifier-list type-qualifier-list-opt parameter-type-list parameter-list parameter-declaration
+%nt parameter-identifier-list abstract-declarator direct-abstract-declarator 
+%nt initializer initializer-list designation designator-list designator
+
+/* 6.7 Declarations p97 */
+%type declaration: struct decl *
+declaration: declaration-specifiers reenable-typedefname SEMICOLON;
+declaration: declaration-specifiers init-declarator-list reenable-typedefname SEMICOLON {
+  /* $$ is "decl *", the actual declarations have already been made in the init-declarator-list */
+
+  $$ = $1;
+  $1 = NULL;
+}
+ 
+%type declaration-specifiers: \
+  struct { \
+    sc_storage_class_t sc_; \
+    int fs_; /* function specifier (e.g. inline) */ \
+    struct type_node *specifier_type_; \
+  }
+%constructor \
+  $$.sc_ = SC_NONE; \
+  $$.fs_ = 0; \
+  $$.specifier_type_ = NULL;
+
+%type declaration-specifier-seq declaration-specifier type-specifier struct-or-union-specifier enum-specifier \
+      specifier-qualifier-list: \
+  struct { \
+    pts_type_specifier_t pts_; \
+    sc_storage_class_t sc_; \
+    int tq_; /* type qualifier */ \
+    int fs_; \
+    struct type_node *specifier_type_; \
+  }
+%constructor \
+  $$.pts_ = PTS_NONE; \
+  $$.sc_ = SC_NONE; \
+  $$.tq_ = 0; \
+  $$.fs_ = 0; \
+  $$.specifier_type_ = NULL;
+
+
+declaration-specifiers: declaration-specifier-seq {
+  struct type_node *spec = templ_specifier_realize(cc, $0.pts_, $0.specifier_type_, &${0}, $0.tq_);
+  if (!spec) {
+    /* Error was issued by templ_specifier_realize. */
+  }
+  else {
+    $$.sc_ = $0.sc_;
+    $$.fs_ = $0.fs_;
+    $$.specifier_type_ = spec;
+    /* Put it in context so the init-declarator reductions that follow can access it */
+    cc->ctx_.decl_spec_sc_ = $$.sc_;
+    cc->ctx_.decl_spec_fs_ = $$.fs_;
+    cc->ctx_.decl_spec_type_ = $$.specifier_type_;
+  }
+}
+
+declaration-specifier-seq: declaration-specifier {
+  $$ = $0;
+  $0.specifier_type_ = NULL;
+}
+
+declaration-specifier-seq: declaration-specifier-seq declaration-specifier {
+  $$ = $0;
+  $0.specifier_type_ = NULL;
+  if (($$.pts_ != PTS_NONE) || ($1.pts_ != PTS_NONE)) {
+    if ($$.specifier_type_ || $1.specifier_type_) {
+      cc_error_loc(cc, &${ 1 }, "Invalid type combination %s with specifier type\n", ($$.pts_ != PTS_NONE) ? pts_str($$.pts_) : pts_str($1.pts_));
+    }
+    $$.pts_ = pts_combine_type($$.pts_, $1.pts_);
+    if ($$.pts_ == PTS_NONE) {
+      cc_error_loc(cc, &${ 1 }, "Invalid type combination %s and %s\n", pts_str($0.pts_), pts_str($1.pts_));
+    }
+  }
+  if ($$.sc_ != SC_NONE) {
+    if ($1.sc_ != SC_NONE) {
+      if ($$.sc_ != $1.sc_) {
+        cc_error_loc(cc, &${ 1 }, "Only one storage class permitted\n");
+      }
+      else {
+        cc_error_loc(cc, &${ 1 }, "Same storage class already specified\n");
+      }
+    }
+  }
+  else {
+    $$.sc_ = $1.sc_;
+  }
+  
+  if ($$.tq_ & $1.tq_) {
+    cc_error_loc(cc, &${ 1 }, "Same type qualifier already specified\n");
+  }
+  $$.tq_ |= $1.tq_;
+  
+  if ($$.fs_ & $1.fs_) {
+    cc_error_loc(cc, &${ 1 }, "Same function specifier already specified\n");
+  }
+  $$.fs_ |= $1.fs_;
+
+  if ($$.specifier_type_ && $1.specifier_type_) {
+    cc_error_loc(cc, &${ 1 }, "Duplicate specifier type\n");
+  }
+  else if ($1.specifier_type_) {
+    $$.specifier_type_ = $1.specifier_type_;
+    $1.specifier_type_ = NULL;
+  }
+}
+
+%type storage-class-specifier: sc_storage_class_t
+%constructor $$ = SC_NONE;
+declaration-specifier: storage-class-specifier { 
+  $$.sc_ = $0;
+}
+
+storage-class-specifier: TYPEDEF  { $$ = SC_TYPEDEF; }
+storage-class-specifier: EXTERN   { $$ = SC_EXTERN; }
+storage-class-specifier: STATIC   { $$ = SC_STATIC; }
+storage-class-specifier: AUTO     { $$ = SC_AUTO; }
+storage-class-specifier: REGISTER { $$ = SC_REGISTER; }
+
+%type type-qualifier: int
+%constructor $$ = 0;
+declaration-specifier: type-qualifier {
+  $$.tq_ = $0;
+}
+
+type-qualifier: CONST    { $$ = TYPE_QUALIFIER_CONST; }
+type-qualifier: RESTRICT { $$ = TYPE_QUALIFIER_RESTRICT; }
+type-qualifier: VOLATILE { $$ = TYPE_QUALIFIER_VOLATILE; }
+
+%type function-specifier: int
+%constructor $$ = 0;
+declaration-specifier: function-specifier {
+  $$.fs_ = $0;
+}
+
+function-specifier: INLINE { $$ = DECL_FUNCTION_SPECIFIER_INLINE; }
+
+/* type-specifier type is the same as the declaration-specifier */
+declaration-specifier: type-specifier {
+  $$ = $0; 
+  $0.specifier_type_ = NULL;
+}
+
+type-specifier: disable-typedefname VOID { $$.pts_ = PTS_VOID; }
+type-specifier: disable-typedefname CHAR { $$.pts_ = PTS_CHAR; }
+type-specifier: disable-typedefname SHORT { $$.pts_ = PTS_SHORT; }
+type-specifier: disable-typedefname INT { $$.pts_ = PTS_INT; }
+type-specifier: disable-typedefname LONG { $$.pts_ = PTS_LONG; }
+type-specifier: disable-typedefname FLOAT { $$.pts_ = PTS_FLOAT; }
+type-specifier: disable-typedefname DOUBLE { $$.pts_ = PTS_DOUBLE; }
+type-specifier: disable-typedefname SIGNED { $$.pts_ = PTS_SIGNED; }
+type-specifier: disable-typedefname UNSIGNED { $$.pts_ = PTS_UNSIGNED; }
+type-specifier: disable-typedefname BOOL { $$.pts_ = PTS_BOOL; }
+type-specifier: disable-typedefname COMPLEX { $$.pts_ = PTS_COMPLEX; }
+type-specifier: disable-typedefname IMAGINARY { $$.pts_ = PTS_IMAGINARY; }
+type-specifier: disable-typedefname struct-or-union-specifier { $$ = $1; $1.specifier_type_ = NULL; }
+type-specifier: disable-typedefname enum-specifier { $$ = $1; $1.specifier_type_ = NULL; }
+type-specifier: TYPEDEF_NAME { $$.specifier_type_ = $0; }
+
+%nt disable-typedefname reenable-typedefname
+disable-typedefname: {
+  cc->ctx_.is_typedefname_permitted_ = 0;
+}
+reenable-typedefname: {
+  cc->ctx_.is_typedefname_permitted_ = 1;
+}
+
+%type abstract-declarator direct-abstract-declarator: struct templ_declarator_scaffold *
+%constructor $$ = NULL;
+%destructor templ_declarator_scaffold_free_chain($$);
+
+%type declarator direct-declarator: struct {\
+  char *ident_; \
+  struct situs ident_loc_; \
+  struct templ_declarator_scaffold *tds_; \
+}
+%constructor $$.ident_ = NULL; situs_init(&$$.ident_loc_); $$.tds_ = NULL;
+%destructor \
+  if ($$.ident_) { \
+    free($$.ident_); \
+  } \
+  if ($$.tds_) { \
+    templ_declarator_scaffold_free_chain($$.tds_); \
+  } \
+  situs_cleanup(&$$.ident_loc_);
+
+%type pointer: struct templ_declarator_scaffold *
+%constructor $$ = NULL;
+%destructor if ($$) templ_declarator_scaffold_free_chain($$);
+
+%type init-declarator-list init-declarator: struct decl *
+%constructor $$ = NULL;
+
+%type struct-declarator-list struct-declarator: struct templ_declarator_entry *
+%constructor $$ = NULL;
+%destructor templ_de_free_chain($$);
+
+%type struct-declaration struct-declaration-list: struct type_field *
+%constructor $$ = NULL;
+%destructor  type_field_free_chain($$);
+
+%type struct-or-union: enum type_kind
+%constructor $$ = tk_invalid;
+
+%type struct-or-union-specifier-prolog: struct type_node *
+%constructor $$ = NULL;
+
+struct-or-union-specifier-prolog: struct-or-union IDENT {
+  char *id = strdup($1);
+  if (!id) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  struct type_node *tn = type_base_alloc_struct_or_union(&cc->tb_, $0);
+  if (!tn) {
+    cc_no_memory(cc);
+    free(id);
+    return _CP_NO_MEMORY;
+  }
+  else {
+    tn->tag_ = id;
+    $1 = NULL;
+    situs_swap(&tn->tag_loc_, &${ 1 });
+    $$ = tn;
+
+    int is_struct = $0 == tk_structure;
+    int is_new;
+    struct name_space *pns = cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_;
+    struct ns_tagged_type_sym *ntts = (struct ns_tagged_type_sym *)st_find_or_insert(is_struct ? &pns->struct_tags_ : &pns->union_tags_, tn->tag_, &is_new, sizeof(struct ns_tagged_type_sym));
+    if (!is_new) {
+      cc_error_loc(cc, &${ 1 }, "%s tag \"%s\" already declared at line %d\n", is_struct ? "struct" : "union", tn->tag_, situs_line(&ntts->type_->tag_loc_));
+    }
+    else {
+      ntts->type_ = tn;
+    }
+  }
+}
+
+struct-or-union-specifier-prolog: struct-or-union {
+  struct type_node *tn = type_base_alloc_struct_or_union(&cc->tb_, $0);
+  if (!tn) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  situs_swap(&tn->tag_loc_, &${ 0 });
+  $$ = tn;
+}
+
+struct-or-union-specifier : struct-or-union-specifier-prolog CUBRACE_OPEN struct-declaration-list CUBRACE_CLOSE {
+  struct type_node *tn = $0;
+  if (tn) {
+    tn->fields_ = $2;
+    $$.specifier_type_ = tn;
+    $2 = NULL;
+  }
+}
+
+struct-or-union-specifier: struct-or-union IDENT {
+  int is_struct = $0 == tk_structure;
+  struct ns_tagged_type_sym *ntts = (is_struct ? ns_find_struct : ns_find_union)(cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_, $1);
+  if (!ntts) {
+    cc_error_loc(cc, &${ 1 }, "unknown %s tag %s\n", is_struct ? "struct" : "union", $1);
+  }
+  else {
+    $$.specifier_type_ = ntts->type_;
+  }
+}
+
+struct-or-union: STRUCT { $$ = tk_structure; }
+struct-or-union: UNION  { $$ = tk_union; }
+
+struct-declaration-list: struct-declaration {
+  $$ = $0;
+  $0 = NULL;
+}
+struct-declaration-list: struct-declaration-list struct-declaration {
+  $$ = type_field_join($0, $1);
+  $0 = $1 = NULL;
+}
+
+%type type-name: struct type_node *
+type-name: specifier-qualifier-list abstract-declarator {
+  int fatality = 0;
+  $$ = templ_type_node_realize(cc, $0.pts_, $0.specifier_type_, &${0}, $0.tq_, $1, &fatality);
+  if (!$$) {
+    if (fatality) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    /* Keep going, not sure what the error was but templ_realize_type() reported it */
+  }
+}
+type-name: specifier-qualifier-list {
+  int fatality = 0;
+  $$ = templ_type_node_realize(cc, $0.pts_, $0.specifier_type_, &${0}, $0.tq_, NULL, &fatality);
+  if (!$$) {
+    if (fatality) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    /* Keep going, not sure what the error was but templ_realize_type() reported it */
+  }
+}
+
+specifier-qualifier-list: type-specifier specifier-qualifier-list {
+  $$ = $0;
+  $0.specifier_type_ = NULL;
+  if (($$.pts_ != PTS_NONE) || ($1.pts_ != PTS_NONE)) {
+    if ($$.specifier_type_ || $1.specifier_type_) {
+      cc_error_loc(cc, &${ 1 }, "Invalid type combination %s with specifier type\n", ($$.pts_ != PTS_NONE) ? pts_str($$.pts_) : pts_str($1.pts_));
+    }
+    $$.pts_ = pts_combine_type($1.pts_, $$.pts_);
+    if ($$.pts_ == PTS_NONE) {
+      cc_error_loc(cc, &${ 1 }, "Invalid type combination %s and %s\n", pts_str($0.pts_), pts_str($1.pts_));
+    }
+  }
+  
+  if ($$.tq_ & $1.tq_) {
+    cc_error_loc(cc, &${ 1 }, "Same type qualifier already specified\n");
+  }
+  $$.tq_ |= $1.tq_;
+  
+  if ($$.fs_ & $1.fs_) {
+    cc_error_loc(cc, &${ 1 }, "Same function specifier already specified\n");
+  }
+  $$.fs_ |= $1.fs_;
+
+  if ($$.specifier_type_ && $1.specifier_type_) {
+    cc_error_loc(cc, &${ 1 }, "Duplicate specifier type\n");
+  }
+  else if ($1.specifier_type_) {
+    $$.specifier_type_ = $1.specifier_type_;
+    $1.specifier_type_ = NULL;
+  }
+}
+specifier-qualifier-list: type-specifier {
+  $$ = $0;
+  $0.specifier_type_ = NULL;
+}
+specifier-qualifier-list: type-qualifier specifier-qualifier-list {
+  $$ = $1;
+  $1.specifier_type_ = NULL;
+  if ($$.tq_ & $0) {
+    cc_error_loc(cc, &${ 1 }, "Same type qualifier already specified\n");
+  }
+  $$.tq_ |= $1.tq_;
+}
+specifier-qualifier-list: type-qualifier {
+  $$.tq_ = $0;
+}
+
+struct-declaration: specifier-qualifier-list struct-declarator-list reenable-typedefname SEMICOLON {
+  /* $$ is type_field * */
+  struct type_field *fields = NULL;
+  struct templ_declarator_entry *tde = $1;
+  if (tde) {
+    do {
+      tde = tde->chain_;
+      /* Convert to type and identifier */
+      struct type_field *tf;
+      int fatality = 0;
+      tf = templ_type_field_realize(cc, $0.pts_, $0.specifier_type_, &${0}, $0.tq_, tde->tds_, tde->ident_, &tde->ident_loc_, tde->bitfield_size_, &fatality);
+      if (!tf) {
+        type_field_free_chain(fields);
+        if (fatality) {
+          cc_no_memory(cc);
+          return _CP_NO_MEMORY;
+        }
+      }
+      tde->ident_ = NULL; /* type_field now owns this */
+      fields = type_field_join(fields, tf);
+    } while (tde != $1);
+  }
+  $$ = fields;
+  
+  if ($0.sc_) {
+    cc_error_loc(cc, &${ 0 }, "Invalid parameter storage class specifiers\n");
+  }
+  if ($0.fs_) {
+    cc_error_loc(cc, &${ 0 }, "Invalid parameter function specifiers\n");
+  }
+}
+
+struct-declarator-list: struct-declarator {
+  $$ = $0;
+  $0 = NULL;
+}
+struct-declarator-list: struct-declarator-list COMMA struct-declarator {
+  $$ = templ_de_join($0, $2);
+  $0 = $2 = NULL;
+}
+
+struct-declarator: declarator {
+  $$ = templ_de_alloc(NULL, $0.tds_, $0.ident_, &$0.ident_loc_, 0);
+  if (!$$) return _CP_NO_MEMORY;
+  $0.tds_ = NULL;
+  $0.ident_ = NULL;
+}
+struct-declarator: declarator COLON constant-exp {
+  $$ = templ_de_alloc(NULL, $0.tds_, $0.ident_, &$0.ident_loc_, 0 /* XXX: needs constant-exp evaluation for bitfield size! */);
+  if (!$$) return _CP_NO_MEMORY;
+  $0.tds_ = NULL;
+  $0.ident_ = NULL;
+  /* XXX: Deal with constant expression $2 for bitfield size! */
+}
+struct-declarator:            COLON constant-exp {
+  struct situs sit;
+  situs_init(&sit);
+  $$ = templ_de_alloc(NULL, NULL, NULL, &sit, 0 /* XXX: needs constant-exp evaluation for bitfield size! */);
+  if (!$$) return _CP_NO_MEMORY;
+  /* XXX: Deal with constant expression $1 for bitfield size! */
+}
+
+%nt enum-specifier-prolog
+%type enum-specifier-prolog: struct type_node *
+%constructor $$ = NULL;
+
+enum-specifier-prolog : ENUM IDENT {
+  char *id = strdup($1);
+  if (!id) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+
+  struct type_node *tn = type_base_alloc_enum(&cc->tb_);
+  if (!tn) {
+    cc_no_memory(cc);
+    free(id);
+    return _CP_NO_MEMORY;
+  }
+  $$ = tn;
+  tn->tag_ = id;
+  situs_swap(&tn->tag_loc_, &${1});
+  $1 = NULL;
+  int is_new;
+  struct name_space *pns = cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_;
+  struct ns_tagged_type_sym *ntts = (struct ns_tagged_type_sym *)st_find_or_insert(&pns->enum_tags_, tn->tag_, &is_new, sizeof(struct ns_tagged_type_sym));
+  if (!is_new) {
+    cc_error_loc(cc, &${ 1 }, "enum tag \"%s\" already declared at line %d\n", tn->tag_, situs_line(&ntts->type_->tag_loc_));
+  }
+  else {
+    ntts->type_ = tn;
+  }
+}
+
+enum-specifier-prolog : ENUM {
+  struct type_node *tn = type_base_alloc_enum(&cc->tb_);
+  if (!tn) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $$ = tn;
+  situs_swap(&tn->tag_loc_, &${0});
+}
+
+enum-specifier: enum-specifier-prolog CUBRACE_OPEN enumerator-list CUBRACE_CLOSE {
+  if ($0) {
+    $0->enum_constants_ = $2;
+    $2 = NULL;
+    $$.specifier_type_ = $0;
+    $0 = NULL;
+  }
+}
+
+enum-specifier : enum-specifier-prolog CUBRACE_OPEN enumerator-list COMMA CUBRACE_CLOSE{
+  if ($0) {
+    $0->enum_constants_ = $2;
+    $2 = NULL;
+    $$.specifier_type_ = $0;
+    $0 = NULL;
+  }
+}
+
+enum-specifier: ENUM IDENT {
+  struct ns_tagged_type_sym *ntts = ns_find_enum(cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_, $1);
+  if (!ntts) {
+    cc_error_loc(cc, &${ 1 }, "unknown enum tag %s\n", $1);
+  }
+  else {
+    $$.specifier_type_ = ntts->type_;
+  }
+}
+
+%type enumerator-list enumerator: struct type_enum_constant *
+%constructor $$ = NULL;
+%destructor type_enum_constant_free_chain($$);
+
+%%
+int cp_declare_enum_constant(struct c_compiler *cc, struct name_space *ns, struct type_enum_constant *tec) {
+  int already_exists = 0;
+  struct decl *d = decl_alloc(ns, &already_exists, tec->ident_, &tec->ident_loc_, 0, 0, type_base_simple(&cc->tb_, tk_int), NULL);
+  if (!d) {
+    cc_no_memory(cc);
+    return -1;
+  }
+  if (already_exists) {
+    cc_error_loc(cc, &tec->ident_loc_, "identifier \"%s\" already in use\n", tec->ident_);
+  }
+  else {
+    d->is_enum_ = 1;
+    d->enum_value_ = tec->value_;
+  }
+  return 0;
+}
+%%
+
+enumerator-list: enumerator {
+  if ($0 && !$0->value_initialized_) {
+    $0->value_ = 0;
+    $0->value_initialized_ = 1;
+    int r;
+    r = cp_declare_enum_constant(cc, cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_, $0);
+    if (r) return _CP_NO_MEMORY;
+  }
+  $$ = $0; 
+  $0 = NULL; 
+}
+enumerator-list: enumerator-list COMMA enumerator {
+  if ($2 && !$2->value_initialized_) {
+    if ($0) {
+      $2->value_ = $0->value_ + 1;
+      $2->value_initialized_ = 1;
+      int r;
+      r = cp_declare_enum_constant(cc, cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_, $2);
+      if (r) return _CP_NO_MEMORY;
+    }
+  }
+  $$ = type_enum_constant_join($0, $2);
+  $0 = $2 = NULL;
+}
+enumerator: IDENT {
+  $$ = type_enum_constant_alloc($0, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+  $0 = NULL;
+}
+enumerator: IDENT EQUALS constant-exp {
+  $$ = type_enum_constant_alloc($0, &${0});
+  if (!$$) return _CP_NO_MEMORY;
+  $0 = NULL;
+  
+  /* Evaluate constant-exp and store ! */
+  struct type_node *int_type = type_base_simple(&cc->tb_, tk_int);
+  struct expr *as_int = expr_convert_type(cc, int_type, $2);
+  if (!as_int) {
+    cc_error_loc(cc, &${ 2 }, "could not convert to int type\n");
+  }
+  else {
+    $2 = as_int;
+    int r;
+
+    struct expr_temp result;
+    expr_prepare($2);
+    r = expr_constant_evaluation(cc, &result, $2);
+    if (r) {
+      cc_error_loc(cc, &${ 2 }, "failed to evaluate\n");
+    }
+    else {
+      $$->value_ = result.v_.i64_;
+      $$->value_initialized_ = 1;
+      int r;
+      r = cp_declare_enum_constant(cc, cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_, $$);
+      if (r) return _CP_NO_MEMORY;
+    }
+  }
+}
+
+init-declarator-list: init-declarator {
+  $$ = $0;
+  $0 = NULL;
+}
+
+init-declarator-list: init-declarator-list COMMA init-declarator {
+  $$ = decl_join($0, $2);
+  $0 = $2 = NULL;
+}
+
+init-declarator: declarator {
+  struct templ_declarator_entry *tde;
+  tde = templ_de_alloc(NULL, $0.tds_, $0.ident_, &$0.ident_loc_, 0);
+  if (!tde) return _CP_NO_MEMORY;
+  $0.tds_ = NULL;
+  $0.ident_ = NULL;
+
+  int fatality = 0;
+  struct type_node *tn = templ_realize_type(cc, cc->ctx_.decl_spec_type_, tde->tds_, &fatality);
+  if (!tn) {
+    if (fatality) {
+      cc_no_memory(cc);
+      templ_de_free_chain(tde);
+      return _CP_NO_MEMORY;
+    }
+    /* Keep going, not sure what the error was but templ_realize_type() reported it */
+  }
+  else {
+    struct name_space *pns;
+    pns = cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_;
+
+    struct decl *d = decl_create_update(cc, tn, pns, &cc->global_ns_, tde->ident_, &tde->ident_loc_, cc->ctx_.decl_spec_sc_, cc->ctx_.decl_spec_fs_, 0, !cc->ctx_.current_func_);
+
+    $$ = d;
+
+    /* Realize storage */
+    /* XXX: It's not always going to be global now is it?? */
+    /* XXX: Revamp storage realization in face of new decls */
+    if ((d->is_external_ || d->is_internal_) && (d->is_definition_ || d->is_tentative_definition_)) {
+      decl_realize_global(cc, d, &cc->ds_);
+    }
+  }
+  templ_de_free_chain(tde);
+}
+
+init-declarator: declarator EQUALS initializer {
+  struct templ_declarator_entry *tde;
+  tde = templ_de_alloc(NULL, $0.tds_, $0.ident_, &$0.ident_loc_, 0);
+  if (!tde) return _CP_NO_MEMORY;
+  $0.tds_ = NULL;
+  $0.ident_ = NULL;
+
+  int fatality = 0;
+  struct type_node *tn = templ_realize_type(cc, cc->ctx_.decl_spec_type_, tde->tds_, &fatality);
+  if (!tn) {
+    if (fatality) {
+      cc_no_memory(cc);
+      templ_de_free_chain(tde);
+      return _CP_NO_MEMORY;
+    }
+    /* Keep going, not sure what the error was but templ_realize_type() reported it */
+  }
+  else {
+    struct name_space *pns;
+    pns = cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_;
+
+    struct decl *d = decl_create_update(cc, tn, pns, &cc->global_ns_, tde->ident_, &tde->ident_loc_, cc->ctx_.decl_spec_sc_, cc->ctx_.decl_spec_fs_, 1, !cc->ctx_.current_func_);
+
+    $$ = d;
+  }
+  templ_de_free_chain(tde);
+
+  if ($$) {
+    /* Have a declaration, now process the initializer for it */
+    uint64_t top_array_observed_length = 0;
+    struct decl_initializer *di = templ_initializer_realize(cc, $2, tn, &top_array_observed_length);
+    struct type_node *unq_fn = type_node_unqualified(tn);
+    if ((unq_fn->kind_ == tk_array) && (unq_fn->array_size_expr_ == NULL)) {
+      /* Incomplete array type, rework array type to appropriate size */
+      struct type_node *new_array_type = type_base_array_fixed_length(cc, unq_fn->derived_from_, top_array_observed_length);
+      /* Re-apply any qualifiers */
+      if (new_array_type && (tn->kind_ == tk_qualifier)) {
+        new_array_type = type_base_qualifier(&cc->tb_, new_array_type, tn->qualifiers_);
+      }
+      if (!new_array_type) {
+        cc_no_memory(cc);
+        return _CP_NO_MEMORY;
+      }
+      /* Change type of the declaration to the new, defined length, array type */
+      $$->type_ = new_array_type;
+    }
+    $$->init_ = di;
+
+    /* Realize storage */
+    /* XXX: It's not always going to be global now is it?? */
+    /* XXX: Revamp storage realization in face of new decls */
+    if (($$->is_external_ || $$->is_internal_) && ($$->is_definition_ || $$->is_tentative_definition_)) {
+      if (decl_realize_global(cc, $$, &cc->ds_)) {
+        cc_no_memory(cc);
+        return _CP_NO_MEMORY;
+      }
+    }
+  }
+}
+
+%type initializer: struct templ_initializer *
+%constructor $$ = NULL;
+%destructor templ_initializer_free($$);
+
+%type initializer-list: struct templ_initializer_list_node *
+%constructor $$ = NULL;
+%destructor templ_initializer_list_node_free($$);
+
+%type designation designator-list designator: struct templ_initializer_designation *
+%constructor $$ = NULL;
+%destructor templ_initializer_designation_free($$);
+
+initializer: assignment-exp {
+  $$ = templ_initializer_literal($0, &${0});
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $0 = NULL;
+}
+initializer: CUBRACE_OPEN initializer-list CUBRACE_CLOSE {
+  $$ = templ_initializer_compound($1, &${1});
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $1 = NULL;
+}
+initializer: CUBRACE_OPEN initializer-list COMMA CUBRACE_CLOSE {
+  $$ = templ_initializer_compound($1, &${1});
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $1 = NULL;
+}
+
+initializer-list: designation initializer {
+  $$ = templ_initializer_list_node($0, $1);
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $0 = NULL;
+  $1 = NULL;
+}
+initializer-list:             initializer {
+  $$ = templ_initializer_list_node(NULL, $0);
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $0 = NULL;
+}
+initializer-list: initializer-list COMMA designation initializer {
+  struct templ_initializer_list_node *tiln;
+  tiln = templ_initializer_list_node($2, $3);
+  if (!tiln) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $$ = templ_initializer_list_node_join($0, tiln);
+  $0 = NULL;
+  $2 = NULL;
+  $3 = NULL;
+}
+initializer-list: initializer-list COMMA             initializer {
+  struct templ_initializer_list_node *tiln;
+  tiln = templ_initializer_list_node(NULL, $2);
+  if (!tiln) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $$ = templ_initializer_list_node_join($0, tiln);
+  $0 = NULL;
+  $2 = NULL;
+}
+
+designation: designator-list EQUALS {
+  $$ = $0;
+  $0 = NULL;
+}
+
+designator-list: designator {
+  $$ = $0;
+  $0 = NULL;
+}
+designator-list: designator-list designator {
+  $$ = templ_initializer_designation_join($0, $1);
+  $0 = $1 = NULL;
+}
+
+designator: SQBRACE_OPEN constant-exp SQBRACE_CLOSE {
+  $$ = templ_initializer_designation_index($1, &${1});
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $1 = NULL;
+}
+designator: DOT IDENT {
+  $$ = templ_initializer_designation_ident($1, &${1});
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  $1 = NULL;
+}
+
+declarator: pointer direct-declarator {
+  /* int *arr[5] is "an array of 5 pointers" - the super (array) goes in the back, the pointer in front,
+   * this inverts when the type_node is actually constructed. */
+  $$ = $1;
+  $$.tds_ = templ_ds_join($0, $1.tds_);
+  $0 = NULL;
+  $1.tds_ = NULL;
+  $1.ident_ = NULL;
+  situs_init(&$1.ident_loc_);
+}
+
+declarator:         direct-declarator {
+  $$ = $0;
+  $0.tds_ = NULL;
+  $0.ident_ = NULL;
+  situs_init(&$0.ident_loc_);
+}
+
+pointer: ASTERISK {
+  $$ = templ_ds_pointer(NULL);
+  if (!$$) return _CP_NO_MEMORY;
+}
+
+%type type-qualifier-list type-qualifier-list-opt: int
+
+pointer: ASTERISK type-qualifier-list {
+  $$ = templ_ds_qualifier(NULL, $1);
+  if (!$$) return _CP_NO_MEMORY;
+  struct templ_declarator_scaffold *ds = templ_ds_pointer($$);
+  if (!ds) return _CP_NO_MEMORY;
+  $$ = ds;
+}
+
+pointer: ASTERISK pointer {
+  $$ = templ_ds_pointer($1);
+  if (!$$) return _CP_NO_MEMORY;
+  $1 = NULL;
+}
+
+pointer: ASTERISK type-qualifier-list pointer {
+  $$ = templ_ds_qualifier($2, $1);
+  if (!$$) return _CP_NO_MEMORY;
+  struct templ_declarator_scaffold *ds = templ_ds_pointer($$);
+  if (!ds) return _CP_NO_MEMORY;
+  $2 = NULL;
+  $$ = ds;
+}
+
+type-qualifier-list-opt: ;
+type-qualifier-list-opt: type-qualifier-list { $$ = $0; }
+type-qualifier-list: type-qualifier { $$ = $0; }
+type-qualifier-list: type-qualifier-list type-qualifier {
+  if ($0 & $1) {
+    cc_error_loc(cc, &${ 1 }, "Same type qualifier already specified\n");
+  }
+  $$ = $0 | $1;
+}
+
+direct-declarator: IDENT {
+  $$.ident_ = strdup($0);
+  if (!$$.ident_) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  situs_swap(&$$.ident_loc_, &${ 0 });
+  $0 = NULL;
+}
+direct-declarator: PAR_OPEN declarator PAR_CLOSE { 
+  $$ = $1;
+  $1.ident_ = NULL;
+  situs_init(&$1.ident_loc_);
+  $1.tds_ = NULL;
+}
+
+direct-declarator: direct-declarator SQBRACE_OPEN type-qualifier-list-opt                SQBRACE_CLOSE {
+  $$ = $0;
+  $0.ident_ = NULL;
+  situs_init(&$0.ident_loc_);
+  struct templ_declarator_scaffold *tds = $0.tds_, *tdsn;
+  $0.tds_ = NULL;
+  $$.tds_ = NULL;
+  if ($2) {
+    tdsn = templ_ds_qualifier(tds, $2);
+    if (!tdsn) {
+      templ_declarator_scaffold_free_chain(tds);
+      return _CP_NO_MEMORY;
+    }
+    tds = tdsn;
+  }
+  tdsn = templ_ds_array(tds, NULL, 0, 0);
+  if (!tdsn) {
+    templ_declarator_scaffold_free_chain(tds);
+    return _CP_NO_MEMORY;
+  }
+  $$.tds_ = tdsn;
+}
+
+direct-declarator: direct-declarator SQBRACE_OPEN type-qualifier-list-opt assignment-exp SQBRACE_CLOSE {
+  $$ = $0;
+  $0.ident_ = NULL;
+  situs_init(&$0.ident_loc_);
+  struct templ_declarator_scaffold *tds = $0.tds_, *tdsn;
+  $0.tds_ = NULL;
+  $$.tds_ = NULL;
+  if ($2) {
+    tdsn = templ_ds_qualifier(tds, $2);
+    if (!tdsn) {
+      templ_declarator_scaffold_free_chain(tds);
+      return _CP_NO_MEMORY;
+    }
+    tds = tdsn;
+  }
+  tdsn = templ_ds_array(tds, $3, 0, 0);
+  if (!tdsn) {
+    templ_declarator_scaffold_free_chain(tds);
+    return _CP_NO_MEMORY;
+  }
+  $3 = NULL;
+  $$.tds_ = tdsn;
+}
+
+direct-declarator: direct-declarator SQBRACE_OPEN STATIC type-qualifier-list-opt assignment-exp SQBRACE_CLOSE {
+  $$ = $0;
+  $0.ident_ = NULL;
+  situs_init(&$0.ident_loc_);
+  struct templ_declarator_scaffold *tds = $0.tds_, *tdsn;
+  $0.tds_ = NULL;
+  $$.tds_ = NULL;
+  if ($3) {
+    tdsn = templ_ds_qualifier(tds, $3);
+    if (!tdsn) {
+      templ_declarator_scaffold_free_chain(tds);
+      return _CP_NO_MEMORY;
+    }
+    tds = tdsn;
+  }
+  tdsn = templ_ds_array(tds, $4, 1, 0);
+  if (!tdsn) {
+    templ_declarator_scaffold_free_chain(tds);
+    return _CP_NO_MEMORY;
+  }
+  $4 = NULL;
+  $$.tds_ = tdsn;
+}
+
+direct-declarator: direct-declarator SQBRACE_OPEN type-qualifier-list STATIC assignment-exp SQBRACE_CLOSE {
+  $$ = $0;
+  $0.ident_ = NULL;
+  situs_init(&$0.ident_loc_);
+  struct templ_declarator_scaffold *tds = $0.tds_, *tdsn;
+  $0.tds_ = NULL;
+  $$.tds_ = NULL;
+  if ($2) {
+    tdsn = templ_ds_qualifier(tds, $2);
+    if (!tdsn) {
+      templ_declarator_scaffold_free_chain(tds);
+      return _CP_NO_MEMORY;
+    }
+    tds = tdsn;
+  }
+  tdsn = templ_ds_array(tds, $4, 1, 0);
+  if (!tdsn) {
+    templ_declarator_scaffold_free_chain(tds);
+    return _CP_NO_MEMORY;
+  }
+  $4 = NULL;
+  $$.tds_ = tdsn;
+}
+
+direct-declarator: direct-declarator SQBRACE_OPEN type-qualifier-list-opt ASTERISK SQBRACE_CLOSE {
+  $$ = $0;
+  $0.ident_ = NULL;
+  situs_init(&$0.ident_loc_);
+  struct templ_declarator_scaffold *tds = $0.tds_, *tdsn;
+  $0.tds_ = NULL;
+  $$.tds_ = NULL;
+  if ($2) {
+    tdsn = templ_ds_qualifier(tds, $2);
+    if (!tdsn) {
+      templ_declarator_scaffold_free_chain(tds);
+      return _CP_NO_MEMORY;
+    }
+    tds = tdsn;
+  }
+  tdsn = templ_ds_array(tds, NULL, 0, 1);
+  if (!tdsn) {
+    templ_declarator_scaffold_free_chain(tds);
+    return _CP_NO_MEMORY;
+  }
+
+  $$.tds_ = tdsn;
+}
+
+%type parameter-list parameter-type-list parameter-identifier-list parameter-declaration: struct templ_declarator_scaffold_field *
+%constructor $$ = NULL;
+%destructor templ_dsf_free_chain($$);
+
+direct-declarator: direct-declarator PAR_OPEN parameter-type-list PAR_CLOSE {
+  $$ = $0;
+  $0.ident_ = NULL;
+  situs_init(&$0.ident_loc_);
+  $$.tds_ = templ_ds_function($0.tds_, $2, 0);
+  if (!$$.tds_) {
+    return _CP_NO_MEMORY;
+  }
+  $0.tds_ = NULL;
+  $2 = NULL;
+}
+
+direct-declarator: direct-declarator PAR_OPEN parameter-identifier-list PAR_CLOSE {
+  $$ = $0;
+  $0.ident_ = NULL;
+  situs_init(&$0.ident_loc_);
+  $$.tds_ = templ_ds_function($0.tds_, $2, 1);
+  if (!$$.tds_) {
+    return _CP_NO_MEMORY;
+  }
+  $0.tds_ = NULL;
+  $2 = NULL;
+}
+
+direct-declarator: direct-declarator PAR_OPEN PAR_CLOSE {
+  $$ = $0;
+  $0.ident_ = NULL;
+  situs_init(&$0.ident_loc_);
+  $$.tds_ = templ_ds_function($0.tds_, NULL, 0);
+  if (!$$.tds_) {
+    return _CP_NO_MEMORY;
+  }
+  $0.tds_ = NULL;
+}
+
+parameter-type-list: parameter-list {
+  $$ = $0;
+  $0 = NULL;
+}
+parameter-type-list: parameter-list COMMA DOT_DOT_DOT {
+  $$ = templ_dsf_alloc($0, NULL, &${2}, NULL);
+  if (!$$) {
+    return _CP_NO_MEMORY;
+  }
+  $0 = NULL;
+  $$->is_variadic_ = 1;
+}
+
+parameter-list: parameter-declaration {
+  $$ = $0;
+  $0 = NULL;
+}
+parameter-list: parameter-list COMMA parameter-declaration {
+  $$ = templ_dsf_join($0, $2);
+  $0 = NULL;
+  $2 = NULL;
+}
+
+parameter-declaration: declaration-specifier-seq declarator reenable-typedefname  {
+  /* Convert to type and identifier */
+
+  int fatality = 0;
+  $$ = templ_dsf_realize(cc, $0.pts_, $0.specifier_type_, &${0}, $0.tq_, $1.tds_, $1.ident_, &$1.ident_loc_, &fatality);
+  if (!$$) {
+    if (fatality) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+  }
+  $1.ident_ = NULL;
+  if ($0.sc_) {
+    cc_error_loc(cc, &${ 0 }, "Invalid parameter storage class specifiers\n");
+  }
+  if ($0.fs_) {
+    cc_error_loc(cc, &${ 0 }, "Invalid parameter function specifiers\n");
+  }
+}
+parameter-declaration: declaration-specifier-seq abstract-declarator reenable-typedefname  {
+  /* Convert to type */
+  struct situs sit;
+  situs_init(&sit);
+  int fatality = 0;
+  $$ = templ_dsf_realize(cc, $0.pts_, $0.specifier_type_, &${0}, $0.tq_, $1, NULL, &sit, &fatality);
+  if (!$$) {
+    if (fatality) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+  }
+  if ($0.sc_) {
+    cc_error_loc(cc, &${ 0 }, "Invalid parameter storage class specifiers\n");
+  }
+  if ($0.fs_) {
+    cc_error_loc(cc, &${ 0 }, "Invalid parameter function specifiers\n");
+  }
+}
+
+parameter-declaration: declaration-specifier-seq {
+  /* Convert to type */
+  struct situs sit;
+  situs_init(&sit);
+  int fatality = 0;
+  $$ = templ_dsf_realize(cc, $0.pts_, $0.specifier_type_, &${0}, $0.tq_, NULL, NULL, &sit, &fatality);
+  if (!$$) {
+    if (fatality) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+  }
+  if ($0.sc_) {
+    cc_error_loc(cc, &${ 0 }, "Invalid parameter storage class specifiers\n");
+  }
+  if ($0.fs_) {
+    cc_error_loc(cc, &${ 0 }, "Invalid parameter function specifiers\n");
+  }
+}
+
+parameter-identifier-list: IDENT {
+  $$ = templ_dsf_alloc(NULL, $0, &${0}, NULL);
+  if (!$$) {
+    return _CP_NO_MEMORY;
+  }
+  $0 = NULL;
+}
+
+parameter-identifier-list: parameter-identifier-list COMMA IDENT {
+  $$ = templ_dsf_alloc($0, $2, &${2}, NULL);
+  if (!$$) {
+    return _CP_NO_MEMORY;
+  }
+  $2 = NULL;
+  $0 = NULL;
+}
+
+abstract-declarator: pointer {
+  $$ = $0;
+  $0 = NULL;
+}
+
+abstract-declarator: pointer direct-abstract-declarator {
+  $$ = templ_ds_join($0, $1);
+  $0 = NULL;
+  $1 = NULL;
+}
+
+abstract-declarator:         direct-abstract-declarator {
+  $$ = $0;
+  $0 = NULL;
+}
+
+direct-abstract-declarator: PAR_OPEN abstract-declarator PAR_CLOSE {
+  $$ = $1;
+  $1 = NULL;
+}
+
+direct-abstract-declarator: direct-abstract-declarator SQBRACE_OPEN assignment-exp SQBRACE_CLOSE {
+  $$ = templ_ds_array($0, $2, 0, 0);
+  if (!$$) {
+    return _CP_NO_MEMORY;
+  }
+  $0 = NULL;
+  $2 = NULL;
+}
+
+direct-abstract-declarator:                            SQBRACE_OPEN assignment-exp SQBRACE_CLOSE {
+  $$ = templ_ds_array(NULL, $1, 0, 0);
+  if (!$$) {
+    return _CP_NO_MEMORY;
+  }
+  $1 = NULL;
+}
+
+
+direct-abstract-declarator: direct-abstract-declarator SQBRACE_OPEN ASTERISK SQBRACE_CLOSE {
+  $$ = templ_ds_array($0, NULL, 0, 1);
+  if (!$$) {
+    return _CP_NO_MEMORY;
+  }
+  $0 = NULL;
+}
+
+direct-abstract-declarator:                            SQBRACE_OPEN ASTERISK SQBRACE_CLOSE {
+  $$ = templ_ds_array(NULL, NULL, 0, 1);
+  if (!$$) {
+    return _CP_NO_MEMORY;
+  }
+}
+
+direct-abstract-declarator: direct-abstract-declarator PAR_OPEN parameter-type-list PAR_CLOSE {
+  $$ = templ_ds_function($0, $2, 0);
+  if (!$$) {
+    return _CP_NO_MEMORY;
+  }
+  $0 = NULL;
+  $2 = NULL;
+}
+
+direct-abstract-declarator: direct-abstract-declarator PAR_OPEN                     PAR_CLOSE {
+  $$ = templ_ds_function($0, NULL, 0);
+  if (!$$) {
+    return _CP_NO_MEMORY;
+  }
+  $0 = NULL;
+}
+
+%type function-definition: struct func_def *
+%type declaration-list : struct decl *
+
+/* function-definition-prolog uses a very similar technique to compound-block-context, please see comments there */
+%type function-definition-prolog: struct { struct func_def *fd_; struct c_compiler *cc_; }
+%constructor $$.fd_ = NULL; $$.cc_ = cc;
+%destructor if ($$.cc_ && $$.fd_) $$.cc_->ctx_.block_ = $$.cc_->ctx_.block_->parent_block_;
+
+function-definition-prolog: declaration-specifiers declarator reenable-typedefname {
+  struct templ_declarator_entry *tde = templ_de_alloc(NULL, $1.tds_, $1.ident_, &$1.ident_loc_, 0);
+  if (!tde) return _CP_NO_MEMORY;
+  $1.tds_ = NULL;
+  $1.ident_ = NULL;
+
+  /* $$ is decl * */
+  struct type_node *spec = $0.specifier_type_;
+  if (!spec) {
+    /* Keep going, there was an error, but it's already been reported. */
+  }
+  else if ((!tde->tds_) || (tde->tds_->kind_ != TDSK_FUNCTION)) {
+    /* 6.9.1-2 in particular footnote 137 -- it's not that we could not support it, but that it's explicitly ruled out. */
+    cc_error_loc(cc, &${ 1 }, "Function definition declarator must be of function type\n");
+  }
+  else {
+    int fatality = 0;
+    struct type_node *tn = templ_realize_type(cc, spec, tde->tds_, &fatality);
+    if (!tn) {
+      if (fatality) {
+        cc_no_memory(cc);
+        templ_de_free_chain(tde);
+        return _CP_NO_MEMORY;
+      }
+      /* Keep going, not sure what the error was but templ_realize_type() reported it */
+    }
+    else {
+      if (($0.fs_ & DECL_FUNCTION_SPECIFIER_INLINE) && (tn->kind_ != tk_function)) {
+        cc_error_loc(cc, &${ 0 }, "inline specifier on non-function type\n");
+      }
+      else if (tn->kind_ != tk_function) {
+        cc_error_loc(cc, &${ 1 }, "function definition for a non-function type\n");
+      }
+      else {
+        int already_exists = -1;
+        struct func_def *new_fd = func_def_alloc(&cc->global_ns_, &already_exists, tde->ident_, &tde->ident_loc_, $0.sc_, $0.fs_, tn);
+        if (already_exists) {
+          /* XXX: Might be a prototype, in which case the decl should be upgraded to a func_def... */
+          cc_error_loc(cc, &${ 1 }, "Identifier \"%s\" already declared (see line %d in file %s)\n", tde->ident_, situs_line(&new_fd->d_.def_loc_), situs_filename(&new_fd->d_.def_loc_));
+        }
+        else {
+          new_fd->d_.external_ = invoke_alloc_function_entry(cc, new_fd);
+          if (!new_fd->d_.external_) {
+            cc_no_memory(cc);
+            return -1;
+          }
+          new_fd->d_.is_external_ = 1;
+
+          struct situs sit;
+          situs_init(&sit);
+          struct stmt *block = stmt_alloc(cc, ST_BLOCK, &sit);
+          if (!block) {
+            cc_no_memory(cc);
+            return -1;
+          }
+          /* Setting fd_ also causes the block to be unwound to its parent_block_
+           * (see %destructor for function-definition-prolog) */
+          $$.fd_ = new_fd;
+
+          block->parent_block_ = cc->ctx_.block_;
+          if (cc->ctx_.block_) {
+            block->ns_->parent_ = cc->ctx_.block_->ns_;
+          }
+          else {
+            block->ns_->parent_ = &cc->global_ns_;
+          }
+          cc->ctx_.block_ = block;
+          new_fd->body_ = block;
+          cc->ctx_.current_func_ = new_fd;
+
+          /* Pre-declare the parameters into the block */
+          struct type_param *param_chain = new_fd->d_.type_->params_;
+          struct type_param *param = param_chain;
+          uint64_t param_offset = 0;
+          if (param) {
+            do {
+              param = param->chain_;
+
+              uint64_t param_size = type_node_size(&cc->tb_, param->type_);
+              int is_passed_by_pointer = 0;
+              if ((param_size > sizeof(uint64_t)) ||
+                  (type_node_is_struct_or_union(param->type_)) ||
+                  (type_node_is_array(param->type_))) {
+                /* Convert to pointer to parameter rather than parameter itself */
+                param_size = sizeof(uint64_t);
+                is_passed_by_pointer = 1;
+              }
+
+              if (param->ident_) {
+                int already_exists;
+                struct decl *new_d = decl_alloc(cc->ctx_.block_->ns_, &already_exists, param->ident_, &param->ident_loc_, SC_NONE, 0 /* no function specifier (no "inline") */, param->type_, NULL /* XXX: initializer */);
+                if (!new_d) {
+                  cc_no_memory(cc);
+                  return -1;
+                }
+
+                if (already_exists) {
+                  cc_error_loc(cc, &param->ident_loc_, "Identifier \"%s\" already declared (see line %d in file %s)\n", tde->ident_, situs_line(&new_d->def_loc_), situs_filename(&new_d->def_loc_));
+                }
+                else {
+                  new_d->is_param_ = 1;
+
+                  new_d->param_offset_ = param_offset;
+                  new_d->is_passed_by_pointer_ = is_passed_by_pointer;
+                }
+              }
+              param_offset += sizeof(uint64_t);
+
+            } while (param != param_chain);
+          }
+        }
+      }
+    }
+  }
+}
+
+function-definition-prolog: declaration-specifiers declarator declaration-list ;
+
+function-definition: function-definition-prolog compound-stmt {
+  int r;
+  $$ = $0.fd_;
+  if ($0.fd_ && $0.fd_->body_) {
+    r = stmt_prepare(cc, $0.fd_->body_);
+    if (r) return r;
+  }
+  cc->ctx_.current_func_ = NULL;
+  $1 = NULL; /* function-definition-prolog allocated and owns this compound-stmt (ST_BLOCK) so ensure we don't clean it up */
+  r = func_def_realize_locals(cc, $$);
+  if (r) {
+    cc_error_loc(cc, &${ 1 }, "Internal error, failed to realize locals\n");
+    return _CP_INTERNAL_ERROR;
+  }
+}
+
+declaration-list: declaration {
+  $$ = $0;
+  $0 = NULL;
+}
+declaration-list: declaration-list declaration {
+  $$ = decl_join($0, $1);
+}
+
+external-declaration: function-definition;
+external-declaration: declaration {
+  if ($0 && $0->init_) {
+    decl_static_initializer_exec(cc, $0->dsp_, 0 /* offset at start of dsp_ data portion */, $0->init_, NULL, NULL, NULL);
+  }
+}
+
+exec-unit: ; /* empty is permitted */
+exec-unit: exec-unit external-declaration;
+
+templ-unit: ; /* empty is permitted */
+templ-unit: templ-unit external-declaration;
+templ-unit: templ-unit stmt {
+  if ($1) {
+    int r;
+    r = decl_resolve_all_global_decl_relocs(cc);
+    if (r) {
+      return r;
+    }
+
+    r = stmt_prepare(cc, $1);
+    if (r) {
+      return r;
+    }
+    r = stmt_exec(cc, $1, NULL, NULL, NULL);
+    if (r) {
+      /* Note that we do not fail wholly, for the caller would assume we need to exit.
+       * Instead, issue the error diagnostic and keep going */
+      cc_error_loc(cc, &${ 1 }, "failed to execute statement\n");
+    }
+  }
+}

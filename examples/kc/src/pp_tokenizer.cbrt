@@ -1,0 +1,848 @@
+/* Copyright 2023-2025 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+#ifndef STDIO_H_INCLUDED
+#define STDIO_H_INCLUDED
+#include <stdio.h>
+#endif
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
+#include <stdint.h>
+#endif
+
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
+#include <string.h>
+#endif
+
+#ifndef ASSERT_H_INCLUDED
+#define ASSERT_H_INCLUDED
+#include <assert.h>
+#endif
+
+#ifndef C_COMPILER_H_INCLUDED
+#define C_COMPILER_H_INCLUDED
+#include "c_compiler.h"
+#endif
+
+#ifndef STMT_H_INCLUDED
+#define STMT_H_INCLUDED 
+#include "stmt.h"
+#endif
+
+#ifndef EXPR_H_INCLUDED
+#define EXPR_H_INCLUDED
+#include "expr.h"
+#endif
+
+#ifndef TYPES_H_INCLUDED
+#define TYPES_H_INCLUDED
+#include "types.h"
+#endif
+
+#ifndef TEMPL_PARSER_H_INCLUDED
+#define TEMPL_PARSER_H_INCLUDED
+#include "templ_parser.h"
+#endif
+
+#ifndef SCAN_HELPERS_H_INCLUDED
+#define SCAN_HELPERS_H_INCLUDED
+#include "scan_helpers.h"
+#endif
+
+#ifndef PP_TOKENS_H_INCLUDED
+#define PP_TOKENS_H_INCLUDED
+#include "pp_tokens.h"
+#endif
+
+
+/* Declare for David M Gay's dtoa.c -- we seek to use that one and not the Visual studio one. */
+double strtod_david_m_gay(const char *s00, char **se);
+
+%prefix pptk_
+
+%scanner%
+
+%params struct c_compiler *cc, struct pptk **pp_tokens, struct situs *input_situs
+
+%common_type struct situs
+%constructor situs_init(&$$);
+%destructor situs_cleanup(&$$);
+
+$: {
+  situs_move_range(&$, input_situs, $endoffset - $offset, $text);
+  
+  /* Always set mode to default, this ensures that, when the mode is HEADER_NAME_POSSIBLE, we always
+   * click back to the default mode; that is to say, we try a header name for 1 token only.
+   * NOTE: non-newline whitespace (comments, spaces) have a *different* common action that does
+   * not reset the mode. Thus, "#include /* comment * / <header>" will work, the HEADER_NAME_POSSIBLE
+   * mode that switches on after include is maintained through the spaces and comment until <header>.
+   */
+  if ($is_mode(TEMPLATE_START) || $is_mode(TEMPLATE_DEFAULT) || $is_mode(TEMPLATE_HEADER_NAME_POSSIBLE)) {
+	  $set_mode(TEMPLATE_DEFAULT);
+  } else {
+	  $set_mode(DEFAULT);
+  }
+}
+
+%mode HEADER_NAME_POSSIBLE TEMPLATE_START TEMPLATE_DEFAULT TEMPLATE_HEADER_NAME_POSSIBLE
+
+<HEADER_NAME_POSSIBLE, TEMPLATE_HEADER_NAME_POSSIBLE> {
+  : <[^\n>]+> { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_HEADER_NAME, &$); }
+  : \"[^\n"]+\" { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_HEADER_NAME, &$); }
+}
+
+<TEMPLATE_START> {
+  : ([^\[] | \[ [^\[])* \[\[ {
+	struct pptk *tk = pptk_alloc_len(cc, pp_tokens, $text, $len - 2, PPTK_TEMPLATE_LIT, &$);
+	tk = pptk_alloc_len(cc, pp_tokens, $text + $len - 2, 2, PPTK_TEMPLATE_DOUBLE_CURLY_OPEN, &$);
+  }
+  : ([^\[] | \[ [^\[])* \[? \Z{struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_TEMPLATE_LIT, &$);}
+}
+
+<TEMPLATE_DEFAULT, TEMPLATE_HEADER_NAME_POSSIBLE> {
+  // Alternate versions of the above that allow for a line-continuation that swallows the newline
+  // character when closing the template with "}}". 
+  // This is useful for cleaner code (otherwise the template string would have to start on a new
+  // line, immediately following the }} .)
+  // This permits one to write "}}\" at the end of a line and have the newline character be swallowed
+  // before starting the template string.
+  : \[ \[ \\ (\r)? \n([^ \[] | \[ [^ \[] ) *\[\[ {
+    if ($text[3] == '\r') {
+      /* newline including carriage return */
+      struct pptk *tk = pptk_alloc_len(cc, pp_tokens, $text, 5, PPTK_TEMPLATE_DOUBLE_CURLY_CLOSE, &$);
+      tk = pptk_alloc_len(cc, pp_tokens, $text + 5, $len - 7, PPTK_TEMPLATE_LIT, &$);
+      tk = pptk_alloc_len(cc, pp_tokens, $text + $len - 2, 2, PPTK_TEMPLATE_DOUBLE_CURLY_OPEN, &$);
+    }
+    else /* newline excluding carriage return */ {
+      struct pptk *tk = pptk_alloc_len(cc, pp_tokens, $text, 4, PPTK_TEMPLATE_DOUBLE_CURLY_CLOSE, &$);
+      tk = pptk_alloc_len(cc, pp_tokens, $text + 4, $len - 6, PPTK_TEMPLATE_LIT, &$);
+      tk = pptk_alloc_len(cc, pp_tokens, $text + $len - 2, 2, PPTK_TEMPLATE_DOUBLE_CURLY_OPEN, &$);
+    }
+  }
+  : \[ \[ \\ (\r) ? \n([^ \[] | \[ [^ \[] ) *\[ ? \Z{
+    if ($text[3] == '\r') {
+      /* newline including carriage return */
+      struct pptk *tk = pptk_alloc_len(cc, pp_tokens, $text, 5, PPTK_TEMPLATE_DOUBLE_CURLY_CLOSE, &$);
+      tk = pptk_alloc_len(cc, pp_tokens, $text + 5, $len - 5, PPTK_TEMPLATE_LIT, &$);
+    }
+    else /* newline excluding carriage return */ {
+      struct pptk *tk = pptk_alloc_len(cc, pp_tokens, $text, 4, PPTK_TEMPLATE_DOUBLE_CURLY_CLOSE, &$);
+      tk = pptk_alloc_len(cc, pp_tokens, $text + 4, $len - 4, PPTK_TEMPLATE_LIT, &$);
+    }
+  }
+
+
+  : \] \] ([^\[] | \[ [^\[])* \[\[ {
+    struct pptk *tk = pptk_alloc_len(cc, pp_tokens, $text, 2, PPTK_TEMPLATE_DOUBLE_CURLY_CLOSE, &$);
+	  tk = pptk_alloc_len(cc, pp_tokens, $text + 2, $len - 4, PPTK_TEMPLATE_LIT, &$); 
+    tk = pptk_alloc_len(cc, pp_tokens, $text + $len - 2, 2, PPTK_TEMPLATE_DOUBLE_CURLY_OPEN, &$);
+  }
+  : \] \] ([^\[] | \[ [^\[])* \[? \Z { 
+    struct pptk *tk = pptk_alloc_len(cc, pp_tokens, $text, 2, PPTK_TEMPLATE_DOUBLE_CURLY_CLOSE, &$);
+    tk = pptk_alloc_len(cc, pp_tokens, $text + 2, $len - 2, PPTK_TEMPLATE_LIT, &$);
+  }
+
+  /* Emit is only valid for template processing and is used as part of a line
+   * directive, with semantics identical to #include (e.g. #emit "header.h" )
+   * Causes the included file to be processed as a template.
+   */
+  : emit { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_EMIT, &$); return PPTK_TOKENIZER_HEADERNAME_CHECK; }
+}
+
+<DEFAULT, HEADER_NAME_POSSIBLE, TEMPLATE_DEFAULT, TEMPLATE_HEADER_NAME_POSSIBLE> {
+  : ! { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_BANG, &$); }
+  : ~ { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_TILDE, &$); }
+  : % { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_PERCENT, &$); }
+  : %= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_PERCENT_EQUALS, &$); }
+  : & { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_AMPERSAND, &$); }
+  : && { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_AMPERSAND_AMPERSAND, &$); }
+  : &= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_AMPERSAND_EQUALS, &$); }
+  : \( { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_PAR_OPEN, &$); }
+  : \) { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_PAR_CLOSE, &$); }
+  : \* { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_ASTERISK, &$); }
+  : \*= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_ASTERISK_EQUALS, &$); }
+  : \+ { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_PLUS, &$); }
+  : \+\+ { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_PLUS_PLUS, &$); }
+  : \+= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_PLUS_EQUALS, &$); }
+  : \, { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_COMMA, &$); }
+  : \- { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_MINUS, &$); }
+  : \-\- { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_MINUS_MINUS, &$); }
+  : \-= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_MINUS_EQUALS, &$); }
+  : \. { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_DOT, &$); }
+  : \.\.\. { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_DOT_DOT_DOT, &$); }
+  : / { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_SLASH, &$); }
+  : /= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_SLASH_EQUALS, &$); }
+  : \: { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_COLON, &$); }
+  : \; { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_SEMICOLON, &$); }
+  : < { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_LT, &$); }
+  : << { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_LT_LT, &$); }
+  : <<= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_LT_LT_EQUALS, &$); }
+  : <= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_LT_EQUALS, &$); }
+  : = { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_EQUALS, &$); }
+  : == { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_EQUALS_EQUALS, &$); }
+  : != { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_BANG_EQUALS, &$); }
+  : > { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_GT, &$); }
+  : >= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_GT_EQUALS, &$); }
+  : >> { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_GT_GT, &$); }
+  : >>= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_GT_GT_EQUALS, &$); }
+  : \-> { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_ARROW, &$); }
+  : \[|<\: { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_SQBRACE_OPEN, &$); } /* note the digraph <: */
+  : \]|\:> { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_SQBRACE_CLOSE, &$); } /* note the digraph :> */
+  : \^ { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CARET, &$); }
+  : \^= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CARET_EQUALS, &$); }
+  : \{|<% { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CUBRACE_OPEN, &$); } /* note the digraph <% */
+  : \}|%> { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CUBRACE_CLOSE, &$); } /* note the digraph %> */
+  : \| { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_BAR, &$); }
+  : \|= { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_BAR_EQUALS, &$); }
+  : \|\| { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_BAR_BAR, &$); }
+  : \? { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_QUESTION_MARK, &$); }
+  : #|%\: { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_HASH_MARK, &$); }
+  : ##|%\:%\: { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_HASH_HASH_MARK, &$); }
+  : auto { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_AUTO, &$); }
+  : break { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_BREAK, &$); }
+  : case { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CASE, &$); }
+  : char { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CHAR, &$); }
+  : const { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CONST, &$); }
+  : continue { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CONTINUE, &$); }
+  : default { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_DEFAULT, &$); }
+  : do { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_DO, &$); }
+  : double { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_DOUBLE, &$); }
+  : else { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_ELSE, &$); }
+  : enum { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_ENUM, &$); }
+  : extern { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_EXTERN, &$); }
+  : float { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_FLOAT, &$); }
+  : for { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_FOR, &$); }
+  : goto { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_GOTO, &$); }
+  : if { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_IF, &$); }
+  : inline { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_INLINE, &$); }
+  : int { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_INT, &$); }
+  : long { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_LONG, &$); }
+  : register { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_REGISTER, &$); }
+  : restrict { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_RESTRICT, &$); }
+  : return { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_RETURN, &$); }
+  : short { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_SHORT, &$); }
+  : signed { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_SIGNED, &$); }
+  : sizeof { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_SIZEOF, &$); }
+  : static { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_STATIC, &$); }
+  : struct { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_STRUCT, &$); }
+  : switch { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_SWITCH, &$); }
+  : typedef { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_TYPEDEF, &$); }
+  : union { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_UNION, &$); }
+  : unsigned { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_UNSIGNED, &$); }
+  : void { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_VOID, &$); }
+  : volatile { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_VOLATILE, &$); }
+  : while { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_WHILE, &$); }
+  : _Bool { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_BOOL, &$); }
+  : _Complex { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_COMPLEX, &$); }
+  : _Imaginary { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_IMAGINARY, &$); }
+
+  /* keywords specific to the preprocessor. These are seen as identifiers by the compiler itself. */
+  : ifdef { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_IFDEF, &$); }
+  : ifndef { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_IFNDEF, &$); }
+  : elif { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_ELIF, &$); }
+  : endif { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_ENDIF, &$); }
+  : include { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_INCLUDE, &$); return PPTK_TOKENIZER_HEADERNAME_CHECK; }
+  : define { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_DEFINE, &$); }
+  : undef { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_UNDEF, &$); }
+  : line { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_LINE, &$); }
+  : error { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_ERROR_KEYWORD, &$); }
+  : pragma { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_PRAGMA, &$); }
+
+  /* keywords specific to the preprocessor. May appear inline */
+  : defined { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_DEFINED, &$); }
+  : _Pragma { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_PRAGMA_OP, &$); }
+
+  /* Integer constants 6.4.4.1 */
+
+  /* decimal integer literal */
+  : [1-9] [0-9] *{
+    /* Suffix none, Decimal constant: int, long int, long long int */
+    uint64_t val;
+    if (sch_parse_decimal(cc, &val, $text, $len, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    enum expr_type et_type = ET_INVALID;
+
+    if (val <= type_base_int_type_max(&cc->tb_, tk_int)) {
+      et_type = ET_C_INT;
+    }
+    else if (val <= type_base_int_type_max(&cc->tb_, tk_long_int)) {
+      et_type = ET_C_LONG_INT;
+    }
+    else {
+      if (val > type_base_int_type_max(&cc->tb_, tk_long_long_int)) {
+        cc_error_loc(cc, &$, "overflow on integer, value truncated");
+      }
+      et_type = ET_C_LONG_LONG_INT;
+    }
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_INTEGER_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    tk->v_.expr_ = expr_alloc(et_type);
+    if (tk->v_.expr_) {
+      tk->v_.expr_->v_.i64_ = (int64_t)val;
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  : [1-9] [0-9] * (u|U) {
+    /* Suffix u or U, Decimal constant: unsigned int, unsigned long int, unsigned long long int */
+    uint64_t val;
+    if (sch_parse_decimal(cc, &val, $text, $len-1, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    enum expr_type et_type = ET_INVALID;
+
+    if (val <= type_base_int_type_max(&cc->tb_, tk_unsigned_int)) {
+      et_type = ET_C_UNSIGNED_INT;
+    }
+    else if (val <= type_base_int_type_max(&cc->tb_, tk_unsigned_long_int)) {
+      et_type = ET_C_UNSIGNED_LONG_INT;
+    }
+    else {
+      if (val > type_base_int_type_max(&cc->tb_, tk_unsigned_long_long_int)) {
+        cc_error_loc(cc, &$, "overflow on integer, value truncated");
+      }
+      et_type = ET_C_UNSIGNED_LONG_LONG_INT;
+    }
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_INTEGER_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    tk->v_.expr_  = expr_alloc(et_type);
+    if (tk->v_.expr_) {
+      tk->v_.expr_->v_.u64_ = val;
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  : [1-9] [0-9] * (l|L) {
+    /* Suffix l or L, Decimal constant: long int, long long int */
+    uint64_t val;
+    if (sch_parse_decimal(cc, &val, $text, $len-1, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    enum expr_type et_type = ET_INVALID;
+
+    if (val <= type_base_int_type_max(&cc->tb_, tk_long_int)) {
+      et_type = ET_C_LONG_INT;
+    }
+    else {
+      if (val > type_base_int_type_max(&cc->tb_, tk_long_long_int)) {
+        cc_error_loc(cc, &$, "overflow on integer, value truncated");
+      }
+      et_type = ET_C_LONG_LONG_INT;
+    }
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_INTEGER_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    tk->v_.expr_  = expr_alloc(et_type);
+    if (tk->v_.expr_) {
+      tk->v_.expr_->v_.i64_ = (int64_t)val;
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  : [1-9] [0-9] * (((u|U)(l|L))|((l|L)(u|U))) {
+    /* Suffix both u or U and l or L, Decimal constant: unsigned long int, unsigned long long int */
+    uint64_t val;
+    if (sch_parse_decimal(cc, &val, $text, $len-2, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    enum expr_type et_type = ET_INVALID;
+
+    if (val <= type_base_int_type_max(&cc->tb_, tk_unsigned_long_int)) {
+      et_type = ET_C_UNSIGNED_LONG_INT;
+    }
+    else {
+      if (val > type_base_int_type_max(&cc->tb_, tk_unsigned_long_long_int)) {
+        cc_error_loc(cc, &$, "overflow on integer, value truncated");
+      }
+      et_type = ET_C_UNSIGNED_LONG_LONG_INT;
+    }
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_INTEGER_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    tk->v_.expr_  = expr_alloc(et_type);
+    if (tk->v_.expr_) {
+      tk->v_.expr_->v_.u64_ = val;
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  : [1-9] [0-9] * (ll|LL) {
+    /* Suffix ll or LL, Decimal constant: long long int */
+    uint64_t val;
+    if (sch_parse_decimal(cc, &val, $text, $len-2, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    enum expr_type et_type = ET_INVALID;
+
+    if (val > type_base_int_type_max(&cc->tb_, tk_long_long_int)) {
+      cc_error_loc(cc, &$, "overflow on integer, value truncated");
+    }
+    et_type = ET_C_LONG_LONG_INT;
+
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_INTEGER_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    tk->v_.expr_  = expr_alloc(et_type);
+    if (tk->v_.expr_) {
+      tk->v_.expr_->v_.i64_ = (int64_t)val;
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  : [1-9] [0-9] * (((u|U)(ll|LL))|((ll|LL)(u|U))) {
+    /* Suffix both u or U and ll or LL, Decimal constant: unsigned long long int */
+    uint64_t val;
+    if (sch_parse_decimal(cc, &val, $text, $len-3, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    enum expr_type et_type = ET_INVALID;
+
+    if (val > type_base_int_type_max(&cc->tb_, tk_unsigned_long_long_int)) {
+      cc_error_loc(cc, &$, "overflow on integer, value truncated");
+    }
+    et_type = ET_C_UNSIGNED_LONG_LONG_INT;
+
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_INTEGER_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    tk->v_.expr_  = expr_alloc(et_type);
+    if (tk->v_.expr_) {
+      tk->v_.expr_->v_.u64_ = val;
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  /* octal integer literal */
+  : 0[0-7]*{
+    uint64_t val;
+    if (sch_parse_octal(cc, &val, $text, $len, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_none(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[0-7]* (u|U) {
+    uint64_t val;
+    if (sch_parse_octal(cc, &val, $text, $len-1, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_U(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[0-7]* (l|L) {
+    uint64_t val;
+    if (sch_parse_octal(cc, &val, $text, $len-1, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_L(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[0-7]* (((u|U)(l|L))|((l|L)(u|U))) {
+    uint64_t val;
+    if (sch_parse_octal(cc, &val, $text, $len-2, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_UL(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[0-7]* (ll|LL) {
+    uint64_t val;
+    if (sch_parse_octal(cc, &val, $text, $len-2, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_LL(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[0-7]* (((u|U)(ll|LL))|((ll|LL)(u|U))) {
+    uint64_t val;
+    if (sch_parse_octal(cc, &val, $text, $len-3, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_ULL(cc, pp_tokens, $text, val, &tk, &$);
+  }
+
+  /* hexadecimal integer literal */
+  : 0[xX][0-9a-fA-F]+ {
+    uint64_t val;
+    if (sch_parse_hexadecimal(cc, &val, $text, $len, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_none(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[xX][0-9a-fA-F]+ (u|U) {
+    uint64_t val;
+    if (sch_parse_hexadecimal(cc, &val, $text, $len-1, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_U(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[xX][0-9a-fA-F]+ (l|L) {
+    uint64_t val;
+    if (sch_parse_hexadecimal(cc, &val, $text, $len-1, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_L(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[xX][0-9a-fA-F]+ (((u|U)(l|L))|((l|L)(u|U))) {
+    uint64_t val;
+    if (sch_parse_hexadecimal(cc, &val, $text, $len-2, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_UL(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[xX][0-9a-fA-F]+ (ll|LL) {
+    uint64_t val;
+    if (sch_parse_hexadecimal(cc, &val, $text, $len-2, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_LL(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[xX][0-9a-fA-F]+ (((u|U)(ll|LL))|((ll|LL)(u|U))) {
+    uint64_t val;
+    if (sch_parse_hexadecimal(cc, &val, $text, $len-3, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_ULL(cc, pp_tokens, $text, val, &tk, &$);
+  }
+
+  /* binary integer literal */
+  : 0[bB][01]+ {
+    uint64_t val;
+    if (sch_parse_binary(cc, &val, $text, $len, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_none(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[bB][01]+ (u|U) {
+    uint64_t val;
+    if (sch_parse_binary(cc, &val, $text, $len - 1, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_U(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[bB][01]+ (l|L) {
+    uint64_t val;
+    if (sch_parse_binary(cc, &val, $text, $len - 1, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_L(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[bB][01]+ (((u|U)(l|L))|((l|L)(u|U))) {
+    uint64_t val;
+    if (sch_parse_binary(cc, &val, $text, $len - 2, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_UL(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[bB][01]+ (ll|LL) {
+    uint64_t val;
+    if (sch_parse_binary(cc, &val, $text, $len - 2, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_LL(cc, pp_tokens, $text, val, &tk, &$);
+  }
+  : 0[bB][01]+ (((u|U)(ll|LL))|((ll|LL)(u|U))) {
+    uint64_t val;
+    if (sch_parse_binary(cc, &val, $text, $len - 3, &$)) {
+      /* Failed, error already reported. */
+      val = 0;
+    }
+    struct pptk *tk = NULL;
+    sch_process_pptk_ohb_ULL(cc, pp_tokens, $text, val, &tk, &$);
+  }
+
+  /* fractional float literal */
+  : (([0-9]+\.)|([0-9]*\.[0-9]+)) ([eE][\+\-]?[0-9]+)?[flFL]? {
+    enum expr_type et;
+    double val = strtod_david_m_gay($text, NULL);
+    char suffix = $len ? $text[$len-1] : '\0';
+    if ((suffix == 'f') || (suffix == 'F')) {
+      et = ET_C_FLOAT;
+    }
+    else if ((suffix == 'l') || (suffix == 'L')) {
+      et = ET_C_LONG_DOUBLE;
+    }
+    else {
+      et = ET_C_DOUBLE;
+    }
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_FLOAT_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    tk->v_.expr_  = expr_alloc(et);
+    if (tk->v_.expr_) {
+      if (et == ET_C_FLOAT) {
+        tk->v_.expr_->v_.f_ = (float)val;
+      }
+      else {
+        tk->v_.expr_->v_.d_ = val;
+      }
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  /* whole float literal */
+  : [0-9] +[eE][\+\-]?[0-9]+[flFL]? {
+    enum expr_type et;
+    double val = strtod_david_m_gay($text, NULL);
+    char suffix = $len ? $text[$len-1] : '\0';
+    if ((suffix == 'f') || (suffix == 'F')) {
+      et = ET_C_FLOAT;
+    }
+    else if ((suffix == 'l') || (suffix == 'L')) {
+      et = ET_C_LONG_DOUBLE;
+    }
+    else {
+      et = ET_C_DOUBLE;
+    }
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_FLOAT_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    tk->v_.expr_  = expr_alloc(et);
+    if (tk->v_.expr_) {
+      if (et == ET_C_FLOAT) {
+        tk->v_.expr_->v_.f_ = (float)val;
+      }
+      else {
+        tk->v_.expr_->v_.d_ = val;
+      }
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  /* XXX: Hexadecimal float missing */
+
+  : "(\\.|[^"\\])*" { 
+    char *p;
+    /* we accept possible over-allocation from escape sequences. */
+    void *blob = malloc($len + 1 - 2);
+    if (!blob) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    p = (char *)blob;
+    const unsigned char *c = $text;
+    c++; /* " */
+    while (c != (unsigned char *)($text + $len - 1)) {
+      int val;
+      c += sch_read_char_value(cc, c, &val, 0xFF, &$, "string");
+      *p++ = (char)val;
+    }
+    *p = '\0';
+
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_STRING_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      free(blob);
+      return _PPTK_NO_MEMORY;
+    }
+
+    tk->v_.string_.wide_ = 0;
+    tk->v_.string_.data_ = blob;
+    tk->v_.string_.length_ = p - (char *)blob;
+  }
+
+  : L"(\\.|[^"\\])*" {
+    uint16_t *p;
+    /* we accept possible over-allocation from escape sequences. */
+    void *blob = malloc(sizeof(uint16_t) * ($len + 1 - 2));
+    if (!blob) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+    p = (uint16_t *)blob;
+    const unsigned char *c = $text;
+    c += 2; /* L" */
+    while (c != (unsigned char *)($text + $len - 1)) {
+      int val;
+      c += sch_read_char_value(cc, c, &val, 0xFFFF, &$, "wide string");
+      *p++ = (uint16_t)val;
+    }
+    *p = '\0';
+
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_STRING_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      free(blob);
+      return _PPTK_NO_MEMORY;
+    }
+    tk->v_.string_.wide_ = 1;
+    tk->v_.string_.data_ = blob;
+    tk->v_.string_.length_ = p - (uint16_t *)blob;
+  }
+
+  :   '(\\.|[^'\\])*' {
+    const unsigned char *c = $text;
+    c++; /* ' */
+    int64_t result = 0;
+    int char_count = 0;
+    while (c != (unsigned char *)($text + $len - 1)) {
+      int val;
+      if (char_count == (cc->tb_.bits_per_int_ / 8)) {
+        cc_error_loc(cc, &$, "too many characters in constant");
+        break;
+      }
+      c += sch_read_char_value(cc, c, &val, 0xFF, &$, "character");
+      result = result + (int64_t)val;
+      char_count++;
+    }
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CHAR_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+
+    tk->v_.expr_  = expr_alloc(ET_C_INT);
+    if (tk->v_.expr_) {
+      tk->v_.expr_->v_.i64_ = result;
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  :   L'(\\.|[^'\\])*' {
+    const unsigned char *c = $text;
+    c += 2; /* L' */
+    uint64_t result = 0;
+    int char_count = 0;
+    while (c != (unsigned char *)($text + $len - 1)) {
+      int val;
+      if (char_count == 1) {
+        cc_error_loc(cc, &$, "characters beyond first ignored in wide character constant");
+        break;
+      }
+
+      c += sch_read_char_value(cc, c, &val, 0xFF, &$, "wide character");
+      result = result + (uint32_t)val;
+      char_count++;
+    }
+
+    struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_CHAR_LIT, &$);
+    if (!tk) {
+      cc_no_memory(cc);
+      return _PPTK_NO_MEMORY;
+    }
+
+    tk->v_.expr_  = expr_alloc(ET_C_UNSIGNED_SHORT_INT);
+    if (tk->v_.expr_) {
+      tk->v_.expr_->v_.u64_ = result;
+    }
+    else {
+      cc_no_memory(cc);
+    }
+  }
+
+  : [a-zA-Z_] [a-zA-Z0-9_]* { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_IDENT, &$); }
+
+  /* Newline -- note that the newline is just whitespace from a PPTK_ perspective, but has extra
+   *            meaning in the pptokenizer as a line delimiter. */
+  : \n { struct pptk *tk = pptk_alloc(cc, pp_tokens, $text, PPTK_NEWLINE_WHITESPACE, &$); return PPTK_TOKENIZER_LINE_READY; }
+
+
+  $: {
+    /* Common action for non-newline whitespace: we do not reset the mode to DEFAULT, but
+     * maintain whatever mode we might be in right now. See notes at the common action for
+     * all the other patterns. */
+    situs_move_range(&$, input_situs, $endoffset - $offset, $text);
+  }
+  /* C-style comment */
+  : /\*([^\*]|[\r\n]|(\*+([^\*/]|[\r\n])))*\*/ { struct pptk *tk = pptk_alloc(cc, pp_tokens, " ", PPTK_WHITESPACE, &$); }
+
+  /* C++ style comment -- up to, but not including the newline (note that ".*" excludes newlines) */
+  : / /.* { struct pptk *tk = pptk_alloc(cc, pp_tokens, " ", PPTK_WHITESPACE, &$); }
+
+  /* any regular whitespace characters */
+  : [\ \x9\xb\xc\xd]+ { struct pptk *tk = pptk_alloc(cc, pp_tokens, " ", PPTK_WHITESPACE, &$); }
+
+} /* <DEFAULT, HEADER_NAME_POSSIBLE, TEMPLATE_DEFAULT> */
+

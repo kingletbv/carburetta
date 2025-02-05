@@ -1,0 +1,130 @@
+/* Copyright 2023-2025 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef STRING_H_INCLUDED
+#define STRING_H_INCLUDED
+#include <string.h>
+#endif
+
+struct c_compiler;
+
+#ifndef C_COMPILER_H_INCLUDED
+#define C_COMPILER_H_INCLUDED
+#include "c_compiler.h"
+#endif
+
+#ifndef SITUS_H_INCLUDED
+#define SITUS_H_INCLUDED
+#include "situs.h"
+#endif
+
+%scanner%
+
+%prefix pptg_
+
+%common_type struct situs
+%constructor situs_init(&$$);
+%destructor situs_cleanup(&$$);
+
+%params struct c_compiler *cc, const char *filename, char **output_buf, size_t *output_end, size_t *output_buf_alloc_size, struct situs *output_situs
+
+$: {
+  $.num_spans_ = 1;
+  $.u_.one_.filename_ = filename;
+  $.u_.one_.is_substitution_ = 0;
+  $.u_.one_.num_bytes_ = $len;
+  $.u_.one_.start_ = $offset;
+  $.u_.one_.end_ = $endoffset;
+  $.u_.one_.start_line_ = $line;
+  $.u_.one_.start_col_ = $column;
+  $.u_.one_.end_line_ = $endline;
+  $.u_.one_.end_col_ = $endcolumn;
+}
+
+: \?\?= {
+  $.u_.one_.end_ = $.u_.one_.start_ + 1;
+  pptg_set_location(stack, $.u_.one_.end_line_, $.u_.one_.end_col_, $.u_.one_.end_);
+  if (cc_pp_concat_sub_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, "#")) {
+    return _PPTG_NO_MEMORY;
+  }
+}
+: \?\?\( { 
+  $.u_.one_.end_ = $.u_.one_.start_ + 1;
+  pptg_set_location(stack, $.u_.one_.end_line_, $.u_.one_.end_col_, $.u_.one_.end_);
+  if (cc_pp_concat_sub_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, "[")) {
+    return _PPTG_NO_MEMORY;
+  }
+}
+: \?\?/ { 
+  $.u_.one_.end_ = $.u_.one_.start_ + 1;
+  pptg_set_location(stack, $.u_.one_.end_line_, $.u_.one_.end_col_, $.u_.one_.end_);
+  if (cc_pp_concat_sub_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, "\\")) {
+    return _PPTG_NO_MEMORY;
+  }
+}
+: \?\?\) { 
+  $.u_.one_.end_ = $.u_.one_.start_ + 1;
+  pptg_set_location(stack, $.u_.one_.end_line_, $.u_.one_.end_col_, $.u_.one_.end_);
+  if (cc_pp_concat_sub_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, "]")) {
+    return _PPTG_NO_MEMORY;
+  }
+}
+: \?\?\' { 
+  $.u_.one_.end_ = $.u_.one_.start_ + 1;
+  pptg_set_location(stack, $.u_.one_.end_line_, $.u_.one_.end_col_, $.u_.one_.end_);
+  if (cc_pp_concat_sub_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, "^")) {
+    return _PPTG_NO_MEMORY;
+  }
+}
+: \?\?< { 
+  $.u_.one_.end_ = $.u_.one_.start_ + 1;
+  pptg_set_location(stack, $.u_.one_.end_line_, $.u_.one_.end_col_, $.u_.one_.end_);
+  if (cc_pp_concat_sub_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, "{")) {
+    return _PPTG_NO_MEMORY;
+  }
+}
+: \?\?! { 
+  $.u_.one_.end_ = $.u_.one_.start_ + 1;
+  pptg_set_location(stack, $.u_.one_.end_line_, $.u_.one_.end_col_, $.u_.one_.end_);
+  if (cc_pp_concat_sub_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, "|")) {
+    return _PPTG_NO_MEMORY;
+  }
+}
+: \?\?> {
+  $.u_.one_.end_ = $.u_.one_.start_ + 1;
+  pptg_set_location(stack, $.u_.one_.end_line_, $.u_.one_.end_col_, $.u_.one_.end_);
+  if (cc_pp_concat_sub_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, "}")) {
+    return _PPTG_NO_MEMORY;
+  }
+}
+: \?\?\- {
+  $.u_.one_.end_ = $.u_.one_.start_ + 1;
+  pptg_set_location(stack, $.u_.one_.end_line_, $.u_.one_.end_col_, $.u_.one_.end_);
+  if (cc_pp_concat_sub_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, "~")) {
+    return _PPTG_NO_MEMORY;
+  }
+}
+
+: ([^\?]+ | \? [^\?] | \? \?+ [^=\(/\)\'<!>\-])+ { 
+  if (cc_pp_concat_output(cc, output_situs, output_buf, output_end, output_buf_alloc_size, &$, $text)) {
+    return _PPTG_NO_MEMORY;
+  }
+}

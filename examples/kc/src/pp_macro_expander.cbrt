@@ -1,0 +1,211 @@
+/* Copyright 2023-2025 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef STDINT_H_INCLUDED
+#define STDINT_H_INCLUDED
+#include <stdint.h>
+#endif
+
+#ifndef C_COMPILER_H_INCLUDED
+#define C_COMPILER_H_INCLUDED
+#include "c_compiler.h"
+#endif
+
+#ifndef SYMTAB_H_INCLUDED
+#define SYMTAB_H_INCLUDED
+#include "symtab.h"
+#endif
+
+#ifndef PP_TOKENS_H_INCLUDED
+#define PP_TOKENS_H_INCLUDED
+#include "pp_tokens.h"
+#endif
+
+%grammar%
+
+%prefix ppme_
+
+%params struct c_compiler *cc, struct pptk **pp_input_chain, int is_final, struct pptk **pp_output_chain
+
+%on_next_token \
+  if (*pp_input_chain) {                                                                \
+    sym = g_pptk_to_ppme_[(*pp_input_chain)->tok_];                                     \
+    if (sym == PPME_IDENT) {                                                            \
+      struct macro *m = (struct macro *)st_find(&cc->macro_table_, (*pp_input_chain)->text_); \
+      if (m && !m->nested_invocation_) {                                                \
+        if (m->is_function_style_) {                                                    \
+          sym = PPME_FUNCTION;                                                          \
+        }                                                                               \
+        else {                                                                          \
+          sym = PPME_OBJECT;                                                            \
+        }                                                                               \
+      }                                                                                 \
+    }                                                                                   \
+  }                                                                                     \
+  else {                                                                                \
+    if (!is_final) return _PPME_FEED_ME;                                                \
+    sym = PPME_INPUT_END;                                                               \
+  }
+
+%token IDENT OBJECT FUNCTION PAR_OPEN PAR_CLOSE COMMA WS_TOK OTHER
+%token_type struct pptk *
+%constructor $$ = NULL;
+%destructor pptk_free($$);
+%token_action $$ = pptk_pop_front(pp_input_chain);
+
+%nt opt-function-seq
+%type OBJECT FUNCTION: struct { struct pptk *tk_; struct macro *m_; }
+%constructor $$.tk_ = NULL; $$.m_ = NULL;
+%destructor pptk_free($$.tk_); macro_free($$.m_); /* Reduction of OBJECT drops a reference and might free the macro */
+%token_action \
+  $$.tk_ = pptk_pop_front(pp_input_chain); \
+  struct macro *m = (struct macro *)st_find(&cc->macro_table_, $$.tk_->text_); \
+  if (!m) { \
+    /* In-between %on_next_token and actually shifting the same token, we lost the macro.
+     * This should never happen as the only thing happening between %on_next_token and
+     * %token_action are reductions in the current grammar (e.g. no #undef can be processed,)
+     * cannot recover */ \
+    cc_printf(cc, "Internal error, lost macro definition\n"); \
+    return _PPME_INTERNAL_ERROR; \
+  } \
+  m->refcount_++; \
+  $$.m_ = m;
+
+%nt top-stream total
+%nt non-function ws-opt ws-opt-emit par-span arg
+%type non-function ws-opt par-span arg: struct pptk *
+%constructor $$ = NULL;
+%destructor pptk_free($$);
+
+%nt args
+%type args: struct macro_arg_inst *
+%constructor $$ = NULL;
+%destructor macro_arg_inst_free($$);
+
+total: top-stream opt-function-seq;
+
+top-stream: ;
+top-stream: top-stream opt-function-seq IDENT {
+    *pp_output_chain = pptk_join(*pp_output_chain, $2);
+    $2 = NULL;
+}
+top-stream: top-stream opt-function-seq COMMA {
+    *pp_output_chain = pptk_join(*pp_output_chain, $2);
+    $2 = NULL;
+}
+top-stream: top-stream ws-opt-emit PAR_OPEN {
+    *pp_output_chain = pptk_join(*pp_output_chain, $2);
+    $2 = NULL;
+}
+top-stream: top-stream opt-function-seq PAR_CLOSE {
+    *pp_output_chain = pptk_join(*pp_output_chain, $2);
+    $2 = NULL;
+}
+top-stream: top-stream opt-function-seq OTHER {
+    *pp_output_chain = pptk_join(*pp_output_chain, $2);
+    $2 = NULL;
+}
+top-stream: top-stream opt-function-seq FUNCTION ws-opt PAR_OPEN args PAR_CLOSE {
+  /* Insert FUNCTION expansion */
+  int r = macro_expand(cc, $2.tk_, $2.m_, $5, pp_output_chain);
+  if (r) {
+    return _PPME_INTERNAL_ERROR;
+  }
+}
+top-stream: top-stream opt-function-seq OBJECT {
+  /* Insert OBJECT expansion */
+  int r = macro_expand(cc, $2.tk_, $2.m_, NULL, pp_output_chain);
+  if (r) {
+    return _PPME_INTERNAL_ERROR;
+  }
+}
+
+opt-function-seq: ws-opt-emit ;
+opt-function-seq: opt-function-seq FUNCTION ws-opt {
+  /* Emit optional function sequences direct to output, they handle the edge case of a function-like
+   * macro with no arguments (which should not result in an expansion, but a literal copy of the
+   * macro identifier.) */
+  *pp_output_chain = pptk_join(*pp_output_chain, $1.tk_);
+  *pp_output_chain = pptk_join(*pp_output_chain, $2);
+  $1.tk_ = $2 = NULL;
+}
+
+args: arg { 
+  struct macro_arg_inst *mai;
+  mai = macro_arg_inst_alloc($0);
+  if (!mai) {
+    cc_no_memory(cc);
+    return _PPME_NO_MEMORY;
+  }
+  $$ = mai; $0 = NULL;
+}
+args: args COMMA arg {
+  struct macro_arg_inst *mai;
+  mai = macro_arg_inst_alloc($2);
+  if (!mai) {
+    cc_no_memory(cc);
+    return _PPME_NO_MEMORY;
+  }
+  $2 = NULL;
+  $$ = macro_arg_inst_join($0, mai);
+  $0 = NULL;
+}
+
+arg: ;
+arg: arg IDENT    { $$ = pptk_join($0, $1); $0 = $1 = NULL; }
+arg: arg FUNCTION { $$ = pptk_join($0, $1.tk_); $0 = $1.tk_ = NULL; }
+arg: arg OBJECT   { $$ = pptk_join($0, $1.tk_); $0 = $1.tk_ = NULL; }
+arg: arg WS_TOK   { $$ = pptk_join($0, $1); $0 = $1 = NULL; }
+arg: arg OTHER    { $$ = pptk_join($0, $1); $0 = $1 = NULL; }
+arg: arg PAR_OPEN par-span PAR_CLOSE {
+  $$ = pptk_join($0, $1);
+  $$ = pptk_join($$, $2);
+  $$ = pptk_join($$, $3);
+  $0 = $1 = $2 = $3 = NULL;
+}
+
+/* par-span, like an arg, but with a comma allowed.. */
+par-span: ;
+par-span: par-span IDENT    { $$ = pptk_join($0, $1); $0 = $1 = NULL; }
+par-span: par-span FUNCTION { $$ = pptk_join($0, $1.tk_); $0 = $1.tk_ = NULL; }
+par-span: par-span OBJECT   { $$ = pptk_join($0, $1.tk_); $0 = $1.tk_ = NULL; }
+par-span: par-span COMMA    { $$ = pptk_join($0, $1); $0 = $1 = NULL; }
+par-span: par-span WS_TOK   { $$ = pptk_join($0, $1); $0 = $1 = NULL; }
+par-span: par-span OTHER    { $$ = pptk_join($0, $1); $0 = $1 = NULL; }
+par-span: par-span PAR_OPEN par-span PAR_CLOSE {
+  $$ = pptk_join($0, $1);
+  $$ = pptk_join($$, $2);
+  $$ = pptk_join($$, $3);
+  $0 = $1 = $2 = $3 = NULL;
+}
+
+
+ws-opt-emit: ;
+ws-opt-emit: ws-opt-emit WS_TOK {
+  *pp_output_chain = pptk_join(*pp_output_chain, $1);
+  $1 = NULL;
+}
+
+
+ws-opt:;
+ws-opt: ws-opt WS_TOK { 
+  $$ = pptk_join($0, $1);
+  $0 = $1 = NULL;
+}

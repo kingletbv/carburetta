@@ -1,0 +1,536 @@
+/* Copyright 2023-2025 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+#ifndef STDLIB_H_INCLUDED
+#define STDLIB_H_INCLUDED
+#include <stdlib.h>
+#endif
+
+#ifndef SYMTAB_H_INCLUDED
+#define SYMTAB_H_INCLUDED
+#include "symtab.h"
+#endif
+
+struct pptk;
+struct c_compiler;
+
+#ifndef PP_LINE_DIRECTIVES_H_INCLUDED
+#define PP_LINE_DIRECTIVES_H_INCLUDED
+#include "pp_line_directives.h"
+#endif
+
+#ifndef PP_TOKENS_H_INCLUDED
+#define PP_TOKENS_H_INCLUDED
+#include "pp_tokens.h"
+#endif
+
+#ifndef INPUT_FILE_H_INCLUDED
+#define INPUT_FILE_H_INCLUDED
+#include "input_file.h"
+#endif
+
+#ifndef C_COMPILER_H_INCLUDED
+#define C_COMPILER_H_INCLUDED
+#include "c_compiler.h"
+#endif
+
+%grammar%
+
+%prefix ppld_
+
+%params struct c_compiler *cc, struct pptk **pp_current, struct pptk **pp_input_chain, int is_final, struct pptk **pp_output_chain
+
+%on_next_token \
+  if (*pp_current) {                                \
+    pptk_free(*pp_current);                         \
+    *pp_current = NULL;                             \
+  }                                                 \
+  if (*pp_input_chain) {                            \
+    *pp_current = pptk_pop_front(pp_input_chain);   \
+    sym = g_pptk_to_ppld_[(*pp_current)->tok_];     \
+  }                                                 \
+  else {                                            \
+    if (!is_final) return _PPLD_FEED_ME;            \
+    sym = PPLD_INPUT_END;                           \
+  }
+
+%token_type struct pptk *
+%constructor $$ = NULL;
+%destructor pptk_free($$);
+%token_action $$ = *pp_current; *pp_current = NULL;
+
+%token HASH_TOK IF_TOK IFDEF_TOK IFNDEF_TOK ELIF_TOK ELSE_TOK ENDIF_TOK INCLUDE_TOK DEFINE_TOK UNDEF_TOK \
+       LINE_TOK ERROR_TOK PRAGMA_TOK PAR_OPEN_TOK PAR_CLOSE_TOK ELLIPSIS_TOK COMMA_TOK WS_TOK NEWLINE_TOK \
+       IDENTIFIER_TOK OTHER_TOK HEADER_NAME
+
+%nt non-directive pp-tokens pp-tokens-opt replacement-list preprocessing-token identifier-list identifier-list-opt \
+    non-dir-token non-par-open-token non-par-open-replacement-list non-hash-pp-tokens non-hash-pp-tokens-opt non-hash-token pp-line    \
+    ws ws-opt newline newline-opt hash if ifdef ifndef elif else endif include define undef line error-nt pragma identifier ident      \
+    par-close comma ellipsis header-pp-tokens hdr-preprocessing-token
+
+%type non-directive pp-tokens pp-tokens-opt replacement-list preprocessing-token identifier-list identifier-list-opt \
+      non-dir-token non-par-open-token non-par-open-replacement-list non-hash-pp-tokens non-hash-pp-tokens-opt non-hash-token pp-line    \
+      ws ws-opt newline newline-opt hash if ifdef ifndef elif else endif include define undef line error-nt pragma identifier ident      \
+      par-close comma ellipsis header-pp-tokens hdr-preprocessing-token: struct pptk *
+%constructor $$ = NULL;
+%destructor pptk_free($$);
+
+
+pp-line: hash ws-opt non-directive newline-opt {
+  cc_error_loc(cc, &$0->situs_, "Error, non-directive line ignored");
+}
+
+pp-line: hash if pp-tokens newline-opt {
+  struct cc_if_section *parent = cc->if_section_stack_;
+  struct cc_if_section *sec = cc_if_push(cc);
+  if (!sec) {
+    cc_no_memory(cc);
+    return _PPLD_NO_MEMORY;
+  }
+  if (parent && (parent->state_ != CC_IFSS_SELECTED)) {
+    /* Don't care if the symbol is defined, the entire ifdef is skipped. */
+    sec->state_ = CC_IFSS_SKIP;
+  }
+  else {
+    sec->state_ = CC_IFSS_NOT_YET_SELECTED;
+    /* Process constant expression */
+    int r = pptk_perform_macro_expansion(cc, &$2);
+    if (!r) {
+      /* Process pp_const_expr */
+      int64_t result;
+      int is_unsigned;
+      r = ppce_eval_const_expr(cc, $2, &result, &is_unsigned);
+      if (!r) {
+        if (result) {
+          /* We're true . */
+          sec->state_ = CC_IFSS_SELECTED;
+        }
+        /* else: all other cases we're false . */
+      }
+      else {
+        /* Failed to evaluate, diagnostic already issued. Treat this as evaluating false */
+      }
+    }
+  }
+}
+
+pp-line: hash elif pp-tokens newline-opt {
+  /* XXX: Check that the preceeding if section group was not #else as that would be non-sensical */
+  if (!cc->if_section_stack_) {
+    cc_error_loc(cc, &$1->situs_, "Error: #elif without preceeding #if/#ifdef/#ifndef block");
+  }
+  else if (cc->if_section_stack_->state_ == CC_IFSS_NOT_YET_SELECTED) {
+    /* Preceeding branch not selected, therefore the #elif may be taken if it evaluates to true */
+    cc->if_section_stack_->state_ = CC_IFSS_SKIP; /* overwritten below */
+
+    /* Process constant expression */
+    int r = pptk_perform_macro_expansion(cc, &$2);
+    if (!r) {
+      /* Process pp_const_expr */
+      int64_t result;
+      int is_unsigned;
+      r = ppce_eval_const_expr(cc, $2, &result, &is_unsigned);
+      if (!r) {
+        if (result) {
+          /* We're true . */
+          cc->if_section_stack_->state_ = CC_IFSS_SELECTED;
+        }
+        /* else: all other cases we're false . */
+      }
+      else {
+        /* Failed to evaluate, diagnostic already issued. Treat this as evaluating false */
+      }
+    }
+  }
+  else if (cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+    /* Preceeding branch selected, therefore the #elif will not be taken */
+    cc->if_section_stack_->state_ = CC_IFSS_SKIP;
+  }
+  else /* (cc->if_section_stack_->state_ == CC_IFSS_SKIP) */ {
+    /* All (remaining) branches of if section are, and continue to be, skipped */
+  }
+}
+
+pp-line: hash ifdef identifier ws-opt newline-opt {
+  struct cc_if_section *parent = cc->if_section_stack_;
+  struct cc_if_section *sec = cc_if_push(cc);
+  if (!sec) {
+    cc_no_memory(cc);
+    return _PPLD_NO_MEMORY;
+  }
+  if (parent && (parent->state_ != CC_IFSS_SELECTED)) {
+    /* Don't care if the symbol is defined, the entire ifdef is skipped. */
+    sec->state_ = CC_IFSS_SKIP;
+  }
+  else /* (!parent || parent->state_ == CC_IFSS_SELECTED) */ {
+    struct sym *s = st_find(&cc->macro_table_, $2->text_);
+    if (s) {
+      sec->state_ = CC_IFSS_SELECTED;
+    }
+    else {
+      sec->state_ = CC_IFSS_NOT_YET_SELECTED; /* #else or #elifs must be evaluated */
+    }
+  }
+}
+
+pp-line: hash ifndef identifier ws-opt newline-opt  {
+  struct cc_if_section *parent = cc->if_section_stack_;
+  struct cc_if_section *sec = cc_if_push(cc);
+  if (!sec) {
+    cc_no_memory(cc);
+    return _PPLD_NO_MEMORY;
+  }
+  if (parent && (parent->state_ != CC_IFSS_SELECTED)) {
+    /* Don't care if the symbol is defined, the entire ifdef is skipped. */
+    sec->state_ = CC_IFSS_SKIP;
+  }
+  else /* (!parent || parent->state_ == CC_IFSS_SELECTED) */ {
+    struct sym *s = st_find(&cc->macro_table_, $2->text_);
+    if (s) {
+      sec->state_ = CC_IFSS_NOT_YET_SELECTED; /* #else or #elifs must be evaluated */
+    }
+    else {
+      sec->state_ = CC_IFSS_SELECTED;
+    }
+  }
+}
+
+pp-line: hash else ws-opt newline-opt {
+  /* XXX: Check that the preceeding if section group was not #else as that would be non-sensical */
+  if (!cc->if_section_stack_) {
+    cc_error_loc(cc, &$1->situs_, "Error: #else without preceeding #if/#ifdef/#ifndef block");
+  }
+  else if (cc->if_section_stack_->state_ == CC_IFSS_NOT_YET_SELECTED) {
+    /* Preceeding branch not selected, therefore the #else will be taken */
+    cc->if_section_stack_->state_ = CC_IFSS_SELECTED;
+  }
+  else if (cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+    /* Preceeding branch selected, therefore the #else will not be taken */
+    cc->if_section_stack_->state_ = CC_IFSS_SKIP;
+  }
+  else /* (cc->if_section_stack_->state_ == CC_IFSS_SKIP) */ {
+    /* All (remaining) branches of if section are, and continue to be, skipped */
+  }
+}
+
+pp-line: hash endif ws-opt newline-opt {
+  if (!cc->if_section_stack_) {
+    cc_error_loc(cc, &$1->situs_, "Error: #endif without preceeding #if/#ifdef/#ifndef block");
+  }
+  else {
+    cc_if_pop(cc);
+  }
+}
+
+pp-line: hash include header-pp-tokens newline-opt {
+  if (!cc->if_section_stack_ || cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+    /* #include */
+    $2 = pptk_trim($2);
+    if ($2 && $2->tok_ != PPTK_HEADER_NAME) {
+      /* Process tokens for macro expansions and re-evaluate for headername */
+      if (pptk_perform_macro_expansion(cc, &$2)) {
+        return _PPLD_INTERNAL_ERROR;
+      }
+      struct pptk *rescanned = NULL;
+      int r = pptk_rescan(cc, $2, &rescanned, 1 /* allow header name */);
+      $2 = pptk_trim(rescanned);
+    
+      if (r) {
+        return _PPLD_INTERNAL_ERROR;
+      }
+    }
+    if (!$2 || ($2->tok_ != PPTK_HEADER_NAME)) {
+      cc_error_loc(cc, &$1->situs_, "Error: #%s expects header filename", ($1->tok_ == PPTK_EMIT) ? "emit" : "include");
+    }
+    else if ($2->next_ != $2) {
+      cc_error_loc(cc, &$2->next_->situs_, "Error: #%s expects only a single header filename", ($1->tok_ == PPTK_EMIT) ? "emit" : "include");
+    }
+    else {
+      size_t headername_len = strlen($2->text_);
+      /* Store include file and return control to caller to perform the include */
+      char *headername = (char *)malloc(headername_len - 2 + 1);
+      if (!headername) {
+        cc_no_memory(cc);
+        return _PPLD_NO_MEMORY;
+      }
+      memcpy(headername, $2->text_ + 1, headername_len - 2);
+      headername[headername_len - 2] = '\0';
+      if (cc->pp_include_file_arg_) {
+        free(cc->pp_include_file_arg_);
+      }
+      cc->pp_include_is_system_include_ = ($2->text_[0] == '<');
+      cc->pp_include_file_arg_ = headername;
+      cc->pp_include_is_template_emit_ = ($1->tok_ == PPTK_EMIT);
+      return PPLD_INCLUDE_FILE;
+    }
+  }
+}
+
+pp-line: hash define identifier non-par-open-replacement-list newline-opt {
+  if (!cc->if_section_stack_ || cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+    int is_new = 0;
+
+    struct macro *m = (struct macro *)st_find_or_insert(&cc->macro_table_, $2->text_, &is_new, sizeof(struct macro));
+    if (!m) {
+      cc_no_memory(cc);
+    }
+    else if (!is_new) {
+      /* XXX: Re-definitions, where the replacement-lists are identical, should be allowed(!) 6.10.3-2 */
+      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" is already defined\n", $2->text_);
+    }
+    else {
+      /* Defined macro. */
+      m->refcount_ = 1; /* the macro_table references it */
+      m->is_function_style_ = 0;
+      m->is_variadic_ = 0;
+      m->nested_invocation_ = 0;
+      m->args_ = NULL;
+      m->replacement_list_ = pptk_trim($3);
+      $3 = NULL;
+    }
+  }
+}
+
+pp-line: hash define identifier PAR_OPEN_TOK identifier-list-opt PAR_CLOSE_TOK replacement-list newline-opt {
+  if (!cc->if_section_stack_ || cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+    int is_new = 0;
+
+    struct macro *m = (struct macro *)st_find_or_insert(&cc->macro_table_, $2->text_, &is_new, sizeof(struct macro));
+    if (!m) {
+      cc_no_memory(cc);
+    }
+    else if (!is_new) {
+      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" is already defined\n", $2->text_);
+    }
+    else {
+      /* Defined macro. */
+      m->refcount_ = 1; /* the macro_table references it */
+      m->is_function_style_ = 1;
+      m->is_variadic_ = 0;
+      m->nested_invocation_ = 0;
+      m->args_ = pptk_trim($4);
+      m->replacement_list_ = pptk_trim($6);
+      $4 = $6 = NULL;
+    }
+  }
+}
+
+pp-line: hash define identifier PAR_OPEN_TOK ELLIPSIS par-close replacement-list newline-opt {
+  if (!cc->if_section_stack_ || cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+    int is_new = 0;
+
+    struct macro *m = (struct macro *)st_find_or_insert(&cc->macro_table_, $2->text_, &is_new, sizeof(struct macro));
+    if (!m) {
+      cc_no_memory(cc);
+    }
+    else if (!is_new) {
+      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" is already defined\n", $2->text_);
+    }
+    else {
+      /* Defined macro. */
+      m->refcount_ = 1; /* the macro_table references it */
+      m->is_function_style_ = 1;
+      m->is_variadic_ = 1;
+      m->nested_invocation_ = 0;
+      m->args_ = NULL;
+      m->replacement_list_ = pptk_trim($6);
+      $6 = NULL;
+    }
+  }
+}
+
+pp-line: hash define identifier PAR_OPEN_TOK identifier-list COMMA ELLIPSIS par-close replacement-list newline-opt {
+  if (!cc->if_section_stack_ || cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+    int is_new = 0;
+
+    struct macro *m = (struct macro *)st_find_or_insert(&cc->macro_table_, $2->text_, &is_new, sizeof(struct macro));
+    if (!m) {
+      cc_no_memory(cc);
+    }
+    else if (!is_new) {
+      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" is already defined\n", $2->text_);
+    }
+    else {
+      /* Defined macro. */
+      m->refcount_ = 1; /* the macro_table references it */
+      m->is_function_style_ = 1;
+      m->is_variadic_ = 1;
+      m->nested_invocation_ = 0;
+      m->args_ = pptk_trim($4);
+      m->replacement_list_ = pptk_trim($8);
+      $4 = $8 = NULL;
+    }
+  }
+}
+
+pp-line: hash undef identifier ws-opt newline-opt {
+  if (!cc->if_section_stack_ || cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+    struct macro *m = (struct macro *)st_find(&cc->macro_table_, $2->text_);
+    if (!m) {
+      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" does not exist\n", $2->text_);
+    }
+    else {
+      st_remove(&cc->macro_table_, &m->sym_);
+      macro_free(m); /* drops reference count; there might be an active expansion on it.. */
+    }
+  }
+}
+
+pp-line: hash line pp-tokens newline-opt;
+pp-line: hash error-nt pp-tokens-opt newline-opt;
+pp-line: hash pragma pp-tokens-opt newline-opt;
+pp-line: hash ws-opt newline-opt {
+  /* An otherwise empty # line passes silently and is a control line according to the standard.. */
+}
+
+pp-line: non-hash-pp-tokens-opt newline-opt {
+  /* Regular content *all* moves to the output; if, and only if, the current section is not to be skipped */
+  if (!cc->if_section_stack_ || (cc->if_section_stack_->state_ == CC_IFSS_SELECTED)) {
+    *pp_output_chain = pptk_join(*pp_output_chain, $0);
+    *pp_output_chain = pptk_join(*pp_output_chain, $1);
+    $0 = $1 = NULL;
+  }
+}
+
+pp-line: ws newline-opt {
+  /* Just an empty line, treat as regular content */
+  if (!cc->if_section_stack_ || (cc->if_section_stack_->state_ == CC_IFSS_SELECTED)) {
+    *pp_output_chain = pptk_join(*pp_output_chain, $0);
+    *pp_output_chain = pptk_join(*pp_output_chain, $1);
+    $0 = $1 = NULL;
+  }
+}
+
+non-directive: non-dir-token pp-tokens-opt;
+
+replacement-list: pp-tokens-opt {
+  $$ = $0;
+  $0 = NULL;
+}
+
+non-par-open-replacement-list: ;
+non-par-open-replacement-list: non-par-open-token replacement-list {
+  $$ = pptk_join($0, $1); $0 = $1 = NULL;
+}
+
+non-hash-pp-tokens: ws-opt non-hash-token { 
+  $$ = pptk_join($0, $1); $0 = $1 = NULL;
+}
+non-hash-pp-tokens: non-hash-pp-tokens preprocessing-token {
+  $$ = pptk_join($0, $1); $0 = $1 = NULL;
+}
+
+non-hash-pp-tokens-opt: ;
+non-hash-pp-tokens-opt: non-hash-pp-tokens { $$ = $0; $0 = NULL; }
+
+header-pp-tokens: hdr-preprocessing-token { $$ = $0; $0 = NULL; }
+header-pp-tokens: header-pp-tokens hdr-preprocessing-token {
+  $$ = pptk_join($0, $1); $0 = $1 = NULL;
+}
+
+pp-tokens: preprocessing-token { $$ = $0; $0 = NULL; }
+pp-tokens: pp-tokens preprocessing-token {
+  $$ = pptk_join($0, $1); $0 = $1 = NULL;
+}
+
+pp-tokens-opt: ;
+pp-tokens-opt: pp-tokens { $$ = $0; $0 = NULL; }
+
+preprocessing-token: WS_TOK        { $$ = $0; $0 = NULL; }
+preprocessing-token: ident         { $$ = $0; $0 = NULL; }
+preprocessing-token: HASH_TOK      { $$ = $0; $0 = NULL; }
+preprocessing-token: PAR_OPEN_TOK  { $$ = $0; $0 = NULL; }
+preprocessing-token: PAR_CLOSE_TOK { $$ = $0; $0 = NULL; }
+preprocessing-token: ELLIPSIS_TOK  { $$ = $0; $0 = NULL; }
+preprocessing-token: COMMA_TOK     { $$ = $0; $0 = NULL; }
+preprocessing-token: OTHER_TOK     { $$ = $0; $0 = NULL; }
+
+hdr-preprocessing-token: preprocessing-token { $$ = $0; $0 = NULL; }
+hdr-preprocessing-token: HEADER_NAME { $$ = $0; $0 = NULL; }
+
+non-hash-token: ident         { $$ = $0; $0 = NULL; }
+non-hash-token: PAR_OPEN_TOK  { $$ = $0; $0 = NULL; }
+non-hash-token: PAR_CLOSE_TOK { $$ = $0; $0 = NULL; }
+non-hash-token: ELLIPSIS_TOK  { $$ = $0; $0 = NULL; }
+non-hash-token: COMMA_TOK     { $$ = $0; $0 = NULL; }
+non-hash-token: OTHER_TOK     { $$ = $0; $0 = NULL; }
+
+non-par-open-token: WS_TOK        { $$ = $0; $0 = NULL; }
+non-par-open-token: ident         { $$ = $0; $0 = NULL; }
+non-par-open-token: HASH_TOK      { $$ = $0; $0 = NULL; }
+non-par-open-token: PAR_CLOSE_TOK { $$ = $0; $0 = NULL; }
+non-par-open-token: ELLIPSIS_TOK  { $$ = $0; $0 = NULL; }
+non-par-open-token: COMMA_TOK     { $$ = $0; $0 = NULL; }
+non-par-open-token: OTHER_TOK     { $$ = $0; $0 = NULL; }
+
+non-dir-token: IDENTIFIER_TOK { $$ = $0; $0 = NULL; }
+non-dir-token: HASH_TOK       { $$ = $0; $0 = NULL; }
+non-dir-token: PAR_OPEN_TOK   { $$ = $0; $0 = NULL; }
+non-dir-token: PAR_CLOSE_TOK  { $$ = $0; $0 = NULL; }
+non-dir-token: ELLIPSIS_TOK   { $$ = $0; $0 = NULL; }
+non-dir-token: COMMA_TOK      { $$ = $0; $0 = NULL; }
+non-dir-token: OTHER_TOK      { $$ = $0; $0 = NULL; }
+
+ws: WS_TOK    { $$ = $0; $0 = NULL; }
+ws: ws WS_TOK { $$ = pptk_join($0, $1); $0 = $1 = NULL; }
+ws-opt: ws    { $$ = $0; $0 = NULL; }
+ws-opt: ;
+
+newline: NEWLINE_TOK { $$ = $0; $0 = NULL; }
+newline-opt: ;
+newline-opt: newline { $$ = $0; $0 = NULL; }
+
+hash:     ws-opt HASH_TOK    { $$ = $1; $1 = NULL; }
+if:       ws-opt IF_TOK      { $$ = $1; $1 = NULL; }
+ifdef:    ws-opt IFDEF_TOK   { $$ = $1; $1 = NULL; }
+ifndef:   ws-opt IFNDEF_TOK  { $$ = $1; $1 = NULL; }
+elif:     ws-opt ELIF_TOK    { $$ = $1; $1 = NULL; }
+else:     ws-opt ELSE_TOK    { $$ = $1; $1 = NULL; }
+endif:    ws-opt ENDIF_TOK   { $$ = $1; $1 = NULL; }
+include:  ws-opt INCLUDE_TOK { $$ = $1; $1 = NULL; }
+define:   ws-opt DEFINE_TOK  { $$ = $1; $1 = NULL; }
+undef:    ws-opt UNDEF_TOK   { $$ = $1; $1 = NULL; }
+line:     ws-opt LINE_TOK    { $$ = $1; $1 = NULL; }
+error-nt: ws-opt ERROR_TOK   { $$ = $1; $1 = NULL; }
+pragma:   ws-opt PRAGMA_TOK  { $$ = $1; $1 = NULL; }
+
+/* An identifier may be preceeded by whitespace and consists of identifier tokens, or any of the keyword tokens. */
+ident: IDENTIFIER_TOK { $$ = $0; $0 = NULL; }
+ident: IF_TOK         { $$ = $0; $0 = NULL; }
+ident: IFDEF_TOK      { $$ = $0; $0 = NULL; }
+ident: IFNDEF_TOK     { $$ = $0; $0 = NULL; }
+ident: ELIF_TOK       { $$ = $0; $0 = NULL; }
+ident: ELSE_TOK       { $$ = $0; $0 = NULL; }
+ident: ENDIF_TOK      { $$ = $0; $0 = NULL; }
+ident: INCLUDE_TOK    { $$ = $0; $0 = NULL; }
+ident: DEFINE_TOK     { $$ = $0; $0 = NULL; }
+ident: UNDEF_TOK      { $$ = $0; $0 = NULL; }
+ident: LINE_TOK       { $$ = $0; $0 = NULL; }
+ident: ERROR_TOK      { $$ = $0; $0 = NULL; }
+ident: PRAGMA_TOK     { $$ = $0; $0 = NULL; }
+
+identifier: ws-opt ident { $$ = $1; $1 = NULL; }
+
+par-close: ws-opt PAR_CLOSE_TOK { $$ = $1; $1 = NULL; }
+comma:     ws-opt COMMA_TOK     { $$ = $1; $1 = NULL; }
+ellipsis:  ws-opt ELLIPSIS_TOK  { $$ = $1; $1 = NULL; }
+
+identifier-list: identifier                       { $$ = $0; $0 = NULL; }
+identifier-list: identifier-list comma identifier { $$ = pptk_join($0, $2); $0 = $2 = NULL; }
+
+identifier-list-opt: ws-opt ;
+identifier-list-opt: identifier-list ws-opt { $$ = $0; $0 = NULL;}
+
