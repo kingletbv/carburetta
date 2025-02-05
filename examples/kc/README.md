@@ -1,4 +1,4 @@
-= "kc", C99 interpreter/compiler front-end example (WIP)
+# "kc", C99 interpreter/compiler front-end example (WIP)
 
 This is an example that shows how to implement a C compiler (C99 standard
 to be specific) using Carburetta, through all of its 7 translation phases.
