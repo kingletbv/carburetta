@@ -1,3 +1,25 @@
+0.8.24 - 2025-02-10
+
+ - Fixed a bug where the generated parser would not correctly handle
+   %type with no %constructor, %destructor or %move (so a plain %type
+   with no initialization, destruction, nor any special data moving
+   operation).
+   This would cause the parser not to correctly move the data when
+   resizing buffers. This did not impact %class which defines these
+   operations implicitly.
+
+ - Disabled the address sanitizer (ASAN) on MSVC for the x86 debug
+   build, it trips a bug that appears to be unrelated to Carburetta
+   itself. ASAN is still enabled for the x64 build.
+
+ - Added the "kc" C99 compiler front-end and interpreter as an example.
+   Currently only builds on the MSVC build for x64 because the interpeter
+   uses x64 assembly to build a trampoline for function pointers, which
+   is both platform and machine specific (hence MSVC x64). The build 
+   currently only builds a library and not yet a test program, and so is
+   a work in progress.
+
+
 0.8.22 - 2024-12-31
 
  - Removed many warnings on both gcc, clang and msvc.
