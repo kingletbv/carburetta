@@ -376,9 +376,9 @@ fail:
 size_t situs_len(const struct situs *s) {
   size_t n;
   size_t len = 0;
-  struct situs_span *spans = (s->num_spans_ > 1) ? s->u_.many_.spans_ : &s->u_.one_;
+  const struct situs_span *spans = (s->num_spans_ > 1) ? s->u_.many_.spans_ : &s->u_.one_;
   for (n = 0; n < s->num_spans_; ++n) {
-    struct situs_span *span = spans + n;
+    const struct situs_span *span = spans + n;
     len += span->num_bytes_;
   }
   return len;
@@ -413,8 +413,8 @@ void situs_convert_to_substitution(struct situs *s, size_t num_bytes) {
 
 void situs_init_from_after(struct situs *s, const struct situs *src_after, size_t num_bytes) {
   situs_init(s);
-  struct situs_span *spans = (src_after->num_spans_ > 1) ? src_after->u_.many_.spans_ : &src_after->u_.one_;
-  struct situs_span *last_span = spans + src_after->num_spans_ - 1;
+  const struct situs_span *spans = (src_after->num_spans_ > 1) ? src_after->u_.many_.spans_ : &src_after->u_.one_;
+  const struct situs_span *last_span = spans + src_after->num_spans_ - 1;
   struct situs_span *span = &s->u_.one_;
   span->filename_ = last_span->filename_;
   span->start_ = last_span->end_;
