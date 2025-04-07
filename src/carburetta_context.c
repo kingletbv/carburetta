@@ -45,6 +45,7 @@ void carburetta_context_init(struct carburetta_context *cc) {
   xlts_init(&cc->token_prefix_);
   cc->token_prefix_uppercase_ = NULL;
   snippet_init(&cc->params_snippet_);
+  snippet_init(&cc->visit_params_snippet_);
   snippet_init(&cc->locals_snippet_);
   snippet_init(&cc->on_finish_snippet_);
   snippet_init(&cc->on_syntax_error_snippet_);
@@ -64,6 +65,7 @@ void carburetta_context_init(struct carburetta_context *cc) {
   cc->have_typed_symbols_ = 0;
   cc->have_cpp_classes_ = 0;
   cc->generate_externc_ = 1;
+  cc->generate_visit_func_ = 0;
   xlts_init(&cc->externc_option_);
   cc->h_output_filename_ = NULL;
   cc->c_output_filename_ = NULL;
@@ -89,6 +91,7 @@ void carburetta_context_cleanup(struct carburetta_context *cc) {
     free(cc->token_prefix_uppercase_);
   }
   snippet_cleanup(&cc->params_snippet_);
+  snippet_cleanup(&cc->visit_params_snippet_);
   snippet_cleanup(&cc->locals_snippet_);
   snippet_cleanup(&cc->on_finish_snippet_);
   snippet_cleanup(&cc->on_syntax_error_snippet_);

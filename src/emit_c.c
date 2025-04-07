@@ -1901,6 +1901,129 @@ static int emit_scan_token_snippet(struct indented_printer *ip, struct carburett
   return emit_snippet_code_emission(ip, cc, &se, 0);
 }
 
+static int emit_visit_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+  /* No continuations for visits (are in the visit function, not in the parse or scan functions) */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
+  struct snippet_emission se = { 0 };
+  if (!ts) return 0;
+  se.code_ = &ts->visit_snippet_;
+  se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
+  se.dest_typestr_ = ts;
+  se.dest_fmt_ = "((stack->stack_ + n)->v_.uv%d_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
+  se.setmode_type_ = SESMT_VALID;
+  se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDIT_NONE;
+  se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
+}
+
+static int emit_common_visit_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc) {
+  /* No continuations for visits (are in the visit function, not in the parse or scan functions) */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->visit_snippet_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "((stack->stack_ + n)->common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "((stack->stack_ + n)->common_)";
+  se.setmode_type_ = SESMT_VALID;
+  se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDIT_NONE;
+  se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
+}
+
+static int emit_newbuf_visit_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc, struct typestr *ts) {
+  /* No continuations for visits (are in the visit function, not in the parse or scan functions) */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
+  struct snippet_emission se = { 0 };
+  if (!ts) return 0;
+  se.code_ = &ts->visit_snippet_;
+  se.dest_type_ = SEDT_FMT_TYPESTR_ORDINAL;
+  se.dest_typestr_ = ts;
+  se.dest_fmt_ = "((stack->new_buf_ + n)->v_.uv%d_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "((stack->new_buf_ + n)->common_)";
+  se.setmode_type_ = SESMT_VALID;
+  se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDIT_NONE;
+  se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
+}
+
+static int emit_newbuf_common_visit_snippet_indexed_by_n(struct indented_printer *ip, struct carburetta_context *cc) {
+  /* No continuations for visits (are in the visit function, not in the parse or scan functions) */
+  int prior_continuation_enabled = cc->continuation_enabled_;
+  cc->continuation_enabled_ = 0;
+  struct snippet_emission se = { 0 };
+  if (!cc->common_data_assigned_type_) return 0;
+  se.code_ = &cc->common_data_assigned_type_->visit_snippet_;
+  se.dest_type_ = SEDT_FMT;
+  se.dest_fmt_ = "((stack->new_buf_ + n)->common_)";
+  se.sym_type_ = SEST_NONE;
+  se.common_type_ = SECT_NONE;
+  se.common_dest_type_ = SECDT_FMT;
+  se.common_dest_fmt_ = "((stack->new_buf_ + n)->common_)";
+  se.setmode_type_ = SESMT_VALID;
+  se.chgterm_type_ = SECTT_NONE;
+  se.settoken_type_ = SESTT_NONE;
+  se.len_type_ = SELT_NONE;
+  se.discard_type_ = SEDIT_NONE;
+  se.text_type_ = SETT_NONE;
+  se.line_type_ = SELIT_NONE;
+  se.col_type_ = SECOT_NONE;
+  se.offset_type_ = SEOT_NONE;
+  se.end_line_type_ = SEELIT_NONE;
+  se.end_col_type_ = SEECOT_NONE;
+  se.end_offset_type_ = SEEOT_NONE;
+  int r = emit_snippet_code_emission(ip, cc, &se, 0);
+  cc->continuation_enabled_ = prior_continuation_enabled;
+  return r;
+}
+
+
 static void emit_lex_function_x(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg) {
   /* Emit the scan function, it scans the input for regex matches without actually executing any actions */
   /* (we're obviously in need of a templating language..) */
@@ -3425,6 +3548,25 @@ static int have_destructor_switch_by_state_cases(struct carburetta_context *cc, 
   for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
     struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
     if (ts->destructor_snippet_.num_tokens_) {
+      size_t state_idx;
+      for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+        struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+        if (!sym) continue;
+        if (sym->assigned_type_ == ts) {
+          return 1; /* have at least 1 case */
+        }
+      }
+    }
+  }
+
+  return 0;
+}
+
+static int have_visitation_switch_by_state_cases(struct carburetta_context *cc, struct lr_generator *lalr, int *state_syms) {
+  size_t typestr_idx;
+  for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+    struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+    if (ts->visit_snippet_.num_tokens_) {
       size_t state_idx;
       for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
         struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
@@ -5629,6 +5771,329 @@ static int emit_stack_deconstruction(struct indented_printer *ip, struct carbure
   return 0;
 }
 
+static int emit_stack_visit(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct lr_generator *lalr, int *state_syms) {
+  int have_state_cases = have_visitation_switch_by_state_cases(cc, lalr, state_syms);
+  int have_common_visitation = cc->common_data_assigned_type_ && cc->common_data_assigned_type_->visit_snippet_.num_tokens_;
+  int have_any_visitation = have_common_visitation || have_state_cases;
+
+  size_t typestr_idx;
+  if (have_any_visitation) {
+    ip_printf(ip, "  size_t n;\n");
+    ip_printf(ip, "  if (!stack->new_buf_) n = 0;\n");
+    ip_printf(ip, "  else {\n");
+    ip_printf(ip, "    n = stack->new_buf_sym_partial_pos_;\n");
+    ip_printf(ip, "  }\n");
+
+    ip_printf(ip, "  for (; n < stack->pos_; ++n) {\n");
+    if (have_common_visitation) ip_printf(ip, "    int need_common_visit = 0;\n");
+    if (have_state_cases) ip_printf(ip, "    int need_state_visit = 0;\n");
+    ip_printf(ip, "    if ((n == 0) || (n == 1)) {\n");
+    int have_sym_types = check_have_sym_types(cc);
+    if (have_sym_types) {
+      ip_printf(ip, "      int need_sym_visit = 0;\n");
+      ip_printf(ip, "      int sym_to_visit;\n");
+    }
+    if (have_state_cases) ip_printf(ip, "      need_state_visit = 0;\n");
+    ip_printf(ip, "    if (n == 0) {\n");
+    if (prdg->num_patterns_) {
+      ip_printf(ip, "      /* slot 0 is used for pattern matching; stack->current_sym_ describes its\n"
+                    "       * contents, not stack->stack_[0].state_ */\n");
+      if (have_sym_types) ip_printf(ip, "      sym_to_visit = stack->current_sym_;\n");
+      if (have_sym_types) ip_printf(ip, "      sym_to_visit = stack->slot_0_has_current_sym_data_;\n");
+      if (have_common_visitation) ip_printf(ip, "      need_common_visit = stack->slot_0_has_common_data_;\n");
+    }
+    else {
+      ip_printf(ip, "      /* slot 0 goes unused in scannerless operation */\n");
+      if (have_common_visitation) ip_printf(ip, "      need_common_visit = 0;\n");
+      if (have_sym_types) ip_printf(ip, "      need_sym_visit = 0;\n");
+    }
+    ip_printf(ip, "    }\n"
+                  "    else if (n == 1) {\n");
+    if (have_sym_types) {
+      ip_printf(ip, "      sym_to_visit = stack->slot_1_sym_;\n");
+      ip_printf(ip, "      need_sym_visit = stack->slot_1_has_sym_data_;\n");
+    }
+    if (have_common_visitation) ip_printf(ip, "      need_common_visit = stack->slot_1_has_common_data_;\n");
+    ip_printf(ip, "    }\n");
+    if (have_sym_types || have_common_visitation) {
+      ip_printf(ip, "      if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {\n");
+      if (have_sym_types) {
+        ip_printf(ip, "        need_sym_visit = need_sym_visit && stack->stack_newbuf_pos_has_sym_data_;\n");
+      }
+      if (have_common_visitation) {
+        ip_printf(ip, "        need_common_visit = need_common_visit && stack->stack_newbuf_pos_has_common_data_;\n");
+      }
+      ip_printf(ip, "      }\n");
+    }
+
+    if (have_sym_types) {
+      ip_printf(ip, "    if (need_sym_visit) {\n");
+      ip_printf(ip, "      switch (sym_to_visit) {\n");
+      size_t ts_idx;
+      for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+        struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+        size_t n;
+        int have_some = 0;
+        for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+          struct symbol *sym = the_syms[n];
+          if (sym) {
+            do {
+              if (sym->assigned_type_ == ts) {
+                have_some = 1;
+                ip_printf(ip, "      case ");
+                print_sym_as_c_ident(ip, cc, sym);
+                ip_printf(ip, ":\n");
+              }
+              sym = sym->next_;
+            } while (sym != the_syms[n]);
+          }
+        }
+        if (have_some) {
+          /* Execute visitation snippet at stack_[0] or stack_[1]. */
+          ip_printf(ip, "    {\n      ");
+          if (emit_visit_snippet_indexed_by_n(ip, cc, ts)) {
+            ip->had_error_ = 1;
+            return -1;
+          }
+          /* Close this compound block  */
+          ip_printf(ip, "\n    }\n    break;\n");
+        }
+      }
+      ip_printf(ip, "      }\n");
+      ip_printf(ip, "    }\n");
+    }
+    ip_printf(ip, "    }\n"
+                  "    else if (n == (stack->pos_ - 1)) {\n");
+    if (have_common_visitation) {
+      ip_printf(ip, "      need_common_visit = stack->top_of_stack_has_common_data_;\n");
+    }
+    if (have_state_cases) {
+      ip_printf(ip, "      need_state_visit = stack->top_of_stack_has_sym_data_;\n");
+    }
+    if (have_common_visitation || have_state_cases) {
+      ip_printf(ip, "      if (n == stack->new_buf_sym_partial_pos_) {\n");
+      if (have_common_visitation) {
+        ip_printf(ip, "      need_common_visit = need_common_visit && stack->stack_newbuf_pos_has_common_data_;\n");
+      }
+      if (have_state_cases) {
+        ip_printf(ip, "      need_state_visit = need_state_visit && stack->stack_newbuf_pos_has_sym_data_;\n");
+      }
+      ip_printf(ip, "      }\n");
+    }
+    ip_printf(ip, "    }\n"
+                  "    else if (stack->new_buf_ && (n == stack->new_buf_sym_partial_pos_)) {\n");
+    if (have_common_visitation) ip_printf(ip, "      need_common_visit = stack->stack_newbuf_pos_has_common_data_;\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_visit = stack->stack_newbuf_pos_has_sym_data_;\n");
+    ip_printf(ip, "    }\n"
+                  "    else {\n");
+    if (have_common_visitation) ip_printf(ip, "      need_common_visit = 1;\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_visit = 1;\n");
+    ip_printf(ip, "    }\n");
+
+    if (have_state_cases) {
+      ip_printf(ip, "    if (need_state_visit) {\n");
+      ip_printf(ip, "    switch (stack->stack_[n].state_) {\n");
+      for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+        if (ts->visit_snippet_.num_tokens_) {
+          int have_cases = 0; /* always true if all types are always used */
+          /* Type has a visit snippet associated.. Find all state for whose corresponding symbol has the associated type */
+          size_t state_idx;
+          for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+            struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+            if (!sym) continue;
+            if (sym->assigned_type_ == ts) {
+              ip_printf(ip, "    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+              have_cases = 1;
+            }
+          }
+          if (have_cases) {
+            ip_printf(ip, "    {\n      ");
+            if (emit_visit_snippet_indexed_by_n(ip, cc, ts)) {
+              ip->had_error_ = 1;
+              return -1;
+            }
+
+            /* Close this compound block  */
+            ip_printf(ip, "\n    }\n    break;\n");
+          }
+        }
+      }
+      ip_printf(ip, "    } /* switch */\n");
+      ip_printf(ip, "    }\n");
+    }
+    if (have_common_visitation) {
+      ip_printf(ip, "    if (need_common_visit) {\n"
+        "      ");
+      if (emit_common_visit_snippet_indexed_by_n(ip, cc)) {
+        ip->had_error_ = 1;
+        return -1;
+      }
+      ip_printf(ip, "\n"
+                    "    }\n");
+    }
+    ip_printf(ip, "  }\n");
+    ////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    ip_printf(ip, "  if (stack->new_buf_) {\n");
+    ip_printf(ip, "    /* same visitation as above, but now for stack->new_buf_ -- stack->new_buf_ only\n"
+                  "     * exists for a brief period time when we resize stack->stack_ and are copying things\n"
+                  "     * over from the old buffer to the new buffer. */\n");
+    ip_printf(ip, "  for (n = 0; n <= stack->new_buf_sym_partial_pos_; ++n) {\n");
+    if (have_common_visitation) ip_printf(ip, "    int need_common_visit = 0;\n");
+    if (have_state_cases) ip_printf(ip, "    int need_state_visit = 0;\n");
+
+    ip_printf(ip, "    if ((n == 0) || (n == 1)) {\n");
+    if (have_sym_types) {
+      ip_printf(ip, "      int need_sym_visit = 0;\n");
+      ip_printf(ip, "      int sym_to_visit;\n");
+    }
+    if (have_state_cases) ip_printf(ip, "      need_state_visit = 0;\n");
+    ip_printf(ip, "      if (n == 0) {\n");
+    if (prdg->num_patterns_) {
+      ip_printf(ip, "        /* slot 0 is used for pattern matching; stack->current_sym_ describes its\n"
+                    "         * contents, not stack->stack_[0].state_ */\n");
+      if (have_sym_types) ip_printf(ip, "      sym_to_visit = stack->current_sym_;\n");
+      if (have_sym_types) ip_printf(ip, "      need_sym_visit = stack->slot_0_has_current_sym_data_;\n");
+      if (have_common_visitation) ip_printf(ip, "      need_common_visit = stack->slot_0_has_common_data_;\n");
+    }else {
+      ip_printf(ip, "        /* slot 0 goes unused in scannerless operation */\n");
+      if (have_common_visitation) ip_printf(ip, "      need_common_visit = 0;\n");
+      if (have_sym_types) ip_printf(ip, "      need_sym_visit = 0;\n");
+    }
+    ip_printf(ip, "      }\n");
+    ip_printf(ip, "      else if (n == 1) {\n");
+    if (have_sym_types) {
+      ip_printf(ip, "      sym_to_visit = stack->slot_1_sym_;\n");
+      ip_printf(ip, "      need_sym_visit = stack->slot_1_has_sym_data_;\n");
+    }
+    if (have_common_visitation) ip_printf(ip, "      need_common_visit = stack->slot_1_has_common_data_;\n");
+    ip_printf(ip, "      }\n");
+    if (have_sym_types || have_common_visitation) {
+      ip_printf(ip, "      if (n == stack->new_buf_sym_partial_pos_) {\n");
+      if (have_sym_types) {
+        ip_printf(ip, "        need_sym_visit = need_sym_visit && stack->newbuf_pos_has_sym_data_;\n");
+      }
+      if (have_common_visitation) {
+        ip_printf(ip, "        need_common_visit = need_common_visit && stack->newbuf_pos_has_common_data_;\n");
+      }
+      ip_printf(ip, "      }\n");
+    }
+    if (have_sym_types) {
+      ip_printf(ip, "        if (need_sym_visit) {\n");
+      ip_printf(ip, "          switch (sym_to_visit) {\n");
+      size_t ts_idx;
+      for (ts_idx = 0; ts_idx < cc->tstab_.num_typestrs_; ++ts_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[ts_idx];
+        struct symbol *the_syms[] = { cc->symtab_.terminals_, cc->symtab_.non_terminals_ };
+        size_t n;
+        int have_some = 0;
+        for (n = 0; n < sizeof(the_syms) / sizeof(*the_syms); ++n) {
+          struct symbol *sym = the_syms[n];
+          if (sym) {
+            do {
+              if (sym->assigned_type_ == ts) {
+                have_some = 1;
+                ip_printf(ip, "      case ");
+                print_sym_as_c_ident(ip, cc, sym);
+                ip_printf(ip, ":\n");
+              }
+              sym = sym->next_;
+            } while (sym != the_syms[n]);
+          }
+        }
+        if (have_some) {
+          /* Execute visit snippet at stack_[0] or stack_[1]. */
+          ip_printf(ip, "    {\n      ");
+          if (emit_newbuf_visit_snippet_indexed_by_n(ip, cc, ts)) {
+            ip->had_error_ = 1;
+            return -1;
+          }
+          /* Close this compound block  */
+          ip_printf(ip, "\n    }\n    break;\n");
+        }
+      }
+      ip_printf(ip, "      }\n");
+      ip_printf(ip, "    }\n");
+    }
+    ip_printf(ip, "    }\n"
+                  "    else if (n == (stack->pos_ - 1)) {\n");
+    if (have_common_visitation) ip_printf(ip, "      need_common_visit = stack->top_of_stack_has_common_data_;\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_visit = stack->top_of_stack_has_sym_data_;\n");
+
+    if (have_common_visitation || have_state_cases) {
+      ip_printf(ip, "      if (n == stack->new_buf_sym_partial_pos_) {\n");
+      if (have_common_visitation) {
+        ip_printf(ip, "      need_common_visit = need_common_visit && stack->newbuf_pos_has_common_data_;\n");
+      }
+      if (have_state_cases) {
+        ip_printf(ip, "      need_state_visit = need_state_visit && stack->newbuf_pos_has_sym_data_;\n");
+      }
+      ip_printf(ip, "      }\n");
+    }
+
+    ip_printf(ip, "    }\n"
+      "    else if (n == stack->new_buf_sym_partial_pos_) {\n");
+    if (have_common_visitation) ip_printf(ip, "      need_common_visit = stack->newbuf_pos_has_common_data_;\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_visit = stack->newbuf_pos_has_sym_data_;\n");
+    ip_printf(ip, "    }\n"
+                  "    else {\n");
+    if (have_common_visitation) ip_printf(ip, "      need_common_visit = 1;\n");
+    if (have_state_cases) ip_printf(ip, "      need_state_visit = 1;\n");
+    ip_printf(ip, "    }\n");
+
+    if (have_state_cases) {
+      ip_printf(ip, "    if (need_state_visit) {\n");
+      ip_printf(ip, "    switch (stack->stack_[n].state_) {\n");
+      for (typestr_idx = 0; typestr_idx < cc->tstab_.num_typestrs_; ++typestr_idx) {
+        struct typestr *ts = cc->tstab_.typestrs_[typestr_idx];
+        if (ts->visit_snippet_.num_tokens_) {
+          int have_cases = 0; /* always true if all types are always used */
+          /* Type has a visit snippet associated.. Find all state for whose corresponding symbol has the associated type */
+          size_t state_idx;
+          for (state_idx = 0; state_idx < lalr->nr_states_; ++state_idx) {
+            struct symbol *sym = symbol_find_by_ordinal(&cc->symtab_, state_syms[state_idx]);
+            if (!sym) continue;
+            if (sym->assigned_type_ == ts) {
+              ip_printf(ip, "    case %d: /* %s */\n", (int)state_idx, sym->def_.translated_);
+              have_cases = 1;
+            }
+          }
+          if (have_cases) {
+            ip_printf(ip, "    {\n      ");
+            if (emit_newbuf_visit_snippet_indexed_by_n(ip, cc, ts)) {
+              ip->had_error_ = 1;
+              return -1;
+            }
+
+            /* Close this compound block  */
+            ip_printf(ip, "\n    }\n    break;\n");
+          }
+        }
+      }
+      ip_printf(ip, "    } /* switch */\n");
+      ip_printf(ip, "    }\n");
+    }
+    if (have_common_visitation) {
+      ip_printf(ip, "    if (need_common_visit) {\n"
+        "      ");
+      if (emit_newbuf_common_visit_snippet_indexed_by_n(ip, cc)) {
+        ip->had_error_ = 1;
+        return -1;
+      }
+      ip_printf(ip, "\n"
+        "    }\n");
+    }
+    ip_printf(ip, "  }\n");
+    ip_printf(ip, "    free(stack->new_buf_);\n");
+    ip_printf(ip, "    stack->new_buf_ = NULL;\n");
+    ip_printf(ip, "  }\n");
+
+  }
+  return 0;
+}
+
 void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, struct prd_grammar *prdg, struct rex_scanner *rex, struct lr_generator *lalr) {
   int *state_syms;
   state_syms = NULL;
@@ -6562,6 +7027,25 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "}\n"
                 "\n");
 
+  if (cc->generate_visit_func_) {
+    ip_printf(ip, "int %sstack_visit(struct %sstack *stack, ", cc_prefix(cc), cc_prefix(cc));
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->visit_params_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->visit_params_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, ") {\n");
+
+    if (emit_stack_visit(ip, cc, prdg, lalr, state_syms)) {
+      ip->had_error_ = 1;
+      goto cleanup_exit;
+    }
+
+    ip_printf(ip, "  return 0;\n"
+                  "}\n"
+                  "\n");
+
+  }
+
   ip_printf(ip, "int %sstack_can_recover(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "  return !!stack->error_recovery_;\n");
   ip_printf(ip, "}\n");
@@ -6723,6 +7207,15 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "void %sstack_init(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "void %sstack_cleanup(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "int %sstack_reset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+  if (cc->generate_visit_func_) {
+    ip_printf(ip, "int %sstack_visit(struct %sstack *stack, ", cc_prefix(cc), cc_prefix(cc));
+    size_t token_idx;
+    for (token_idx = 0; token_idx < cc->visit_params_snippet_.num_tokens_; ++token_idx) {
+      ip_printf(ip, "%s", cc->visit_params_snippet_.tokens_[token_idx].text_.original_);
+    }
+    ip_printf(ip, ");\n");
+  }
+
   ip_printf(ip, "int %sstack_can_recover(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "int %sstack_accepts(struct %sstack *stack, int sym);\n", cc_prefix(cc), cc_prefix(cc));
   if (prdg->num_patterns_) {

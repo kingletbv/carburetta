@@ -191,10 +191,12 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     PCD_RAII_CONSTRUCTOR_DIRECTIVE,
     PCD_MOVE_DIRECTIVE,
     PCD_DESTRUCTOR_DIRECTIVE,
+    PCD_VISIT_DIRECTIVE,
     PCD_TOKEN_ACTION_DIRECTIVE,
     PCD_PREFIX_DIRECTIVE,
     PCD_TOKEN_PREFIX_DIRECTIVE,
     PCD_PARAMS_DIRECTIVE,
+    PCD_VISIT_PARAMS_DIRECTIVE,
     PCD_LOCALS_DIRECTIVE,
     PCD_ON_FINISH_DIRECTIVE,
     PCD_ON_SYNTAX_ERROR_DIRECTIVE,
@@ -238,7 +240,9 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             (directive == PCD_RAII_CONSTRUCTOR_DIRECTIVE) ||
             (directive == PCD_MOVE_DIRECTIVE) ||
             (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
+            (directive == PCD_VISIT_DIRECTIVE) ||
             (directive == PCD_PARAMS_DIRECTIVE) ||
+            (directive == PCD_VISIT_PARAMS_DIRECTIVE) ||
             (directive == PCD_LOCALS_DIRECTIVE) ||
             (directive == PCD_ON_FINISH_DIRECTIVE) ||
             (directive == PCD_ON_LEXICAL_ERROR_DIRECTIVE) ||
@@ -314,31 +318,37 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             else if (!strcmp("constructor", tkr_str(tkr_tokens))) {
               directive = PCD_CONSTRUCTOR_DIRECTIVE;
               if (!cc->most_recent_typestr_) {
-                re_error_tkr(tkr_tokens, "%%constructor must follow %%token_type or %%type directive");
+                re_error_tkr(tkr_tokens, "%%constructor must follow %%token_type, %%type, %%class, %%common_type or %%common_class directive");
               }
             }
             else if (!strcmp("raii_constructor", tkr_str(tkr_tokens))) {
               directive = PCD_RAII_CONSTRUCTOR_DIRECTIVE;
               if (!cc->most_recent_typestr_) {
-                re_error_tkr(tkr_tokens, "%%raii_constructor must follow %%token_type or %%type directive");
+                re_error_tkr(tkr_tokens, "%%raii_constructor must follow %%token_type, %%type, %%class, %%common_type or %%common_class directive");
               }
             }
             else if (!strcmp("move", tkr_str(tkr_tokens))) {
               directive = PCD_MOVE_DIRECTIVE;
               if (!cc->most_recent_typestr_) {
-                re_error_tkr(tkr_tokens, "%%move must follow %%token_type or %%type directive");
+                re_error_tkr(tkr_tokens, "%%move must follow %%token_type, %%type, %%class, %%common_type or %%common_class directive");
               }
             }
             else if (!strcmp("destructor", tkr_str(tkr_tokens))) {
               directive = PCD_DESTRUCTOR_DIRECTIVE;
               if (!cc->most_recent_typestr_) {
-                re_error_tkr(tkr_tokens, "%%destructor must follow %%token_type or %%type directive");
+                re_error_tkr(tkr_tokens, "%%destructor must follow %%token_type, %%type, %%class, %%common_type or %%common_class directive");
+              }
+            }
+            else if (!strcmp("visit", tkr_str(tkr_tokens))) {
+              directive = PCD_VISIT_DIRECTIVE;
+              if (!cc->most_recent_typestr_) {
+                re_error_tkr(tkr_tokens, "%%visit must follow %%token_type, %%type, %%class, %%common_type or %%common_class directive");
               }
             }
             else if (!strcmp("token_action", tkr_str(tkr_tokens))) {
               directive = PCD_TOKEN_ACTION_DIRECTIVE;
               if (!cc->most_recent_typestr_) {
-                re_error_tkr(tkr_tokens, "%%token_action must follow %%token_type or %%type directive");
+                re_error_tkr(tkr_tokens, "%%token_action must follow %%token_type, %%type, %%class, %%common_type or %%common_class directive");
               }
             }
             else if (!strcmp("prefix", tkr_str(tkr_tokens))) {
@@ -349,6 +359,9 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             }
             else if (!strcmp("params", tkr_str(tkr_tokens))) {
               directive = PCD_PARAMS_DIRECTIVE;
+            }
+            else if (!strcmp("visit_params", tkr_str(tkr_tokens))) {
+              directive = PCD_VISIT_PARAMS_DIRECTIVE;
             }
             else if (!strcmp("locals", tkr_str(tkr_tokens))) {
               directive = PCD_LOCALS_DIRECTIVE;
@@ -694,6 +707,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
                    (directive == PCD_RAII_CONSTRUCTOR_DIRECTIVE) ||
                    (directive == PCD_MOVE_DIRECTIVE) ||
                    (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
+                   (directive == PCD_VISIT_DIRECTIVE) ||
                    (directive == PCD_TOKEN_ACTION_DIRECTIVE)) {
             if (dir_snippet.num_tokens_ || (tkr_tokens->best_match_variant_ != TOK_WHITESPACE)) {
               r = snippet_append_tkr(&dir_snippet, tkr_tokens);
@@ -774,6 +788,7 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
             found_prefix = 1;
           }
           else if ((directive == PCD_PARAMS_DIRECTIVE) || 
+                   (directive == PCD_VISIT_PARAMS_DIRECTIVE) ||
                    (directive == PCD_LOCALS_DIRECTIVE) ||
                    (directive == PCD_ON_FINISH_DIRECTIVE) || 
                    (directive == PCD_ON_SYNTAX_ERROR_DIRECTIVE) || 
@@ -951,10 +966,12 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
 
   if ((directive == PCD_LOCALS_DIRECTIVE) ||
       (directive == PCD_PARAMS_DIRECTIVE) ||
+      (directive == PCD_VISIT_PARAMS_DIRECTIVE) ||
       (directive == PCD_CONSTRUCTOR_DIRECTIVE) ||
       (directive == PCD_RAII_CONSTRUCTOR_DIRECTIVE) ||
       (directive == PCD_MOVE_DIRECTIVE) ||
       (directive == PCD_DESTRUCTOR_DIRECTIVE) ||
+      (directive == PCD_VISIT_DIRECTIVE) ||
       (directive == PCD_TOKEN_ACTION_DIRECTIVE)) {
     /* Trim simple whitespace off the tail end, preserve comments, remove newlines and spaces */
     while (dir_snippet.num_tokens_ && (
@@ -1061,6 +1078,13 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     if (r) goto cleanup_exit;
   }
 
+  if (directive == PCD_VISIT_DIRECTIVE) {
+    cc->generate_visit_func_ = 1;
+    snippet_clear(&cc->most_recent_typestr_->visit_snippet_);
+    r = snippet_append_snippet(&cc->most_recent_typestr_->visit_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
   if (directive == PCD_TOKEN_ACTION_DIRECTIVE) {
     snippet_clear(&cc->most_recent_typestr_->token_action_snippet_);
     r = snippet_append_snippet(&cc->most_recent_typestr_->token_action_snippet_, &dir_snippet);
@@ -1073,6 +1097,13 @@ static int pi_process_carburetta_directive(struct tkr_tokenizer *tkr_tokens, str
     if (r) goto cleanup_exit;
   }
   
+  if (directive == PCD_VISIT_PARAMS_DIRECTIVE) {
+    cc->generate_visit_func_ = 1;
+    snippet_clear(&cc->visit_params_snippet_);
+    r = snippet_append_snippet(&cc->visit_params_snippet_, &dir_snippet);
+    if (r) goto cleanup_exit;
+  }
+
   if (directive == PCD_LOCALS_DIRECTIVE) {
     snippet_clear(&cc->locals_snippet_);
     r = snippet_append_snippet(&cc->locals_snippet_, &dir_snippet);

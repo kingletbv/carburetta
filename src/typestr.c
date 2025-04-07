@@ -72,6 +72,7 @@ static void typestr_init(struct typestr *ts) {
   snippet_init(&ts->move_snippet_);
   snippet_init(&ts->destructor_snippet_);
   snippet_init(&ts->token_action_snippet_);
+  snippet_init(&ts->visit_snippet_);
 }
 
 static void typestr_cleanup(struct typestr *ts) {
@@ -79,6 +80,7 @@ static void typestr_cleanup(struct typestr *ts) {
   snippet_cleanup(&ts->constructor_snippet_);
   snippet_cleanup(&ts->destructor_snippet_);
   snippet_cleanup(&ts->token_action_snippet_);
+  snippet_cleanup(&ts->visit_snippet_);
 }
 
 struct typestr *typestr_add(struct typestr_table *tt, const struct snippet *typestr_snippet) {

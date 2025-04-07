@@ -79,6 +79,7 @@ struct carburetta_context {
   struct xlts token_prefix_;
   char *token_prefix_uppercase_;
   struct snippet params_snippet_;
+  struct snippet visit_params_snippet_;
   struct snippet locals_snippet_;
   struct snippet on_finish_snippet_;
   struct snippet on_syntax_error_snippet_;
@@ -98,6 +99,7 @@ struct carburetta_context {
   int have_typed_symbols_ :1;
   int have_cpp_classes_ :1; /* Have C++ classes as types, e.g. %class directive has been used */
   int generate_externc_:1;  /* Generate extern "C" { ... } around the generated code */
+  int generate_visit_func_:1; /* Generate a visit function (true if %visit or %visit-params is specified, false otherwise) */
   struct xlts externc_option_; /* "%externc" or "%noexternc"; but only when this is specified, used to determine if generate_externc_ flag is implicit or explicit. */
   char *h_output_filename_;
   char *c_output_filename_;
