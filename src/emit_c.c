@@ -7028,13 +7028,17 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
                 "\n");
 
   if (cc->generate_visit_func_) {
-    ip_printf(ip, "int %sstack_visit(struct %sstack *stack, ", cc_prefix(cc), cc_prefix(cc));
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->visit_params_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->visit_params_snippet_.tokens_[token_idx].text_.original_);
+    if (cc->visit_params_snippet_.num_tokens_) {
+      ip_printf(ip, "int %sstack_visit(struct %sstack *stack, ", cc_prefix(cc), cc_prefix(cc));
+      size_t token_idx;
+      for (token_idx = 0; token_idx < cc->visit_params_snippet_.num_tokens_; ++token_idx) {
+        ip_printf(ip, "%s", cc->visit_params_snippet_.tokens_[token_idx].text_.original_);
+      }
+      ip_printf(ip, ") {\n");
     }
-    ip_printf(ip, ") {\n");
-
+    else {
+      ip_printf(ip, "int %sstack_visit(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
+    }
     if (emit_stack_visit(ip, cc, prdg, lalr, state_syms)) {
       ip->had_error_ = 1;
       goto cleanup_exit;
@@ -7208,12 +7212,17 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "void %sstack_cleanup(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "int %sstack_reset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   if (cc->generate_visit_func_) {
-    ip_printf(ip, "int %sstack_visit(struct %sstack *stack, ", cc_prefix(cc), cc_prefix(cc));
-    size_t token_idx;
-    for (token_idx = 0; token_idx < cc->visit_params_snippet_.num_tokens_; ++token_idx) {
-      ip_printf(ip, "%s", cc->visit_params_snippet_.tokens_[token_idx].text_.original_);
+    if (cc->visit_params_snippet_.num_tokens_) {
+      ip_printf(ip, "int %sstack_visit(struct %sstack *stack, ", cc_prefix(cc), cc_prefix(cc));
+      size_t token_idx;
+      for (token_idx = 0; token_idx < cc->visit_params_snippet_.num_tokens_; ++token_idx) {
+        ip_printf(ip, "%s", cc->visit_params_snippet_.tokens_[token_idx].text_.original_);
+      }
+      ip_printf(ip, ");\n");
     }
-    ip_printf(ip, ");\n");
+    else {
+      ip_printf(ip, "int %sstack_visit(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
+    }
   }
 
   ip_printf(ip, "int %sstack_can_recover(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
