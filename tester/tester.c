@@ -34,7 +34,8 @@ xx(t13, "C++ tracing failing constructor cleanup test over common data") \
 xx(t14, "C++ tracing failing move cleanup test over common data") \
 xx(t15, "C++ tracing failing constructor carrying data over common data") \
 xx(t16, "C++ skip destructor for implicit C-style %move") \
-xx(t17, "C++ call destructor for explicit C-style %move")
+xx(t17, "C++ call destructor for explicit C-style %move") \
+xx(t18, "C++ check visit function visits all open common data")
 
 #define xx(id, desc) int id(void);
 enum_tests
