@@ -1,0 +1,194 @@
+/* Copyright 2020-2025 Kinglet B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// t19 - C++ check visit function visits all open symbol data
+#include <stdio.h>  // fprintf, stderr
+#include <stdint.h> // SIZE_MAX
+#include <cstdlib> // atoi
+#include <exception> // std::exception
+
+#include "t19.h"
+
+namespace nt19 {
+
+class CountedValue {
+  public:
+  CountedValue() {
+    open_value_count_++;
+  }
+  ~CountedValue() {
+    open_value_count_--;
+  }
+
+  static void perform_visits(struct t19_stack *stack);
+
+  static size_t open_value_count_;
+  static size_t open_visit_count_;
+  static bool counts_mismatched_;
+};
+
+// Value object for all valued nonterminals and the INTEGER terminal.
+class Value : public CountedValue {
+public:
+  int value_ = 0;
+  Value() : Value(0) {
+  }
+  Value(const Value &v) {
+    value_ = v.value();
+  }
+  Value(int val) : value_(val) {
+  }
+  ~Value() {
+  }
+  int value() const { return value_; }
+  void set_value(int value) { value_ = value; }
+  Value operator+(const Value &r) const { return Value(value() + r.value()); }
+  Value operator-(const Value &r) const { return Value(value() - r.value()); }
+  Value operator*(const Value &r) const { return Value(value() * r.value()); }
+  Value operator/(const Value &r) const { return Value(value() / r.value()); }
+  Value operator-() const { return Value(-value()); }
+  Value &operator=(const Value &r) {
+    set_value(r.value());
+    return *this;
+  }
+  Value &operator=(Value &&r) {
+    set_value(r.value());
+    r.set_value(0);
+    return *this;
+  }
+};
+
+size_t CountedValue::open_value_count_ = 0;
+size_t CountedValue::open_visit_count_ = 0;
+bool CountedValue::counts_mismatched_ = false;
+
+void CountedValue::perform_visits(struct t19_stack *stack) {
+  open_visit_count_ = 0;
+  t19_stack_visit(stack);
+  if (open_value_count_ != open_visit_count_) {
+    counts_mismatched_ = true;
+  }
+}
+
+
+} // namespace nt19
+
+using namespace nt19;
+
+%scanner%
+%prefix t19_
+
+INTEGER: [0-9]+ { $$ = Value(atoi($text)); }
+
+: [\ \n]+; /* skip spaces and newlines */
+PLUS: \+; 
+MINUS: \-;
+ASTERISK: \*;
+SLASH: /; 
+PAR_OPEN: \(; 
+PAR_CLOSE: \);
+
+%token PLUS MINUS ASTERISK SLASH PAR_OPEN PAR_CLOSE INTEGER
+%nt grammar expr term factor value
+
+%grammar%
+
+%class grammar expr term factor value INTEGER: Value
+%visit CountedValue::open_visit_count_++;
+
+%params int &final_result
+
+grammar: expr {
+  final_result = $0.value();
+}
+
+expr: term                      { $$ = $0; CountedValue::perform_visits(stack); }
+expr: expr PLUS term            { $$ = $0 + $2; CountedValue::perform_visits(stack); }
+expr: expr MINUS term           { $$ = $0 - $2; CountedValue::perform_visits(stack); }
+  
+term: factor                    { $$ = $0; CountedValue::perform_visits(stack); }
+term: term ASTERISK factor      { $$ = $0 * $2; CountedValue::perform_visits(stack); }
+term: term SLASH factor         { $$ = $0 / $2; CountedValue::perform_visits(stack); }
+  
+factor: value                   { $$ = $0; CountedValue::perform_visits(stack); }
+factor: MINUS factor            { $$ = -$1; CountedValue::perform_visits(stack); }
+factor: PAR_OPEN expr PAR_CLOSE { $$ = $1; CountedValue::perform_visits(stack); }
+
+value: INTEGER                  { $$ = $0; CountedValue::perform_visits(stack); }
+
+%%
+extern "C" int t19() {
+  int rv = -1;
+  int r;
+
+  const char sum[] = "((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1+2*-3"
+                     "))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))";
+
+  struct t19_stack stack;
+  t19_stack_init(&stack);
+
+
+  t19_set_input(&stack, sum, sizeof(sum) - 1, 1);
+  int final_result = 0;
+  r = t19_scan(&stack, final_result);
+  if (r != _T19_FINISH) {
+    rv = -1;
+    goto fail;
+  }
+
+  if (final_result != -5) {
+    rv = -2;
+    goto fail;
+  }
+
+  /* At this point, the only object that should exist on the stack
+   * is the grammar object; all other value objects should be cleaned up. */
+  if (Value::open_value_count_ != 1) {
+    rv = -3;
+    goto fail;
+  }
+
+  t19_stack_reset(&stack);
+
+  if (Value::open_value_count_ != 0) {
+    rv = -4;
+    goto fail;
+  }
+
+  t19_set_input(&stack, sum, sizeof(sum) - 1, 1);
+  r = t19_scan(&stack, final_result);
+  if (r == _T19_FINISH) {
+    if (CountedValue::counts_mismatched_) {
+      rv = -5;
+      goto fail;
+    }
+  }
+  else if (r != -1) {
+    // Did not catch an exception and did not finish, this is a fail.
+    rv = -6;
+    goto fail;
+  }
+
+  /* Resetting the stack should clear out the only object on the stack,
+   * being, the grammar object. */
+  t19_stack_reset(&stack);
+
+  rv = 0;
+
+fail:
+  t19_stack_cleanup(&stack);
+  return rv;
+}
+
