@@ -1,3 +1,13 @@
+0.8.25 - 2025-04-14
+
+ - New 'visit' feature. When specifying either %visit or %visit_params
+   directives, Carburetta will now generate a new function 
+   <prefix>stack_visit() that visits all the symbol datatypes inside
+   the stack, using stack internal runtime type information to dispatch
+   to the appropriate snippet of code.
+   Please see the https://carburetta.com/manual.html#prefixstack_visit
+   section of the manual for details on the function generated.
+
 0.8.24 - 2025-02-10
 
  - Fixed a bug where the generated parser would not correctly handle
