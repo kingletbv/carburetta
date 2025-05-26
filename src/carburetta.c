@@ -205,7 +205,8 @@ struct cli_args {
   { 'c', "c", "[<c_filename>]", "Generate a C file and output it to c_filename. If no filename is specified, then output will be to stdout.", 1 },
   { 'h', "h", "[<h_filename>]", "Generate a C header file and output it to h_filename. If no filename is present, a c_filename must be present as it will then be used to derive a filename for the header file.", 1},
   { '8', "x-utf8", NULL, "Generate a parser that reads input as UTF-8 (default)", 0},
-  { 'r', "x-raw", NULL, "Generate a parser that reads input as raw (latin-1) bytes", 0}
+  { 'r', "x-raw", NULL, "Generate a parser that reads input as raw (latin-1) bytes", 0},
+  { 'L', "nolinedir", NULL, "Disables emitting #line directives for code snippets in the generated output. If not specified, the default behavior is to emit #line directives.", 0}
 };
 
 int process_option(int argc, const char **argv, int *arg_index, int permit_default_arg) {
@@ -407,6 +408,9 @@ int main(int argc, char **argv) {
         break;
       case 'r':
         cc.utf8_experimental_ = 0;
+        break;
+      case 'L':
+        cc.emit_line_directives_ = 0;
         break;
       case '?':
         print_usage(stdout);
