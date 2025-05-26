@@ -60,6 +60,7 @@ void ip_init(struct indented_printer *ip, FILE *outfp, const char *filename) {
   ip->had_error_ = 0;
   ip->at_start_of_line_ = 1;
   ip->retain_output_ = 0;
+  ip->current_line_num_ = 1;
   ip->retained_output_ = NULL;
 }
 
@@ -165,6 +166,10 @@ void ip_write_no_indent(struct indented_printer *ip, const char *s, size_t len) 
     if (!ip->had_error_) re_error_nowhere("Failed to write to \"%s\": %s", ip->filename_, strerror(err));
     ip->had_error_ = 1;
   }
+  size_t n;
+  for (n = 0; n < len; ++n) {
+    if (s[n] == '\n') ip->current_line_num_++;
+  }
   if (len && (s[len - 1] == '\n')) ip->at_start_of_line_ = 1;
 }
 
@@ -212,6 +217,7 @@ void ip_puts(struct indented_printer *ip, const char *s) {
       /* include newline with end of line */
       end_of_line++;
       ip->at_start_of_line_ = 1; /* next text starts a new line */
+      ip->current_line_num_++;
     }
     len = end_of_line - s;
     if (ip_dst_write(ip, s, len)) {

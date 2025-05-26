@@ -45,6 +45,7 @@ struct indented_printer {
   int had_error_:1;
   int at_start_of_line_:1;
   int retain_output_:1;
+  int current_line_num_;
   struct ip_retained_output_bucket *retained_output_; /* tail ptr */
 };
 
