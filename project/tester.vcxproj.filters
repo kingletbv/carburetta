@@ -16,11 +16,12 @@
     <CustomBuild Include="..\tester\cpp\t13.cbrt" />
     <CustomBuild Include="..\tester\cpp\t14.cbrt" />
     <CustomBuild Include="..\tester\cpp\t15.cbrt" />
+    <CustomBuild Include="..\tester\cpp\t16.cbrt" />
+    <CustomBuild Include="..\tester\cpp\t17.cbrt" />
+    <CustomBuild Include="..\tester\cpp\t18.cbrt" />
+    <CustomBuild Include="..\tester\cpp\t19.cbrt" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\tester\tester.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\tester\cpp\t16.cbrt" />
   </ItemGroup>
 </Project>
