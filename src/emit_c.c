@@ -613,6 +613,47 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
     }
   }
   ip_printf(ip, "{\n");
+  if (cc->emit_line_directives_) {
+    int emitted_line_directive = 0;
+    for (col = 0; col < se->code_->num_tokens_; ++col) {
+      struct snippet_token *tok = se->code_->tokens_ + col;
+      size_t chunk_idx;
+      for (chunk_idx = 0; chunk_idx < tok->text_.num_chunks_; ++chunk_idx) {
+        struct xlts_chunk *chunk = tok->text_.chunks_ + chunk_idx;
+        if (chunk->ct_ != XLTS_XLAT) {
+          /* Found chunk we can use as source location */
+          ip_printf_no_indent(ip, "#line %d", chunk->line_);
+          if (chunk->filename_) {
+            /* Make sure backslashes in the path (on windows) are converted into
+             * forward slashes */
+#ifdef _WIN32
+            ip_printf_no_indent(ip, " \"");
+            const char *p = chunk->filename_;
+            while (*p) {
+              if (*p == '\\') {
+                ip_printf_no_indent(ip, "/");
+              }
+              else {
+                ip_printf_no_indent(ip, "%c", *p);
+              }
+              p++;
+            }
+            ip_printf_no_indent(ip, "\"\n");
+#else
+            ip_printf_no_indent(ip, " \"%s\"\n", chunk->filename_);
+#endif
+          }
+          else {
+            ip_printf_no_indent(ip, "\n");
+          }
+          emitted_line_directive = 1;
+          break;
+        }
+      }
+      if (emitted_line_directive) break;
+    }
+  }
+
   ip_force_indent_print(ip);
   for (col = 0; col < se->code_->num_tokens_; ++col) {
     /* Print the original code, to preserve formatting and line continuations */
@@ -840,6 +881,32 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
     }
   }
   ip_printf_no_indent(ip, "\n");
+  if (cc->emit_line_directives_) {
+    ip_printf_no_indent(ip, "#line %d", ip->current_line_num_ + 1);
+    if (ip->filename_) {
+      /* Make sure backslashes in the path (on windows) are converted into
+      * forward slashes */
+#ifdef _WIN32
+      ip_printf_no_indent(ip, " \"");
+      const char *p = ip->filename_;
+      while (*p) {
+        if (*p == '\\') {
+          ip_printf_no_indent(ip, "/");
+        }
+        else {
+          ip_printf_no_indent(ip, "%c", *p);
+        }
+        p++;
+      }
+      ip_printf_no_indent(ip, "\"\n");
+#else
+      ip_printf_no_indent(ip, " \"%s\"\n", ip->filename_);
+#endif
+    }
+    else {
+      ip_printf_no_indent(ip, "\n");
+    }
+  }
   ip_printf(ip, "}\n");
   if (cc->continuation_enabled_) {
     if (!retry_on_exit) {
