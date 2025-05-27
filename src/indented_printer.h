@@ -30,7 +30,13 @@
 extern "C" {
 #endif
 
+enum ip_retained_output_bucket_type {
+  IPROBT_BUFFER,
+  IPROBT_LINE_NUM_PLUS_1 /* used for #line directives as placeholder for the next line number, emitted when we don't yet know that number */
+};
+
 struct ip_retained_output_bucket {
+  enum ip_retained_output_bucket_type kind_;
   /* Size of struct allocation includes data in buf_ with null terminator (eg. buf_size_ + 1) */
   struct ip_retained_output_bucket *next_;
   size_t buf_size_;
@@ -45,6 +51,7 @@ struct indented_printer {
   int had_error_:1;
   int at_start_of_line_:1;
   int retain_output_:1;
+  int retained_line_num_;
   int current_line_num_;
   struct ip_retained_output_bucket *retained_output_; /* tail ptr */
 };
@@ -52,6 +59,7 @@ struct indented_printer {
 void ip_init(struct indented_printer *ip, FILE *outfp, const char *filename);
 void ip_cleanup(struct indented_printer *ip);
 void ip_write_no_indent(struct indented_printer *ip, const char *s, size_t len);
+void ip_write_next_line_num(struct indented_printer *ip);
 void ip_puts_no_indent(struct indented_printer *ip, const char *s);
 void ip_puts(struct indented_printer *ip, const char *s);
 void ip_force_indent_print(struct indented_printer *ip);

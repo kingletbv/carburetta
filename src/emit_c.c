@@ -882,7 +882,9 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
   }
   ip_printf_no_indent(ip, "\n");
   if (cc->emit_line_directives_) {
-    ip_printf_no_indent(ip, "#line %d", ip->current_line_num_ + 1);
+    ip_printf_no_indent(ip, "#line ");
+    ip_write_next_line_num(ip);
+
     if (ip->filename_) {
       /* Make sure backslashes in the path (on windows) are converted into
       * forward slashes */
