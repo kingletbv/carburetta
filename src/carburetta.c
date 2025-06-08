@@ -230,7 +230,7 @@ int process_option(int argc, const char **argv, int *arg_index, int permit_defau
       return g_args_[n].short_;
     }
   }
-  if (arg[0] != '-') {
+  if ((arg[0] != '-') || !arg[1]) {
     // default argument
     if (permit_default_arg) return '-';
     else {
@@ -280,7 +280,7 @@ void print_usage(FILE *fp) {
               "carburetta <inputfile.cbrt> <flags>\n"
               "\n"
               "<inputfile.cbrt>\n"
-              "         the input file containing the grammar (mandatory)\n"
+              "         The input file containing the grammar (mandatory). If '-' (an isolated dash) is specified, then carburetta will read from standard input.\n"
               "\n"        
               "<flags>\n"
   );
@@ -346,6 +346,7 @@ int main(int argc, char **argv) {
 
   int option_index = 0;
   int have_input_file = 0;
+  int read_from_stdin = 0;
   int option;
   do {
     option = process_option(argc, (const char **)argv, &option_index, !have_input_file);
@@ -417,7 +418,16 @@ int main(int argc, char **argv) {
         goto exit_arg_eval_success;
       case '-':
         /* default argument */
-        input_filename = strdup(argv[option_index]);
+        if (!strcmp("-", argv[option_index])) {
+          /* read from stdin */
+          input_filename = strdup("(stdin)");
+          /* Reading from standard input implies no line directives */
+          cc.emit_line_directives_ = 0;
+          read_from_stdin = 1;
+        }
+        else {
+          input_filename = strdup(argv[option_index]);
+        }
         if (!input_filename) {
           re_error_nowhere("Error: no memory");
           goto exit_arg_eval;
@@ -452,6 +462,12 @@ int main(int argc, char **argv) {
     memcpy(cc.h_output_filename_ + (ext - cc.c_output_filename_), ".h", 3 /* inc terminator */);
   }
 
+  if (read_from_stdin && cc.emit_line_directives_) {
+    re_error_nowhere("Error: Cannot emit #line directives when source is standard input and not a filename. (add --nolinedir or specify an input file.)");
+    print_usage(stderr);
+    goto exit_arg_eval;
+  }
+
   if (0) {
     int rv;
   exit_arg_eval_success:
@@ -466,7 +482,7 @@ int main(int argc, char **argv) {
   }
 
   FILE *fp = NULL;
-  if (input_filename) {
+  if (!read_from_stdin) {
     fp = fopen(input_filename, "rb");
     if (!fp) {
       int err = errno;
