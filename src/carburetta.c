@@ -206,6 +206,7 @@ struct cli_args {
   { 'h', "h", "[<h_filename>]", "Generate a C header file and output it to h_filename. If no filename is present, a c_filename must be present as it will then be used to derive a filename for the header file.", 1},
   { '8', "x-utf8", NULL, "Generate a parser that reads input as UTF-8 (default)", 0},
   { 'r', "x-raw", NULL, "Generate a parser that reads input as raw (latin-1) bytes", 0},
+  { 'n', "sym-names", NULL, "Generate a \"const char *<prefix>symbol_names_[]\" table through which the name of a symbol can be retrieved for debug purposes. The length of the table is stored in \"int <prefix>symbol_names_length_\". Entries which are invalid symbol ordinals will contain NULL.", 0},
   { 'L', "nolinedir", NULL, "Disables emitting #line directives for code snippets in the generated output. If not specified, the default behavior is to emit #line directives.", 0}
 };
 
@@ -412,6 +413,9 @@ int main(int argc, char **argv) {
         break;
       case 'L':
         cc.emit_line_directives_ = 0;
+        break;
+      case 'n':
+        cc.emit_symbol_name_table_ = 1;
         break;
       case '?':
         print_usage(stdout);

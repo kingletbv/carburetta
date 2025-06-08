@@ -111,6 +111,7 @@ struct carburetta_context {
   int continuation_enabled_:1;
   int utf8_experimental_:1;
   int emit_line_directives_:1;
+  int emit_symbol_name_table_:1;
 };
 
 void carburetta_context_init(struct carburetta_context *cc);

@@ -77,6 +77,7 @@ void carburetta_context_init(struct carburetta_context *cc) {
   cc->continuation_enabled_ = 1;
   cc->utf8_experimental_ = 1; /* default on, use --x-raw to set to false. */
   cc->emit_line_directives_ = 1;
+  cc->emit_symbol_name_table_ = 0;
 }
 
 void carburetta_context_cleanup(struct carburetta_context *cc) {

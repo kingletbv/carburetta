@@ -6950,6 +6950,80 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     ip_printf(ip, "#endif /* %s */\n\n", cc->include_guard_);
   }
 
+  if (cc->emit_symbol_name_table_) {
+    struct symbol *sym;
+
+    /* Discover the maximum symbol ordinal so we can gather it in a table.
+     * (While we could make assumptions about the ordinals of the symbols here, this
+     *  more elaborate searching approach helps decouple us from any changes there.) */
+    int max_ordinal = 0;
+    sym = cc->symtab_.terminals_;
+    if (sym) {
+      do {
+        sym = sym->next_;
+
+        if (sym->ordinal_ > max_ordinal) max_ordinal = sym->ordinal_;
+
+      } while (sym != cc->symtab_.terminals_);
+    }
+
+    sym = cc->symtab_.non_terminals_;
+    if (sym) {
+      do {
+        sym = sym->next_;
+
+        if (sym->ordinal_ > max_ordinal) max_ordinal = sym->ordinal_;
+
+      } while (sym != cc->symtab_.non_terminals_);
+    }
+
+    ip_printf(ip, "int %ssymbol_names_length_ = %d;\n", cc_prefix(cc), max_ordinal + 1);
+    ip_printf(ip, "const char *%ssymbol_names_[] = {\n", cc_prefix(cc));
+
+    int sym_ord;
+    for (sym_ord = 0; sym_ord <= max_ordinal; ++sym_ord) {
+      /* Locate symbol corresponding to ordinal */
+      struct symbol *match = NULL;
+
+      sym = cc->symtab_.terminals_;
+      if (sym) {
+        do {
+          sym = sym->next_;
+
+          if (sym->ordinal_ == sym_ord) {
+            match = sym;
+            break;
+          }
+
+        } while (sym != cc->symtab_.terminals_);
+      }
+
+      if (!match) {
+        sym = cc->symtab_.non_terminals_;
+        if (sym) {
+          do {
+            sym = sym->next_;
+
+            if (sym->ordinal_ == sym_ord) {
+              match = sym;
+              break;
+            }
+          } while (sym != cc->symtab_.non_terminals_);
+        }
+      }
+
+      const char *line_end = (max_ordinal == sym_ord) ? "\n" : ",\n";
+      if (match) {
+        ip_printf(ip, "\"%*s\"%s", sym->def_.num_translated_, sym->def_.translated_, line_end);
+      }
+      else {
+        ip_printf(ip, "NULL%s", line_end);
+      }
+    }
+
+    ip_printf(ip, "};\n\n");
+  }
+
   /* Emit stack constructor, destructor and reset functions */
   ip_printf(ip, "void %sstack_init(struct %sstack *stack) {\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "  stack->error_recovery_ = 0;\n"
@@ -7277,6 +7351,12 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   emit_stack_struct_decl(ip, cc, prdg);
 
   ip_printf(ip, "\n");
+
+  if (cc->emit_symbol_name_table_) {
+    ip_printf(ip, "extern int %ssymbol_names_length_;\n", cc_prefix(cc));
+    ip_printf(ip, "extern const char *%ssymbol_names_[];\n", cc_prefix(cc));
+  }
+
   ip_printf(ip, "void %sstack_init(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "void %sstack_cleanup(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
   ip_printf(ip, "int %sstack_reset(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
