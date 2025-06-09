@@ -6977,7 +6977,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
       } while (sym != cc->symtab_.non_terminals_);
     }
 
-    ip_printf(ip, "int %ssymbol_names_length_ = %d;\n", cc_prefix(cc), max_ordinal + 1);
+    ip_printf(ip, "const int %ssymbol_names_length_ = %d;\n", cc_prefix(cc), max_ordinal + 1);
     ip_printf(ip, "const char *%ssymbol_names_[] = {\n", cc_prefix(cc));
 
     int sym_ord;
@@ -7353,7 +7353,7 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
   ip_printf(ip, "\n");
 
   if (cc->emit_symbol_name_table_) {
-    ip_printf(ip, "extern int %ssymbol_names_length_;\n", cc_prefix(cc));
+    ip_printf(ip, "extern const int %ssymbol_names_length_;\n", cc_prefix(cc));
     ip_printf(ip, "extern const char *%ssymbol_names_[];\n", cc_prefix(cc));
   }
 
