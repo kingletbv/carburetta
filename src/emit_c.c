@@ -6978,7 +6978,7 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
     }
 
     ip_printf(ip, "const int %ssymbol_names_length_ = %d;\n", cc_prefix(cc), max_ordinal + 1);
-    ip_printf(ip, "const char *%ssymbol_names_[] = {\n", cc_prefix(cc));
+    ip_printf(ip, "const char * const %ssymbol_names_[] = {\n", cc_prefix(cc));
 
     int sym_ord;
     for (sym_ord = 0; sym_ord <= max_ordinal; ++sym_ord) {
@@ -7354,7 +7354,7 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
 
   if (cc->emit_symbol_name_table_) {
     ip_printf(ip, "extern const int %ssymbol_names_length_;\n", cc_prefix(cc));
-    ip_printf(ip, "extern const char *%ssymbol_names_[];\n", cc_prefix(cc));
+    ip_printf(ip, "extern const char * const %ssymbol_names_[];\n", cc_prefix(cc));
   }
 
   ip_printf(ip, "void %sstack_init(struct %sstack *stack);\n", cc_prefix(cc), cc_prefix(cc));
