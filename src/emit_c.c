@@ -599,6 +599,45 @@ static int emit_common(struct indented_printer *ip, struct carburetta_context *c
   return 0;
 }
 
+/* Returns non-zero if a line-num could be emitted (if the code had a non-translated piece that we
+ * could refer to using #line) - otherwise 0 is returned, so caller knows to keep looking for such 
+ * a referable piece of code at its discretion. */
+static int emit_line_num(struct indented_printer *ip, struct carburetta_context *cc, struct xlts *code) {
+  size_t chunk_idx;
+  for (chunk_idx = 0; chunk_idx < code->num_chunks_; ++chunk_idx) {
+    struct xlts_chunk *chunk = code->chunks_ + chunk_idx;
+    if (chunk->ct_ != XLTS_XLAT) {
+      /* Found chunk we can use as source location */
+      ip_printf_no_indent(ip, "#line %d", chunk->line_);
+      if (chunk->filename_) {
+        /* Make sure backslashes in the path (on windows) are converted into
+         * forward slashes */
+#ifdef _WIN32
+        ip_printf_no_indent(ip, " \"");
+        const char *p = chunk->filename_;
+        while (*p) {
+          if (*p == '\\') {
+            ip_printf_no_indent(ip, "/");
+          }
+          else {
+            ip_printf_no_indent(ip, "%c", *p);
+          }
+          p++;
+        }
+        ip_printf_no_indent(ip, "\"\n");
+#else
+        ip_printf_no_indent(ip, " \"%s\"\n", chunk->filename_);
+#endif
+      }
+      else {
+        ip_printf_no_indent(ip, "\n");
+      }
+      return 1; /* emitted a #line */
+    }
+  }
+  return 0; /* did not emit a #line */
+}
+
 static int emit_snippet_code_emission(struct indented_printer *ip, struct carburetta_context *cc, struct snippet_emission *se, int retry_on_exit) {
   int r;
   size_t col;
@@ -617,40 +656,7 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
     int emitted_line_directive = 0;
     for (col = 0; col < se->code_->num_tokens_; ++col) {
       struct snippet_token *tok = se->code_->tokens_ + col;
-      size_t chunk_idx;
-      for (chunk_idx = 0; chunk_idx < tok->text_.num_chunks_; ++chunk_idx) {
-        struct xlts_chunk *chunk = tok->text_.chunks_ + chunk_idx;
-        if (chunk->ct_ != XLTS_XLAT) {
-          /* Found chunk we can use as source location */
-          ip_printf_no_indent(ip, "#line %d", chunk->line_);
-          if (chunk->filename_) {
-            /* Make sure backslashes in the path (on windows) are converted into
-             * forward slashes */
-#ifdef _WIN32
-            ip_printf_no_indent(ip, " \"");
-            const char *p = chunk->filename_;
-            while (*p) {
-              if (*p == '\\') {
-                ip_printf_no_indent(ip, "/");
-              }
-              else {
-                ip_printf_no_indent(ip, "%c", *p);
-              }
-              p++;
-            }
-            ip_printf_no_indent(ip, "\"\n");
-#else
-            ip_printf_no_indent(ip, " \"%s\"\n", chunk->filename_);
-#endif
-          }
-          else {
-            ip_printf_no_indent(ip, "\n");
-          }
-          emitted_line_directive = 1;
-          break;
-        }
-      }
-      if (emitted_line_directive) break;
+      int emitted_line_directive = emit_line_num(ip, cc, &tok->text_);
     }
   }
 
@@ -6167,16 +6173,11 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
   int *state_syms;
   state_syms = NULL;
 
-  struct part *pt;
-  pt = cc->prologue_;
-  if (pt) {
-    do {
-      pt = pt->next_;
-
-      ip_write_no_indent(ip, pt->chars_, pt->num_chars_);
-
-    } while (pt != cc->prologue_);
+  if (cc->emit_line_directives_) {
+    emit_line_num(ip, cc, &cc->prologue_);
   }
+
+  ip_write_no_indent(ip, cc->prologue_.original_, cc->prologue_.num_original_);
 
   ip_printf(ip, "/* --------- START OF GENERATED CODE ------------ */\n");
   ip_printf(ip, "#if defined(__clang__)\n");
@@ -7227,16 +7228,11 @@ void emit_c_file(struct indented_printer *ip, struct carburetta_context *cc, str
 
   ip_printf(ip, "/* --------- END OF GENERATED CODE ------------ */\n");
 
-  pt = cc->epilogue_;
-  if (pt) {
-    do {
-      pt = pt->next_;
-
-      ip_write_no_indent(ip, pt->chars_, pt->num_chars_);
-
-    } while (pt != cc->epilogue_);
+  if (cc->emit_line_directives_) {
+    emit_line_num(ip, cc, &cc->epilogue_);
   }
 
+  ip_write_no_indent(ip, cc->epilogue_.original_, cc->epilogue_.num_original_);
 
 cleanup_exit:
   if (state_syms) free(state_syms);
@@ -7253,16 +7249,11 @@ void emit_h_file(struct indented_printer *ip, struct carburetta_context *cc, str
                  "\n");
 
   /* emit %header section.. Note that this is *after* the #ifndef include guard but *before* the extern "C" */
-  struct part *pt;
-  pt = cc->header_;
-  if (pt) {
-    do {
-      pt = pt->next_;
-
-      ip_write_no_indent(ip, pt->chars_, pt->num_chars_);
-
-    } while (pt != cc->header_);
+  if (cc->emit_line_directives_) {
+    emit_line_num(ip, cc, &cc->header_);
   }
+
+  ip_write_no_indent(ip, cc->header_.original_, cc->header_.num_original_);
 
   if (cc->generate_externc_) {
     ip_printf(ip, "#ifdef __cplusplus\n"

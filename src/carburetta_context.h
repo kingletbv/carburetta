@@ -59,12 +59,6 @@ struct conflict_resolution {
   int over_prod_place_;
 };
 
-struct part {
-  struct part *next_;
-  size_t num_chars_;
-  char *chars_;
-};
-
 struct carburetta_context {
   struct snippet token_type_;
   struct snippet common_data_type_;
@@ -104,9 +98,9 @@ struct carburetta_context {
   char *h_output_filename_;
   char *c_output_filename_;
   char *include_guard_;
-  struct part *prologue_;
-  struct part *header_;
-  struct part *epilogue_;
+  struct xlts prologue_;
+  struct xlts header_;
+  struct xlts epilogue_;
   int current_snippet_continuation_;
   int continuation_enabled_:1;
   int utf8_experimental_:1;

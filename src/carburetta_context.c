@@ -29,8 +29,6 @@
 #include "carburetta_context.h"
 #endif
 
-static void parts_free(struct part *parts);
-
 void carburetta_context_init(struct carburetta_context *cc) {
   snippet_init(&cc->token_type_);
   snippet_init(&cc->common_data_type_);
@@ -70,9 +68,9 @@ void carburetta_context_init(struct carburetta_context *cc) {
   cc->h_output_filename_ = NULL;
   cc->c_output_filename_ = NULL;
   cc->include_guard_ = NULL;
-  cc->prologue_ = NULL;
-  cc->header_ = NULL;
-  cc->epilogue_ = NULL;
+  xlts_init(&cc->prologue_);
+  xlts_init(&cc->header_);
+  xlts_init(&cc->epilogue_);
   cc->current_snippet_continuation_ = 0;
   cc->continuation_enabled_ = 1;
   cc->utf8_experimental_ = 1; /* default on, use --x-raw to set to false. */
@@ -121,9 +119,9 @@ void carburetta_context_cleanup(struct carburetta_context *cc) {
   if (cc->c_output_filename_) free(cc->c_output_filename_);
   if (cc->h_output_filename_) free(cc->h_output_filename_);
   if (cc->include_guard_) free(cc->include_guard_);
-  parts_free(cc->prologue_);
-  parts_free(cc->header_);
-  parts_free(cc->epilogue_);
+  xlts_cleanup(&cc->prologue_);
+  xlts_cleanup(&cc->header_);
+  xlts_cleanup(&cc->epilogue_);
   xlts_cleanup(&cc->externc_option_);
 }
 
@@ -139,42 +137,3 @@ void conflict_resolution_cleanup(struct conflict_resolution *cr) {
   prd_prod_cleanup(&cr->over_prod_);
 }
 
-static void parts_free(struct part *parts) {
-  struct part *p = parts;
-  struct part *next;
-  if (p) {
-    next = p->next_;
-    do {
-      p = next;
-      next = p->next_;
-
-      if (p->chars_) free(p->chars_);
-      free(p);
-
-    } while (p != parts);
-  }
-}
-
-struct part *parts_append(struct part **tailptr, size_t num_chars, char *chars) {
-  struct part *p = (struct part *)malloc(sizeof(struct part));
-  if (!p) return NULL;
-  p->chars_ = (char *)malloc(num_chars + 1);
-  if (!p->chars_) {
-    free(p);
-    return NULL;
-  }
-  memcpy(p->chars_, chars, num_chars);
-  p->chars_[num_chars] = '\0';
-  p->num_chars_ = num_chars;
-  if (*tailptr) {
-    p->next_ = (*tailptr)->next_;
-    (*tailptr)->next_ = p;
-    *tailptr = p;
-  }
-  else {
-    *tailptr = p;
-    p->next_ = p;
-  }
-
-  return p;
-}

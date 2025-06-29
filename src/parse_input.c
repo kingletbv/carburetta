@@ -1419,7 +1419,11 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           switch (tkr_lines.best_match_variant_) {
           case LD_C_PREPROCESSOR:
             /* Preserve line continuations */
-            parts_append(&cc->prologue_, token_buf.num_original_, token_buf.original_);
+            r = xlts_append(&cc->prologue_, &token_buf);
+            if (r) {
+              r = 1;
+              goto cleanup_exit;
+            }
             break;
           case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
             where_are_we = default_mode = SCANNER;
@@ -1441,7 +1445,11 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
             break;
           case LD_REGULAR:
             /* Preserve line continuations */
-            parts_append(&cc->prologue_, token_buf.num_original_, token_buf.original_);
+            r = xlts_append(&cc->prologue_, &token_buf);
+            if (r) {
+              r = 1;
+              goto cleanup_exit;
+            }
             break;
           case LD_CARBURETTA_DIRECTIVE:
             r = pi_process_carburetta_directive(&tkr_tokens, &token_buf, cc);
@@ -1459,7 +1467,11 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           switch (tkr_lines.best_match_variant_) {
             case LD_C_PREPROCESSOR:
               /* Preserve line continuations */
-              parts_append(&cc->header_, token_buf.num_original_, token_buf.original_);
+              r = xlts_append(&cc->header_, &token_buf);
+              if (r) {
+                r = 1;
+                goto cleanup_exit;
+              }
               break;
             case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
               where_are_we = default_mode = SCANNER;
@@ -1481,7 +1493,11 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
               break;
             case LD_REGULAR:
               /* Preserve line continuations */
-              parts_append(&cc->header_, token_buf.num_original_, token_buf.original_);
+              r = xlts_append(&cc->header_, &token_buf);
+              if (r) {
+                r = 1;
+                goto cleanup_exit;
+              }
               break;
             case LD_CARBURETTA_DIRECTIVE:
               r = pi_process_carburetta_directive(&tkr_tokens, &token_buf, cc);
@@ -1568,7 +1584,11 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
         else /* (where_are_we == EPILOGUE) */ {
           switch (tkr_lines.best_match_variant_) {
           case LD_C_PREPROCESSOR:
-            parts_append(&cc->epilogue_, token_buf.num_original_, token_buf.original_);
+            r = xlts_append(&cc->epilogue_, &token_buf);
+            if (r) {
+              r = 1;
+              goto cleanup_exit;
+            }
             break;
           case LD_CARBURETTA_SCANNER_SECTION_DELIMETER:
           case LD_CARBURETTA_GRAMMAR_SECTION_DELIMETER:
@@ -1577,23 +1597,12 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
             /* Going back to the grammar or scanner, append the epilogue we gathered to the prologue as it is
              * actually inline code. */
           {
-            struct part *prologue_head, *prologue_tail, *epilogue_head, *epilogue_tail;
-            prologue_tail = cc->prologue_;
-            prologue_head = cc->prologue_ ? cc->prologue_->next_ : NULL;
-            epilogue_tail = cc->epilogue_;
-            epilogue_head = cc->epilogue_ ? cc->epilogue_->next_ : NULL;
-            if (epilogue_head) {
-              if (!prologue_head) {
-                cc->prologue_ = epilogue_head;
-                cc->epilogue_ = NULL;
-              }
-              else {
-                epilogue_tail->next_ = prologue_head;
-                prologue_tail->next_ = epilogue_head;
-                cc->prologue_ = epilogue_tail;
-                cc->epilogue_ = NULL;
-              }
+            r = xlts_append(&cc->prologue_, &cc->epilogue_);
+            if (r) {
+              r = 1;
+              goto cleanup_exit;
             }
+            xlts_reset(&cc->epilogue_);
           }
           if (tkr_lines.best_match_variant_ == LD_CARBURETTA_SCANNER_SECTION_DELIMETER) {
             where_are_we = default_mode = SCANNER;
@@ -1611,7 +1620,11 @@ int pi_parse_input(FILE *fp, const char *input_filename, struct carburetta_conte
           break;
           case LD_REGULAR:
             /* Preserve line continuations */
-            parts_append(&cc->epilogue_, token_buf.num_original_, token_buf.original_);
+            r = xlts_append(&cc->epilogue_, &token_buf);
+            if (r) {
+              r = 1;
+              goto cleanup_exit;
+            }
             break;
           case LD_CARBURETTA_DIRECTIVE:
             r = pi_process_carburetta_directive(&tkr_tokens, &token_buf, cc);
