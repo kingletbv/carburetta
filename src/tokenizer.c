@@ -408,12 +408,14 @@ int tkr_tokenizer_inputs(struct tkr_tokenizer *tkr, const char *input, size_t in
       base_line = input_line;
       base_col = input_col;
       base = tkr->input_index_;
-      for (offs = tkr->input_index_; offs < input_index; ++offs) {
+      for (offs = tkr->input_index_; offs < input_index; ) {
         input_offset++;
         if (input[offs] != '\n') {
           input_col++;
+          ++offs;
         }
         else /* input[offs] == '\n' */ {
+          ++offs;
           r = xlts_append_equal(&tkr->xmatch_, tkr->filename_, base_line, base_col, base_offset, offs - base, input + base);
           if (r) {
             return TKR_INTERNAL_ERROR;
@@ -426,9 +428,11 @@ int tkr_tokenizer_inputs(struct tkr_tokenizer *tkr, const char *input, size_t in
           base = offs;
         }
       }
-      r = xlts_append_equal(&tkr->xmatch_, tkr->filename_, base_line, base_col, base_offset, offs - base, input + base);
-      if (r) {
-        return TKR_INTERNAL_ERROR;
+      if (offs != base) {
+        r = xlts_append_equal(&tkr->xmatch_, tkr->filename_, base_line, base_col, base_offset, offs - base, input + base);
+        if (r) {
+          return TKR_INTERNAL_ERROR;
+        }
       }
 
       if (best_match_action == default_action) {
