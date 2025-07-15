@@ -35,7 +35,7 @@ static char bleached_msg_[sizeof(msg_) + 1] = {0};
   /* Letters including diacretics */
   num_letters_++;
   if (bleached_msg_len_ == sizeof(msg_)) return -1;
-  bleached_msg_[bleached_msg_len_++] = *$text;
+  bleached_msg_[bleached_msg_len_++] = *$text; \
 }
 
 : \p{Space_Separator} {
