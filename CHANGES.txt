@@ -1,3 +1,17 @@
+0.8.28 - 2026-01-11
+
+ - Will now emit #line so C/C++ compilation errors on generated code 
+   will be located at the corresponding snippet code in the .cbrt input 
+   file, where appropatiate. Use --nolinedir to disable.
+
+ - Can now emit a symbol_names[] table for all ordinal constants, this
+   can be useful when writing code that uses Carburetta's internal 
+   structures more dynamically and you wish to emit debug information.
+   Only generated when --sym-names is specified.
+
+ - Instead of specifying a filename, you can now pass - (a dash) for
+   the filename and the grammar input will be read from stdin.
+
 0.8.25 - 2025-04-14
 
  - New 'visit' feature. When specifying either %visit or %visit_params
