@@ -663,6 +663,7 @@ static int emit_snippet_code_emission(struct indented_printer *ip, struct carbur
     for (col = 0; col < se->code_->num_tokens_; ++col) {
       struct snippet_token *tok = se->code_->tokens_ + col;
       int emitted_line_directive = emit_line_num(ip, cc, &tok->text_);
+      if (emitted_line_directive) break;
     }
   }
 
