@@ -2752,6 +2752,7 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
     }
     case return_value_addr: {
       temps[x->ord_].v_.u64_ = (uint64_t)return_value_ptr;
+      break;
     }
 
     case bitwise_and:
