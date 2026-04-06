@@ -98,7 +98,7 @@ int ds_append(struct ds_portion *dsp, size_t num_bytes, void *bytes) {
   void *buf;
   r = ds_reserve(dsp, num_bytes, &buf);
   if (r) return r;
-  memcpy(((char *)dsp->data_) + dsp->size_, bytes, num_bytes);
+  memcpy(buf, bytes, num_bytes);
   return 0;
 }
 
