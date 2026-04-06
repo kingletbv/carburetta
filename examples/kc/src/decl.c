@@ -490,6 +490,9 @@ int decl_initializer_as_expr(struct c_compiler *cc, struct expr *target_ptr, str
           case tk_long_long_int:
             opcode = ET_STORE_SLLI;
             break;
+          case tk_bool:
+            opcode = ET_STORE_B;
+            break;
           case tk_long_int:
             opcode = ET_STORE_SLI;
             break;
