@@ -1868,7 +1868,7 @@ specifier-qualifier-list: type-qualifier specifier-qualifier-list {
   if ($$.tq_ & $0) {
     cc_error_loc(cc, &${ 1 }, "Same type qualifier already specified\n");
   }
-  $$.tq_ |= $1.tq_;
+  $$.tq_ |= $0;
 }
 specifier-qualifier-list: type-qualifier {
   $$.tq_ = $0;
