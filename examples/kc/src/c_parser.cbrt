@@ -416,7 +416,7 @@ primary-exp: string-lit-seq {
   memcpy(p, $0.data_, bytesize_excl_terminator);
   /* set null terminator in charsize agnostic way */
   memset(p + bytesize_excl_terminator, 0, charsize);
-  struct expr *x = expr_alloc($0.wide_ ? ET_C_STRING_LIT : ET_C_WIDE_STRING_LIT);
+  struct expr *x = expr_alloc($0.wide_ ? ET_C_WIDE_STRING_LIT : ET_C_STRING_LIT);
   if (!x) {
     cc_no_memory(cc);
     return -1;
