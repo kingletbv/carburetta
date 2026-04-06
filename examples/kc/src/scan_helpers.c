@@ -456,7 +456,7 @@ int sch_read_char_value(struct c_compiler *cc, const char *lit_pos, int *val, in
       }
       break;
     case 'x':
-      num_digits = sch_read_hex_esc_value(c + 1, &num);
+      num_digits = sch_read_hex_esc_value(c + 2, &num);
       if ((!num_digits) || (num > max_char)) {
         cc_error_loc(cc, loc, "Invalid hex escape sequence");
         *val = *c;
