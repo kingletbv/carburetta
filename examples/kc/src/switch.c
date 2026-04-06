@@ -272,7 +272,7 @@ static struct switch_case *switch_delete_at(struct switch_case *h, uint64_t case
       h->right_ = substitute_right_arm;
     }
     else {
-      h->right_ = switch_delete_at(h, case_val, deleted);
+      h->right_ = switch_delete_at(h->right_, case_val, deleted);
     }
   }
 
