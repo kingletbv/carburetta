@@ -320,6 +320,7 @@ int decl_static_initializer_exec(struct c_compiler *cc, struct ds_portion *dsp, 
               default:
                 assert(0 && "unexpected integer type size");
             }
+            break;
           }
           case tk_float:
             *(float *)target = value_result.v_.f_;
