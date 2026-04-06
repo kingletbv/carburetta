@@ -1823,7 +1823,7 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
     /* Pointer arithmetic is separate from regular arithmetic because
      * the unit quantity is the size of the objects pointed to. */
     xx(ET_ADD_PTR_UINTPTR, add, ptr, uintptr, none, ptr)
-    xx(ET_SUB_PTR_UINTPTR, add, ptr, uintptr, none, ptr)
+    xx(ET_SUB_PTR_UINTPTR, sub, ptr, uintptr, none, ptr)
     xx(ET_SUB_PTR, subptr_ptr, ptr, ptr, uintptr, ptr)
 
     xx(ET_UNARY_PLUS_LDC, nop, ldc, none, none, ldc)
