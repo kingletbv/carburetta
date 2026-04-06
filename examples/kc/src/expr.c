@@ -1688,7 +1688,7 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
     xx(ET_MUL_DC_D, mul, dc, d, none, dc)
     xx(ET_MUL_DC_DC, mul, dc, dc, none, dc)
     xx(ET_MUL_DC_DI, mul, dc, di, none, dc)
-    xx(ET_MUL_FC_F, mul, fc, f, none, f)
+    xx(ET_MUL_FC_F, mul, fc, f, none, fc)
     xx(ET_MUL_FC_FC, mul, fc, fc, none, fc)
     xx(ET_MUL_FC_FI, mul, fc, fi, none, fc)
     xx(ET_MUL_LDI_LD, mul, ldi, ld, none, ldi)
