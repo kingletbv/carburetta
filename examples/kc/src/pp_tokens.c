@@ -344,7 +344,7 @@ struct macro_arg_inst *macro_arg_inst_join(struct macro_arg_inst *front, struct 
   return front_head;
 }
 
-int pptk_perform_macro_expansion(struct c_compiler *cc, struct pptk **pp_chain) {
+int pptk_perform_macro_expansion(struct c_compiler *cc, struct pptk **pp_chain, int keep_defined) {
   struct pptk *output_chain = NULL;
   struct pptk *token_chain = *pp_chain;
 
@@ -369,7 +369,7 @@ int pptk_perform_macro_expansion(struct c_compiler *cc, struct pptk **pp_chain) 
       }
     }
 
-    switch (ppme_parse(&macro_expander, next_sym, cc, &token_chain, 1 /* token_chain is entire and final bit of input */, &output_chain)) {
+    switch (ppme_parse(&macro_expander, next_sym, cc, &token_chain, 1 /* token_chain is entire and final bit of input */, &output_chain, keep_defined)) {
       case _PPME_FINISH:
         if (token_chain) {
           cc_printf(cc, "Unexpected macro-expander finish: input has not ended.\n");
@@ -867,7 +867,7 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
               }
 
               if (!preceeded_by_hash && !preceeded_by_hash_hash && !followed_by_hash_hash) {
-                int r = pptk_perform_macro_expansion(cc, &arg_clone);
+                int r = pptk_perform_macro_expansion(cc, &arg_clone, 0 /* keep_defined */);
                 if (r) {
                   pptk_free(expansion);
                   pptk_free(instanced);
@@ -930,7 +930,7 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
                   if (!preceeded_by_hash && !preceeded_by_hash_hash && !followed_by_hash_hash) {
                     /* Expand macros for each __VA_ARGS__ argument individually, and concatenate them together.
                      * (Don't expand as a whole or macro invocations can straddle multiple macro arguments.) */
-                    int r = pptk_perform_macro_expansion(cc, &arg_clone);
+                    int r = pptk_perform_macro_expansion(cc, &arg_clone, 0 /* keep_defined */);
                     if (r) {
                       pptk_free(arg_clone);
                       pptk_free(expansion);
@@ -1083,7 +1083,7 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
    * only the case for the full replacement list, not for argument expansions and the
    * like. */
   m->nested_invocation_ = 1;
-  int r = pptk_perform_macro_expansion(cc, &repl_list);
+  int r = pptk_perform_macro_expansion(cc, &repl_list, 0 /* keep_defined */);
   m->nested_invocation_ = 0;
   if (r) {
     pptk_free(repl_list);

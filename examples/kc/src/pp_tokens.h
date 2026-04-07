@@ -161,7 +161,7 @@ extern "C" {
   xx(PPTK_LINE,               PPLD_LINE_TOK,       PPCE_IDENT,               PPME_IDENT,      CP_IDENT) \
   xx(PPTK_ERROR_KEYWORD,      PPLD_ERROR_TOK,      PPCE_IDENT,               PPME_IDENT,      CP_IDENT) \
   xx(PPTK_PRAGMA,             PPLD_PRAGMA_TOK,     PPCE_IDENT,               PPME_IDENT,      CP_IDENT) \
-  xx(PPTK_DEFINED,            PPLD_OTHER_TOK,      PPCE_DEFINED,             PPME_IDENT,      CP_IDENT) \
+  xx(PPTK_DEFINED,            PPLD_OTHER_TOK,      PPCE_DEFINED,             PPME_DEFINED,    CP_IDENT) \
   xx(PPTK_PRAGMA_OP,          PPLD_OTHER_TOK,      PPCE_IDENT,               PPME_IDENT,      CP_IDENT) \
 \
   /* placemarker used during macro expansion of empty arguments adjacent to ## tokens (See C99 6.10.3.3-2) */ \
@@ -268,7 +268,7 @@ struct macro_arg_inst *macro_arg_inst_join(struct macro_arg_inst *front, struct 
 int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *m, struct macro_arg_inst *args, struct pptk **pp_output_chain);
 
 /* Perform in-place macro expansion for a single chain of pptk tokens; chain is modified in-place to reflect the expansions (if any). */
-int pptk_perform_macro_expansion(struct c_compiler *cc, struct pptk **pp_chain);
+int pptk_perform_macro_expansion(struct c_compiler *cc, struct pptk **pp_chain, int keep_defined);
 
 /* Re-scans an input sequence by taking an input_chain of tokens and  */
 int pptk_rescan(struct c_compiler *cc, struct pptk *input_chain, struct pptk **pp_output_chain, int allow_header_name);

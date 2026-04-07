@@ -42,11 +42,14 @@
 
 %prefix ppme_
 
-%params struct c_compiler *cc, struct pptk **pp_input_chain, int is_final, struct pptk **pp_output_chain
+%params struct c_compiler *cc, struct pptk **pp_input_chain, int is_final, struct pptk **pp_output_chain, int keep_defined
 
 %on_next_token \
   if (*pp_input_chain) {                                                                \
     sym = g_pptk_to_ppme_[(*pp_input_chain)->tok_];                                     \
+    if ((!keep_defined) && (sym == PPME_DEFINED)) {                                     \
+      sym = PPME_IDENT;                                                                 \
+    }                                                                                   \
     if (sym == PPME_IDENT) {                                                            \
       struct macro *m = (struct macro *)st_find(&cc->macro_table_, (*pp_input_chain)->text_); \
       if (m && !m->nested_invocation_) {                                                \
@@ -64,7 +67,7 @@
     sym = PPME_INPUT_END;                                                               \
   }
 
-%token IDENT OBJECT FUNCTION PAR_OPEN PAR_CLOSE COMMA WS_TOK OTHER
+%token IDENT OBJECT FUNCTION DEFINED PAR_OPEN PAR_CLOSE COMMA WS_TOK OTHER
 %token_type struct pptk *
 %constructor $$ = NULL;
 %destructor pptk_free($$);
@@ -135,6 +138,85 @@ top-stream: top-stream opt-function-seq OBJECT {
   if (r) {
     return _PPME_INTERNAL_ERROR;
   }
+}
+
+/* Insert "DEFINED (ID)" and "DEFINED ID" expansions; this gets a little bit clumsy because
+ * prior to the parser, the IDENT may already have been translated to a FUNCTION or an OBJECT
+ * token (see %on_next_token for instance); so we need to accept all three as an argument to
+ * DEFINED, without expanding anything. The actual expansion check is performed in pp_const_expr.cbrt,
+ * if preservation is desired. Goal here is to adhere to C99 6.10.1-3 in particular: "(except
+ * for those macro names modified by the defined unary operator)". */
+
+top-stream: top-stream opt-function-seq DEFINED ws-opt PAR_OPEN ws-opt IDENT ws-opt PAR_CLOSE {
+  *pp_output_chain = pptk_join(*pp_output_chain, $2);
+  *pp_output_chain = pptk_join(*pp_output_chain, $3);
+  *pp_output_chain = pptk_join(*pp_output_chain, $4);
+  *pp_output_chain = pptk_join(*pp_output_chain, $5);
+  *pp_output_chain = pptk_join(*pp_output_chain, $6);
+  *pp_output_chain = pptk_join(*pp_output_chain, $7);
+  *pp_output_chain = pptk_join(*pp_output_chain, $8);
+  $2 = $3 = $4 = $5 = $6 = $7 = $8 = NULL;
+}
+
+top-stream: top-stream opt-function-seq DEFINED ws-opt PAR_OPEN ws-opt FUNCTION ws-opt PAR_CLOSE {
+  *pp_output_chain = pptk_join(*pp_output_chain, $2);
+  *pp_output_chain = pptk_join(*pp_output_chain, $3);
+  *pp_output_chain = pptk_join(*pp_output_chain, $4);
+  *pp_output_chain = pptk_join(*pp_output_chain, $5);
+  *pp_output_chain = pptk_join(*pp_output_chain, $6.tk_);
+  *pp_output_chain = pptk_join(*pp_output_chain, $7);
+  *pp_output_chain = pptk_join(*pp_output_chain, $8);
+  $2 = $3 = $4 = $5 = $6.tk_ = $7 = $8 = NULL;
+}
+
+top-stream: top-stream opt-function-seq DEFINED ws-opt PAR_OPEN ws-opt OBJECT ws-opt PAR_CLOSE {
+  *pp_output_chain = pptk_join(*pp_output_chain, $2);
+  *pp_output_chain = pptk_join(*pp_output_chain, $3);
+  *pp_output_chain = pptk_join(*pp_output_chain, $4);
+  *pp_output_chain = pptk_join(*pp_output_chain, $5);
+  *pp_output_chain = pptk_join(*pp_output_chain, $6.tk_);
+  *pp_output_chain = pptk_join(*pp_output_chain, $7);
+  *pp_output_chain = pptk_join(*pp_output_chain, $8);
+  $2 = $3 = $4 = $5 = $6.tk_ = $7 = $8 = NULL;
+}
+
+top-stream: top-stream opt-function-seq DEFINED ws-opt PAR_OPEN ws-opt DEFINED ws-opt PAR_CLOSE {
+  *pp_output_chain = pptk_join(*pp_output_chain, $2);
+  *pp_output_chain = pptk_join(*pp_output_chain, $3);
+  *pp_output_chain = pptk_join(*pp_output_chain, $4);
+  *pp_output_chain = pptk_join(*pp_output_chain, $5);
+  *pp_output_chain = pptk_join(*pp_output_chain, $6);
+  *pp_output_chain = pptk_join(*pp_output_chain, $7);
+  *pp_output_chain = pptk_join(*pp_output_chain, $8);
+  $2 = $3 = $4 = $5 = $6 = $7 = $8 = NULL;
+}
+
+top-stream: top-stream opt-function-seq DEFINED ws-opt IDENT {
+  *pp_output_chain = pptk_join(*pp_output_chain, $2);
+  *pp_output_chain = pptk_join(*pp_output_chain, $3);
+  *pp_output_chain = pptk_join(*pp_output_chain, $4);
+  $2 = $3 = $4 = NULL;
+}
+
+top-stream: top-stream opt-function-seq DEFINED ws-opt FUNCTION {
+  *pp_output_chain = pptk_join(*pp_output_chain, $2);
+  *pp_output_chain = pptk_join(*pp_output_chain, $3);
+  *pp_output_chain = pptk_join(*pp_output_chain, $4.tk_);
+  $2 = $3 = $4.tk_ = NULL;
+}
+
+top-stream: top-stream opt-function-seq DEFINED ws-opt OBJECT {
+  *pp_output_chain = pptk_join(*pp_output_chain, $2);
+  *pp_output_chain = pptk_join(*pp_output_chain, $3);
+  *pp_output_chain = pptk_join(*pp_output_chain, $4.tk_);
+  $2 = $3 = $4.tk_ = NULL;
+}
+
+top-stream: top-stream opt-function-seq DEFINED ws-opt DEFINED {
+  *pp_output_chain = pptk_join(*pp_output_chain, $2);
+  *pp_output_chain = pptk_join(*pp_output_chain, $3);
+  *pp_output_chain = pptk_join(*pp_output_chain, $4);
+  $2 = $3 = $4 = NULL;
 }
 
 opt-function-seq: ws-opt-emit ;

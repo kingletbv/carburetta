@@ -107,7 +107,7 @@ pp-line: hash if pp-tokens newline-opt {
   else {
     sec->state_ = CC_IFSS_NOT_YET_SELECTED;
     /* Process constant expression */
-    int r = pptk_perform_macro_expansion(cc, &$2);
+    int r = pptk_perform_macro_expansion(cc, &$2, 1 /* keep_defined */);
     if (!r) {
       /* Process pp_const_expr */
       int64_t result;
@@ -137,7 +137,7 @@ pp-line: hash elif pp-tokens newline-opt {
     cc->if_section_stack_->state_ = CC_IFSS_SKIP; /* overwritten below */
 
     /* Process constant expression */
-    int r = pptk_perform_macro_expansion(cc, &$2);
+    int r = pptk_perform_macro_expansion(cc, &$2, 1 /* keep_defined */);
     if (!r) {
       /* Process pp_const_expr */
       int64_t result;
@@ -241,7 +241,7 @@ pp-line: hash include header-pp-tokens newline-opt {
     $2 = pptk_trim($2);
     if ($2 && $2->tok_ != PPTK_HEADER_NAME) {
       /* Process tokens for macro expansions and re-evaluate for headername */
-      if (pptk_perform_macro_expansion(cc, &$2)) {
+      if (pptk_perform_macro_expansion(cc, &$2, 0 /* keep_defined */)) {
         return _PPLD_INTERNAL_ERROR;
       }
       struct pptk *rescanned = NULL;

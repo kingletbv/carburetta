@@ -223,9 +223,28 @@ mul-exp: cast-exp { $$ = $0; }
 
 cast-exp: unary-exp { $$ = $0; }
 
-/* XXX: defined operator... */
-unary-exp: DEFINED PAR_OPEN IDENT PAR_CLOSE;
-unary-exp: DEFINED IDENT;
+unary-exp: DEFINED PAR_OPEN IDENT PAR_CLOSE {
+  struct sym *s = st_find(&cc->macro_table_, $2->text_);
+  $$.is_unsigned_ = 1;
+  $$.v_.u_ = !!s;
+}
+unary-exp: DEFINED PAR_OPEN DEFINED PAR_CLOSE {
+  /* edge case, is the word "defined" a macro */
+  struct sym *s = st_find(&cc->macro_table_, $2->text_);
+  $$.is_unsigned_ = 1;
+  $$.v_.u_ = !!s;
+}
+unary-exp: DEFINED IDENT {
+  struct sym *s = st_find(&cc->macro_table_, $1->text_);
+  $$.is_unsigned_ = 1;
+  $$.v_.u_ = !!s;
+}
+unary-exp: DEFINED DEFINED {
+  /* edge case, is the word "defined" a macro */
+  struct sym *s = st_find(&cc->macro_table_, $1->text_);
+  $$.is_unsigned_ = 1;
+  $$.v_.u_ = !!s;
+}
 
 unary-exp: BANG cast-exp { $$ = $1; $$.v_.u_ = !$$.v_.u_; }
 unary-exp: TILDE cast-exp { $$ = $1; $$.v_.u_ = ~$$.v_.u_; }
