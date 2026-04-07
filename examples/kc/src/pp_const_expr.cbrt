@@ -49,7 +49,7 @@
 #endif
 
 #ifndef TYPES_H_INCLUDED
-#define TYPES_H_INCLUDES
+#define TYPES_H_INCLUDED
 #include "types.h"
 #endif
 
