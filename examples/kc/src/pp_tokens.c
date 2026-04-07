@@ -821,8 +821,9 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
 
     int preceeded_by_hash = 0;
 
-    if ((g_pptk_to_ppme_[tk->tok_] == PPME_IDENT) ||
-        ((tk->tok_ == PPTK_HASH_MARK) && (tk->next_ != instanced) && (g_pptk_to_ppme_[tk->next_->tok_] == PPME_IDENT))) {
+    #define IS_TOK_A_STRINGIZING_IDENT(t) (((t) == PPME_IDENT) || ((t) == PPME_DEFINED))
+    if ((IS_TOK_A_STRINGIZING_IDENT(g_pptk_to_ppme_[tk->tok_])) ||
+        ((tk->tok_ == PPTK_HASH_MARK) && (tk->next_ != instanced) && IS_TOK_A_STRINGIZING_IDENT(g_pptk_to_ppme_[tk->next_->tok_]))) {
       struct pptk *id = NULL;
       if (tk->tok_ != PPTK_HASH_MARK) {
         preceeded_by_hash = 0;
