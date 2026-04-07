@@ -2810,7 +2810,7 @@ function-definition-prolog: declaration-specifiers declarator reenable-typedefna
                 }
 
                 if (already_exists) {
-                  cc_error_loc(cc, &param->ident_loc_, "Identifier \"%s\" already declared (see line %d in file %s)\n", tde->ident_, situs_line(&new_d->def_loc_), situs_filename(&new_d->def_loc_));
+                  cc_error_loc(cc, &param->ident_loc_, "Identifier \"%s\" already declared (see line %d in file %s)\n", param->ident_, situs_line(&new_d->def_loc_), situs_filename(&new_d->def_loc_));
                 }
                 else {
                   new_d->is_param_ = 1;
