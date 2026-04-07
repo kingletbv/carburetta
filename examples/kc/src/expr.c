@@ -4486,7 +4486,7 @@ int expr_sub(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, s
     return 0;
   }
   else {
-    cc_error_loc(cc, op_loc, "types mismatch for addition, must be either both arithmetic, or pointer and an integer");
+    cc_error_loc(cc, op_loc, "types mismatch for subtraction, must be either both arithmetic, or pointer and an integer");
     return -1;
   }
   return -1;
