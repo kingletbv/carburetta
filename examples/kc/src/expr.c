@@ -2081,8 +2081,20 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
         case tk_int:
           load[opd] = si;
           break;
+        case tk_long_int:
+          load[opd] = sli;
+          break;
+        case tk_long_long_int:
+          load[opd] = slli;
+          break;
         case tk_unsigned_int:
           load[opd] = ui;
+          break;
+        case tk_unsigned_long_int:
+          load[opd] = uli;
+          break;
+        case tk_unsigned_long_long_int:
+          load[opd] = ulli;
           break;
         default:
           assert(0 && "Unsupported enum compatible integer type");
@@ -2851,8 +2863,20 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
       case tk_int:
         store = si;
         break;
+      case tk_long_int:
+        store = sli;
+        break;
+      case tk_long_long_int:
+        store = slli;
+        break;
       case tk_unsigned_int:
         store = ui;
+        break;
+      case tk_unsigned_long_int:
+        store = uli;
+        break;
+      case tk_unsigned_long_long_int:
+        store = ulli;
         break;
       default:
         assert(0 && "Unsupported enum compatible integer type");
