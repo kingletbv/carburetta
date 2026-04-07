@@ -678,6 +678,12 @@ int templ_initializer_iter_struct_union(struct c_compiler *cc, struct type_node 
   }
   else {
     /* First field .. */
+    if (!tn->fields_) {
+      /* Struct/union has no fields .. so report error */
+      report_error(&tn->tag_loc_, "cannot initialize empty struct or union");
+      return -1;
+    }
+
     field = tn->fields_->chain_;
   }
 
