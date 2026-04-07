@@ -284,7 +284,7 @@ static int cc_file_mem_input_request_callback(void *baton, struct input_file *if
 
 struct input_file *cc_push_input_file_mem(struct c_compiler *cc, const char *filename, const void *mem, size_t memsize) {
   struct mem_input_file *ifile = (struct mem_input_file *)cc_push_input_file(cc, filename, sizeof(struct mem_input_file) - sizeof(struct input_file));
-  if (ifile) return NULL;
+  if (!ifile) return NULL;
   ifile->if_.input_request_fn_ = cc_file_mem_input_request_callback;
   ifile->mem_ = mem;
   ifile->memsize_ = memsize;
@@ -329,7 +329,7 @@ enum c_compiler_result cc_preprocessor_stage(struct c_compiler *cc) {
         }
       }
     }
-    r = ppme_parse(&cc->ppme_, next_sym, cc, &cc->ppme_input_, cc->ppme_input_final_, &cc->cp_input_, 0 /* keep_defined */);
+    r = ppme_parse(&cc->ppme_, next_sym, cc, &cc->ppme_input_, cc->ppme_input_final_, &cc->cp_input_);
     switch (r) {
       case _PPME_FINISH:
         cc->cp_input_final_ = 1;
