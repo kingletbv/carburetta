@@ -3121,7 +3121,8 @@ int expr_mul(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, s
 
   if (expr_usual_arithmetic_conversions(cc, left, right)) {
     cc_error_loc(cc, op_loc, "failed to perform the usual arithmetic conversions");
-    return 0;
+    *dst = NULL;
+    return -1;
   }
 
   enum type_kind tk_left, tk_right;
@@ -3317,6 +3318,7 @@ int expr_div(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, s
 
   if (expr_usual_arithmetic_conversions(cc, left, right)) {
     cc_error_loc(cc, op_loc, "failed to perform the usual arithmetic conversions");
+    *dst = NULL;
     return -1;
   }
 
@@ -4496,7 +4498,7 @@ int expr_sub(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, s
 int expr_unary_plus(struct c_compiler *cc, struct expr **dst, struct situs *op_loc, struct situs *opd_loc, struct expr **operand) {
   if (!*operand) {
     /* One of the sides is invalid. Simple pass through of an error */
-    return -1;
+    return 0;
   }
   struct type_node *opd_type = expr_type(cc, *operand);
 
@@ -4587,7 +4589,7 @@ int expr_unary_plus(struct c_compiler *cc, struct expr **dst, struct situs *op_l
 int expr_unary_minus(struct c_compiler *cc, struct expr **dst, struct situs *op_loc, struct situs *opd_loc, struct expr **operand) {
   if (!*operand) {
     /* One of the sides is invalid. Simple pass through of an error */
-    return -1;
+    return 0;
   }
   struct type_node *opd_type = expr_type(cc, *operand);
 
@@ -4678,7 +4680,7 @@ int expr_unary_minus(struct c_compiler *cc, struct expr **dst, struct situs *op_
 int expr_bitwise_complement(struct c_compiler *cc, struct expr **dst, struct situs *op_loc, struct situs *opd_loc, struct expr **operand) {
   if (!*operand) {
     /* One of the sides is invalid. Simple pass through of an error */
-    return -1;
+    return 0;
   }
   struct type_node *opd_type = expr_type(cc, *operand);
 
@@ -4740,7 +4742,7 @@ int expr_bitwise_complement(struct c_compiler *cc, struct expr **dst, struct sit
 int expr_indirection(struct c_compiler *cc, struct expr **dst, struct situs *op_loc, struct situs *opd_loc, struct expr **operand) {
   if (!*operand) {
     /* One of the sides is invalid. Simple pass through of an error */
-    return -1;
+    return 0;
   }
 
   int r;
@@ -4889,7 +4891,7 @@ int expr_pre_dec(struct c_compiler *cc, struct expr **dst, struct situs *op_loc,
 int expr_address_of(struct c_compiler *cc, struct expr **dst, struct situs *op_loc, struct situs *opd_loc, struct expr **operand) {
   if (!*operand) {
     /* One of the sides is invalid. Simple pass through of an error */
-    return -1;
+    return 0;
   }
 
   /* Possibly somewhat counter-intuitively, taking the address of an operand actually consists of stripping away an ET_INDIRECTION_PTR instruction. 
@@ -4912,7 +4914,7 @@ int expr_address_of(struct c_compiler *cc, struct expr **dst, struct situs *op_l
 int expr_cast(struct c_compiler *cc, struct expr **dst, struct situs *type_loc, struct type_node *ptype, struct situs *val_loc, struct expr **val) {  
   if ((!ptype) || (!*val)) {
     /* One of the sides is invalid. Simple pass through of an error */
-    return -1;
+    return 0;
   }
 
   int r;
@@ -5022,7 +5024,7 @@ int expr_cast(struct c_compiler *cc, struct expr **dst, struct situs *type_loc, 
 static int expr_equality_operators(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, struct expr **left, struct situs *op_loc, struct situs *right_loc, struct expr **right, int not_equals) {  
   if ((!*left) || (!*right)) {
     /* One of the sides is invalid. Simple pass through of an error */
-    return -1;
+    return 0;
   }
 
   int r;
@@ -5400,7 +5402,7 @@ int expr_logical_or(struct c_compiler *cc, struct expr **dst, struct situs *left
 int expr_assign(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, struct expr **left, struct situs *op_loc, struct situs *right_loc, struct expr **right) {
   if ((!*left) || (!*right)) {
     /* One of the sides is invalid. Simple pass through of an error */
-    return -1;
+    return 0;
   }
 
   int r;
