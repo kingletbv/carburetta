@@ -1284,7 +1284,7 @@ switch-prolog: SWITCH PAR_OPEN exp PAR_CLOSE {
 
 selection-stmt: switch-prolog stmt {
   $$ = $0.s_; $0.s_ = NULL;
-  STMT_SET_CHILD0($$, $1); 
+  if ($$) { STMT_SET_CHILD0($$, $1); } 
 }
 
 %nt for-prolog while-prolog do-while-prolog
