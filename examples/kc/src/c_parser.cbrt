@@ -1103,7 +1103,7 @@ int cp_init_declarations_as_expr(struct c_compiler *cc, struct decl *d_list, str
        * time we pass by the definition, but have the variable itself allocated as a global.
        */
       struct decl *dit = d;
-      if (dit->global_forward_)  dit = dit->global_forward_;
+      if (dit->global_forward_) dit = dit->global_forward_;
 
       struct expr *x;
       /* Note that initializer is always on the forwarder (if any) - not the global. */
