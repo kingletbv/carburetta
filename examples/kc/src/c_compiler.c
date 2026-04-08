@@ -329,7 +329,7 @@ enum c_compiler_result cc_preprocessor_stage(struct c_compiler *cc) {
         }
       }
     }
-    r = ppme_parse(&cc->ppme_, next_sym, cc, &cc->ppme_input_, cc->ppme_input_final_, &cc->cp_input_);
+    r = ppme_parse(&cc->ppme_, next_sym, cc, &cc->ppme_input_, cc->ppme_input_final_, &cc->cp_input_, 0);
     switch (r) {
       case _PPME_FINISH:
         cc->cp_input_final_ = 1;
