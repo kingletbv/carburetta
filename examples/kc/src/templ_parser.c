@@ -433,6 +433,7 @@ struct type_field *templ_type_field_realize(struct c_compiler *cc, pts_type_spec
     enum type_kind tk = pts_type_kind(pts);
     if (tk == tk_invalid) {
       report_error(spec_loc, "Invalid type specifier");
+      return NULL;
     }
     else {
       tn = type_base_simple(&cc->tb_, tk);
