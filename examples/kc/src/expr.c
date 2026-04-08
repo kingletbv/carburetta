@@ -2276,12 +2276,28 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
       complex_mul_f(operands_f + 0, operands_fi + 0, operands_f[0], operands_fi[0], operands_f[1], operands_fi[1]);
       break;
     case div:
-      operands_i[0] /= operands_i[1];
-      operands_u[0] /= operands_u[1];
+      /* Check for division by zero, but only if the integer division is what is wanted (e.g. division
+       * by 0.1 should not trigger the integer path div-by-zero */
+      if (store == si || store == sli || store == slli ||
+          store == ui || store == uli || store == ulli) {
+        if (!operands_i[1] || !operands_u[1]) {
+          cc_fatal(cc, "Runtime error: division by zero\n");
+          break;
+        }
+        operands_i[0] /= operands_i[1];
+        operands_u[0] /= operands_u[1];
+      }
       complex_div_d(operands_d + 0, operands_di + 0, operands_d[0], operands_di[0], operands_d[1], operands_di[1]);
       complex_div_f(operands_f + 0, operands_fi + 0, operands_f[0], operands_fi[0], operands_f[1], operands_fi[1]);
       break;
     case rem:
+      if (store == si || store == sli || store == slli ||
+          store == ui || store == uli || store == ulli) {
+        if (!operands_i[1] || !operands_u[1]) {
+          cc_fatal(cc, "Runtime error: division by zero\n");
+          break;
+        }
+      }
       operands_i[0] %= operands_i[1];
       operands_u[0] %= operands_u[1];
       break;
