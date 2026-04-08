@@ -1891,6 +1891,8 @@ struct-declaration: specifier-qualifier-list struct-declarator-list reenable-typ
           cc_no_memory(cc);
           return _CP_NO_MEMORY;
         }
+        fields = NULL;
+        break;
       }
       tde->ident_ = NULL; /* type_field now owns this */
       fields = type_field_join(fields, tf);
