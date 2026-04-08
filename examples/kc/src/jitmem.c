@@ -106,7 +106,7 @@ void *jitmem_reserve(struct c_compiler *cc, size_t num_bytes) {
   if (!g_jitmem_buckets_ || ((g_jitmem_bucket_offset_ + num_bytes) > g_jitmem_buckets_->size_)) {
     size_t page_data_size_needed = g_page_data_size_;
     if (page_data_size_needed < num_bytes) {
-      page_data_size_needed = (num_bytes + g_page_data_size_ - 1) & ~g_page_data_size_;
+      page_data_size_needed = (num_bytes + g_page_data_size_ - 1) & ~(g_page_data_size_ - 1);
     }
     struct jitmem_bucket *bkt = (struct jitmem_bucket *)malloc(sizeof(struct jitmem_bucket));
     if (!bkt) {
