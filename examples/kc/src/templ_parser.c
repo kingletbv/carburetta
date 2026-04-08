@@ -876,7 +876,6 @@ int templ_initializer_iter_array(struct c_compiler *cc, struct type_node *tn, st
       current_offset = expr_alloc(et_add);
       if (!current_offset) {
         expr_free(offset_expr);
-        expr_free(current_offset);
         cc_no_memory(cc);
         return -1;
       }
