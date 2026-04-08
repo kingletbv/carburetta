@@ -861,7 +861,6 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
               struct pptk *arg_clone = pptk_clone_trimmed(cc, inst_arg->tokens_);
               if (inst_arg->tokens_ && !arg_clone) {
                 cc_no_memory(cc);
-                pptk_free(expansion);
                 pptk_free(instanced);
                 pptk_free(arg_expanded);
                 return -1;
@@ -870,7 +869,7 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
               if (!preceeded_by_hash && !preceeded_by_hash_hash && !followed_by_hash_hash) {
                 int r = pptk_perform_macro_expansion(cc, &arg_clone, 0 /* keep_defined */);
                 if (r) {
-                  pptk_free(expansion);
+                  pptk_free(arg_clone);
                   pptk_free(instanced);
                   pptk_free(arg_expanded);
                   return r;
