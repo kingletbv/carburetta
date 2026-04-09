@@ -214,7 +214,7 @@ int stmt_prepare(struct c_compiler *cc, struct stmt *root) {
       if (s == root) {
         /* Finished at root, don't try to escape out, don't try to execute root's 
          * next sibling, just exit. */
-        return 0;
+        return failure;
       }
       if (s->parent_) {
         if ((s->next_ != s->parent_->child0_) && (s->next_ != s->parent_->child1_)) {
@@ -232,12 +232,10 @@ int stmt_prepare(struct c_compiler *cc, struct stmt *root) {
         }
       }
       else {
-        return 0;
+        return failure;
       }
     } while (!enter);
   }
-
-  return failure;
 }
 
 int stmt_exec(struct c_compiler *cc, struct stmt *root, void *local_base, void *param_base, void *return_value_ptr) {
