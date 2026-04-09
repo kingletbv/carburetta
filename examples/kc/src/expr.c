@@ -980,6 +980,7 @@ struct expr *expr_convert_arithmetic_type(struct c_compiler *cc, struct type_nod
   if (!from) return NULL;
 
   from = type_node_unqualified(from);
+  to = type_node_unqualified(to);
 
   if (from == to) return src; /* Already there.. */
 
