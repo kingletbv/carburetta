@@ -4866,6 +4866,18 @@ static int expr_post_op_by_one(struct c_compiler *cc, struct expr **dst, struct 
     return r;
   }
 
+  if (opd_plus_one) {
+    expr_free(opd_plus_one);
+  }
+
+  if (one) {
+    expr_free(one);
+  }
+
+  if (lvalue) {
+    expr_free(lvalue);
+  }
+
   // XXX: expr_assign pops the top expr (the indirection) to perform the assignment on the pointer itself, we, however, rely
   //      on the continued existence of the indirection (as a source for the increment as well as the resulting value) -- are
   //      current measures enough? Will the indirection survive with a refcount of 2 total?
@@ -4915,6 +4927,18 @@ static int expr_pre_op_by_one(struct c_compiler *cc, struct expr **dst, struct s
     expr_free(lvalue);
     expr_free(opd_plus_one);
     return r;
+  }
+
+  if (opd_plus_one) {
+    expr_free(opd_plus_one);
+  }
+
+  if (one) {
+    expr_free(one);
+  }
+
+  if (lvalue) {
+    expr_free(lvalue);
   }
 
   return 0;
