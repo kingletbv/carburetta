@@ -413,6 +413,7 @@ void situs_convert_to_substitution(struct situs *s, size_t num_bytes) {
 
 void situs_init_from_after(struct situs *s, const struct situs *src_after, size_t num_bytes) {
   situs_init(s);
+  if (!src_after || !src_after->num_spans_) return;
   const struct situs_span *spans = (src_after->num_spans_ > 1) ? src_after->u_.many_.spans_ : &src_after->u_.one_;
   const struct situs_span *last_span = spans + src_after->num_spans_ - 1;
   struct situs_span *span = &s->u_.one_;
