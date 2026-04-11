@@ -173,7 +173,7 @@ extern "C" {
   xx(ET_CVF2D, 1, tk_double) \
 \
   /* Convert Double to Float */ \
-  xx(ET_CVD2F, 1, tk_double) \
+  xx(ET_CVD2F, 1, tk_float) \
 \
   /* Convert Double to Long Double */ \
   xx(ET_CVD2LD, 1, tk_long_double) \
