@@ -802,7 +802,7 @@ $: {
         break;
       }
 
-      c += sch_read_char_value(cc, c, &val, 0xFF, &$, "wide character");
+      c += sch_read_char_value(cc, c, &val, 0xFFFF, &$, "wide character");
       result = result + (uint32_t)val;
       char_count++;
     }
