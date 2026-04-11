@@ -896,6 +896,8 @@ void type_param_free_chain(struct type_param *tp) {
 }
 
 struct type_param *type_param_join(struct type_param *front, struct type_param *back) {
+  if (!front) return back;
+  if (!back) return front;
   struct type_param *front_head = front->chain_;
   struct type_param *front_tail = front;
   struct type_param *back_head = back->chain_;
@@ -965,6 +967,9 @@ void type_enum_constant_free_chain(struct type_enum_constant *tec) {
 }
 
 struct type_enum_constant *type_enum_constant_join(struct type_enum_constant *front, struct type_enum_constant *back) {
+  if (!front) return back;
+  if (!back) return front;
+
   struct type_enum_constant *front_head = front->chain_;
   struct type_enum_constant *front_tail = front;
   struct type_enum_constant *back_head = back->chain_;
