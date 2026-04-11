@@ -6099,7 +6099,9 @@ static struct expr *expr_args_final_conversions(struct c_compiler *cc, struct ty
               *error_reported = 1;
               cc_error_loc(cc, func_loc, "failed float to double promotions on argument #%zu", *pcurrent_index);
             }
-            argslist = x;
+            else {
+              argslist = x;
+            }
           }
         }
       }
