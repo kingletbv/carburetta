@@ -105,6 +105,8 @@ invoke_call_x64:
 
   mov rcx, [rbp - 16]
   mov [rcx + Invocation_rax_result_], rax
+  # Capture float/double return value from xmm0 (reuse xmm0_ field)
+  movsd [rcx + Invocation_xmm0_], xmm0
 
   mov rsp, rbp
   pop rbp
@@ -139,6 +141,8 @@ enter_call_x64:
   mov rcx, r11
   call invoke_enter_call
   mov rax, [rsp + Invocation_rax_result_]
+  # Return float/double results via xmm0 (load same bytes, caller picks correct register)
+  movsd xmm0, [rsp + Invocation_rax_result_]
   add rsp, Invocation_sizeof
   pop rbp
   ret
