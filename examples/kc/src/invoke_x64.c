@@ -169,6 +169,9 @@ size_t fill_args(struct c_compiler *cc, struct invoke_context *ic, size_t arg_in
     return arg_index;
   }
 
+/* Win64: each arg position uses either the integer register or the xmm register.
+ * For variadic functions, float args must be duplicated in both registers.
+ * We always set both to be safe. */
 #define PROCESS_ARG(x, ireg, dreg) \
   case x: { \
     struct type_node *tn = expr_type(cc, args); \
@@ -176,8 +179,15 @@ size_t fill_args(struct c_compiler *cc, struct invoke_context *ic, size_t arg_in
       return arg_index + 1; \
     } \
     tn = type_node_unqualified(tn); \
-    if ((tn->kind_ == tk_float) || (tn->kind_ == tk_double)) { \
-      /* XXX: Always passing as double *this is a problem* */ \
+    if (tn->kind_ == tk_float) { \
+      float _fv = temps[args->ord_].v_.f_; \
+      *(float *)&ic->dreg = _fv; \
+      ic->ireg = 0; \
+      *(float *)&ic->ireg = _fv; \
+      *(((uint64_t *)ic->hspace_) + arg_index) = 0; \
+      *(float *)(((uint64_t *)ic->hspace_) + arg_index) = _fv; \
+    } \
+    else if (tn->kind_ == tk_double) { \
       ic->dreg = temps[args->ord_].v_.d_; \
       ic->ireg = *(uint64_t *)&temps[args->ord_].v_.d_; \
       *(double *)(((uint64_t *)ic->hspace_) + arg_index) = temps[args->ord_].v_.d_; \
@@ -194,14 +204,17 @@ size_t fill_args(struct c_compiler *cc, struct invoke_context *ic, size_t arg_in
     PROCESS_ARG(2, r8_, xmm2_)
     PROCESS_ARG(3, r9_, xmm3_)
     default: {
-      /* Beyond 4th argument */
+      /* Beyond 4th argument, on stack only */
       struct type_node *tn = expr_type(cc, args);
       if (!tn) {
         return arg_index + 1;
       }
       tn = type_node_unqualified(tn);
-      if ((tn->kind_ == tk_float) || (tn->kind_ == tk_double)) {
-        /* XXX: Always passing as double *this is a problem* */
+      if (tn->kind_ == tk_float) {
+        *(((uint64_t *)ic->hspace_) + arg_index) = 0;
+        *(float *)(((uint64_t *)ic->hspace_) + arg_index) = temps[args->ord_].v_.f_;
+      }
+      else if (tn->kind_ == tk_double) {
         *(double *)(((uint64_t *)ic->hspace_) + arg_index) = temps[args->ord_].v_.d_;
       }
       else {
@@ -254,7 +267,16 @@ int invoke_x64(struct c_compiler *cc, struct expr *x, struct expr_temp *temps) {
   fill_args(cc, ic, 0, x->children_[1], temps);
   invoke_call_x64(ic);
 
-  temps[x->ord_].v_.u64_ = ic->rax_result_;
+  /* After the call, integer results are in rax_result_, float/double in xmm0_
+   * (the ASM saves xmm0 to the xmm0_ field after the call). */
+  struct type_node *ret_type = type_node_unqualified(func_type->derived_from_);
+  if (ret_type && ret_type->kind_ == tk_float) {
+    temps[x->ord_].v_.f_ = *(float *)&ic->xmm0_;
+  } else if (ret_type && ret_type->kind_ == tk_double) {
+    temps[x->ord_].v_.d_ = ic->xmm0_;
+  } else {
+    temps[x->ord_].v_.u64_ = ic->rax_result_;
+  }
 
   return 0;
 }

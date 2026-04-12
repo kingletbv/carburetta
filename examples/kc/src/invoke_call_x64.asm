@@ -84,6 +84,8 @@ invoke_call_x64 PROC FRAME
 
   mov rcx, [rbp - 16]
   mov [rcx.Invocation].rax_result_, rax
+  ; Capture float/double return value from xmm0 (reuse xmm0_ field)
+  movsd [rcx.Invocation].xmm0_, xmm0
 
   add rsp, [rcx.Invocation].hspace_size_
   
@@ -125,7 +127,9 @@ enter_call_x64 PROC FRAME
   mov r9, r11
   call invoke_enter_call
   mov rax, [8 * 4 + rsp.Invocation].rax_result_
-  add rsp, SIZEOF Invocation + 8*4 
+  ; Return float/double results via xmm0
+  movsd xmm0, [8 * 4 + rsp.Invocation].rax_result_
+  add rsp, SIZEOF Invocation + 8*4
   pop rbp
   ret
 enter_call_x64 ENDP
