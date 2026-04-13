@@ -149,7 +149,7 @@ static enum expr_type expr_get_next_arithmetic_conversion_step(struct c_compiler
     if ((destination == tk_float_imaginary) || (destination == tk_double_imaginary) || (destination == tk_long_double_imaginary)) {
       /* Imaginary up or down conversions */
       if (current == tk_float_imaginary) {
-        if ((destination == tk_double_imaginary) || (destination == tk_double_imaginary)) {
+        if ((destination == tk_double_imaginary) || (destination == tk_long_double_imaginary)) {
           return ET_CVFI2DI;
         }
       }
