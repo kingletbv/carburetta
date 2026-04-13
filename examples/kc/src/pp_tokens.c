@@ -334,7 +334,7 @@ struct macro_arg_inst *macro_arg_inst_alloc(struct pptk *tokens) {
   struct macro_arg_inst *mai = (struct macro_arg_inst *)malloc(sizeof(struct macro_arg_inst));
   if (!mai) return NULL;
   mai->tokens_ = tokens;
-  mai->next_ = mai->prev_ = mai;
+  mai->next_ = mai;
   return mai;
 }
 
@@ -347,18 +347,12 @@ void macro_arg_inst_free(struct macro_arg_inst *mai) {
 struct macro_arg_inst *macro_arg_inst_join(struct macro_arg_inst *front, struct macro_arg_inst *back) {
   if (!back) return front;
   if (!front) return back;
-  struct macro_arg_inst *front_head = front;
-  struct macro_arg_inst *front_tail = front->prev_;
-  struct macro_arg_inst *back_head = back;
-  struct macro_arg_inst *back_tail = back->prev_;
+  struct macro_arg_inst *front_head = front->next_;
+  struct macro_arg_inst *back_head = back->next_;
 
-  back_tail->next_ = front_head;
-  front_head->prev_ = back_tail;
-
-  front_tail->next_ = back_head;
-  back_head->prev_ = front_tail;
-
-  return front_head;
+  back->next_ = front_head;
+  front->next_ = back_head;
+  return back;
 }
 
 int pptk_perform_macro_expansion(struct c_compiler *cc, struct pptk **pp_chain, int keep_defined) {
@@ -803,9 +797,10 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
         variadic_tail = inst_arg;
       }
 
+      inst_arg = inst_arg->next_;
+
       num_inst_args++;
 
-      inst_arg = inst_arg->next_;
     } while (inst_arg != args);
   }
 
@@ -854,6 +849,8 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
       if (arg) {
         inst_arg = args;
         do {
+          inst_arg = inst_arg ? inst_arg->next_ : NULL;
+
           struct pptk *expansion = NULL;
           if (!strcmp(id->text_, arg->text_)) {
             /* Replacement */
@@ -914,8 +911,10 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
           }
           else if (m->is_variadic_ && !strcmp(id->text_, "__VA_ARGS__")) {
             struct macro_arg_inst *tail = variadic_tail;
-            if (tail && tail != args) {
+            if (tail && (num_inst_args > num_args)) {
               do {
+                tail = tail->next_;
+
                 if (pptk_is_only_whitespace(tail->tokens_) && (tail->next_ == args) && (followed_by_hash_hash || preceeded_by_hash_hash)) {
                   if (!preceeded_by_hash) {
                     /* Empty __VA_ARGS__ argument, and we're adjacent to a ## token, insert placemarker
@@ -975,7 +974,6 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
                   }
                 }
 
-                tail = tail->next_;
               } while (tail != args);
             }
             else if (followed_by_hash_hash || preceeded_by_hash_hash) {
@@ -1011,14 +1009,6 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
             break;
           }
 
-          if (inst_arg) {
-            if (inst_arg->next_ != args) {
-              inst_arg = inst_arg->next_;
-            }
-            else {
-              inst_arg = NULL;
-            }
-          }
           arg = arg->next_;
         } while (arg != m->args_);
       }
