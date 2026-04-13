@@ -1243,20 +1243,24 @@ struct type_node *type_node_composite(struct c_compiler *cc, struct type_node *t
     
     size_t t1c = 0;
     struct type_param *tp = t1->params_;
-    do {
-      tp = tp->chain_;
+    if (tp) {
+      do {
+        tp = tp->chain_;
 
-      t1c++;
-    } while (tp != t1->params_);
+        t1c++;
+      } while (tp != t1->params_);
+    }
 
     size_t t2c = 0;
     tp = t2->params_;
-    do {
-      tp = tp->chain_;
+    if (tp) {
+      do {
+        tp = tp->chain_;
 
-      t2c++;
-    } while (tp != t2->params_);
-  
+        t2c++;
+      } while (tp != t2->params_);
+    }
+
     /* both parameter lists (arguments) are known, form new param list as composite of each individual parameter */
     if (t1->params_ && t2->params_ && !t1->is_identifier_list_ && !t2->is_identifier_list_) {
       if (t1->params_->is_varadic_ != t2->params_->is_varadic_) {
