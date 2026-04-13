@@ -1137,7 +1137,7 @@ int cc_pp_concat_sub_output_b(struct c_compiler *cc, struct situs *output_situs,
     return -1;
   }
 
-  struct situs_span *sss = (span_situs->num_spans_ > 1) ? span_situs->u_.many_.spans_ : &span_situs->u_.one_;
+  struct situs_span *sss = (substitution.num_spans_ > 1) ? substitution.u_.many_.spans_ : &substitution.u_.one_;
   /* Mark all of the situs a substitution */
   size_t n;
   sss->is_substitution_ = 1;
