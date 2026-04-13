@@ -92,7 +92,7 @@ static void situs_find_offset(const char *bytes, size_t byte_size, int *num_line
  * will be copied. The goal is to make progress, not to complete all in one shot.
  * If it tried to chop but there was no memory, -1 is returned. 0 is returned otherwise.
  */
-static size_t situs_chop(struct situs *chop, struct situs *from, size_t byte_length, const char *text, size_t *chop_length) {
+static int situs_chop(struct situs *chop, struct situs *from, size_t byte_length, const char *text, size_t *chop_length) {
   /* Returns non-zero if chop was performed.. */
   struct situs_span *sf = from->num_spans_ > 1 ? from->u_.many_.spans_ : &from->u_.one_;
   struct situs_span *sflast = sf;
@@ -121,7 +121,6 @@ static size_t situs_chop(struct situs *chop, struct situs *from, size_t byte_len
       chop->u_.many_.num_spans_allocated_ = num_spans;
       chop->u_.many_.spans_ = malloc(sizeof(struct situs_span) * num_spans);
       if (!chop->u_.many_.spans_) {
-        /* Caller can check chop->num_spans_, if non-zero and yet 0 is returned, it's a fail */
         *chop_length = 0;
         return -1;
       }
@@ -144,6 +143,7 @@ static size_t situs_chop(struct situs *chop, struct situs *from, size_t byte_len
     return 0;
   }
   if (sf->is_substitution_) {
+    size_t prior_num_bytes = sf->num_bytes_;
     sf->num_bytes_ -= byte_length;
     size_t num_spans = (sflast + 1) - sf;
     if (num_spans == 1) {
@@ -156,8 +156,9 @@ static size_t situs_chop(struct situs *chop, struct situs *from, size_t byte_len
       chop->u_.many_.num_spans_allocated_ = num_spans;
       chop->u_.many_.spans_ = malloc(sizeof(struct situs_span) * num_spans);
       if (!chop->u_.many_.spans_) {
-        /* Caller can check chop->num_spans_, if non-zero and yet 0 is returned, it's a fail */
-        return 0;
+        *chop_length = 0;
+        sf->num_bytes_ = prior_num_bytes;
+        return -1;
       }
       memmove(chop->u_.many_.spans_, sf, sizeof(struct situs_span) * num_spans);
       chop->u_.many_.spans_->num_bytes_ = byte_length;
@@ -344,13 +345,12 @@ int situs_clone(struct situs *dst, const struct situs *src) {
     dst->u_.one_ = src->u_.one_;
   }
   else {
+    struct situs_span *new_spans = (struct situs_span *)malloc(src->u_.many_.num_spans_allocated_ * sizeof(*src->u_.many_.spans_));
+    if (!new_spans) return -1;
     if (dst->num_spans_ > 1) free(dst->u_.many_.spans_);
     dst->num_spans_ = src->num_spans_;
     dst->u_.many_.num_spans_allocated_ = src->u_.many_.num_spans_allocated_;
-    dst->u_.many_.spans_ = (struct situs_span *)malloc(src->u_.many_.num_spans_allocated_ * sizeof(*src->u_.many_.spans_));
-    if (!dst->u_.many_.spans_) {
-      return -1;
-    }
+    dst->u_.many_.spans_ = new_spans;
     memcpy(dst->u_.many_.spans_, src->u_.many_.spans_, src->num_spans_ * sizeof(*src->u_.many_.spans_));
   }
   return 0;
