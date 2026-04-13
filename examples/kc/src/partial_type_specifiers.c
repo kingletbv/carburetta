@@ -28,7 +28,7 @@
 #include "partial_type_specifiers.h"
 #endif
 
-static int pts_type_combination_table_[PTS_NUM_SINGULAR * PTS_LAST_TYPE_SPECIFIER ] = {
+static int pts_type_combination_table_[(1 + PTS_NUM_SINGULAR) * PTS_LAST_TYPE_SPECIFIER ] = {
   // Singular type specifiers: TS_VOID , TS_CHAR , TS_SHORT, ... as columns
   // All type specifiers starting from TS_NONE as rows..
   // Therefore TS_NUM_SINGLULAR - 1 columns and TS_LAST_TYPE_SPECIFIER rows..
@@ -171,7 +171,7 @@ void pts_init() {
   int compound, singular;
   for (compound = PTS_NONE; compound < PTS_LAST_TYPE_SPECIFIER; ++compound) {
     for (singular = PTS_NONE; singular <= PTS_NUM_SINGULAR; ++singular) {
-      pts_type_combination_table_[compound * PTS_NUM_SINGULAR + singular] = pts_combine_type_slow(compound, singular);
+      pts_type_combination_table_[compound * (1 + PTS_NUM_SINGULAR) + singular] = pts_combine_type_slow(compound, singular);
     }
   }
 }
@@ -195,9 +195,9 @@ enum type_kind pts_type_kind(pts_type_specifier_t ts) {
 }
 
 int pts_combine_type(pts_type_specifier_t compound, pts_type_specifier_t singular) {
-  assert((compound >= PTS_NONE) && (compound <= PTS_LAST_TYPE_SPECIFIER) && "compound value out of range");
+  assert((compound >= PTS_NONE) && (compound < PTS_LAST_TYPE_SPECIFIER) && "compound value out of range");
   assert((singular >= PTS_NONE) && (singular <= PTS_NUM_SINGULAR) && "singular value out of range");
   pts_type_specifier_t r;
-  r = pts_type_combination_table_[compound * PTS_NUM_SINGULAR + singular];
+  r = pts_type_combination_table_[compound * (1 + PTS_NUM_SINGULAR) + singular];
   return r;
 }
