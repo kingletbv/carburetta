@@ -1544,10 +1544,7 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
     assert(0 && "Unsupported bits per int");
   }
 
-  if (cc->tb_.uintptr_equivalent_ == tk_unsigned_short_int) {
-    uintptr = u16;
-  }
-  else if (cc->tb_.uintptr_equivalent_ == tk_unsigned_int) {
+  if (cc->tb_.uintptr_equivalent_ == tk_unsigned_int) {
     uintptr = ui;
   }
   else if (cc->tb_.uintptr_equivalent_ == tk_unsigned_long_int) {

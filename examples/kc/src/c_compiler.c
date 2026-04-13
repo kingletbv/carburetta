@@ -992,18 +992,18 @@ static int cc_template_default_handler(struct c_compiler *cc, char *templ_str, s
 
   enum expr_type et_uintptr = ET_INVALID;
   switch (cc->tb_.uintptr_equivalent_) {
-  case tk_unsigned_int:
-    et_uintptr = ET_C_UNSIGNED_INT;
-    break;
-  case tk_unsigned_long_int:
-    et_uintptr = ET_C_UNSIGNED_LONG_INT;
-    break;
-  case tk_unsigned_long_long_int:
-    et_uintptr = ET_C_UNSIGNED_LONG_LONG_INT;
-    break;
-  default:
-    assert(0 && "Cannot work with uintptr type");
-    break;
+    case tk_unsigned_int:
+      et_uintptr = ET_C_UNSIGNED_INT;
+      break;
+    case tk_unsigned_long_int:
+      et_uintptr = ET_C_UNSIGNED_LONG_INT;
+      break;
+    case tk_unsigned_long_long_int:
+      et_uintptr = ET_C_UNSIGNED_LONG_LONG_INT;
+      break;
+    default:
+      assert(0 && "Cannot work with uintptr type");
+      break;
   }
 
   struct expr *baton_expr = expr_alloc(et_uintptr);
