@@ -1361,6 +1361,7 @@ for-prolog: FOR PAR_OPEN declaration optional_exp SEMICOLON optional_exp PAR_CLO
   if ($2 && $2->init_) {
     int r = cp_init_declarations_as_expr(cc, $2, &${2}, &for_s->expr0_);
     if (r) {
+      stmt_free(for_s);
       return _CP_NO_MEMORY;
     }
   }
