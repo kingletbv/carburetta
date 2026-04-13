@@ -1114,7 +1114,7 @@ static int cc_template_default_handler(struct c_compiler *cc, char *templ_str, s
 
 int cc_pp_concat_sub_output(struct c_compiler *cc, struct situs *output_situs, char **output_buf, size_t *output_pos, size_t *output_buf_size, struct situs *span_situs, const char *span_text) {
   size_t span_text_len = strlen(span_text);
-  return cc_pp_concat_output_b(cc, output_situs, output_buf, output_pos, output_buf_size, span_situs, span_text, span_text_len);
+  return cc_pp_concat_sub_output_b(cc, output_situs, output_buf, output_pos, output_buf_size, span_situs, span_text, span_text_len);
 }
 
 int cc_pp_concat_sub_output_b(struct c_compiler *cc, struct situs *output_situs, char **output_buf, size_t *output_pos, size_t *output_buf_size, struct situs *span_situs, const char *span_text, size_t span_text_len) {
