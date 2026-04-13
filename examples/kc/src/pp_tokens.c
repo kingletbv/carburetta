@@ -240,7 +240,24 @@ struct pptk *pptk_clone_single(struct c_compiler *cc, struct pptk *one) {
   if (!clone) {
     return NULL;
   }
-  if ((one->tok_ != PPTK_TYPEDEF_NAME) && one->v_.expr_) {
+  if (one->tok_ == PPTK_STRING_LIT) {
+    clone->v_.string_.wide_ = one->v_.string_.wide_;
+    clone->v_.string_.length_ = one->v_.string_.length_;
+    if (one->v_.string_.data_) {
+      size_t elem_size = one->v_.string_.wide_ ? sizeof(uint16_t) : sizeof(char);
+      size_t alloc_size = (one->v_.string_.length_ + 1) * elem_size;
+      clone->v_.string_.data_ = malloc(alloc_size);
+      if (!clone->v_.string_.data_) {
+        pptk_free(clone);
+        return NULL;
+      }
+      memcpy(clone->v_.string_.data_, one->v_.string_.data_, alloc_size);
+    }
+    else{
+      clone->v_.string_.data_ = NULL;
+    }
+  }
+  else if ((one->tok_ != PPTK_TYPEDEF_NAME) && one->v_.expr_) {
     clone->v_.expr_  = one->v_.expr_;
     one->v_.expr_->refs_++;
   }
