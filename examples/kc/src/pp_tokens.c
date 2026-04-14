@@ -120,6 +120,11 @@ struct pptk *pptk_alloc_len(struct c_compiler *cc, struct pptk **pp_chain, const
     }
     situs_init(&tk->situs_);
     situs_clone(&tk->situs_, psit);
+    if (sym == PPTK_STRING_LIT) {
+      tk->v_.string_.wide_ = 0;
+      tk->v_.string_.data_ = NULL;
+      tk->v_.string_.length_ = 0;
+    }
     tk->v_.expr_ = NULL;
   }
   if (!tk || !tk->text_) {
@@ -845,13 +850,13 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
         preceeded_by_hash = 1;
         id = tk->next_;
       }
+      struct pptk *expansion = NULL;
       arg = m->args_;
       if (arg) {
         inst_arg = args;
         do {
           inst_arg = inst_arg ? inst_arg->next_ : NULL;
 
-          struct pptk *expansion = NULL;
           if (!strcmp(id->text_, arg->text_)) {
             /* Replacement */
             if (pptk_is_only_whitespace(inst_arg->tokens_) && (followed_by_hash_hash || preceeded_by_hash_hash)) {
@@ -909,80 +914,25 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
             token_replaced = 1;
             break;
           }
-          else if (m->is_variadic_ && !strcmp(id->text_, "__VA_ARGS__")) {
-            struct macro_arg_inst *tail = variadic_tail;
-            if (tail && (num_inst_args > num_args)) {
-              do {
-                tail = tail->next_;
 
-                if (pptk_is_only_whitespace(tail->tokens_) && (tail->next_ == args) && (followed_by_hash_hash || preceeded_by_hash_hash)) {
-                  if (!preceeded_by_hash) {
-                    /* Empty __VA_ARGS__ argument, and we're adjacent to a ## token, insert placemarker
-                     * Note that if __VA_ARGS__ expands to multiple empty arguments then it expands to one
-                     * or more commas; which would not cause a placemarker insertion. */
-                    struct situs insertion;
-                    situs_init_from_after(&insertion, &id->situs_, 0);
-                    struct pptk *placemarker = pptk_alloc(cc, &expansion, NULL, PPTK_PLACEMARKER, &insertion);
-                    situs_cleanup(&insertion);
-                    if (!placemarker) {
-                      cc_no_memory(cc);
-                      pptk_free(expansion);
-                      pptk_free(instanced);
-                      pptk_free(arg_expanded);
-                      return -1;
-                    }
-                  }
-                }
-                else {
-                  struct pptk *arg_clone = pptk_clone(cc, tail->tokens_);
-                  if (tail->tokens_ && !arg_clone) {
-                    cc_no_memory(cc);
-                    pptk_free(expansion);
-                    pptk_free(instanced);
-                    pptk_free(arg_expanded);
-                    return -1;
-                  }
+          arg = arg->next_;
+        } while (arg != m->args_);
+      }
+      if (m->is_variadic_ && !strcmp(id->text_, "__VA_ARGS__")) {
+        struct macro_arg_inst *tail = variadic_tail;
+        if (tail && (num_inst_args > num_args)) {
+          do {
+            tail = tail->next_;
 
-                  if (!preceeded_by_hash && !preceeded_by_hash_hash && !followed_by_hash_hash) {
-                    /* Expand macros for each __VA_ARGS__ argument individually, and concatenate them together.
-                     * (Don't expand as a whole or macro invocations can straddle multiple macro arguments.) */
-                    int r = pptk_perform_macro_expansion(cc, &arg_clone, 0 /* keep_defined */);
-                    if (r) {
-                      pptk_free(arg_clone);
-                      pptk_free(expansion);
-                      pptk_free(instanced);
-                      pptk_free(arg_expanded);
-                      return r;
-                    }
-                  }
-
-                  expansion = pptk_join(expansion, arg_clone);
-
-                  /* Arguments have dropped the comma between the args, recreate them. */
-                  if (tail->next_ != args) {
-                    struct situs insertion;
-                    situs_init_from_after(&insertion, &(*pp_output_chain)->prev_->situs_, 1 /* comma "," byte length 1 */);
-                    if (!pptk_alloc(cc, &expansion, ",", PPTK_COMMA, &insertion)) {
-                      situs_cleanup(&insertion);
-                      cc_no_memory(cc);
-                      pptk_free(expansion);
-                      pptk_free(instanced);
-                      pptk_free(arg_expanded);
-                      return -1;
-                    }
-                    situs_cleanup(&insertion);
-                  }
-                }
-
-              } while (tail != args);
-            }
-            else if (followed_by_hash_hash || preceeded_by_hash_hash) {
+            if (pptk_is_only_whitespace(tail->tokens_) && (tail->next_ == args) && (followed_by_hash_hash || preceeded_by_hash_hash)) {
               if (!preceeded_by_hash) {
-                /* No __VA_ARGS__ "argument" but adjacent to ## token. Whether this is permitted is dubious (and should
-                 * be checked when counting arguments) -- here we defensively handle it as an empty argument.. */
+                /* Empty __VA_ARGS__ argument, and we're adjacent to a ## token, insert placemarker
+                 * Note that if __VA_ARGS__ expands to multiple empty arguments then it expands to one
+                 * or more commas; which would not cause a placemarker insertion. */
                 struct situs insertion;
                 situs_init_from_after(&insertion, &id->situs_, 0);
                 struct pptk *placemarker = pptk_alloc(cc, &expansion, NULL, PPTK_PLACEMARKER, &insertion);
+                situs_cleanup(&insertion);
                 if (!placemarker) {
                   cc_no_memory(cc);
                   pptk_free(expansion);
@@ -992,25 +942,79 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
                 }
               }
             }
-            if (preceeded_by_hash) {
-              struct pptk *stringified = pptk_stringize(cc, expansion);
-              if (!stringified) {
+            else {
+              struct pptk *arg_clone = pptk_clone(cc, tail->tokens_);
+              if (tail->tokens_ && !arg_clone) {
                 cc_no_memory(cc);
                 pptk_free(expansion);
                 pptk_free(instanced);
                 pptk_free(arg_expanded);
                 return -1;
               }
-              pptk_free(expansion);
-              expansion = stringified;
-            }
-            arg_expanded = pptk_join(arg_expanded, expansion);
-            token_replaced = 1;
-            break;
-          }
 
-          arg = arg->next_;
-        } while (arg != m->args_);
+              if (!preceeded_by_hash && !preceeded_by_hash_hash && !followed_by_hash_hash) {
+                /* Expand macros for each __VA_ARGS__ argument individually, and concatenate them together.
+                 * (Don't expand as a whole or macro invocations can straddle multiple macro arguments.) */
+                int r = pptk_perform_macro_expansion(cc, &arg_clone, 0 /* keep_defined */);
+                if (r) {
+                  pptk_free(arg_clone);
+                  pptk_free(expansion);
+                  pptk_free(instanced);
+                  pptk_free(arg_expanded);
+                  return r;
+                }
+              }
+
+              expansion = pptk_join(expansion, arg_clone);
+
+              /* Arguments have dropped the comma between the args, recreate them. */
+              if (tail != args) {
+                struct situs insertion;
+                situs_init_from_after(&insertion, &id->situs_, 1 /* comma "," byte length 1 */);
+                if (!pptk_alloc(cc, &expansion, ",", PPTK_COMMA, &insertion)) {
+                  situs_cleanup(&insertion);
+                  cc_no_memory(cc);
+                  pptk_free(expansion);
+                  pptk_free(instanced);
+                  pptk_free(arg_expanded);
+                  return -1;
+                }
+                situs_cleanup(&insertion);
+              }
+            }
+
+          } while (tail != args);
+        }
+        else if (followed_by_hash_hash || preceeded_by_hash_hash) {
+          if (!preceeded_by_hash) {
+            /* No __VA_ARGS__ "argument" but adjacent to ## token. Whether this is permitted is dubious (and should
+             * be checked when counting arguments) -- here we defensively handle it as an empty argument.. */
+            struct situs insertion;
+            situs_init_from_after(&insertion, &id->situs_, 0);
+            struct pptk *placemarker = pptk_alloc(cc, &expansion, NULL, PPTK_PLACEMARKER, &insertion);
+            if (!placemarker) {
+              cc_no_memory(cc);
+              pptk_free(expansion);
+              pptk_free(instanced);
+              pptk_free(arg_expanded);
+              return -1;
+            }
+          }
+        }
+        if (preceeded_by_hash) {
+          struct pptk *stringified = pptk_stringize(cc, expansion);
+          if (!stringified) {
+            cc_no_memory(cc);
+            pptk_free(expansion);
+            pptk_free(instanced);
+            pptk_free(arg_expanded);
+            return -1;
+          }
+          pptk_free(expansion);
+          expansion = stringified;
+        }
+        arg_expanded = pptk_join(arg_expanded, expansion);
+        token_replaced = 1;
       }
     }
 
