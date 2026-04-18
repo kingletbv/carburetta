@@ -373,6 +373,9 @@ int pptk_perform_macro_expansion(struct c_compiler *cc, struct pptk **pp_chain, 
 
   while (token_chain) {
     int next_sym = g_pptk_to_ppme_[token_chain->tok_];
+    if ((!keep_defined) && (next_sym == PPME_DEFINED)) {
+      next_sym = PPME_IDENT;
+    }
     if (next_sym == PPME_IDENT) {
       struct macro *m = (struct macro *)st_find(&cc->macro_table_, token_chain->text_);
       if (m) {
