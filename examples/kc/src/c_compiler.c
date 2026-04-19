@@ -297,6 +297,7 @@ struct cc_if_section *cc_if_push(struct c_compiler *cc) {
   ldifs->parent_ = cc->if_section_stack_;
   cc->if_section_stack_ = ldifs;
   ldifs->state_ = CC_IFSS_SKIP;
+  ldifs->seen_else_ = 0;
   return ldifs;
 }
 

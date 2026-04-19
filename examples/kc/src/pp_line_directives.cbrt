@@ -19,6 +19,11 @@
 #include <stdlib.h>
 #endif
 
+#ifndef INTTYPES_H_INCLUDED
+#define INTTYPES_H_INCLUDED
+#include <inttypes.h>
+#endif
+
 #ifndef SYMTAB_H_INCLUDED
 #define SYMTAB_H_INCLUDED
 #include "symtab.h"
@@ -128,15 +133,16 @@ pp-line: hash if pp-tokens newline-opt {
 }
 
 pp-line: hash elif pp-tokens newline-opt {
-  /* XXX: Check that the preceeding if section group was not #else as that would be non-sensical */
   if (!cc->if_section_stack_) {
     cc_error_loc(cc, &$1->situs_, "Error: #elif without preceeding #if/#ifdef/#ifndef block");
   }
+  else if (cc->if_section_stack_->seen_else_) {
+    cc_error_loc(cc, &$1->situs_, "Error: #elif after #else in the same if-section");
+    cc->if_section_stack_->state_ = CC_IFSS_SKIP;
+  }
   else if (cc->if_section_stack_->state_ == CC_IFSS_NOT_YET_SELECTED) {
-    /* Preceeding branch not selected, therefore the #elif may be taken if it evaluates to true */
-    cc->if_section_stack_->state_ = CC_IFSS_SKIP; /* overwritten below */
-
-    /* Process constant expression */
+    /* Preceeding branch not selected, therefore the #elif may be taken if it evaluates to true
+     * Process constant expression */
     int r = pptk_perform_macro_expansion(cc, &$2, 1 /* keep_defined */);
     if (!r) {
       /* Process pp_const_expr */
@@ -209,20 +215,27 @@ pp-line: hash ifndef identifier ws-opt newline-opt  {
 }
 
 pp-line: hash else ws-opt newline-opt {
-  /* XXX: Check that the preceeding if section group was not #else as that would be non-sensical */
   if (!cc->if_section_stack_) {
     cc_error_loc(cc, &$1->situs_, "Error: #else without preceeding #if/#ifdef/#ifndef block");
   }
-  else if (cc->if_section_stack_->state_ == CC_IFSS_NOT_YET_SELECTED) {
-    /* Preceeding branch not selected, therefore the #else will be taken */
-    cc->if_section_stack_->state_ = CC_IFSS_SELECTED;
-  }
-  else if (cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
-    /* Preceeding branch selected, therefore the #else will not be taken */
+  else if (cc->if_section_stack_->seen_else_) {
+    cc_error_loc(cc, &$1->situs_, "Error: duplicate #else in the same if-section");
     cc->if_section_stack_->state_ = CC_IFSS_SKIP;
   }
-  else /* (cc->if_section_stack_->state_ == CC_IFSS_SKIP) */ {
-    /* All (remaining) branches of if section are, and continue to be, skipped */
+  else {
+    cc->if_section_stack_->seen_else_ = 1;
+
+    if (cc->if_section_stack_->state_ == CC_IFSS_NOT_YET_SELECTED) {
+      /* Preceeding branch not selected, therefore the #else will be taken */
+      cc->if_section_stack_->state_ = CC_IFSS_SELECTED;
+    }
+    else if (cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+      /* Preceeding branch selected, therefore the #else will not be taken */
+      cc->if_section_stack_->state_ = CC_IFSS_SKIP;
+    }
+    else /* (cc->if_section_stack_->state_ == CC_IFSS_SKIP) */ {
+      /* All (remaining) branches of if section are, and continue to be, skipped */
+    }
   }
 }
 
@@ -398,7 +411,63 @@ pp-line: hash undef identifier ws-opt newline-opt {
   }
 }
 
-pp-line: hash line pp-tokens newline-opt;
+pp-line: hash line pp-tokens newline-opt {
+  /* Manually parse the line from here on out as we allow macro expansion */
+  if (!cc->if_section_stack_ || cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
+    int r = pptk_perform_macro_expansion(cc, &$2, 0);
+    if (r) return _PPLD_INTERNAL_ERROR;
+    $2 = pptk_trim($2);
+
+    if (!$2 || $2->tok_ != PPTK_INTEGER_LIT || !$2->v_.expr_) {
+      cc_error_loc(cc, &$1->situs_, "Error: #line expects a decimal line number");
+    }
+    else {
+      uint64_t n = $2->v_.expr_->v_.u64_;
+      if ((n == 0) || (n > 2147483647)) {
+        cc_error_loc(cc, &$1->situs_, "Error: #line number %" PRIu64 " is out of range 1..2147483647", n);
+      }
+      else {
+        /* Valid line number, check for optional filename */
+        struct pptk *peek = $2->next_;
+        /* skip any whitespace first */
+        while ((peek != $2) &&
+               ((peek->tok_ == PPTK_WHITESPACE) || (peek->tok_ == PPTK_NEWLINE_WHITESPACE))) {
+          peek = peek->next_;
+        }
+        if (peek != $2) {
+          if (peek->tok_ == PPTK_STRING_LIT && !peek->v_.string_.wide_) {
+            /* We have a string, and the string is a regular (non-wide) string */
+            const char *new_filename = cc_preserve_filename(cc, (const char *)peek->v_.string_.data_);
+            if (!new_filename) { 
+              cc_no_memory(cc);
+            }
+            else {
+              /* Check that there is no more non-whitespace tokens after the filename */
+              peek = peek->next_;
+              while ((peek != $2) &&
+                     ((peek->tok_ == PPTK_WHITESPACE) || (peek->tok_ == PPTK_NEWLINE_WHITESPACE))) {
+                peek = peek->next_;
+              }
+              if (peek != $2) {
+                cc_error_loc(cc, &peek->situs_, "Error: unexpected tokens after #line filename");
+              }
+              else {
+                /* All good, update line and file */
+                cc->input_stack_->pptk_input_line_ = (int)n;
+                cc->input_stack_->pptk_input_line_filename_ = new_filename;
+              }
+            }
+          }
+        }
+        else {
+          /* No filename present; which is valid. */
+          cc->input_stack_->pptk_input_line_ = (int)n;
+        }
+      }
+    }
+  }
+}
+
 pp-line: hash error-nt pp-tokens-opt newline-opt;
 pp-line: hash pragma pp-tokens-opt newline-opt;
 pp-line: hash ws-opt newline-opt {

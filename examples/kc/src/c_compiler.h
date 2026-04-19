@@ -97,6 +97,7 @@ typedef int (*cc_template_handler_fn)(struct c_compiler *cc, char *templ_str, si
 struct cc_if_section {
   enum cc_if_section_state state_;
   struct cc_if_section *parent_; /* #endif pops to parent, if there is a parent. */
+  int seen_else_:1;  /* if non-zero, the #else has already been processed (and further #else or #elif would be invalid.) */
 };
 
 struct cc_filename_buffer {
