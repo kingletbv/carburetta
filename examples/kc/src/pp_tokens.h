@@ -253,9 +253,18 @@ struct pptk *pptk_trim_front(struct pptk *chain);
 struct pptk *pptk_trim_back(struct pptk *chain);
 struct pptk *pptk_trim(struct pptk *chain);
 
+/* Are the two sequences of tokens a and b "identical" according to the definition in C99 6.10.3p1:
+ * Two replacement lists are identical iff the preprocessing tokens in both have the same number,
+ * order, spelling, and white-space separation, where all whitespace separations are considered
+ * identical.
+ */
+int pptk_is_identical(const struct pptk *a, const struct pptk *b);
+
 struct pptk *pptk_clone_single(struct c_compiler *cc, struct pptk *one);
 struct pptk *pptk_clone(struct c_compiler *cc, struct pptk *chain);
 struct pptk *pptk_clone_trimmed(struct c_compiler *cc, struct pptk *chain);
+
+int macro_is_identical(const struct macro *m, int is_function, int is_variadic, const struct pptk *args, const struct pptk *replacement_list);
 
 void macro_free(struct macro *m);
 

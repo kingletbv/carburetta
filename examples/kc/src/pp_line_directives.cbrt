@@ -288,8 +288,9 @@ pp-line: hash define identifier non-par-open-replacement-list newline-opt {
       cc_no_memory(cc);
     }
     else if (!is_new) {
-      /* XXX: Re-definitions, where the replacement-lists are identical, should be allowed(!) 6.10.3-2 */
-      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" is already defined\n", $2->text_);
+      if (!macro_is_identical(m, 0, 0, NULL, $3)) {
+        cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" redefined differently\n", $2->text_);
+      }
     }
     else {
       /* Defined macro. */
@@ -313,7 +314,9 @@ pp-line: hash define identifier PAR_OPEN_TOK identifier-list-opt PAR_CLOSE_TOK r
       cc_no_memory(cc);
     }
     else if (!is_new) {
-      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" is already defined\n", $2->text_);
+      if (!macro_is_identical(m, 1, 0, $4, $6)) {
+        cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" redefined differently\n", $2->text_);
+      }
     }
     else {
       /* Defined macro. */
@@ -337,7 +340,9 @@ pp-line: hash define identifier PAR_OPEN_TOK ELLIPSIS par-close replacement-list
       cc_no_memory(cc);
     }
     else if (!is_new) {
-      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" is already defined\n", $2->text_);
+      if (!macro_is_identical(m, 1, 1, NULL, $6)) {
+        cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" redefined differently\n", $2->text_);
+      }
     }
     else {
       /* Defined macro. */
@@ -361,7 +366,9 @@ pp-line: hash define identifier PAR_OPEN_TOK identifier-list COMMA ELLIPSIS par-
       cc_no_memory(cc);
     }
     else if (!is_new) {
-      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" is already defined\n", $2->text_);
+      if (!macro_is_identical(m, 1, 1, $4, $8)) {
+        cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" redefined differently\n", $2->text_);
+      }
     }
     else {
       /* Defined macro. */

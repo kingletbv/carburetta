@@ -239,6 +239,66 @@ struct pptk *pptk_trim(struct pptk *chain) {
   return chain;
 }
 
+int pptk_is_identical(const struct pptk *a, const struct pptk *b) {
+  int first = 1;
+  const struct pptk *pa = a, *pb = b;
+  for (;;) {
+    /* Skip whitespace, if any, but remember if there was any whitespace separation on either. */
+    int ws_on_a = 0;
+    while (pa && (pa->tok_ == PPTK_WHITESPACE || pa->tok_ == PPTK_NEWLINE_WHITESPACE)) {
+      ws_on_a = 1;
+      pa = pa->next_;
+      if (pa == a) { pa = NULL; }
+    }
+    int ws_on_b = 0;
+    while (pb && (pb->tok_ == PPTK_WHITESPACE || pb->tok_ == PPTK_NEWLINE_WHITESPACE)) {
+      ws_on_b = 1;
+      pb = pb->next_;
+      if (pb == b) { pb = NULL; }
+    }
+
+    /* this is about whitespace *separation*, therefore start and end whitespace tokens are 
+     * not relevant to the comparison; but any whitespace in-between must be present in both.. */
+    if (!pa && !pb) {
+      /* Reached the end of the list, both have ended, we match */
+      break;
+    }
+    if (!pa || !pb) {
+      /* Reached the end of one list, but not the other, and we know the list that did not
+       * end, did not end on whitespace -- we mismatch */
+      return 0;
+    }
+    if (!first && (ws_on_a != ws_on_b)) {
+      /* There was one or more whitespace in one, but not in the other, we mismatch */
+      return 0;
+    }
+    first = 0;
+
+    /* The tokens should be identical */
+    if (pa->tok_ != pb->tok_) {
+      /* Mismatch */
+      return 0;
+    }
+    if (pa->text_len_ != pb->text_len_) {
+      /* Mismatch */
+      return 0;
+    }
+    if (memcmp(pa->text_, pb->text_, pa->text_len_)) {
+      /* Token text mismatches */
+      return 0;
+    }
+
+    /* Current tokens match - step both forward */
+    pa = pa->next_;
+    if (pa == a) { pa = NULL; }
+    pb = pb->next_;
+    if (pb == b) { pb = NULL; }
+  }
+
+  /* Any mismatch to this point will have exited, so if we get here, it's a match! */
+  return 1;
+}
+
 struct pptk *pptk_clone_single(struct c_compiler *cc, struct pptk *one) {
   if (!one) return NULL;
   struct pptk *clone = pptk_alloc(cc, NULL, one->text_, one->tok_, &one->situs_);
@@ -325,6 +385,16 @@ struct pptk *pptk_clone_trimmed(struct c_compiler *cc, struct pptk *chain) {
 
   return clone_chain;
 
+}
+
+int macro_is_identical(const struct macro *m, int is_function, int is_variadic, const struct pptk *args, const struct pptk *replacement_list) {
+  if ((!m->is_function_style_) != (!is_function)) return 0;
+  if ((!m->is_variadic_) != (!is_variadic)) return 0;
+  /* Note that args_ is an identifier list already stripped of whitespace (see pp_line_directives.cbrt),
+   * the re-use of pptk_is_identical() with its particular whitespace handling conventions therefore does not
+   * affect it here. */
+  if (is_function && !pptk_is_identical(m->args_, args)) return 0;
+  return pptk_is_identical(m->replacement_list_, replacement_list);
 }
 
 void macro_free(struct macro *m) {
