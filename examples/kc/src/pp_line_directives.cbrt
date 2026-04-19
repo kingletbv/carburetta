@@ -387,7 +387,9 @@ pp-line: hash undef identifier ws-opt newline-opt {
   if (!cc->if_section_stack_ || cc->if_section_stack_->state_ == CC_IFSS_SELECTED) {
     struct macro *m = (struct macro *)st_find(&cc->macro_table_, $2->text_);
     if (!m) {
-      cc_error_loc(cc, &$2->situs_, "Error: macro \"%s\" does not exist\n", $2->text_);
+      /* Macro does not exist, C99 6.10.3.5p2 "It is ignored if the specified identifier
+       * is not currently defined as a macro name."
+       * So we do nothing. */
     }
     else {
       st_remove(&cc->macro_table_, &m->sym_);
