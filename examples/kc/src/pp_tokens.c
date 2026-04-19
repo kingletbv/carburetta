@@ -907,13 +907,22 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
   do {
     int token_replaced = 0;
 
-    followed_by_hash_hash = (tk->next_ != instanced) && (tk->next_->tok_ == PPTK_HASH_HASH_MARK);
+    struct pptk *peek = tk;
+    do {
+      peek = peek->next_;
+      if (peek == instanced) {
+        break;
+      }
+    } while ((peek->tok_ == PPTK_WHITESPACE) || (peek->tok_ == PPTK_NEWLINE_WHITESPACE));
+
+    followed_by_hash_hash = (peek != instanced) && (peek->tok_ == PPTK_HASH_HASH_MARK);
 
     int preceeded_by_hash = 0;
 
     #define IS_TOK_A_STRINGIZING_IDENT(t) (((t) == PPME_IDENT) || ((t) == PPME_DEFINED))
     if ((IS_TOK_A_STRINGIZING_IDENT(g_pptk_to_ppme_[tk->tok_])) ||
-        ((tk->tok_ == PPTK_HASH_MARK) && (tk->next_ != instanced) && IS_TOK_A_STRINGIZING_IDENT(g_pptk_to_ppme_[tk->next_->tok_]))) {
+        ((tk->tok_ == PPTK_HASH_MARK) && (peek != instanced) &&
+         IS_TOK_A_STRINGIZING_IDENT(g_pptk_to_ppme_[peek->tok_]))) {
       struct pptk *id = NULL;
       if (tk->tok_ != PPTK_HASH_MARK) {
         preceeded_by_hash = 0;
@@ -921,7 +930,7 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
       }
       else {
         preceeded_by_hash = 1;
-        id = tk->next_;
+        id = peek;
       }
       struct pptk *expansion = NULL;
       arg = m->args_;
@@ -1093,16 +1102,23 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
       }
     }
 
-    preceeded_by_hash_hash = (tk->tok_ == PPTK_HASH_HASH_MARK);
+    if ((tk->tok_ != PPTK_WHITESPACE) && (tk->tok_ != PPTK_NEWLINE_WHITESPACE)) {
+      preceeded_by_hash_hash = (tk->tok_ == PPTK_HASH_HASH_MARK);
+    }
 
     if (!token_replaced) {
       arg_expanded = pptk_join(arg_expanded, pptk_pop_front(&instanced));
     }
     else {
       if (preceeded_by_hash) {
-        /* Pop hash first.. */
+        /* Pop hash first.. then any whitespace following hash .. */
         pptk_free(pptk_pop_front(&instanced));
+        while (instanced && 
+               ((instanced->tok_ == PPTK_WHITESPACE) || (instanced->tok_ == PPTK_NEWLINE_WHITESPACE))) {
+          pptk_free(pptk_pop_front(&instanced));
+        }
       }
+      /* identifier. */
       pptk_free(pptk_pop_front(&instanced));
     }
 
@@ -1116,51 +1132,83 @@ int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *
     pptk_free(pptk_pop_front(&arg_expanded));
   }
   while (arg_expanded) {
-    if ((arg_expanded->next_ != arg_expanded) && (arg_expanded->next_->tok_ == PPTK_HASH_HASH_MARK)) {
-      if (arg_expanded->next_->next_ == arg_expanded) {
-        cc_printf(cc, "Error, ## token at end of macro replacement list\n");
-        repl_list = pptk_join(repl_list, pptk_pop_front(&arg_expanded));
-        pptk_free(pptk_pop_front(&arg_expanded)); /* pop the ## */
-      }
-      else {
-        struct pptk *left, *right;
-        left = pptk_pop_front(&arg_expanded);
-        pptk_free(pptk_pop_front(&arg_expanded)); /* pop the ## */
-        right = pptk_pop_front(&arg_expanded);
+    /* Pass through whitespace not adjacent to any ## token */
+    if ((arg_expanded->tok_ == PPTK_WHITESPACE) || (arg_expanded->tok_ == PPTK_NEWLINE_WHITESPACE)) {
+      repl_list = pptk_join(repl_list, pptk_pop_front(&arg_expanded));
+      continue;
+    }
 
-        if ((left->tok_ == PPTK_PLACEMARKER) && (right->tok_ == PPTK_PLACEMARKER)) {
-          /* Push back a placemarker, delete the other one */
-          arg_expanded = pptk_join(right, arg_expanded);
-          pptk_free(left);
-        }
-        else if (left->tok_ == PPTK_PLACEMARKER) {
-          /* Push back the valid (right) token, delete the other one */
-          arg_expanded = pptk_join(right, arg_expanded);
-          pptk_free(left);
-        }
-        else if (right->tok_ == PPTK_PLACEMARKER) {
-          /* Push back the valid (left) token, delete the other one */
-          arg_expanded = pptk_join(left, arg_expanded);
-          pptk_free(right);
-        }
-        else {
-          /* Concatenate the two tokens and re-evaluate their tokenization; then push the result back */
-          struct pptk *concatenated_token = NULL;
-          int r = pptk_concat(cc, left, right, &concatenated_token);
+    /* arg_expanded is at a non-ws token, use peek to scan to a successor token that is also
+     * not whitespace; and not looped around (not beyond the end) */
+    struct pptk *peek = arg_expanded->next_;
+    while ((peek != arg_expanded) &&
+           ((peek->tok_ == PPTK_WHITESPACE) || (peek->tok_ == PPTK_NEWLINE_WHITESPACE))) {
+      peek = peek->next_;
+    }
 
-          if (r || !concatenated_token) {
-            /* Fatal error, note that pptk_concat has cleaned up left and right in this case also */
-            pptk_free(concatenated_token);
-            pptk_free(repl_list);
-            return -1;
-          }
-          arg_expanded = pptk_join(concatenated_token, arg_expanded);
-        }
-      }
+    if ((peek == arg_expanded) || (peek->tok_ != PPTK_HASH_HASH_MARK)) {
+      /* Either peek hit the end of the list, or a non-ws token that is not ##, in either case
+       * we pass through the token that started the search adn continue */
+      repl_list = pptk_join(repl_list, pptk_pop_front(&arg_expanded));
+      continue;
+    }
+
+    /* arg_expanded is still on the left side of the ##, peek is on the ##; we'll pop the
+     * left side, keep it separate, drop any intervening whitespace, and the ## token, and
+     * any subsequence whitespace, and then we should be on the right token. */
+    struct pptk *left = pptk_pop_front(&arg_expanded);
+    while (arg_expanded && 
+           ((arg_expanded->tok_ == PPTK_WHITESPACE) || (arg_expanded->tok_ == PPTK_NEWLINE_WHITESPACE))) {
+      pptk_free(pptk_pop_front(&arg_expanded));
+    }
+
+    /* arg_expanded is now at peek, the ## */
+    pptk_free(pptk_pop_front(&arg_expanded));
+
+    /* Now pop the whitespace after the ## as we look for the token at the right side of ## */
+    while (arg_expanded && 
+           ((arg_expanded->tok_ == PPTK_WHITESPACE) || (arg_expanded->tok_ == PPTK_NEWLINE_WHITESPACE))) {
+      pptk_free(pptk_pop_front(&arg_expanded));
+    }
+
+    if (!arg_expanded) {
+      cc_printf(cc, "Error, ## token at end of macro replacement list\n");
+      /* failure in applying the ## operator, we have a dangling left operand, which we'll concatenate
+       * as we keep going. */
+      repl_list = pptk_join(repl_list, left);
+      break;
+    }
+
+    struct pptk *right = pptk_pop_front(&arg_expanded);
+
+    /* arg_expanded is now after the ## operator and associated operands, the operands are in
+     * left and right. Perform the concatenation, taking placemarker tokens into account. Concatenation
+     * is pushed back onto arg_expanded (and not repl_list) so we can handle serial ## a ## b ## c
+     * invocations appropriately (by re-evaluating the concatenated token.
+     * Placemarkers are tokens we insert to ensure that the concatenation does not behave unpredictably
+     * when faced with empty arguments. */
+    if ((left->tok_ == PPTK_PLACEMARKER) && (right->tok_ == PPTK_PLACEMARKER)) {
+      /* Concatenating two empty arguments, so we end up with a single placemarker. */
+      arg_expanded = pptk_join(right, arg_expanded);
+      pptk_free(left);
+    }
+    else if (left->tok_ == PPTK_PLACEMARKER) {
+      arg_expanded = pptk_join(right, arg_expanded);
+      pptk_free(left);
+    }
+    else if (right->tok_ == PPTK_PLACEMARKER) {
+      arg_expanded = pptk_join(left, arg_expanded);
+      pptk_free(right);
     }
     else {
-      /* No concatenation (##) operator, pop the top and copy it over */
-      repl_list = pptk_join(repl_list, pptk_pop_front(&arg_expanded));
+      struct pptk *concatenated_token = NULL;
+      if (pptk_concat(cc, left, right, &concatenated_token) || !concatenated_token) {
+        pptk_free(concatenated_token);
+        pptk_free(repl_list);
+        return -1;
+      }
+      /* as per above, re-evaluate our new concatenated token so chains a ## b ## c work. */
+      arg_expanded = pptk_join(concatenated_token, arg_expanded);
     }
   }
 
