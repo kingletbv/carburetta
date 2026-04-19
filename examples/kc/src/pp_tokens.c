@@ -323,8 +323,11 @@ struct pptk *pptk_clone_single(struct c_compiler *cc, struct pptk *one) {
     }
   }
   else if ((one->tok_ != PPTK_TYPEDEF_NAME) && one->v_.expr_) {
-    clone->v_.expr_  = one->v_.expr_;
-    one->v_.expr_->refs_++;
+    clone->v_.expr_  = expr_clone(one->v_.expr_);
+    if (!clone->v_.expr_) {
+      pptk_free(clone);
+      return NULL;
+    }
   }
   else if (one->tok_ != PPTK_TYPEDEF_NAME) {
     clone->v_.type_ = one->v_.type_;
