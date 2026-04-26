@@ -276,6 +276,11 @@ struct macro_arg_inst *macro_arg_inst_join(struct macro_arg_inst *front, struct 
 /* Expands a single macro.. */
 int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *m, struct macro_arg_inst *args, struct pptk **pp_output_chain);
 
+/* Text length of a chain of tokens, and copying that chain of tokens to a string. The string is null terminated (and so you'll need
+ * to have at least pptk_text_len(chain) + 1 bytes reserved for it.) */
+size_t pptk_text_len(struct pptk *chain);
+void pptk_text_cpy(char *dst, struct pptk *chain);
+
 /* Perform in-place macro expansion for a single chain of pptk tokens; chain is modified in-place to reflect the expansions (if any). */
 int pptk_perform_macro_expansion(struct c_compiler *cc, struct pptk **pp_chain, int keep_defined);
 

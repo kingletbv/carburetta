@@ -828,6 +828,31 @@ static struct pptk *pptk_make_string_lit(struct c_compiler *cc, const char *data
 
 }
 
+size_t pptk_text_len(struct pptk *chain) {
+  if (!chain) return 0;
+  size_t n = 0;
+  struct pptk *tk = chain;
+  do {
+    n += tk->text_len_;
+    tk = tk->next_;
+  } while (tk != chain);
+  return n;
+}
+
+void pptk_text_cpy(char *dst, struct pptk *chain) {
+  if (!chain) {
+    *dst = '\0';
+    return;
+  }
+  struct pptk *tk = chain;
+  do {
+    memcpy(dst, tk->text_, tk->text_len_);
+    dst += tk->text_len_;
+    tk = tk->next_;
+  } while (tk != chain);
+  *dst = '\0';
+}
+
 int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *m, struct macro_arg_inst *args, struct pptk **pp_output_chain) {
   /* Check for builtin macros */
   if (!strcmp(macro_ident->text_, "__FILE__")) {
