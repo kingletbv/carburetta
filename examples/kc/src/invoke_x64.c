@@ -40,6 +40,11 @@
 #include "c_compiler.h"
 #endif
 
+#ifndef DECL_H_INCLUDED
+#define DECL_H_INCLUDED
+#include "decl.h"
+#endif
+
 #ifndef EXPR_H_INCLUDED
 #define EXPR_H_INCLUDED
 #include "expr.h"
@@ -48,11 +53,6 @@
 #ifndef TYPES_H_INCLUDED
 #define TYPES_H_INCLUDED
 #include "types.h"
-#endif
-
-#ifndef FUNC_DEF_H_INCLUDED
-#define FUNC_DEF_H_INCLUDED
-#include "func_def.h"
 #endif
 
 #ifndef JITMEM_H_INCLUDED
@@ -95,7 +95,7 @@ void invoke_cleanup(void) {
 /* defined in invoke_call_x64.asm */
 uint64_t enter_call_x64(uint64_t a, uint64_t b);
 
-void *invoke_alloc_function_entry(struct c_compiler *cc, struct func_def *fd) {
+void *invoke_alloc_function_entry(struct c_compiler *cc, struct decl *fd) {
   uint8_t trampoline_template[] = {
                                   //49 BA 00 00 00 00 00 00 00 00   mov r10, 0x0000000000000000h
                                   0x49, 0xBA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -122,9 +122,9 @@ void *invoke_alloc_function_entry(struct c_compiler *cc, struct func_def *fd) {
   return jitmem_acquire(cc, sizeof(trampoline_template), trampoline_template);
 }
 
-uint64_t invoke_enter_call(struct invoke_context *ic, void *rsp, struct func_def *fd, struct c_compiler *cc) {
+uint64_t invoke_enter_call(struct invoke_context *ic, void *rsp, struct decl *fd, struct c_compiler *cc) {
 #if 0
-  cc_printf(cc, "Invoked function: %s\n", fd->d_.sym_.ident_);
+  cc_printf(cc, "Invoked function: %s\n", fd->sym_.ident_);
   cc_printf(cc, "   first argument %08" PRIx64 "\n", ic->rcx_);
   cc_printf(cc, "  second argument %08" PRIx64 "\n", ic->rdx_);
   cc_printf(cc, "   third argument %08" PRIx64 "\n", ic->r8_);
@@ -148,7 +148,7 @@ uint64_t invoke_enter_call(struct invoke_context *ic, void *rsp, struct func_def
   r = stmt_exec(cc, fd->body_, stack_frame, param_frame, &ic->rax_result_);
 #if 0
   if (r) {
-    cc_printf(cc, "warning: stmt_exec() for \"%s\" returned: %d\n", fd->d_.sym_.ident_, r);
+    cc_printf(cc, "warning: stmt_exec() for \"%s\" returned: %d\n", fd->sym_.ident_, r);
   }
 
   cc_printf(cc, "           result %08" PRIx64 "\n", ic->rax_result_);

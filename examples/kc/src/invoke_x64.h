@@ -27,6 +27,6 @@ struct c_compiler;
 
 void invoke_init(void);
 void invoke_cleanup(void);
-void *invoke_alloc_function_entry(struct c_compiler *cc, struct func_def *fd);
+void *invoke_alloc_function_entry(struct c_compiler *cc, struct decl *fd);
 
 int invoke_x64(struct c_compiler *cc, struct expr *x, struct expr_temp *temps);

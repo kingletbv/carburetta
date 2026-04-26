@@ -105,6 +105,10 @@ struct decl *decl_alloc_sized(struct name_space *ns, int *already_exists, const 
   d->disambiguation_ordinal_ = 0;
   d->num_refs_ = d->num_refs_allocated_ = 0;
   d->refs_ = NULL;
+  d->body_ = NULL;
+  d->stackframe_size_required_ = 0;
+  d->parameter_size_required_ = 0;
+  
   return d;
 }
 
@@ -866,7 +870,7 @@ static struct decl *decl_create_static_local_variable(struct c_compiler *cc, str
     return NULL;
   }
   
-  const char *function_ident = cc->ctx_.current_func_ ? cc->ctx_.current_func_->d_.sym_.ident_ : NULL;
+  const char *function_ident = cc->ctx_.current_func_ ? cc->ctx_.current_func_->sym_.ident_ : NULL;
   if (!function_ident) {
     // Make up a function name for disambiguation, we'll use "$IMPLICIT_GLOBAL"
     function_ident = "$IMPLICIT_GLOBAL";
@@ -1088,3 +1092,97 @@ int decl_resolve_all_global_decl_relocs(struct c_compiler *cc) {
   return 0;
 }
 
+
+// XXX: We want to mimick consecutive pushes of variables onto the stack; the stack, however,
+// grows in the negative direction. Consequently, rather than "align offset, assign offset, add size"
+// we should do "add size, align offset, assign offset"
+// Consequently, if the offset is 0, and we process a uint32_t, then the assigned offset is 4 (pointing
+// to the end of the uint32_t.)
+// If we next process a uint64_t, then the assigned offset is align64(4 + 8) = 16, pointing to the end
+// of the uint64_t.
+//
+// Having done this, we take the stackframe_size_required_, align it to 16 bytes, and, for each field thus assigned, we re-assign
+// the field as new_offset = stackframe_size_required_ - old_offset.
+//
+// This is messy. Do we really want to do this?
+
+
+static int decl_func_def_realize_block_stmt(struct c_compiler *cc, struct decl *fd, struct stmt *s, uint64_t current_offset) {
+  if (!s) return -1;
+
+  if (s->ns_) {
+    struct decl *d;
+    d = (struct decl *)s->ns_->ordinary_idents_.seq_;
+    if (d) {
+      do {
+        /* Is this declaration a variable? */
+        if (!d->is_param_ && !d->is_enum_) {
+          uint64_t size = type_node_size(&cc->tb_, d->type_);
+          if (size && ((d->sc_ == SC_NONE) || (d->sc_ == SC_AUTO) || (d->sc_ == SC_REGISTER))) {
+            /* Align current_offset to alignment requirements of d
+             * Alignments are always a power of 2 */
+            uint64_t alignment = type_node_align(&cc->tb_, d->type_);
+            current_offset = (current_offset + alignment - 1) & ~(alignment - 1);
+
+            /* Assign the current offset and increment it by its size */
+            d->local_offset_ = current_offset;
+
+            current_offset += size;
+
+            /* Check if we are expanding the stackframe */
+            if (fd->stackframe_size_required_ < current_offset) {
+              fd->stackframe_size_required_ = current_offset;
+            }
+          }
+        }
+
+        d = (struct decl *)d->sym_.next_;
+      } while (d != (struct decl *)s->ns_->ordinary_idents_.seq_);
+    }
+  }
+
+  struct stmt *child;
+  child = s->child0_;
+  if (child) {
+    do {
+      if (child->type_ == ST_BLOCK) {
+        int r = decl_func_def_realize_block_stmt(cc, fd, child, current_offset);
+        if (r) return r;
+      }
+
+      if (child->child0_ && child->child0_->type_ == ST_BLOCK) {
+        int r = decl_func_def_realize_block_stmt(cc, fd, child->child0_, current_offset);
+        if (r) return r;
+      }
+
+      if (child->child1_ && child->child1_->type_ == ST_BLOCK) {
+        int r = decl_func_def_realize_block_stmt(cc, fd, child->child1_, current_offset);
+        if (r) return r;
+      }
+
+      child = child->next_;
+    } while (child != s->child0_);
+  }
+
+  return 0;
+}
+
+int decl_func_def_realize_locals(struct c_compiler *cc, struct decl *d) {
+  /* Iterate through the statements and assign offsets to each declared variable */
+  struct stmt *s;
+  if (!d) return -1;
+  s = d->body_;
+  if (!s) return -1;
+
+  int r;
+
+  /* Realize all locals starting at offset 0 */
+  d->stackframe_size_required_ = 0;
+  r = decl_func_def_realize_block_stmt(cc, d, s, 0);
+  if (r) return r;
+
+  /* Align stackframe size to multiple of 16 bytes */
+  d->stackframe_size_required_ = (d->stackframe_size_required_ + 15) & ~15;
+
+  return 0;
+}

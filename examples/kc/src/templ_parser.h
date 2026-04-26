@@ -51,9 +51,9 @@
 #include "partial_type_specifiers.h"
 #endif
 
-#ifndef FUNC_DEF_H_INCLUDED
-#define FUNC_DEF_H_INCLUDED
-#include "func_def.h"
+#ifndef DECL_H_INCLUDED
+#define DECL_H_INCLUDED
+#include "decl.h"
 #endif
 
 
@@ -89,7 +89,7 @@ struct templ_context {
   struct stmt *current_switch_parent_;
   struct stmt *current_break_parent_;
   struct stmt *current_continue_parent_;
-  struct func_def *current_func_;
+  struct decl *current_func_;
   struct type_node *decl_spec_type_;
   int decl_spec_fs_; /* function specifier */
   int decl_spec_sc_; /* storage class (SC_xx, e.g. SC_STATIC) */

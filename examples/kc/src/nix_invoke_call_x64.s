@@ -135,7 +135,7 @@ enter_call_x64:
   mov rdi, rsp
   # Second argument of invoke_enter_call() = void *rsp
   lea rsi, [rsp + Invocation_sizeof]
-  # Third argument of invoke_enter_call() = struct func_def *fd
+  # Third argument of invoke_enter_call() = struct decl *fd
   mov rdx, r10
   # Final argument of invoke_enter_call() = struct c_compiler *cc
   mov rcx, r11

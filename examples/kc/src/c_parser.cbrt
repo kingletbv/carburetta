@@ -72,11 +72,6 @@
 #include "decl.h"
 #endif
 
-#ifndef FUNC_DEF_H_INCLUDED
-#define FUNC_DEF_H_INCLUDED
-#include "func_def.h"
-#endif
-
 #ifndef TEMPL_PARSER_H_INCLUDED
 #define TEMPL_PARSER_H_INCLUDED
 #include "templ_parser.h"
@@ -1445,14 +1440,14 @@ jump-stmt: RETURN exp SEMICOLON {
     /* Trying to return value without function */
     cc_error_loc(cc, &${ 0 }, "cannot return outside a function\n");
   }
-  else if (!cc->ctx_.current_func_->d_.type_) {
+  else if (!cc->ctx_.current_func_->type_) {
     /* Declaration for the current function has no type, ignore silently and assume we're passing through an error. */
   }
-  else if (!cc->ctx_.current_func_->d_.type_->derived_from_) {
+  else if (!cc->ctx_.current_func_->type_->derived_from_) {
     /* Current function type has no returnvalue type - this is incorrect, there should be at least a tk_void, but ignore silently
      * and assume it is a symptom of a problem reported elsewhere. */
   }
-  else if (type_node_unqualified(cc->ctx_.current_func_->d_.type_->derived_from_)->kind_ == tk_void) {
+  else if (type_node_unqualified(cc->ctx_.current_func_->type_->derived_from_)->kind_ == tk_void) {
     cc_error_loc(cc, &${ 0 }, "cannot return a value from a void function\n");
   }
   else {
@@ -1471,7 +1466,7 @@ jump-stmt: RETURN exp SEMICOLON {
       cc_no_memory(cc);
       return _CP_NO_MEMORY;
     }
-    return_value_ptr_expr->type_arg_ = cc->ctx_.current_func_->d_.type_->derived_from_;
+    return_value_ptr_expr->type_arg_ = cc->ctx_.current_func_->type_->derived_from_;
     return_value_expr->children_[0] = return_value_ptr_expr;
   
     int r = expr_assign(cc, &return_value_assignment_expr, &${0}, &return_value_expr, &${0}, &${1}, &$1);
@@ -1493,15 +1488,15 @@ jump-stmt: RETURN SEMICOLON {
     /* Trying to return value without function */
     cc_error_loc(cc, &${ 0 }, "cannot return outside a function\n");
   }
-  else if (!cc->ctx_.current_func_->d_.type_) {
+  else if (!cc->ctx_.current_func_->type_) {
     /* Declaration for the current function has no type, ignore silently and assume we're passing through an error. */
   }
-  else if (!cc->ctx_.current_func_->d_.type_->derived_from_) {
+  else if (!cc->ctx_.current_func_->type_->derived_from_) {
     /* Current function type has no returnvalue type - this is incorrect, there should be at least a tk_void, but ignore silently
      * and assume it is a symptom of a problem reported elsewhere. */
   }
   else {
-    if (type_node_unqualified(cc->ctx_.current_func_->d_.type_->derived_from_)->kind_ != tk_void) {
+    if (type_node_unqualified(cc->ctx_.current_func_->type_->derived_from_)->kind_ != tk_void) {
       cc_error_loc(cc, &${ 0 }, "(warning) must return a value from a non-void function\n");
     }
     else {
@@ -2708,11 +2703,11 @@ direct-abstract-declarator: direct-abstract-declarator PAR_OPEN                 
   $0 = NULL;
 }
 
-%type function-definition: struct func_def *
+%type function-definition: struct decl *
 %type declaration-list : struct decl *
 
 /* function-definition-prolog uses a very similar technique to compound-block-context, please see comments there */
-%type function-definition-prolog: struct { struct func_def *fd_; struct c_compiler *cc_; }
+%type function-definition-prolog: struct { struct decl *fd_; struct c_compiler *cc_; }
 %constructor $$.fd_ = NULL; $$.cc_ = cc;
 %destructor if ($$.cc_ && $$.fd_) $$.cc_->ctx_.block_ = $$.cc_->ctx_.block_->parent_block_;
 
@@ -2751,18 +2746,18 @@ function-definition-prolog: declaration-specifiers declarator reenable-typedefna
       }
       else {
         int already_exists = -1;
-        struct func_def *new_fd = func_def_alloc(&cc->global_ns_, &already_exists, tde->ident_, &tde->ident_loc_, $0.sc_, $0.fs_, tn);
+        struct decl *new_fd = decl_alloc(&cc->global_ns_, &already_exists, tde->ident_, &tde->ident_loc_, $0.sc_, $0.fs_, tn, NULL);
         if (already_exists) {
-          /* XXX: Might be a prototype, in which case the decl should be upgraded to a func_def... */
-          cc_error_loc(cc, &${ 1 }, "Identifier \"%s\" already declared (see line %d in file %s)\n", tde->ident_, situs_line(&new_fd->d_.def_loc_), situs_filename(&new_fd->d_.def_loc_));
+          /* XXX: Might be a prototype, in which case the decl should be upgraded to a function definition... */
+          cc_error_loc(cc, &${ 1 }, "Identifier \"%s\" already declared (see line %d in file %s)\n", tde->ident_, situs_line(&new_fd->def_loc_), situs_filename(&new_fd->def_loc_));
         }
         else {
-          new_fd->d_.external_ = invoke_alloc_function_entry(cc, new_fd);
-          if (!new_fd->d_.external_) {
+          new_fd->external_ = invoke_alloc_function_entry(cc, new_fd);
+          if (!new_fd->external_) {
             cc_no_memory(cc);
             return -1;
           }
-          new_fd->d_.is_external_ = 1;
+          new_fd->is_external_ = 1;
 
           struct situs sit;
           situs_init(&sit);
@@ -2787,7 +2782,7 @@ function-definition-prolog: declaration-specifiers declarator reenable-typedefna
           cc->ctx_.current_func_ = new_fd;
 
           /* Pre-declare the parameters into the block */
-          struct type_param *param_chain = new_fd->d_.type_->params_;
+          struct type_param *param_chain = new_fd->type_->params_;
           struct type_param *param = param_chain;
           uint64_t param_offset = 0;
           if (param) {
@@ -2844,7 +2839,7 @@ function-definition: function-definition-prolog compound-stmt {
   cc->ctx_.current_func_ = NULL;
   $1 = NULL; /* function-definition-prolog allocated and owns this compound-stmt (ST_BLOCK) so ensure we don't clean it up */
   if ($$) {
-    r = func_def_realize_locals(cc, $$);
+    r = decl_func_def_realize_locals(cc, $$);
     if (r) {
       cc_error_loc(cc, &${ 1 }, "Internal error, failed to realize locals\n");
       return _CP_INTERNAL_ERROR;

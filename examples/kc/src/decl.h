@@ -211,6 +211,14 @@ struct decl {
   size_t num_refs_;
   size_t num_refs_allocated_;
   struct decl_ref *refs_;
+
+  /* Function body if this decl is a function definition */
+  struct stmt *body_;
+
+  /* Size of the stack frame and parameters required, if this decl is a function definition */
+  uint64_t stackframe_size_required_;
+  uint64_t parameter_size_required_;
+
 };
 
 struct decl_initializer {
@@ -248,6 +256,7 @@ struct decl *decl_join(struct decl *front, struct decl *back);
 void decl_print(FILE *fp, struct decl *d);
 
 int decl_realize_global(struct c_compiler *cc, struct decl *d, struct data_section *ds);
+int decl_func_def_realize_locals(struct c_compiler *cc, struct decl *d);
 
 /* if ns != global_ns, then this is not in the global namespace, if !is_global, then this is a local variable.
  * If REPL or template mode, then is_global need not imply ns == global_ns as we might be in an inner block stmt
