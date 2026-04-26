@@ -121,6 +121,7 @@ static int func_def_realize_block_stmt(struct c_compiler *cc, struct func_def *f
 int func_def_realize_locals(struct c_compiler *cc, struct func_def *fd) {
   /* Iterate through the statements and assign offsets to each declared variable */
   struct stmt *s;
+  if (!fd) return -1;
   s = fd->body_;
   if (!s) return -1;
 
