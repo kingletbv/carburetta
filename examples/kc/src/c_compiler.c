@@ -790,7 +790,7 @@ c_parser_input:
       if ((r == _CP_SYNTAX_ERROR) || (r == _CP_FEED_ME)) {
         if (r == _CP_SYNTAX_ERROR) {
           if (cc->cp_input_) {
-            cc_error(cc, "syntax error at column %d: \"%s\"\n", situs_col(&cc->cp_input_->situs_), cc->cp_input_->text_);
+            cc_error_loc(cc, &cc->cp_input_->situs_, "syntax error at column %d: \"%s\"\n", situs_col(&cc->cp_input_->situs_), cc->cp_input_->text_);
           }
           else {
             cc_error(cc, "syntax error, unexpected end of file\n", cc->cp_input_file_, cc->cp_input_line_);
