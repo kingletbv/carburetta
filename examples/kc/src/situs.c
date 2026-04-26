@@ -434,3 +434,14 @@ void situs_swap(struct situs *a, struct situs *b) {
   *a = *b;
   *b = tmp;
 }
+
+void situs_relocate(struct situs *s, const char *new_filename, int line_delta) {
+  if (!s->num_spans_) return;
+  struct situs_span *spans = situs_first_span(s);
+  size_t n;
+  for (n = 0; n < s->num_spans_; ++n) {
+    spans[n].filename_ = new_filename;
+    spans[n].start_line_ += line_delta;
+    spans[n].end_line_ += line_delta;
+  }
+}

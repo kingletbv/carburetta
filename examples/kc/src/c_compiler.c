@@ -503,6 +503,19 @@ tokenizer:;
         cc->have_ppld_input_line_ = 1;
         cc->input_stack_->ppld_input_line_ = cc->input_stack_->pptk_input_line_;
         cc->input_stack_->ppld_input_line_filename_ = cc->input_stack_->pptk_input_line_filename_;
+
+        /* Move every situs in the logical line; this may be different from the actual physical line we have thus far
+         * when programmers explicitly use the #line to remap error locations. */
+        if (cc->ppld_input_) {
+          int line_delta = cc->input_stack_->pptk_input_line_ - cc->input_stack_->pptk_true_input_line_number_at_start_;
+          const char *virt_file = cc->input_stack_->pptk_input_line_filename_;
+          struct pptk *tk_chain = cc->ppld_input_;
+          do {
+            situs_relocate(&tk_chain->situs_, virt_file, line_delta);
+            tk_chain = tk_chain->next_;
+          } while (tk_chain != cc->ppld_input_);
+        }
+
         int current_line = pptk_endline(&cc->input_stack_->pptk_);
         cc->input_stack_->pptk_input_line_ += current_line - cc->input_stack_->pptk_true_input_line_number_at_start_;
         cc->input_stack_->pptk_true_input_line_number_at_start_ = current_line;

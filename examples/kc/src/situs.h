@@ -94,4 +94,7 @@ void situs_init_from_after(struct situs *s, const struct situs *src_after, size_
  * memory allocations and still ensuring clean destruction. */
 void situs_swap(struct situs *a, struct situs *b);
 
+/* "Moves" the situs, to help implement #line implementations. */
+void situs_relocate(struct situs *s, const char *new_filename, int line_delta);
+
 #endif /* SITUS_H */
