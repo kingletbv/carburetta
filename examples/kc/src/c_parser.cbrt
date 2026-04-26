@@ -2843,10 +2843,12 @@ function-definition: function-definition-prolog compound-stmt {
   }
   cc->ctx_.current_func_ = NULL;
   $1 = NULL; /* function-definition-prolog allocated and owns this compound-stmt (ST_BLOCK) so ensure we don't clean it up */
-  r = func_def_realize_locals(cc, $$);
-  if (r) {
-    cc_error_loc(cc, &${ 1 }, "Internal error, failed to realize locals\n");
-    return _CP_INTERNAL_ERROR;
+  if ($$) {
+    r = func_def_realize_locals(cc, $$);
+    if (r) {
+      cc_error_loc(cc, &${ 1 }, "Internal error, failed to realize locals\n");
+      return _CP_INTERNAL_ERROR;
+    }
   }
 }
 
