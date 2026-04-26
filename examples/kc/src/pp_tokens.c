@@ -544,7 +544,7 @@ int pptk_rescan(struct c_compiler *cc, struct pptk *input_chain, struct pptk **p
     } while (tk != input_chain);
   }
   pptk_stack_init(&tokenizer);
-  pptk_set_input(&tokenizer, input_chain->text_, strlen(input_chain->text_), (input_chain->next_ == input_chain));
+  pptk_set_input(&tokenizer, input_chain->text_, input_chain->text_len_, (input_chain->next_ == input_chain));
   pptk_set_mode(&tokenizer, allow_header_name ? M_PPTK_HEADER_NAME_POSSIBLE : M_PPTK_DEFAULT);
   int r;
   for (;;) {
@@ -567,7 +567,7 @@ int pptk_rescan(struct c_compiler *cc, struct pptk *input_chain, struct pptk **p
       }
       /* Needs more input; push in next token */
       pptk_free(pptk_pop_front(&input_chain));
-      pptk_set_input(&tokenizer, input_chain->text_, strlen(input_chain->text_), (input_chain->next_ == input_chain));
+      pptk_set_input(&tokenizer, input_chain->text_, input_chain->text_len_, (input_chain->next_ == input_chain));
     }
     else if (r == _PPTK_FINISH) {
       break;
@@ -595,18 +595,19 @@ int pptk_scan_str(struct c_compiler *cc, const char *text, struct pptk **pp_outp
   struct pptk *output_chain = NULL;
   struct pptk_stack tokenizer;
   struct situs input_chain_situs;
+  size_t text_len = strlen(text);
   situs_init(&input_chain_situs);
   input_chain_situs.num_spans_ = 1;
   input_chain_situs.u_.one_.filename_ = "";
   input_chain_situs.u_.one_.start_ = 0;
   input_chain_situs.u_.one_.start_line_ = 1;
   input_chain_situs.u_.one_.start_col_= 1;
-  input_chain_situs.u_.one_.end_ = strlen(text);
+  input_chain_situs.u_.one_.end_ = text_len;
   input_chain_situs.u_.one_.end_line_ = 1;
-  input_chain_situs.u_.one_.end_col_ = (int)strlen(text); // this is not exact, but may be bigger (UTF-8).
+  input_chain_situs.u_.one_.end_col_ = (int)text_len; // this is not exact, but may be bigger (UTF-8).
 
   pptk_stack_init(&tokenizer);
-  pptk_set_input(&tokenizer, text, strlen(text), 1);
+  pptk_set_input(&tokenizer, text, text_len, 1);
   pptk_set_mode(&tokenizer, M_PPTK_DEFAULT);
   int r;
   for (;;) {
@@ -727,7 +728,7 @@ static size_t pptk_stringize_to_buf(char *dst, struct pptk *chain) {
       }
 
       /* Process current (non-whitespace) item */
-      offset += pptk_stringify_buf(dst ? dst + offset : NULL, tk->text_, strlen(tk->text_));
+      offset += pptk_stringify_buf(dst ? dst + offset : NULL, tk->text_, tk->text_len_);
 
       tk = tk->next_;
     } while (tk != chain);
