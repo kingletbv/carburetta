@@ -853,6 +853,68 @@ void pptk_text_cpy(char *dst, struct pptk *chain) {
   *dst = '\0';
 }
 
+int macro_validate(struct c_compiler *cc, struct situs *loc, struct macro *m) {
+  /* C99 6.10.3.3-1 ## not at start or end of replacement list */
+  if (m->replacement_list_ && (m->replacement_list_->tok_ == PPTK_HASH_HASH_MARK)) {
+    cc_error_loc(cc, &m->replacement_list_->situs_, "Error: ## at start of macro replacement list");
+    return -1;
+  }
+  if (m->replacement_list_ && (m->replacement_list_->prev_->tok_ == PPTK_HASH_HASH_MARK)) {
+    cc_error_loc(cc, &m->replacement_list_->prev_->situs_, "Error: ## at end of macro replacement list");
+    return -1;
+  }
+
+  /* C99 6.10.3.2-1 Each # in a function like macro should be followed by a parameter name. */
+  if (m->is_function_style_ && m->replacement_list_) {
+    struct pptk *tk = m->replacement_list_;
+    do {
+      if (tk->tok_ == PPTK_HASH_MARK) {
+        /* Find next, non-whitespace token */
+        struct pptk *next = tk->next_;
+        while ((next != m->replacement_list_) && pptk_is_whitespace(next)) {
+          next = next->next_;
+        }
+
+        if (next == m->replacement_list_) {
+          /* Did not find a next token. */
+          cc_error_loc(cc, &tk->situs_, "Error: # at end of macro replacement list");
+          return -1;
+        }
+
+        if (g_pptk_to_ppme_[next->tok_] != PPME_IDENT) {
+          cc_error_loc(cc, &tk->situs_, "Error: # in macro replacement list must be followed by a parameter (got \"%s\")", next->text_);
+          return -1;
+        }
+
+        int found = 0;
+        if (m->is_variadic_ && !strcmp(next->text_, "__VA_ARGS__")) {
+          found = 1;
+        }
+        else if (m->args_) {
+          struct pptk *arg = m->args_;
+          do {
+            if ((g_pptk_to_ppme_[arg->tok_] == PPME_IDENT) && !strcmp(arg->text_, next->text_)) {
+              found = 1;
+              break;
+            }
+
+            arg = arg->next_;
+          } while (arg != m->args_);
+        }
+
+        if (!found) {
+          cc_error_loc(cc, &tk->situs_, "Error: # in macro replacement list must be followed by a parameter (got \"%s\")", next->text_);
+          return -1;
+        }
+      }
+
+      tk = tk->next_;
+    } while (tk != m->replacement_list_);
+  }
+
+  return 0;
+}
+
 int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *m, struct macro_arg_inst *args, struct pptk **pp_output_chain) {
   /* Check for builtin macros */
   if (!strcmp(macro_ident->text_, "__FILE__")) {

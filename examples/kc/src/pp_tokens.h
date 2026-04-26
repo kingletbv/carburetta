@@ -273,6 +273,11 @@ void macro_arg_inst_free(struct macro_arg_inst *mai);
 
 struct macro_arg_inst *macro_arg_inst_join(struct macro_arg_inst *front, struct macro_arg_inst *back);
 
+/* Reports diagnostic (through cc_error_loc - i.e. the compilation will fail) if the macro is not valid.)
+ * Returns 0 if the macro is valid, -1 if not. Checks are not exhaustive but validates conditions that should
+ * be valid at macro definition time (mostly placement of # and ##). */
+int macro_validate(struct c_compiler *cc, struct situs *loc, struct macro *m);
+
 /* Expands a single macro.. */
 int macro_expand(struct c_compiler *cc, struct pptk *macro_ident, struct macro *m, struct macro_arg_inst *args, struct pptk **pp_output_chain);
 

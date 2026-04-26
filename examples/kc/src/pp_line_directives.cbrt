@@ -314,12 +314,7 @@ pp-line: hash define identifier non-par-open-replacement-list newline-opt {
       m->args_ = NULL;
       m->replacement_list_ = pptk_trim($3);
       $3 = NULL;
-      if (m->replacement_list_ && (m->replacement_list_->tok_ == PPTK_HASH_HASH_MARK)) {
-        cc_error_loc(cc, &$2->situs_, "Error: ## at start of macro replacement list");
-      }
-      else if (m->replacement_list_ && (m->replacement_list_->prev_->tok_ == PPTK_HASH_HASH_MARK)) {
-        cc_error_loc(cc, &$2->situs_, "Error: ## at end of macro replacement list");
-      }
+      macro_validate(cc, &$2->situs_, m);
     }
   }
 }
@@ -346,12 +341,7 @@ pp-line: hash define identifier PAR_OPEN_TOK identifier-list-opt PAR_CLOSE_TOK r
       m->args_ = pptk_trim($4);
       m->replacement_list_ = pptk_trim($6);
       $4 = $6 = NULL;
-      if (m->replacement_list_ && (m->replacement_list_->tok_ == PPTK_HASH_HASH_MARK)) {
-        cc_error_loc(cc, &$2->situs_, "Error: ## at start of macro replacement list");
-      }
-      else if (m->replacement_list_ && (m->replacement_list_->prev_->tok_ == PPTK_HASH_HASH_MARK)) {
-        cc_error_loc(cc, &$2->situs_, "Error: ## at end of macro replacement list");
-      }
+      macro_validate(cc, &$2->situs_, m);
     }
   }
 }
@@ -378,12 +368,7 @@ pp-line: hash define identifier PAR_OPEN_TOK ELLIPSIS par-close replacement-list
       m->args_ = NULL;
       m->replacement_list_ = pptk_trim($6);
       $6 = NULL;
-      if (m->replacement_list_ && (m->replacement_list_->tok_ == PPTK_HASH_HASH_MARK)) {
-        cc_error_loc(cc, &$2->situs_, "Error: ## at start of macro replacement list");
-      }
-      else if (m->replacement_list_ && (m->replacement_list_->prev_->tok_ == PPTK_HASH_HASH_MARK)) {
-        cc_error_loc(cc, &$2->situs_, "Error: ## at end of macro replacement list");
-      }
+      macro_validate(cc, &$2->situs_, m);
     }
   }
 }
@@ -410,12 +395,7 @@ pp-line: hash define identifier PAR_OPEN_TOK identifier-list COMMA ELLIPSIS par-
       m->args_ = pptk_trim($4);
       m->replacement_list_ = pptk_trim($8);
       $4 = $8 = NULL;
-      if (m->replacement_list_ && (m->replacement_list_->tok_ == PPTK_HASH_HASH_MARK)) {
-        cc_error_loc(cc, &$2->situs_, "Error: ## at start of macro replacement list");
-      }
-      else if (m->replacement_list_ && (m->replacement_list_->prev_->tok_ == PPTK_HASH_HASH_MARK)) {
-        cc_error_loc(cc, &$2->situs_, "Error: ## at end of macro replacement list");
-      }
+      macro_validate(cc, &$2->situs_, m);
     }
   }
 }
