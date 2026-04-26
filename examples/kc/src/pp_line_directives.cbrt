@@ -314,6 +314,12 @@ pp-line: hash define identifier non-par-open-replacement-list newline-opt {
       m->args_ = NULL;
       m->replacement_list_ = pptk_trim($3);
       $3 = NULL;
+      if (m->replacement_list_ && (m->replacement_list_->tok_ == PPTK_HASH_HASH_MARK)) {
+        cc_error_loc(cc, &$2->situs_, "Error: ## at start of macro replacement list");
+      }
+      else if (m->replacement_list_ && (m->replacement_list_->prev_->tok_ == PPTK_HASH_HASH_MARK)) {
+        cc_error_loc(cc, &$2->situs_, "Error: ## at end of macro replacement list");
+      }
     }
   }
 }
@@ -340,6 +346,12 @@ pp-line: hash define identifier PAR_OPEN_TOK identifier-list-opt PAR_CLOSE_TOK r
       m->args_ = pptk_trim($4);
       m->replacement_list_ = pptk_trim($6);
       $4 = $6 = NULL;
+      if (m->replacement_list_ && (m->replacement_list_->tok_ == PPTK_HASH_HASH_MARK)) {
+        cc_error_loc(cc, &$2->situs_, "Error: ## at start of macro replacement list");
+      }
+      else if (m->replacement_list_ && (m->replacement_list_->prev_->tok_ == PPTK_HASH_HASH_MARK)) {
+        cc_error_loc(cc, &$2->situs_, "Error: ## at end of macro replacement list");
+      }
     }
   }
 }
@@ -366,6 +378,12 @@ pp-line: hash define identifier PAR_OPEN_TOK ELLIPSIS par-close replacement-list
       m->args_ = NULL;
       m->replacement_list_ = pptk_trim($6);
       $6 = NULL;
+      if (m->replacement_list_ && (m->replacement_list_->tok_ == PPTK_HASH_HASH_MARK)) {
+        cc_error_loc(cc, &$2->situs_, "Error: ## at start of macro replacement list");
+      }
+      else if (m->replacement_list_ && (m->replacement_list_->prev_->tok_ == PPTK_HASH_HASH_MARK)) {
+        cc_error_loc(cc, &$2->situs_, "Error: ## at end of macro replacement list");
+      }
     }
   }
 }
@@ -392,6 +410,12 @@ pp-line: hash define identifier PAR_OPEN_TOK identifier-list COMMA ELLIPSIS par-
       m->args_ = pptk_trim($4);
       m->replacement_list_ = pptk_trim($8);
       $4 = $8 = NULL;
+      if (m->replacement_list_ && (m->replacement_list_->tok_ == PPTK_HASH_HASH_MARK)) {
+        cc_error_loc(cc, &$2->situs_, "Error: ## at start of macro replacement list");
+      }
+      else if (m->replacement_list_ && (m->replacement_list_->prev_->tok_ == PPTK_HASH_HASH_MARK)) {
+        cc_error_loc(cc, &$2->situs_, "Error: ## at end of macro replacement list");
+      }
     }
   }
 }
@@ -468,7 +492,20 @@ pp-line: hash line pp-tokens newline-opt {
   }
 }
 
-pp-line: hash error-nt pp-tokens-opt newline-opt;
+pp-line: hash error-nt pp-tokens-opt newline-opt {
+  if (!cc->if_section_stack_ || (cc->if_section_stack_->state_ == CC_IFSS_SELECTED)) {
+    size_t n = pptk_text_len($2);
+    char *msg = malloc(n + 1);
+    if (!msg) { 
+      cc_no_memory(cc);
+      return _PPLD_NO_MEMORY;
+    }
+    pptk_text_cpy(msg, $2);
+    cc_error_loc(cc, &$1->situs_, "#error: %s", msg);
+    free(msg);
+  }
+}
+
 pp-line: hash pragma pp-tokens-opt newline-opt;
 pp-line: hash ws-opt newline-opt {
   /* An otherwise empty # line passes silently and is a control line according to the standard.. */
