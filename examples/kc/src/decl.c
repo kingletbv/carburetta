@@ -737,6 +737,9 @@ static struct decl *decl_create_variable(struct c_compiler *cc, struct type_node
     /* Not yet a definition (don't down-grade a definition.) */
     d->is_tentative_definition_ = 1;
   }
+  if (is_file_scope) {
+    d->is_hidden_global_ = 0; /* File scope declaration, any prior block-extern is overriden. */
+  }
     
   return d;
 }
@@ -749,6 +752,11 @@ static struct decl *decl_create_extern_variable(struct c_compiler *cc, struct ty
    * If is_file_scope and has_initializer then this is a definition (and we should not have any prior definitions.)
    * If not is_file_scope then we need to create a global forward to a declaration at file scope; it would be an error
    * for such a local 'extern' to have an initializer. */
+
+  if (!is_file_scope && has_initializer) {
+    cc_error_loc(cc, ident_loc, "Block-scope 'extern \"%s\"' declaration cannot have an initializer", ident);
+    return NULL;
+  }
 
   int already_exists = 0;
   struct decl *d;
@@ -781,14 +789,14 @@ static struct decl *decl_create_extern_variable(struct c_compiler *cc, struct ty
       cc_no_memory(cc);
       return NULL;
     }
-    if (!global_already_exists) {
-      gd->is_hidden_global_ = 1;
-      d->global_forward_ = gd;
-    }
-    else if (gd->is_typedef_) {
+    if (gd->is_typedef_) {
       cc_error_loc(cc, ident_loc, "Identifier \"%s\" already defined as a typedef (see line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
       return NULL;
     }
+    if (!global_already_exists) {
+      gd->is_hidden_global_ = 1;
+    }
+    d->global_forward_ = gd;
     /* Continue processing with the global variable, not the local one as it only forwards. */
     d = gd;
   }
@@ -827,6 +835,9 @@ static struct decl *decl_create_extern_variable(struct c_compiler *cc, struct ty
     }
 
     d->is_definition_ = 1;
+    if (is_file_scope) {
+      d->is_hidden_global_ = 0;
+    }
 
     return d_to_return;
   }
@@ -856,6 +867,10 @@ static struct decl *decl_create_extern_variable(struct c_compiler *cc, struct ty
     else {
       d->is_external_ = 1;
     }
+  }
+
+  if (is_file_scope) {
+    d->is_hidden_global_ = 0; /* file-scope re-declaration acknowledges the hidden global */
   }
 
   return d_to_return;
@@ -1045,6 +1060,7 @@ struct decl *decl_define_function(struct c_compiler *cc, struct type_node *tn, s
 
   /* Promote function to defined */
   d->is_definition_ = 1;
+  d->is_hidden_global_ = 0;
 
   /* Move def_loc_ to the body (so later diagnostics will point to the definition) */
   situs_cleanup(&d->def_loc_);

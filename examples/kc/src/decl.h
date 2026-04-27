@@ -168,7 +168,7 @@ struct decl {
    * converts the hidden global from declaration to definition. Note however that
    * the function h() will fail to compile because 'x' is not visible in h(), even 
    * though it appears in the global namespace, the is_hidden_global_ flag prevents
-   * it from being seen until defined by "int x = 3"
+   * it from being seen until acknowledged at file scope by "int x = 3"
    */
   int is_hidden_global_:1;
 
