@@ -1008,7 +1008,7 @@ static void type_node_print_specifier(FILE *fp, struct type_node *tn) {
   }
 }
 
-int type_node_is_compatible(struct type_node *tn, struct type_node *with) {
+int type_node_is_compatible(struct type_base *tb, struct type_node *tn, struct type_node *with) {
   if (tn == with) return 1;
 
   if (tn->kind_ != with->kind_) {
@@ -1019,34 +1019,115 @@ int type_node_is_compatible(struct type_node *tn, struct type_node *with) {
     if (tn->qualifiers_ != with->qualifiers_) {
       return 0;
     }
-    return type_node_is_compatible(tn->derived_from_, with->derived_from_);
+    return type_node_is_compatible(tb, tn->derived_from_, with->derived_from_);
   }
 
   if (tn->kind_ == tk_pointer) {
-    return type_node_is_compatible(tn->derived_from_, with->derived_from_);
+    return type_node_is_compatible(tb, tn->derived_from_, with->derived_from_);
   }
 
   if (tn->kind_ == tk_array) {
     if (tn->is_variable_length_array_ || with->is_variable_length_array_) {
       /* Variable length arrays (eg. non-constant expression or [*]) are always
        * compatible with both incomplete types ([]) or constant arrays ([6]). /*/
-      return type_node_is_compatible(tn->derived_from_, with->derived_from_);
+      return type_node_is_compatible(tb, tn->derived_from_, with->derived_from_);
     }
     if (tn->array_size_ == with->array_size_) {
-      return type_node_is_compatible(tn->derived_from_, with->derived_from_);
+      return type_node_is_compatible(tb, tn->derived_from_, with->derived_from_);
     }
     if (!tn->array_size_ || !with->array_size_) {
       /* One or both of the arrays are incomplete types (no assigned size) */
-      return type_node_is_compatible(tn->derived_from_, with->derived_from_);
+      return type_node_is_compatible(tb, tn->derived_from_, with->derived_from_);
     }
     /* Array sizes are constant expressions, they are defined, and mismatch. */
     return 0;
   }
 
   if (tn->kind_ == tk_function) {
-    /* now what... 
-     * XXX: Do function compatibility. */
+    /* Return types compatible - C99 6.7.5.3-15 */
+    if (!type_node_is_compatible(tb, tn->derived_from_, with->derived_from_)) {
+      return 0;
+    }
 
+    int tn_has_proto =   !tn->arguments_unknown_;
+    int with_has_proto = !with->arguments_unknown_;
+
+    if (tn_has_proto && with_has_proto) {
+      /* Both prototyped, agree on ellipsis and number of params, and the
+       * params should be pairwise compatible. */
+      int tn_is_variadic = tn->params_ && tn->params_->is_varadic_;
+      int with_is_variadic = with->params_ && with->params_->is_varadic_;
+      if (tn_is_variadic != with_is_variadic) {
+        return 0;
+      }
+      struct type_param *a = tn->params_;
+      struct type_param *b = with->params_;
+
+      if (!a != !b) {
+        /* Misaligned length, one is empty, the other is not */
+        return 0;
+      }
+      if (a) {
+        struct type_param *tpa = a, *tpb = b;
+        do {
+          tpa = tpa->chain_;
+          tpb = tpb->chain_;
+
+          if (tpa->is_varadic_ && tpb->is_varadic_) {
+            /* Reached the end -- breaking here prevents tpa/b->type_ NULL pointer access */
+            break;
+          }
+
+          if (tpa->is_varadic_ != tpb->is_varadic_) {
+            /* Misaligned length */
+            return 0;
+          }
+
+          if (!type_node_is_compatible(tb, type_node_unqualified(tpa->type_), type_node_unqualified(tpb->type_))) {
+            return 0;
+          }
+
+          if ((tpa == a) != (tpb == b)) {
+            /* Misaligned length -- one has ended, the other has not */
+            return 0;
+          }
+        } while (tpa != a);
+      }
+      return 1;
+    }
+
+    if (!tn_has_proto && !with_has_proto) {
+      /* Both K&R empty identifier list; only return type matters and that
+       * we checked, they're compatible. */
+      return 1;
+    }
+
+    /* One is prototyped, the other an empty K&R list; C99 6.7.5.3-15 */
+    struct type_node *proto_tn = tn_has_proto ? tn : with;
+    struct type_node *kr_tn =    tn_has_proto ? with : tn;
+    if (kr_tn->is_function_def_) {
+      /* C99 6.7.5.3-15 default promotion rule applies only when the K&R 
+       * empty declarator is *not* part of a definition. A K&R empty 
+       * *definition* has exactly zero parameters, and is compatible only
+       * with a zero param prototype. */
+      return proto_tn->params_ == NULL;
+    }
+    if (proto_tn->params_ && proto_tn->params_->is_varadic_) {
+      /* Cannot combine with variadic functions. */
+      return 0;
+    }
+
+    struct type_param *ptp = proto_tn->params_;
+    if (ptp) {
+      do {
+        ptp = ptp->chain_;
+
+        if (!type_node_is_compatible(tb, ptp->type_, type_node_default_arg_promotion(tb, ptp->type_))) {
+          return 0;
+        }
+      } while (ptp != proto_tn->params_);
+    }
+    return 1;
   }
 
   return 0;
@@ -1161,7 +1242,7 @@ static int type_node_are_params_default_promotion_compatible(struct type_base *t
 
       if (tp->is_varadic_) break;
 
-      if (!type_node_is_compatible(tp->type_, type_node_default_arg_promotion(tb, tp->type_))) {
+      if (!type_node_is_compatible(tb, tp->type_, type_node_default_arg_promotion(tb, tp->type_))) {
         /* not compatible.. */
         return 0;
       }
@@ -1217,8 +1298,8 @@ struct type_node *type_node_composite(struct c_compiler *cc, struct type_node *t
       }
       struct type_node *tr = type_base_alloc_func(&cc->tb_, type_node_composite(cc, t1->derived_from_, t2->derived_from_));
       tr->arguments_unknown_ = 0;
-      if (t1->params_) {
-        tr->params_ = type_param_clone_list(t1->params_);
+      if (t2->params_) {
+        tr->params_ = type_param_clone_list(t2->params_);
         if (!tr->params_) {
           return NULL;
         }
@@ -1232,8 +1313,8 @@ struct type_node *type_node_composite(struct c_compiler *cc, struct type_node *t
       }
       struct type_node *tr = type_base_alloc_func(&cc->tb_, type_node_composite(cc, t1->derived_from_, t2->derived_from_));
       tr->arguments_unknown_ = 0;
-      if (t2->params_) {
-        tr->params_ = type_param_clone_list(t2->params_);
+      if (t1->params_) {
+        tr->params_ = type_param_clone_list(t1->params_);
         if (!tr->params_) {
           return NULL;
         }

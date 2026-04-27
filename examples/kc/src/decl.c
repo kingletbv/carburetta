@@ -63,6 +63,11 @@
 #include "dynamic_runtime_linking.h"
 #endif
 
+#ifndef INVOKE_X64_H_INCLUDED
+#define INVOKE_X64_H_INCLUDED
+#include "invoke_x64.h"
+#endif
+
 struct decl *decl_alloc_sized(struct name_space *ns, int *already_exists, const char *ident, struct situs *ident_loc, 
                               sc_storage_class_t sc, int function_specifiers, struct type_node *tn, struct decl_initializer *init,
                               size_t full_decl_size) {
@@ -604,7 +609,7 @@ static struct decl *decl_create_typedef(struct c_compiler *cc, struct type_node 
   if (is_file_scope && already_exists) {
     /* Create composite type; augment the pre-existing variable, can be internal (static) or external, we don't care. */
     struct type_node *old_tn = d->type_;
-    if (!type_node_is_compatible(old_tn, tn)) {
+    if (!type_node_is_compatible(&cc->tb_, old_tn, tn)) {
       cc_error_loc(cc, ident_loc, "Identifier \"%s\" type disagreement (see line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
       return NULL;
     }
@@ -712,7 +717,7 @@ static struct decl *decl_create_variable(struct c_compiler *cc, struct type_node
   if (already_exists) {
     /* Create composite type */
     struct type_node *old_tn = d->type_;
-    if (!type_node_is_compatible(old_tn, tn)) {
+    if (!type_node_is_compatible(&cc->tb_, old_tn, tn)) {
       cc_error_loc(cc, ident_loc, "Identifier \"%s\" type disagreement (see line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
       return NULL;
     }
@@ -807,7 +812,7 @@ static struct decl *decl_create_extern_variable(struct c_compiler *cc, struct ty
     if (already_exists) {
       /* Create composite type */
       struct type_node *old_tn = d->type_;
-      if (!type_node_is_compatible(old_tn, tn)) {
+      if (!type_node_is_compatible(&cc->tb_, old_tn, tn)) {
         cc_error_loc(cc, ident_loc, "Identifier \"%s\" type disagreement (see line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
         return NULL;
       }
@@ -828,7 +833,7 @@ static struct decl *decl_create_extern_variable(struct c_compiler *cc, struct ty
   if (already_exists) {
     /* Create composite type */
     struct type_node *old_tn = d->type_;
-    if (!type_node_is_compatible(old_tn, tn)) {
+    if (!type_node_is_compatible(&cc->tb_, old_tn, tn)) {
       cc_error_loc(cc, ident_loc, "Identifier \"%s\" type disagreement (see line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
       return NULL;
     }
@@ -930,6 +935,125 @@ static struct decl *decl_create_static_local_variable(struct c_compiler *cc, str
   free(global_name);
   d->global_forward_ = gd;
   return d;
+}
+
+struct decl *decl_define_function(struct c_compiler *cc, struct type_node *tn, struct name_space *global_ns,
+                                  const char *ident, struct situs *ident_loc,
+                                  sc_storage_class_t sc, int function_specifiers) {
+  if (type_node_unqualified(tn)->kind_ != tk_function) {
+    cc_fatal_loc(cc, ident_loc, "Internal error: defining function for non-function type");
+    return NULL;
+  }
+
+  /* C99 6.9.1p4: "The storage-class specifiers auto and register shall not
+   * appear in the declaration specifiers in a function definition."
+   * 6.7.1: typedef is a declaration, not a definition — it cannot carry a
+   * function body.
+   * Permitted: SC_NONE, SC_STATIC, SC_EXTERN. */
+  switch (sc) {
+    case SC_NONE:
+    case SC_STATIC:
+    case SC_EXTERN:
+      break;
+    case SC_TYPEDEF:
+      cc_error_loc(cc, ident_loc,
+                   "Function definition \"%s\" cannot have storage class 'typedef'",
+                   ident);
+      return NULL;
+    case SC_AUTO:
+      cc_error_loc(cc, ident_loc,
+                   "Function definition \"%s\" cannot have storage class 'auto' (C99 6.9.1p4)",
+                   ident);
+      return NULL;
+    case SC_REGISTER:
+      cc_error_loc(cc, ident_loc,
+                   "Function definition \"%s\" cannot have storage class 'register' (C99 6.9.1p4)",
+                   ident);
+      return NULL;
+  }
+
+  int already_exists = -1;
+  struct decl *d = decl_alloc(global_ns, &already_exists, ident, ident_loc, sc, function_specifiers, tn, NULL);
+  if (!d) {
+    cc_no_memory(cc);
+    return NULL;
+  }
+
+  if (!already_exists) {
+    /* XXX: Surely is_internal_ and is_external_ are not always eachothers inverse??? */
+    d->is_internal_ = (sc == SC_STATIC) ? 1 : 0;
+    d->is_external_ = (sc == SC_STATIC) ? 0 : 1;
+    d->is_definition_ = 1;
+
+    /* trampoline allocation */
+    d->external_ = invoke_alloc_function_entry(cc, d);
+    if (!d->external_) {
+      cc_no_memory(cc);
+      return NULL;
+    }
+    
+    return d;
+  }
+
+  /* Note: here the function decl already exists */
+
+  if (d->is_typedef_) {
+    cc_error_loc(cc, ident_loc, "Error: %s already defined as typedef (see line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
+    return NULL;
+  }
+  
+  if (!type_node_is_function(d->type_)) {
+    cc_error_loc(cc, ident_loc, "Error: %s redeclared as function (prior non-function declaration at line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
+    return NULL;
+  }
+
+  if (d->is_definition_) {
+    cc_error_loc(cc, ident_loc, "Error: function %s redefined (see previous definition at line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
+    return NULL;
+  }
+
+  if (!type_node_is_compatible(&cc->tb_, d->type_, tn)) {
+    cc_error_loc(cc, ident_loc, "Error: function type for %s disagrees with previous declaration (see line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
+    return NULL;
+  }
+
+  if (d->is_external_ && (sc == SC_STATIC)) {
+    cc_error_loc(cc, ident_loc, "Error: function %s defined as static was previously declared external (see line %d in file %s)", ident, situs_line(&d->def_loc_), situs_filename(&d->def_loc_));
+    return NULL;
+  }
+
+
+  /* Merge the function definition in with the prior declaration */
+  struct type_node *composite = type_node_composite(cc, tn, d->type_);
+  if (!composite) {
+    cc_no_memory(cc);
+    return NULL;
+  }
+  d->type_ = composite;
+
+  d->fs_ |= function_specifiers;
+
+  if (!d->external_) {
+    d->external_ = invoke_alloc_function_entry(cc, d);
+    if (!d->external_) {
+      cc_no_memory(cc);
+      return NULL;
+    }
+  }
+
+  /* Promote function to defined */
+  d->is_definition_ = 1;
+
+  /* Move def_loc_ to the body (so later diagnostics will point to the definition) */
+  situs_cleanup(&d->def_loc_);
+  situs_init(&d->def_loc_);
+  if (situs_clone(&d->def_loc_, ident_loc)) {
+    cc_no_memory(cc);
+    return NULL;
+  }
+
+  return d;
+
 }
 
 struct decl *decl_create_update(struct c_compiler *cc, struct type_node *tn, struct name_space *ns, struct name_space *global_ns, 

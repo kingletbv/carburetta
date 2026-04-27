@@ -303,7 +303,7 @@ struct type_node *type_node_unqualified(struct type_node *tn);
 struct type_node *type_node_integer_promotion(struct type_base *tb, struct type_node *et);
 struct type_node *type_node_default_arg_promotion(struct type_base *tb, struct type_node *tn);
 struct type_node *type_node_composite(struct c_compiler *cc, struct type_node *t1, struct type_node *t2);
-int type_node_is_compatible(struct type_node *tn, struct type_node *with);
+int type_node_is_compatible(struct type_base *tb, struct type_node *tn, struct type_node *with);
 
 /* Prints the type as if it were a declaration. ident is the identifier, optional and may be NULL if purely
  * the type is to be printed. */

@@ -992,7 +992,7 @@ int templ_initializer_iter(struct c_compiler *cc, struct type_node *tn, struct e
           return -1;
         }
         et = type_node_unqualified(et);
-        if (type_node_is_compatible(tn, et)) {
+        if (type_node_is_compatible(&cc->tb_, tn, et)) {
           /* Assignment of literal value */
           struct decl_initializer *ini = decl_initializer_alloc();
           if (!ini) {

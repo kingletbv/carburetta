@@ -3791,7 +3791,7 @@ static int expr_rel_op(struct c_compiler *cc, struct expr **dst, struct situs *l
   right_type = type_node_unqualified(right_type);
   left_type = type_node_unqualified(left_type);
   if ((left_type->kind_ == tk_pointer) && (right_type->kind_ == tk_pointer)) {
-    if (!type_node_is_compatible(left_type->derived_from_, right_type->derived_from_)) {
+    if (!type_node_is_compatible(&cc->tb_, left_type->derived_from_, right_type->derived_from_)) {
       struct situs sit;
       situs_init(&sit);
       if (situs_concat(&sit, left_loc) || situs_concat(&sit, op_loc) || situs_concat(&sit, right_loc)) {
@@ -5283,7 +5283,7 @@ static int expr_equality_operators(struct c_compiler *cc, struct expr **dst, str
     /* 6.5.9-2 both operands are pointers to qualified or unqualified versions of compatible types;
      *         one operand is a pointer to an object or incomplete type and the other is a pointer to a
      *         qualified or unqualified version of void. */ 
-    if (type_node_is_compatible(type_node_unqualified(left_type->derived_from_), type_node_unqualified(right_type->derived_from_)) ||
+    if (type_node_is_compatible(&cc->tb_, type_node_unqualified(left_type->derived_from_), type_node_unqualified(right_type->derived_from_)) ||
         (type_node_unqualified(left_type->derived_from_)->kind_ == tk_void) ||
         (type_node_unqualified(right_type->derived_from_)->kind_ == tk_void)) {
       struct expr *x = expr_alloc(not_equals ? ET_NEQ_PTR : ET_EQU_PTR);
@@ -5607,7 +5607,7 @@ int expr_assign(struct c_compiler *cc, struct expr **dst, struct situs *left_loc
   }
   else if  (is_struct_or_union_left && is_struct_or_union_right) {
     /* Is left compatible with the right ? */
-    if (type_node_is_compatible(type_node_unqualified(left_type), type_node_unqualified(right_type))) {
+    if (type_node_is_compatible(&cc->tb_, type_node_unqualified(left_type), type_node_unqualified(right_type))) {
       /* XXX: Not yet implemented */
       cc_fatal_loc(cc, op_loc, "struct assignment is not yet implemented");
       return -1;
@@ -5636,7 +5636,7 @@ int expr_assign(struct c_compiler *cc, struct expr **dst, struct situs *left_loc
       }
     }
     /* Are both pointers to compatible types ? */
-    else if (type_node_is_compatible(type_node_unqualified(left_type_pointed_to), type_node_unqualified(right_type_pointed_to))) {
+    else if (type_node_is_compatible(&cc->tb_, type_node_unqualified(left_type_pointed_to), type_node_unqualified(right_type_pointed_to))) {
       /* Does the left have all the qualifiers of the type pointed to by the right ? */
       if (qualifiers_right & ~qualifiers_left) {
         /* There are qualifiers in the right that do not exist in the left */
@@ -5861,7 +5861,7 @@ int expr_condition(struct c_compiler *cc, struct expr **dst, struct situs *cond_
       return -1;
     }
   }
-  else if (type_node_is_compatible(true_type, false_type)) {
+  else if (type_node_is_compatible(&cc->tb_, true_type, false_type)) {
     /* Compatible structure or union types, or tk_void */
     result_type = type_node_unqualified(true_type);
   }
@@ -5899,7 +5899,7 @@ int expr_condition(struct c_compiler *cc, struct expr **dst, struct situs *cond_
       result_type = type_base_qualifier(&cc->tb_, type_base_simple(&cc->tb_, tk_void), pointed_to_qualifiers);
       result_type = type_base_pointer(&cc->tb_, result_type);
     }
-    else if (type_node_is_compatible(type_node_unqualified(true_pointed_to), type_node_unqualified(false_pointed_to))) {
+    else if (type_node_is_compatible(&cc->tb_, type_node_unqualified(true_pointed_to), type_node_unqualified(false_pointed_to))) {
       result_type = type_node_composite(cc, type_node_unqualified(true_pointed_to), type_node_unqualified(false_pointed_to));
       result_type = type_base_qualifier(&cc->tb_, result_type, pointed_to_qualifiers);
       result_type = type_base_pointer(&cc->tb_, result_type);

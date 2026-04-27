@@ -258,6 +258,10 @@ void decl_print(FILE *fp, struct decl *d);
 int decl_realize_global(struct c_compiler *cc, struct decl *d, struct data_section *ds);
 int decl_func_def_realize_locals(struct c_compiler *cc, struct decl *d);
 
+struct decl *decl_define_function(struct c_compiler *cc, struct type_node *tn, struct name_space *global_ns,
+                                  const char *ident, struct situs *ident_loc,
+                                  sc_storage_class_t sc, int function_specifiers);
+
 /* if ns != global_ns, then this is not in the global namespace, if !is_global, then this is a local variable.
  * If REPL or template mode, then is_global need not imply ns == global_ns as we might be in an inner block stmt
  * at the file level (e.g. a for loop or whatnot at the file level - obviously not permitted for C99 but we permit
