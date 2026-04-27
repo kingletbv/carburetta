@@ -418,6 +418,23 @@ struct templ_declarator_scaffold_field *templ_dsf_realize(struct c_compiler *cc,
   if (!tn) {
     return NULL;
   }
+  /* C99 6.7.5.3-7 parameter of array type adjusts to pointer to element. */
+  if (tn->kind_ == tk_array) {
+    tn = type_base_pointer(&cc->tb_, tn->derived_from_);
+    if (!tn) {
+      *fatality = 1;
+      return NULL;
+    }
+  }
+  /* C99 6.7.5.3-8 parameter of function type adjusts to pointer to function. */
+  else if (tn->kind_ == tk_function) {
+    tn = type_base_pointer(&cc->tb_, tn);
+    if (!tn) {
+      *fatality = 1;
+      return NULL;
+    }
+  }
+
   tdsf = templ_dsf_alloc(NULL, ident, ident_loc, tn);
   if (!tdsf) {
     *fatality = 1;
