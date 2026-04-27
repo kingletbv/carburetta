@@ -1114,59 +1114,70 @@ int cp_init_declarations_as_expr(struct c_compiler *cc, struct decl *d_list, str
       }
 
       if (dit && d->init_) {
-        if (dit->is_external_) {
-          x = expr_alloc(ET_ADDRESS_E);
-        }
-        else if (dit->is_internal_) {
-          x = expr_alloc(ET_ADDRESS_G);
-          if (!dit->dsp_) {
-            cc_error_loc(cc, d_loc, "Internal error: internal at global scope should have allocated data section portion\n");
+        if (dit->is_internal_ && cc->ctx_.current_func_) {
+          /* Static local in function body, the initializer is a constant expression run once
+           * at compile time (and our runtime logic should not apply.. */
+          if (decl_static_initializer_exec(cc, dit->dsp_, 0, d->init_, NULL, NULL, NULL)) {
+            cc_error_loc(cc, d_loc, "Error: static-local initializer for \"%s\" must be a constant expression\n", d->sym_.ident_);
             return -1;
           }
-          x->dsp_ = dit->dsp_;
-        }
-        else if (dit->is_param_) {
-          x = expr_alloc(ET_ADDRESS_P);
-        }
-        else if (dit->is_local_) {
-          /* By process of elimination, d must be a local */
-          x = expr_alloc(ET_ADDRESS_L);
+          /* Do not build a runtime ini_expr; the init has been baked into gd->dsp_ at compile time. */
         }
         else {
-          cc_error_loc(cc, d_loc, "Internal error: Unknown storage class for declaration\n");
-          return -1;
-        }
-
-        if (x) {
-          x->decl_ = dit;
-          struct expr *ini_expr = NULL;
-          int r = decl_initializer_as_expr(cc, x, &ini_expr, d->init_);
-          expr_free(x);
-          if (r) {
-            expr_free(*pp_expr);
-            *pp_expr = NULL;
-            return r;
+          if (dit->is_external_) {
+            x = expr_alloc(ET_ADDRESS_E);
           }
-          if (!*pp_expr) {
-            *pp_expr = ini_expr;
-          }
-          else {
-            /* Build ET_SEQ chain of previous init expressions */
-            x = expr_alloc(ET_SEQ);
-            if (!x) {
-              cc_no_memory(cc);
-              expr_free(*pp_expr);
-              *pp_expr = NULL;
+          else if (dit->is_internal_) {
+            x = expr_alloc(ET_ADDRESS_G);
+            if (!dit->dsp_) {
+              cc_error_loc(cc, d_loc, "Internal error: internal at global scope should have allocated data section portion\n");
               return -1;
             }
-            x->children_[0] = *pp_expr;
-            x->children_[1] = ini_expr;
-            *pp_expr = x;
+            x->dsp_ = dit->dsp_;
           }
-        }
-        else {
-          cc_no_memory(cc);
-          return -1;
+          else if (dit->is_param_) {
+            x = expr_alloc(ET_ADDRESS_P);
+          }
+          else if (dit->is_local_) {
+            /* By process of elimination, d must be a local */
+            x = expr_alloc(ET_ADDRESS_L);
+          }
+          else {
+            cc_error_loc(cc, d_loc, "Internal error: Unknown storage class for declaration\n");
+            return -1;
+          }
+
+          if (x) {
+            x->decl_ = dit;
+            struct expr *ini_expr = NULL;
+            int r = decl_initializer_as_expr(cc, x, &ini_expr, d->init_);
+            expr_free(x);
+            if (r) {
+              expr_free(*pp_expr);
+              *pp_expr = NULL;
+              return r;
+            }
+            if (!*pp_expr) {
+              *pp_expr = ini_expr;
+            }
+            else {
+              /* Build ET_SEQ chain of previous init expressions */
+              x = expr_alloc(ET_SEQ);
+              if (!x) {
+                cc_no_memory(cc);
+                expr_free(*pp_expr);
+                *pp_expr = NULL;
+                return -1;
+              }
+              x->children_[0] = *pp_expr;
+              x->children_[1] = ini_expr;
+              *pp_expr = x;
+            }
+          }
+          else {
+            cc_no_memory(cc);
+            return -1;
+          }
         }
       }
     } while (d != d_list);
