@@ -5967,6 +5967,12 @@ int expr_array_index(struct c_compiler *cc, struct expr **dst, struct situs *arr
     return -1;
   }
 
+  /* For parameters, it is possible to have a qualifier on the array:
+   *   int func(int a[const 10]); // this is valid
+   * so remove any qualifiers or our checks will fail. */
+  arr_type = type_node_unqualified(arr_type);
+  index_type = type_node_unqualified(index_type);
+
   int is_arith_left = type_node_is_arithmetic_type(arr_type);
   int is_arith_right = type_node_is_arithmetic_type(index_type);
   int is_integer_arr = type_node_is_integer_type(arr_type);

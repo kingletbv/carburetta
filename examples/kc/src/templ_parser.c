@@ -381,6 +381,47 @@ struct type_node *templ_realize_type(struct c_compiler *cc, struct type_node *sp
   return tn;
 }
 
+int templ_check_param_only_array_attrs(struct type_node *tn, struct situs *loc, const char *context_label) {
+  int violation = 0;
+  struct type_node *cur;
+  for (cur = tn; cur; cur = cur->derived_from_) {
+    if ((cur->kind_ == tk_qualifier) &&
+        cur->derived_from_ &&
+        (cur->derived_from_->kind_ == tk_array)) {
+      report_error(loc, "Type qualifiers inside [] are permitted only on the outermost array of a function parameter declarator (%s)", context_label);
+      violation = 1;
+    }
+  }
+  return violation ? -1 : 0;
+}
+
+int templ_check_param_only_static_array(struct templ_declarator_scaffold *tds, struct situs *loc, int allow_outermost_static, const char *context_label) {
+  if (!tds) return 0;
+
+  struct templ_declarator_scaffold *outermost = tds;  /* tail-cyclic: tds is outermost */
+  struct templ_declarator_scaffold *cur = tds;
+  do {
+    cur = cur->chain_;
+
+    if (cur->kind_ != TDSK_ARRAY) {
+      continue;
+    }
+
+    if (!cur->is_static_array_) {
+      continue;
+    }
+
+    if (cur == outermost && allow_outermost_static) {
+      continue;   /* legal: outermost array of a parameter declarator */
+    }
+
+    report_error(loc, "'static' inside [] is permitted only on the outermost array of a function parameter declarator [%s]", context_label);
+    return -1;
+  } while (cur != tds);
+
+  return 0;
+}
+
 struct type_node *templ_type_node_realize(struct c_compiler *cc, pts_type_specifier_t pts, struct type_node *specifier_type, struct situs *spec_loc, int type_qualifier, struct templ_declarator_scaffold *declarator, int *fatality) {
   /* Convert to type and identifier */
   struct type_node *tn = specifier_type;
@@ -414,16 +455,39 @@ struct type_node *templ_type_node_realize(struct c_compiler *cc, pts_type_specif
 
 struct templ_declarator_scaffold_field *templ_dsf_realize(struct c_compiler *cc, pts_type_specifier_t pts, struct type_node *specifier, struct situs *spec_loc, int type_qualifier, struct templ_declarator_scaffold *declarator, char *ident, struct situs *ident_loc, int *fatality) {
   struct templ_declarator_scaffold_field *tdsf;
+
+  /* Pre-realize: outermost-static is OK in a parameter declarator;
+   * any inner static is a 6.7.5.2p2 violation. */
+  if (templ_check_param_only_static_array(declarator, ident_loc, /*allow_outermost_static=*/1, "function parameter")) {
+    *fatality = 0;
+    return NULL;
+  }
   struct type_node *tn = templ_type_node_realize(cc, pts, specifier, spec_loc, type_qualifier, declarator, fatality);
   if (!tn) {
     return NULL;
   }
+
   /* C99 6.7.5.3-7 parameter of array type adjusts to pointer to element. */
+  int adjust_qualifiers = 0;
+  if ((tn->kind_ == tk_qualifier) &&
+      tn->derived_from_ &&
+      (tn->derived_from_->kind_ == tk_array)) {
+    adjust_qualifiers = tn->qualifiers_;
+    tn = tn->derived_from_;
+  }
+
   if (tn->kind_ == tk_array) {
     tn = type_base_pointer(&cc->tb_, tn->derived_from_);
     if (!tn) {
       *fatality = 1;
       return NULL;
+    }
+    if (adjust_qualifiers) {
+      tn = type_base_qualifier(&cc->tb_, tn, adjust_qualifiers);
+      if (!tn) {
+        *fatality = 1;
+        return NULL;
+      }
     }
   }
   /* C99 6.7.5.3-8 parameter of function type adjusts to pointer to function. */
@@ -433,6 +497,11 @@ struct templ_declarator_scaffold_field *templ_dsf_realize(struct c_compiler *cc,
       *fatality = 1;
       return NULL;
     }
+  }
+
+  if (templ_check_param_only_array_attrs(tn, ident_loc, "function parameter")) {
+    *fatality = 0;
+    return NULL;
   }
 
   tdsf = templ_dsf_alloc(NULL, ident, ident_loc, tn);
@@ -472,6 +541,10 @@ struct type_field *templ_type_field_realize(struct c_compiler *cc, pts_type_spec
   if (!tn) {
     return NULL;
   }
+  if (templ_check_param_only_static_array(declarator, ident_loc, 0, "struct/union member") ||
+      templ_check_param_only_array_attrs(tn, ident_loc, "struct/union member")) {
+    return NULL;
+  }  
   struct type_field *tf;
   tf = type_field_alloc(ident, ident_loc, tn, bitfield_size);
   if (!tf) {

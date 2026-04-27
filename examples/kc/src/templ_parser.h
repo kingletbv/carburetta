@@ -219,6 +219,8 @@ struct templ_declarator_scaffold *templ_ds_pointer(struct templ_declarator_scaff
 struct templ_declarator_scaffold *templ_ds_join(struct templ_declarator_scaffold *front, struct templ_declarator_scaffold *back);
 void templ_declarator_scaffold_free_chain(struct templ_declarator_scaffold *tdsf);
 
+int templ_check_param_only_static_array(struct templ_declarator_scaffold *tds, struct situs *loc, int allow_outermost_static, const char *context_label);
+int templ_check_param_only_array_attrs(struct type_node *tn, struct situs *loc, const char *context_label);
 struct type_node *templ_type_node_realize(struct c_compiler *cc, pts_type_specifier_t pts, struct type_node *specifier_type, struct situs *spec_loc, int type_qualifier, struct templ_declarator_scaffold *declarator, int *fatality);
 
 struct templ_declarator_scaffold_field *templ_dsf_alloc(struct templ_declarator_scaffold_field *siblings, char *ident, struct situs *ident_loc, struct type_node *tn);
