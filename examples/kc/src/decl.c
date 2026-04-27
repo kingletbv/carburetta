@@ -731,8 +731,10 @@ static struct decl *decl_create_variable(struct c_compiler *cc, struct type_node
 
   if (this_is_definition) {
     d->is_definition_ = 1;
+    d->is_tentative_definition_ = 0; /* no more, if ever */
   }
-  else {
+  else if (!d->is_definition_) {
+    /* Not yet a definition (don't down-grade a definition.) */
     d->is_tentative_definition_ = 1;
   }
     
