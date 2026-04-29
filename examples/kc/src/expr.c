@@ -5576,6 +5576,9 @@ int expr_assign(struct c_compiler *cc, struct expr **dst, struct situs *left_loc
       case tk_unsigned_char:
         opcode = ET_STORE_UC;
         break;
+      case tk_bool:
+        opcode = ET_STORE_B;
+        break;
       case tk_char:
         opcode = ET_STORE_C;
         break;
