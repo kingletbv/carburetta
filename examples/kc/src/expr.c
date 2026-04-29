@@ -1378,6 +1378,12 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
     
     return 0;
   }
+  else if (x->et_ == ET_VOID_CAST) {
+    /* Evaluate child[0] for side effects, discard its value */
+    r = expr_eval_impl(cc, x->children_[0], temps, x->ord_, is_constant_expr, nulled_out_decl, local_base, param_base, return_value_ptr);
+    if (r) return r;
+    return 0;
+  }
 
   int num_operands = expr_num_operands(x);
   if (x->et_ == ET_FUNCTION_CALL) {
@@ -4991,6 +4997,18 @@ int expr_cast(struct c_compiler *cc, struct expr **dst, struct situs *type_loc, 
     return -1;
   }
 
+  if (type_node_unqualified(ptype)->kind_ == tk_void) {
+    struct expr *vc = expr_alloc(ET_VOID_CAST);
+    if (!vc) {
+      cc_no_memory(cc);
+      return -1;
+    }
+    vc->children_[0] = *val;
+    *val = NULL;
+    *dst = vc;
+    return 0;
+  }
+
   struct type_node *cast_type = ptype;
 
   int is_arith_cast = type_node_is_arithmetic_type(cast_type);
@@ -6303,7 +6321,7 @@ int expr_lvalue_member_access(struct c_compiler *cc, struct expr **dst, struct s
 int expr_type_is_constant(enum expr_type et) {
   switch (et) {
     case ET_FUNCTION_CALL:
-  
+    case ET_VOID_CAST:  
     case ET_INDIRECTION_PTR:
 
     case ET_STORE_LDC:

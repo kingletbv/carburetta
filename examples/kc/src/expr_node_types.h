@@ -27,6 +27,9 @@ extern "C" {
   /* No-operation; used internally but should not appear in any actual expression trees */ \
   xx(ET_NOP, 0, tk_invalid) \
 \
+  /* Cast to void, evaluates child[0] for side effects only and yields no usable value. */ \
+  xx(ET_VOID_CAST, 1, tk_void) \
+\
   /* Conversions, for some of these there are no-ops for the code generated, however,
    * having them helps analyse code and determine the type of expressions by looking at
    * just the top node. */ \
