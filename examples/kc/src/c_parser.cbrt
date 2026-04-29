@@ -157,8 +157,13 @@ double strtod_david_m_gay(const char *s00, char **se);
  * accepted by the parser and the identifier looks up as a typedef inside the
  * symbol tables. */
 %token TYPEDEF_NAME
-%type TYPEDEF_NAME: struct type_node *
-%token_action $$ = input_chain->v_.type_;
+%type TYPEDEF_NAME: struct { struct type_node *type_; char *text_; size_t len_; }
+%constructor $$.type_ = NULL; $$.text_ = NULL; $$.len_ = 0;
+%destructor if ($$.text_) free($$.text_);
+%token_action $$.type_ = input_chain->v_.type_;      \
+              $$.text_ = input_chain->text_;   \
+              input_chain->text_ = NULL;       \
+              $$.len_ = input_chain->text_len_;
 
 /* For IDENT, take out the char* and have the parser stack own the memory.
  * TEMPLATE_LIT functions analogously to IDENT*/
@@ -975,6 +980,32 @@ labeled-stmt: IDENT COLON stmt {
     cc_error_loc(cc, &${ 0 }, "Cannot declare label \"%s\" outside function scope\n", $0);
   }
 }
+labeled-stmt: TYPEDEF_NAME COLON stmt {
+  if (cc->ctx_.current_func_) {
+    $$ = stmt_alloc(cc, ST_LABEL, &${ 0 });
+    if (!$$) return _CP_NO_MEMORY;
+    STMT_SET_CHILD0($$, $2);
+    $$->label_ = $0.text_;
+    $0.text_ = NULL;
+    situs_swap(&$$->label_range_, &${ 0 });
+
+    int is_new_label = 0;
+    struct ns_label_sym *ls = (struct ns_label_sym *)st_find_or_insert(&cc->ctx_.current_func_->body_->ns_->stmt_labels_, $$->label_, &is_new_label, sizeof(struct ns_label_sym));
+    if (!ls) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    if (!is_new_label) {
+      cc_error_loc(cc, &${ 0 }, "Label \"%s\" already declared (see line %d)\n", $$->label_, situs_line(&ls->labeled_stmt_->label_range_));
+    }
+    else {
+      ls->labeled_stmt_ = $$;
+    }
+  }
+  else {
+    cc_error_loc(cc, &${ 0 }, "Cannot declare label \"%s\" outside function scope\n", $0.text_);
+  }
+}
 
 labeled-stmt: CASE constant-exp COLON stmt {
   $$ = stmt_alloc(cc, ST_CASE, &${0});
@@ -1691,7 +1722,7 @@ type-specifier: disable-typedefname COMPLEX { $$.pts_ = PTS_COMPLEX; }
 type-specifier: disable-typedefname IMAGINARY { $$.pts_ = PTS_IMAGINARY; }
 type-specifier: disable-typedefname struct-or-union-specifier { $$ = $1; $1.specifier_type_ = NULL; }
 type-specifier: disable-typedefname enum-specifier { $$ = $1; $1.specifier_type_ = NULL; }
-type-specifier: TYPEDEF_NAME { $$.specifier_type_ = $0; }
+type-specifier: TYPEDEF_NAME { $$.specifier_type_ = $0.type_; }
 
 %nt disable-typedefname reenable-typedefname
 disable-typedefname: {
