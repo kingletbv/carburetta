@@ -1742,34 +1742,38 @@ reenable-typedefname: {
 %constructor $$ = NULL;
 
 struct-or-union-specifier-prolog: struct-or-union IDENT {
-  char *id = strdup($1);
-  if (!id) {
+  int is_struct = $0 == tk_structure;
+  struct name_space *pns = cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_;
+
+  int is_new;
+  /* Scope local search, we want any struct/union declared inside a block to be declared for that block,
+   * not for any outer incomplete struct/union declarations */
+  struct ns_tagged_type_sym *ntts = (struct ns_tagged_type_sym *)st_find_or_insert(is_struct ? &pns->struct_tags_ : &pns->union_tags_, $1, &is_new, sizeof(struct ns_tagged_type_sym));
+  if (!ntts) {
     cc_no_memory(cc);
     return _CP_NO_MEMORY;
   }
-  struct type_node *tn = type_base_alloc_struct_or_union(&cc->tb_, $0);
-  if (!tn) {
-    cc_no_memory(cc);
-    free(id);
-    return _CP_NO_MEMORY;
+
+  struct type_node *tn;
+  if (is_new) {
+    tn = type_base_alloc_struct_or_union(&cc->tb_, $0);
+    if (!tn) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    tn->tag_ = $1;
+    $1 = NULL;
+    situs_swap(&tn->tag_loc_, &${1});
+    ntts->type_ = tn;
   }
   else {
-    tn->tag_ = id;
-    $1 = NULL;
-    situs_swap(&tn->tag_loc_, &${ 1 });
-    $$ = tn;
-
-    int is_struct = $0 == tk_structure;
-    int is_new;
-    struct name_space *pns = cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_;
-    struct ns_tagged_type_sym *ntts = (struct ns_tagged_type_sym *)st_find_or_insert(is_struct ? &pns->struct_tags_ : &pns->union_tags_, tn->tag_, &is_new, sizeof(struct ns_tagged_type_sym));
-    if (!is_new) {
-      cc_error_loc(cc, &${ 1 }, "%s tag \"%s\" already declared at line %d\n", is_struct ? "struct" : "union", tn->tag_, situs_line(&ntts->type_->tag_loc_));
-    }
-    else {
-      ntts->type_ = tn;
+    tn = ntts->type_;
+    if (tn->fields_) {
+      cc_error_loc(cc, &${ 1 }, "%s tag \"%s\" already defined at line %d\n", is_struct ? "struct" : "union", tn->tag_, situs_line(&tn->tag_loc_));
+      /* fallthrough; callers will get tn as type */
     }
   }
+  $$ = tn;
 }
 
 struct-or-union-specifier-prolog: struct-or-union {
@@ -1785,9 +1789,16 @@ struct-or-union-specifier-prolog: struct-or-union {
 struct-or-union-specifier : struct-or-union-specifier-prolog CUBRACE_OPEN struct-declaration-list CUBRACE_CLOSE {
   struct type_node *tn = $0;
   if (tn) {
-    tn->fields_ = $2;
+    if (!tn->fields_) {
+      tn->fields_ = $2;
+      $2 = NULL;
+    }
+    else {
+      /* get here if struct tag was already declared, don't overwrite it
+       * with the new definition. Error already set, just do the least surprising thing
+       * here. */
+    }
     $$.specifier_type_ = tn;
-    $2 = NULL;
   }
 }
 
@@ -1795,7 +1806,26 @@ struct-or-union-specifier: struct-or-union IDENT {
   int is_struct = $0 == tk_structure;
   struct ns_tagged_type_sym *ntts = (is_struct ? ns_find_struct : ns_find_union)(cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_, $1);
   if (!ntts) {
-    cc_error_loc(cc, &${ 1 }, "unknown %s tag %s\n", is_struct ? "struct" : "union", $1);
+    struct type_node *tn = type_base_alloc_struct_or_union(&cc->tb_, $0);
+    if (!tn) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    else {
+      tn->tag_ = $1;
+      $1 = NULL;
+      situs_swap(&tn->tag_loc_, &${ 1 });
+      $$.specifier_type_ = tn;
+
+      int is_new;
+      struct name_space *pns = cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_;
+      struct ns_tagged_type_sym *inserted_ntts = (struct ns_tagged_type_sym *)st_find_or_insert(is_struct ? &pns->struct_tags_ : &pns->union_tags_, tn->tag_, &is_new, sizeof(struct ns_tagged_type_sym));
+      if (!inserted_ntts) {
+        cc_no_memory(cc);
+        return _CP_NO_MEMORY;
+      }
+      inserted_ntts->type_ = tn;
+    }
   }
   else {
     $$.specifier_type_ = ntts->type_;
