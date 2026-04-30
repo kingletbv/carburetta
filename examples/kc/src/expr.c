@@ -1437,6 +1437,7 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
     subptr_ptr,
     neg,
     compl,
+    cv2b,
     indir,
     shl,
     shr,
@@ -1666,19 +1667,19 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
     xx(ET_CVLDC2LD, nop, ldc, none, none, ld)
     xx(ET_CVLD2LDC, nop, ld, none, none, ldc)
     xx(ET_CVB2UC, nop, b, none, none, u8)
-    xx(ET_CVUC2B, nop, u8, none, none, b)
-    xx(ET_CVSC2B, nop, i8, none, none, b)
-    xx(ET_CVUS2B, nop, u16, none, none, b)
-    xx(ET_CVSS2B, nop, i16, none, none, b)
-    xx(ET_CVUI2B, nop, ui, none, none, b)
-    xx(ET_CVSI2B, nop, si, none, none, b)
-    xx(ET_CVULI2B, nop, uli, none, none, b)
-    xx(ET_CVSLI2B, nop, sli, none, none, b)
-    xx(ET_CVULLI2B, nop, ulli, none, none, b)
-    xx(ET_CVSLLI2B, nop, slli, none, none, b)
-    xx(ET_CVF2B, nop, f, none, none, b)
-    xx(ET_CVD2B, nop, d, none, none, b)
-    xx(ET_CVLD2B, nop, ld, none, none, b)
+    xx(ET_CVUC2B, cv2b, u8, none, none, b)
+    xx(ET_CVSC2B, cv2b, i8, none, none, b)
+    xx(ET_CVUS2B, cv2b, u16, none, none, b)
+    xx(ET_CVSS2B, cv2b, i16, none, none, b)
+    xx(ET_CVUI2B, cv2b, ui, none, none, b)
+    xx(ET_CVSI2B, cv2b, si, none, none, b)
+    xx(ET_CVULI2B, cv2b, uli, none, none, b)
+    xx(ET_CVSLI2B, cv2b, sli, none, none, b)
+    xx(ET_CVULLI2B, cv2b, ulli, none, none, b)
+    xx(ET_CVSLLI2B, cv2b, slli, none, none, b)
+    xx(ET_CVF2B, cv2b, f, none, none, b)
+    xx(ET_CVD2B, cv2b, d, none, none, b)
+    xx(ET_CVLD2B, cv2b, ld, none, none, b)
     xx(ET_CVFUN2PTR, nop, ptr, none, none, ptr)
     xx(ET_CVE2CIT, nop, enum_type, none, none, enum_cit)
     xx(ET_CVCIT2E, nop, enum_cit, none, none, enum_type)
@@ -2377,6 +2378,19 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
       operands_u[0] = ~operands_u[0];
       operands_d[0] = 0.;
       operands_f[0] = 0.f;
+      operands_fi[0] = 0.f;
+      operands_di[0] = 0.;
+      break;
+    case cv2b:
+      operands_i[0] = (operands_i[0] != 0)
+                   || (operands_u[0] != 0)
+                   || (operands_d[0] != 0.0)
+                   || (operands_f[0] != 0.0f)
+                   || (operands_fi[0] != 0.0f)
+                   || (operands_di[0] != 0.0);
+      operands_u[0] = (uint64_t)operands_i[0];
+      operands_d[0] = (double)operands_i[0];
+      operands_f[0] = (float)operands_i[0];
       operands_fi[0] = 0.f;
       operands_di[0] = 0.;
       break;
