@@ -1321,7 +1321,15 @@ int templ_initializer_iter(struct c_compiler *cc, struct type_node *tn, struct e
           return -1;
         }
 
-        ini->value_ = (*pptiln)->initializer_->u_.literal_exp_;
+        /* Convert the value as if by assignment */
+        if ((*pptiln)->initializer_->u_.literal_exp_) (*pptiln)->initializer_->u_.literal_exp_->refs_++;
+        struct expr *converted = expr_convert_type(cc, tn, (*pptiln)->initializer_->u_.literal_exp_);
+        if (!converted) {
+          cc_error_loc(cc, &(*pptiln)->initializer_->loc_, "cannot convert initializer to target type");
+          return -1;
+        }
+        
+        ini->value_ = converted;
         if (ini->value_) {
           ini->value_->refs_++;
         }
