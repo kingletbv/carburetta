@@ -37,7 +37,6 @@
     <ClCompile Include="..\examples\kc\src\decl.c" />
     <ClCompile Include="..\examples\kc\src\dynamic_runtime_linking.c" />
     <ClCompile Include="..\examples\kc\src\expr.c" />
-    <ClCompile Include="..\examples\kc\src\func_def.c" />
     <ClCompile Include="..\examples\kc\src\input_file.c" />
     <ClCompile Include="..\examples\kc\src\invoke_x64.c" />
     <ClCompile Include="..\examples\kc\src\jitmem.c" />
@@ -60,7 +59,6 @@
     <ClInclude Include="..\examples\kc\src\decl.h" />
     <ClInclude Include="..\examples\kc\src\dynamic_runtime_linking.h" />
     <ClInclude Include="..\examples\kc\src\expr.h" />
-    <ClInclude Include="..\examples\kc\src\func_def.h" />
     <ClInclude Include="..\examples\kc\src\input_file.h" />
     <ClInclude Include="..\examples\kc\src\invoke_x64.h" />
     <ClInclude Include="..\examples\kc\src\jitmem.h" />

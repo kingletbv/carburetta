@@ -4,7 +4,6 @@
     <ClCompile Include="..\examples\kc\src\data_section.c" />
     <ClCompile Include="..\examples\kc\src\decl.c" />
     <ClCompile Include="..\examples\kc\src\expr.c" />
-    <ClCompile Include="..\examples\kc\src\func_def.c" />
     <ClCompile Include="..\examples\kc\src\input_file.c" />
     <ClCompile Include="..\examples\kc\src\c_compiler.c" />
     <ClCompile Include="..\examples\kc\src\invoke_x64.c" />
@@ -37,7 +36,6 @@
     <ClInclude Include="..\examples\kc\src\data_section.h" />
     <ClInclude Include="..\examples\kc\src\decl.h" />
     <ClInclude Include="..\examples\kc\src\expr.h" />
-    <ClInclude Include="..\examples\kc\src\func_def.h" />
     <ClInclude Include="..\examples\kc\src\input_file.h" />
     <ClInclude Include="..\examples\kc\src\c_compiler.h" />
     <ClInclude Include="..\examples\kc\src\invoke_x64.h" />
