@@ -2962,13 +2962,13 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
       temps[x->ord_].v_.di_ = operands_di[0];
       break;
     case fc:
-      temps[x->ord_].v_.fi_ = operands_fi[0];
-      temps[x->ord_].v_.f_ = operands_f[0];
+      temps[x->ord_].v_.fc_.fi_ = operands_fi[0];
+      temps[x->ord_].v_.fc_.f_ = operands_f[0];
       break;
     case ldc:
     case dc:
-      temps[x->ord_].v_.di_ = operands_di[0];
-      temps[x->ord_].v_.d_ = operands_d[0];
+      temps[x->ord_].v_.dc_.di_ = operands_di[0];
+      temps[x->ord_].v_.dc_.d_ = operands_d[0];
       break;
     case b:
       temps[x->ord_].v_.i64_ = !!operands_i[0];
