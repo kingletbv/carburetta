@@ -5493,6 +5493,91 @@ int expr_logical_or(struct c_compiler *cc, struct expr **dst, struct situs *left
 }
 
 
+struct expr *expr_convert_as_if_by_assignment(struct c_compiler *cc, struct type_node *to, struct expr *src, struct situs *src_loc) {
+  if (!to || !src) return NULL;
+
+  struct type_node *from = expr_type(cc, src);
+  if (!from) {
+    cc_error_loc(cc, src_loc, "cannot determine type of source expression");
+    return NULL;
+  }
+
+  int from_arith = type_node_is_arithmetic_type(from);
+  int from_ptr = type_node_is_pointer_type(from);
+  int from_struct = type_node_is_struct_or_union(from);
+  int to_arith = type_node_is_arithmetic_type(to);
+  int to_ptr = type_node_is_pointer_type(to);
+  int to_struct = type_node_is_struct_or_union(to);
+  int to_is_bool = (type_node_unqualified(to)->kind_ == tk_bool);
+
+  if (from_arith && to_arith) {
+    return expr_convert_type(cc, to, src);
+  }
+
+  if (to_is_bool && from_ptr) {
+    return expr_convert_type(cc, to, src);
+  }
+
+  if (from_ptr && to_ptr) {
+    struct type_node *pointed_to = type_node_unqualified(to)->derived_from_;
+    struct type_node *pointed_from = type_node_unqualified(from)->derived_from_;
+    int quali_to = (pointed_to->kind_ == tk_qualifier) ? pointed_to->qualifiers_ : 0;
+    int quali_from = (pointed_from->kind_ == tk_qualifier) ? pointed_from->qualifiers_ : 0;
+    int to_void = (type_node_unqualified(pointed_to)->kind_ == tk_void);
+    int from_void = (type_node_unqualified(pointed_from)->kind_ == tk_void);
+
+    if (to_void != from_void) {
+      /* Note: in C99 assignment to/from void* is legal, e.g. I can say struct MyType *p = malloc(123),
+       * and that would not require additional casting. This is different in C++. */
+      if (quali_from & ~quali_to) {
+        cc_error_loc(cc, src_loc, "assignment would lose qualifiers");
+        return NULL;
+      }
+    }
+    else if (type_node_is_compatible(&cc->tb_, type_node_unqualified(pointed_to), type_node_unqualified(pointed_from))) {
+      if (quali_from & ~quali_to) {
+        cc_error_loc(cc, src_loc, "assignment would lose qualifiers");
+        return NULL;
+      }
+    }
+    else {
+      cc_error_loc(cc, src_loc, "incompatible pointer assignment");
+      return NULL;
+    }
+    return expr_convert_type(cc, to, src);
+  }
+
+  if (to_ptr && from_arith) {
+    int is_null = 0;
+    if (expr_is_null_ptr(cc, src, &is_null)) {
+      cc_error_loc(cc, src_loc, "failed to evaluate as null pointer constant");
+      return NULL;
+    }
+    if (!is_null) {
+      cc_error_loc(cc, src_loc, "incompatible pointer assignment from arithmetic type (use an explicit cast)");
+      return NULL;
+    }
+    return expr_convert_type(cc, to, src);
+  }
+
+  if (from_struct && to_struct) {
+    if (!type_node_is_compatible(&cc->tb_, type_node_unqualified(to), type_node_unqualified(from))) {
+      cc_error_loc(cc, src_loc, "incompatible struct/union assignment");
+      return NULL;
+    }
+    /* XXX: Implement struct/union assignment */
+    return NULL;
+  }
+
+  /* Fail anything else */
+  if (from_ptr) {
+    cc_error_loc(cc, src_loc, "incompatible assignment from pointer to non-_Bool arithmetic type (use an explicit cast)");
+    return NULL;
+  }
+  cc_error_loc(cc, src_loc, "incompatible types for assignment");
+  return NULL;
+}
+
 int expr_assign(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, struct expr **left, struct situs *op_loc, struct situs *right_loc, struct expr **right) {
   if ((!*left) || (!*right)) {
     /* One of the sides is invalid. Simple pass through of an error */
@@ -6084,20 +6169,15 @@ static struct expr *expr_args_final_conversions(struct c_compiler *cc, struct ty
   /* Currently at an argument at index *pcurrent_index . */
   if (*pparam && (*pparam)->type_) {
     /* Assign argslist to dequalified version of (*pparam)->type_. */
-    /* XXX: This is not what we want, what we want is to check the semantics; for instance,
-     *      for an "int" parameter, expr_convert_type() will happily take a "char*" argument
-     *      and convert the pointer value to an int. This is not what you want to have happen
-     *      implicitly, we should be issuing errors on these things. Errors such as checked
-     *      by expr_assign(). */
     int r = expr_pointer_decay(cc, &argslist);
     if (r) {
       *error_reported = 1;
     }
     else {
-      struct expr *x = expr_convert_type(cc, type_node_unqualified((*pparam)->type_), argslist);
+      struct expr *x = expr_convert_as_if_by_assignment(cc, type_node_unqualified((*pparam)->type_), argslist, func_loc);
       if (!x) {
         *error_reported = 1;
-        cc_error_loc(cc, func_loc, "failed convert argument #%zu to parameter type", *pcurrent_index);
+        /* Diagnostic already emitted by expr_convert_as_if_by_assignment */
       }
       else {
         argslist = x;

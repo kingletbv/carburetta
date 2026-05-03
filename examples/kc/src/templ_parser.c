@@ -1322,32 +1322,10 @@ int templ_initializer_iter(struct c_compiler *cc, struct type_node *tn, struct e
         }
 
         struct expr *src  = (*pptiln)->initializer_->u_.literal_exp_;
-        struct type_node *src_type = expr_type(cc, src);
-        if (!src_type) {
-          cc_error_loc(cc, &(*pptiln)->initializer_->loc_, "cannot determine type of initializer");
-          return -1;
-        }
-
-        if (type_node_is_pointer_type(tn) && type_node_is_arithmetic_type(src_type)) {
-          /* Assigning an integer constant to a pointer is only allowed if the integer
-           * constant is exactly 0 */
-          int is_null = 0;
-          if (expr_is_null_ptr(cc, src, &is_null)) {
-            cc_error_loc(cc, &(*pptiln)->initializer_->loc_, "failed to evaluate initializer as null pointer constant");
-            return -1;
-          }
-          if (!is_null) {
-            cc_error_loc(cc, &(*pptiln)->initializer_->loc_, "incompatible pointer initializer (use an explicit cast)");
-            return -1;
-          }
-        }
-
-
-        /* Convert the value as if by assignment */
         if (src) src->refs_++;
-        struct expr *converted = expr_convert_type(cc, tn, src);
+        struct expr *converted = expr_convert_as_if_by_assignment(cc, tn, src, &(*pptiln)->initializer_->loc_);
         if (!converted) {
-          cc_error_loc(cc, &(*pptiln)->initializer_->loc_, "cannot convert initializer to target type");
+          /* Diagnostic already emitted by expr_convert_as_if_by_assignment */
           return -1;
         }
         

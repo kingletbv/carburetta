@@ -205,6 +205,7 @@ int expr_pre_inc(struct c_compiler *cc, struct expr **dst, struct situs *op_loc,
 int expr_pre_dec(struct c_compiler *cc, struct expr **dst, struct situs *op_loc, struct situs *opd_loc, struct expr **operand);
 int expr_address_of(struct c_compiler *cc, struct expr **dst, struct situs *op_loc, struct situs *opd_loc, struct expr **operand);
 int expr_cast(struct c_compiler *cc, struct expr **dst, struct situs *type_loc, struct type_node *ptype, struct situs *val_loc, struct expr **val);
+struct expr *expr_convert_as_if_by_assignment(struct c_compiler *cc, struct type_node *to, struct expr *src, struct situs *src_loc);
 int expr_assign(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, struct expr **left, struct situs *op_loc, struct situs *right_loc, struct expr **right);
 int expr_assign_mul(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, struct expr **left, struct situs *op_loc, struct situs *right_loc, struct expr **right);
 int expr_assign_div(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, struct expr **left, struct situs *op_loc, struct situs *right_loc, struct expr **right);
