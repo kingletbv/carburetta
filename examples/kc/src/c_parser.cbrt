@@ -1876,7 +1876,7 @@ struct-declaration-list: struct-declaration-list struct-declaration {
 }
 
 %type type-name: struct type_node *
-type-name: specifier-qualifier-list abstract-declarator {
+type-name: specifier-qualifier-list abstract-declarator reenable-typedefname {
   int fatality = 0;
   $$ = templ_type_node_realize(cc, $0.pts_, $0.specifier_type_, &${0}, $0.tq_, $1, &fatality);
   if (!$$) {
@@ -1887,7 +1887,7 @@ type-name: specifier-qualifier-list abstract-declarator {
     /* Keep going, not sure what the error was but templ_realize_type() reported it */
   }
 }
-type-name: specifier-qualifier-list {
+type-name: specifier-qualifier-list reenable-typedefname {
   int fatality = 0;
   $$ = templ_type_node_realize(cc, $0.pts_, $0.specifier_type_, &${0}, $0.tq_, NULL, &fatality);
   if (!$$) {
