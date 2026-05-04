@@ -666,8 +666,9 @@ $: {
     }
   }
 
-  /* whole float literal */
-  : [0-9] +[eE][\+\-]?[0-9]+[flFL]? {
+  /* whole float literal, regular and hex */
+  : ([0-9]+[eE][\+\-]?[0-9]+[flFL]?)|(0[xX](([0-9a-fA-F]+\.) | 
+    ([0-9a-fA-F]*\.[0-9a-fA-F]+)|[0-9a-fA-F]+)[pP][\+\-]?[0-9]+[flFL]?) {
     enum expr_type et;
     double val = strtod_david_m_gay($text, NULL);
     char suffix = $len ? $text[$len-1] : '\0';
@@ -699,7 +700,6 @@ $: {
     }
   }
 
-  /* XXX: Hexadecimal float missing */
 
   : "(\\.|[^"\\])*" { 
     char *p;
