@@ -793,7 +793,7 @@ struct type_node *expr_type(struct c_compiler *cc, struct expr *src) {
     }
     return tn;
   }
-  else if (src->et_ == ET_ADD_PTR_UINTPTR) {
+  else if ((src->et_ == ET_ADD_PTR_UINTPTR) || (src->et_ == ET_SUB_PTR_UINTPTR)) {
     return expr_type(cc, src->children_[0]);
   }
   else if (src->et_ == ET_SUB_PTR) {
@@ -4039,6 +4039,33 @@ int expr_bitwise_xor(struct c_compiler *cc, struct expr **dst, struct situs *lef
                             ET_BITWISE_XOR_UI);
 }
 
+static struct expr *expr_build_pointer_offset(struct c_compiler *cc,
+                                              struct type_node *pointer_type,
+                                              struct situs *index_loc,
+                                              struct expr **index) {
+  enum expr_type et_and, et_add, et_sub, et_c, et_mul, et_lt;
+  type_node_uintptr_expr(&cc->tb_, &et_and, &et_add, &et_sub, &et_c, &et_mul, &et_lt);
+
+  struct expr *index_expr = expr_convert_arithmetic_type(cc, type_base_simple(&cc->tb_, cc->tb_.uintptr_equivalent_), *index);
+  if (!index_expr) {
+    cc_error_loc(cc, index_loc, "unable to convert index type to pointer sized integer");
+    return NULL;
+  }
+  struct expr *size_expr = type_node_size_expr(cc, pointer_type->derived_from_);
+  struct expr *offset_expr = expr_alloc(et_mul);
+  if (!size_expr || !offset_expr) {
+    expr_free(size_expr);
+    expr_free(offset_expr);
+    expr_free(index_expr);
+    cc_no_memory(cc);
+    return NULL;
+  }
+  offset_expr->children_[0] = size_expr;
+  offset_expr->children_[1] = index_expr;
+  *index = NULL;
+  return offset_expr;
+}
+
 int expr_add(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, struct expr **left, struct situs *op_loc, struct situs *right_loc, struct expr **right) {
   struct type_node *left_type, *right_type;
   /* XXX: DEQUALIFY OR THIS WILL ALL FAIL  */
@@ -4260,31 +4287,18 @@ int expr_add(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, s
       return -1;
     }
 
-    enum expr_type et_and, et_add, et_sub, et_c, et_mul, et_lt;
-    type_node_uintptr_expr(&cc->tb_, &et_and, &et_add, &et_sub, &et_c, &et_mul, &et_lt);
-
-    struct expr *index_expr = expr_convert_arithmetic_type(cc, type_base_simple(&cc->tb_, cc->tb_.uintptr_equivalent_), index);
-    if (!index_expr) {
-      cc_error_loc(cc, index_loc, "unable to convert index type to pointer sized integer");
+    struct expr *offset = expr_build_pointer_offset(cc, pointer_type, index_loc, &index);
+    if (!offset) {
       return -1;
     }
-
     struct expr *x = expr_alloc(ET_ADD_PTR_UINTPTR);
-    struct expr *size_expr = type_node_size_expr(cc, pointer_type->derived_from_);
-    struct expr *offset_expr = expr_alloc(et_mul);
-    if (!x || !offset_expr || !size_expr) {
-      expr_free(x);
-      expr_free(size_expr);
-      expr_free(index_expr);
-      expr_free(offset_expr);
+    if (!x) {
+      expr_free(offset);
       cc_no_memory(cc);
       return -1;
     }
-    offset_expr->children_[0] = size_expr;
-    offset_expr->children_[1] = index_expr;
-
     x->children_[0] = pointer;
-    x->children_[1] = offset_expr;
+    x->children_[1] = offset;
     *left = NULL;
     *right = NULL;
     *dst = x;
@@ -4525,23 +4539,19 @@ int expr_sub(struct c_compiler *cc, struct expr **dst, struct situs *left_loc, s
     }
   }
   else if ((left_type->kind_ == tk_pointer) && is_integer_right) {
+    struct expr *offset = expr_build_pointer_offset(cc, left_type, right_loc, right);
+    if (!offset) return -1;
+
     struct expr *x = expr_alloc(ET_SUB_PTR_UINTPTR);
     if (!x) {
+      expr_free(offset);
       cc_no_memory(cc);
       return -1;
     }
 
-    struct expr *index_expr = expr_convert_arithmetic_type(cc, type_base_simple(&cc->tb_, cc->tb_.uintptr_equivalent_), *right);
-    if (!index_expr) {
-      cc_error_loc(cc, right_loc, "unable to convert index type to pointer sized integer");
-      expr_free(x);
-      return -1;
-    }
-
     x->children_[0] = *left;
-    x->children_[1] = index_expr;
+    x->children_[1] = offset;
     *left = NULL;
-    *right = NULL;
     *dst = x;
     return 0;
   }
@@ -6119,33 +6129,23 @@ int expr_array_index(struct c_compiler *cc, struct expr **dst, struct situs *arr
       return 0;
     }
 
-    enum expr_type et_and, et_add, et_sub, et_c, et_mul, et_lt;
-    type_node_uintptr_expr(&cc->tb_, &et_and, &et_add, &et_sub, &et_c, &et_mul, &et_lt);
-
-    struct expr *index_expr = expr_convert_arithmetic_type(cc, type_base_simple(&cc->tb_, cc->tb_.uintptr_equivalent_), index_x);
-    if (!index_expr) {
-      cc_error_loc(cc, index_x_loc, "unable to convert index type to pointer sized integer");
+    struct expr *offset = expr_build_pointer_offset(cc, pointer_type, index_x_loc, &index_x);
+    if (!offset) {
       return -1;
     }
 
     struct expr *x = expr_alloc(ET_ADD_PTR_UINTPTR);
-    struct expr *size_expr = type_node_size_expr(cc, pointer_type->derived_from_);
-    struct expr *offset_expr = expr_alloc(et_mul);
     struct expr *indirection = expr_alloc(ET_INDIRECTION_PTR);
-    if (!x || !offset_expr || !size_expr || !indirection) {
+    if (!x || !indirection) {
+      expr_free(offset);
       expr_free(x);
-      expr_free(size_expr);
-      expr_free(index_expr);
-      expr_free(offset_expr);
       expr_free(indirection);
       cc_no_memory(cc);
       return -1;
     }
-    offset_expr->children_[0] = size_expr;
-    offset_expr->children_[1] = index_expr;
 
     x->children_[0] = pointer;
-    x->children_[1] = offset_expr;
+    x->children_[1] = offset;
 
     *arr = NULL;
     *index = NULL;
