@@ -739,8 +739,9 @@ extern "C" {
    * (The size of the type pointed to is irrelevant for this operation.) */ \
   xx(ET_SUB_PTR_UINTPTR, 2, tk_invalid) \
 \
-  /* Subtract Pointer from Pointer, result type is type_base::ptrdiff_equivalent_. */ \
-  xx(ET_SUB_PTR, 2, tk_invalid) \
+  /* Subtract Pointer from Pointer, result type is type_base::ptrdiff_equivalent_.
+   * Pointers in children_[0] and children_[1], the size of an element in children_[2]. */ \
+  xx(ET_SUB_PTR, 3, tk_invalid) \
 \
 \
   /* Unary Plus, this is a no-op, but reflects the presence of the + operator in the expression. 
