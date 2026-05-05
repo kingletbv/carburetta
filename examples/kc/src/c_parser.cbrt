@@ -1817,12 +1817,13 @@ struct-or-union-specifier-prolog: struct-or-union {
   $$ = tn;
 }
 
-struct-or-union-specifier : struct-or-union-specifier-prolog CUBRACE_OPEN struct-declaration-list CUBRACE_CLOSE {
+struct-or-union-specifier : struct-or-union-specifier-prolog reenable-typedefname 
+                            CUBRACE_OPEN struct-declaration-list disable-typedefname CUBRACE_CLOSE {
   struct type_node *tn = $0;
   if (tn) {
     if (!tn->fields_) {
-      tn->fields_ = $2;
-      $2 = NULL;
+      tn->fields_ = $3;
+      $3 = NULL;
     }
     else {
       /* get here if struct tag was already declared, don't overwrite it
