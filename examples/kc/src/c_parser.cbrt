@@ -149,7 +149,7 @@ double strtod_david_m_gay(const char *s00, char **se);
 %token_action if (input_chain) { \
   if (situs_clone(&$, &input_chain->situs_)) { \
     cc_no_memory(cc); \
-    return -1; \
+    return _CP_NO_MEMORY; \
   } \
 }
 
@@ -255,7 +255,7 @@ $: {
     for (n = 0; n < len; ++n) {
       if (situs_concat(&$, &${n})) {
         cc_no_memory(cc);
-        return -1;
+        return _CP_NO_MEMORY;
       }
     }
   }
@@ -327,7 +327,7 @@ primary-exp: IDENT {
     }
     if (!x) {
       cc_no_memory(cc);
-      return -1;
+      return _CP_NO_MEMORY;
     }
     x->decl_ = d;
 
@@ -338,7 +338,7 @@ primary-exp: IDENT {
         if (!pbp) {
           expr_free(x);
           cc_no_memory(cc);
-          return -1;
+          return _CP_NO_MEMORY;
         }
         pbp->children_[0] = x;
         x = pbp;
@@ -348,7 +348,7 @@ primary-exp: IDENT {
       if (!$$) {
         expr_free(x);
         cc_no_memory(cc);
-        return -1;
+        return _CP_NO_MEMORY;
       }
       else {
         $$->children_[0] = x;
@@ -376,7 +376,7 @@ string-lit-seq: string-lit-seq STRING_LIT {
   void *data = malloc(len * charsize);
   if (!data) {
     cc_no_memory(cc);
-    return -1;
+    return _CP_NO_MEMORY;
   }
   size_t second_at = 0;
   if ($$.wide_ && !$0.wide_) {
@@ -410,12 +410,12 @@ primary-exp: string-lit-seq {
   struct ds_portion *dsp = ds_alloc_portion(&cc->ds_);
   if (!dsp) {
     cc_no_memory(cc);
-    return -1;
+    return _CP_NO_MEMORY;
   }
   char *p = NULL;
   if (ds_reserve(dsp, bytesize_incl_terminator, &p)) {
     cc_no_memory(cc);
-    return -1;
+    return _CP_NO_MEMORY;
   }
   memcpy(p, $0.data_, bytesize_excl_terminator);
   /* set null terminator in charsize agnostic way */
@@ -423,7 +423,7 @@ primary-exp: string-lit-seq {
   struct expr *x = expr_alloc($0.wide_ ? ET_C_WIDE_STRING_LIT : ET_C_STRING_LIT);
   if (!x) {
     cc_no_memory(cc);
-    return -1;
+    return _CP_NO_MEMORY;
   }
   x->dsp_ = dsp;
 
@@ -433,7 +433,7 @@ primary-exp: string-lit-seq {
   if (!$$) {
     expr_free(x);
     cc_no_memory(cc);
-    return -1;
+    return _CP_NO_MEMORY;
   }
   $$->children_[0] = x;
 }
@@ -494,13 +494,26 @@ postfix-exp: postfix-exp MINUS_MINUS {
   }
 }
 
-/* XXX: handle postfix-exp of compound-literals */
 postfix-exp: PAR_OPEN type-name PAR_CLOSE CUBRACE_OPEN initializer-list CUBRACE_CLOSE {
-  cc_fatal_loc(cc, &${ 0 }, "compound literals not supported yet.\n");
+  for (size_t n = 1; n < 4; ++n) {
+    if (situs_concat(&${0}, &${n})) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+  }
+  int r = templ_compound_literal_build(cc, $1, &$4, &${0}, &${4}, &$$);
+  if (r) return r;
 }
 
 postfix-exp: PAR_OPEN type-name PAR_CLOSE CUBRACE_OPEN initializer-list COMMA CUBRACE_CLOSE {
-  cc_fatal_loc(cc, &${ 0 }, "compound literals not supported yet.\n");
+  for (size_t n = 1; n < 4; ++n) {
+    if (situs_concat(&${0}, &${n})) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+  }
+  int r = templ_compound_literal_build(cc, $1, &$4, &${0}, &${4}, &$$);
+  if (r) return r;
 }
 
 arg-exp-list: assignment-exp {
@@ -510,7 +523,7 @@ arg-exp-list: arg-exp-list COMMA assignment-exp {
   $$ = expr_alloc(ET_FUNCTION_ARG_LIST);
   if (!$$) {
     cc_no_memory(cc);
-    return -1;
+    return _CP_NO_MEMORY;
   }
 
   $$->children_[0] = $0;
@@ -895,7 +908,7 @@ $: {
     for (n = 0; n < len; ++n) {
       if (situs_concat(&$, &${ n })) {
         cc_no_memory(cc);
-        return -1;
+        return _CP_NO_MEMORY;
       }
     }
   }
@@ -935,7 +948,7 @@ compound-block-context: {
   struct stmt *block = stmt_alloc(cc, ST_BLOCK, &sit);
   if (!block) {
     cc_no_memory(cc);
-    return -1;
+    return _CP_NO_MEMORY;
   }
   if (cc->ctx_.block_) {
     block->ns_->parent_ = cc->ctx_.block_->ns_;
@@ -1140,7 +1153,7 @@ int cp_init_declarations_as_expr(struct c_compiler *cc, struct decl *d_list, str
       if (dit && dit->is_internal_ && !dit->dsp_) {
         if (decl_realize_global(cc, dit, &cc->ds_)) {
           cc_no_memory(cc);
-          return -1;
+          return _CP_NO_MEMORY;
         }
       }
 
@@ -1150,7 +1163,7 @@ int cp_init_declarations_as_expr(struct c_compiler *cc, struct decl *d_list, str
            * at compile time (and our runtime logic should not apply.. */
           if (decl_static_initializer_exec(cc, dit->dsp_, 0, d->init_, NULL, NULL, NULL)) {
             cc_error_loc(cc, d_loc, "Error: static-local initializer for \"%s\" must be a constant expression\n", d->sym_.ident_);
-            return -1;
+            return _CP_NO_MEMORY;
           }
           /* Do not build a runtime ini_expr; the init has been baked into gd->dsp_ at compile time. */
         }
@@ -1162,7 +1175,7 @@ int cp_init_declarations_as_expr(struct c_compiler *cc, struct decl *d_list, str
             x = expr_alloc(ET_ADDRESS_G);
             if (!dit->dsp_) {
               cc_error_loc(cc, d_loc, "Internal error: internal at global scope should have allocated data section portion\n");
-              return -1;
+              return _CP_NO_MEMORY;
             }
             x->dsp_ = dit->dsp_;
           }
@@ -1175,7 +1188,7 @@ int cp_init_declarations_as_expr(struct c_compiler *cc, struct decl *d_list, str
           }
           else {
             cc_error_loc(cc, d_loc, "Internal error: Unknown storage class for declaration\n");
-            return -1;
+            return _CP_NO_MEMORY;
           }
 
           if (x) {
@@ -1198,7 +1211,7 @@ int cp_init_declarations_as_expr(struct c_compiler *cc, struct decl *d_list, str
                 cc_no_memory(cc);
                 expr_free(*pp_expr);
                 *pp_expr = NULL;
-                return -1;
+                return _CP_NO_MEMORY;
               }
               x->children_[0] = *pp_expr;
               x->children_[1] = ini_expr;
@@ -1207,7 +1220,7 @@ int cp_init_declarations_as_expr(struct c_compiler *cc, struct decl *d_list, str
           }
           else {
             cc_no_memory(cc);
-            return -1;
+            return _CP_NO_MEMORY;
           }
         }
       }
@@ -2091,7 +2104,7 @@ int cp_declare_enum_constant(struct c_compiler *cc, struct name_space *ns, struc
   struct decl *d = decl_alloc(ns, &already_exists, tec->ident_, &tec->ident_loc_, 0, 0, type_base_simple(&cc->tb_, tk_int), NULL);
   if (!d) {
     cc_no_memory(cc);
-    return -1;
+    return _CP_NO_MEMORY;
   }
   if (already_exists) {
     cc_error_loc(cc, &tec->ident_loc_, "identifier \"%s\" already in use\n", tec->ident_);
@@ -2733,6 +2746,7 @@ direct-abstract-declarator: PAR_OPEN abstract-declarator PAR_CLOSE {
 direct-abstract-declarator: direct-abstract-declarator SQBRACE_OPEN assignment-exp SQBRACE_CLOSE {
   $$ = templ_ds_array($0, $2, 0, 0);
   if (!$$) {
+    cc_no_memory(cc);
     return _CP_NO_MEMORY;
   }
   $0 = NULL;
@@ -2742,11 +2756,27 @@ direct-abstract-declarator: direct-abstract-declarator SQBRACE_OPEN assignment-e
 direct-abstract-declarator:                            SQBRACE_OPEN assignment-exp SQBRACE_CLOSE {
   $$ = templ_ds_array(NULL, $1, 0, 0);
   if (!$$) {
+    cc_no_memory(cc);
     return _CP_NO_MEMORY;
   }
   $1 = NULL;
 }
 
+direct-abstract-declarator: direct-abstract-declarator SQBRACE_OPEN                SQBRACE_CLOSE {
+  $$ = templ_ds_array($0, NULL, 0, 0);
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+}
+
+direct-abstract-declarator:                            SQBRACE_OPEN                SQBRACE_CLOSE {
+  $$ = templ_ds_array(NULL, NULL, 0, 0);
+  if (!$$) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+}
 
 direct-abstract-declarator: direct-abstract-declarator SQBRACE_OPEN ASTERISK SQBRACE_CLOSE {
   $$ = templ_ds_array($0, NULL, 0, 1);
@@ -2833,7 +2863,7 @@ function-definition-prolog: declaration-specifiers declarator reenable-typedefna
           struct stmt *block = stmt_alloc(cc, ST_BLOCK, &sit);
           if (!block) {
             cc_no_memory(cc);
-            return -1;
+            return _CP_NO_MEMORY;
           }
           /* Setting fd_ also causes the block to be unwound to its parent_block_
            * (see %destructor for function-definition-prolog) */
@@ -2873,7 +2903,7 @@ function-definition-prolog: declaration-specifiers declarator reenable-typedefna
                 struct decl *new_d = decl_alloc(cc->ctx_.block_->ns_, &already_exists, param->ident_, &param->ident_loc_, SC_NONE, 0 /* no function specifier (no "inline") */, param->type_, NULL /* XXX: initializer */);
                 if (!new_d) {
                   cc_no_memory(cc);
-                  return -1;
+                  return _CP_NO_MEMORY;
                 }
 
                 if (already_exists) {

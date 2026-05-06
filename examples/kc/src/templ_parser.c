@@ -1379,3 +1379,111 @@ struct decl_initializer *templ_initializer_realize(struct c_compiler *cc, struct
 
   return di;
 }
+
+int templ_compound_literal_build(struct c_compiler *cc, struct type_node *type_name, struct templ_initializer_list_node **plist, struct situs *anchor_loc, struct situs *init_loc, struct expr **out) {
+  struct name_space *ns = cc->ctx_.block_ ? cc->ctx_.block_->ns_ : &cc->global_ns_;
+  struct decl *anon = decl_create_anonymous_variable(cc, type_name, ns, anchor_loc);
+  if (!anon) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  struct templ_initializer *tin = templ_initializer_compound(*plist, init_loc);
+  if (!tin) {
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  *plist = NULL;
+
+  uint64_t observed_len = 0;
+  struct decl_initializer *di = templ_initializer_realize(cc, tin, anon->type_, &observed_len);
+  templ_initializer_free(tin);
+  if (!di) return -1;
+  anon->init_ = di;
+  struct type_node *unq = type_node_unqualified(anon->type_);
+  if ((unq->kind_ == tk_array) && !unq->array_size_expr_) {
+    /* Make incomplete array type complete */
+    struct type_node *fixed = type_base_array_fixed_length(cc, unq->derived_from_, observed_len);
+    if (fixed && (anon->type_->kind_ == tk_qualifier)) {
+      fixed = type_base_qualifier(&cc->tb_, fixed, anon->type_->qualifiers_);
+    }
+    if (!fixed) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    anon->type_ = fixed;
+  }
+
+  struct expr *init_expr = NULL;
+  struct expr *addr2 = NULL;
+  if (cc->ctx_.block_) {
+    /* Not static global but local, can execute at runtime */
+    struct expr *addr = expr_alloc(ET_ADDRESS_L);
+    if (!addr) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    addr->decl_ = anon;
+
+    int r = decl_initializer_as_expr(cc, addr, &init_expr, anon->init_);
+    expr_free(addr);
+    if (r) {
+      return r;
+    }
+
+    addr2 = expr_alloc(ET_ADDRESS_L);
+    if (!addr2) {
+      expr_free(init_expr);
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    addr2->decl_ = anon;
+  }
+  else {
+    if (decl_realize_global(cc, anon, &cc->ds_)) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    if (decl_static_initializer_exec(cc, anon->dsp_, 0, anon->init_, NULL, NULL, NULL)) {
+      cc_error_loc(cc, init_loc, "compound literal initializer must be constant expression\n");
+      return -1;
+    }
+    /* note: init_expr is NULL here */
+
+    addr2 = expr_alloc(ET_ADDRESS_G);
+    if (!addr2) {
+      cc_no_memory(cc);
+      return _CP_NO_MEMORY;
+    }
+    addr2->dsp_ = anon->dsp_;
+  }
+
+  struct expr *lv = expr_alloc(ET_INDIRECTION_PTR);
+  if (!lv) {
+    expr_free(init_expr);
+    expr_free(addr2);
+    cc_no_memory(cc);
+    return _CP_NO_MEMORY;
+  }
+  lv->children_[0] = addr2;
+
+  if (init_expr) {
+    /* Local scope, initialization at runtime, build sequence to first initialize
+     * and then return the struct lvalue. */
+    struct expr *seq = expr_alloc(ET_SEQ);
+    if (!seq) {
+      cc_no_memory(cc);
+      expr_free(lv);
+      expr_free(init_expr);
+      return _CP_NO_MEMORY;
+    }
+    seq->children_[0] = init_expr;
+    seq->children_[1] = lv;
+    *out = seq;
+  }
+  else {
+    /* Global scope, initialization at compile-time, the data section has already
+     * been baked */
+    *out = lv;
+  }
+  return 0;
+}

@@ -258,6 +258,9 @@ void decl_print(FILE *fp, struct decl *d);
 int decl_realize_global(struct c_compiler *cc, struct decl *d, struct data_section *ds);
 int decl_func_def_realize_locals(struct c_compiler *cc, struct decl *d);
 
+struct decl *decl_create_anonymous_variable(struct c_compiler *cc, struct type_node *tn, struct name_space *ns,
+                                            struct situs *anchor_loc);
+
 struct decl *decl_define_function(struct c_compiler *cc, struct type_node *tn, struct name_space *global_ns,
                                   const char *ident, struct situs *ident_loc,
                                   sc_storage_class_t sc, int function_specifiers);

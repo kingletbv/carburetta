@@ -430,8 +430,13 @@ int decl_initializer_as_expr(struct c_compiler *cc, struct expr *target_ptr, str
       t->children_[1] = ini->offset_;
       ini->offset_->refs_++;
 
+      struct expr **slot = &ini->value_;
+      while ((*slot)->et_ == ET_SEQ) {
+        slot = &(*slot)->children_[1];
+      }
+      struct expr *bottom = *slot;
 
-      if (ini->value_->et_ == ET_INDIRECTION_PTR) {
+      if (bottom->et_ == ET_INDIRECTION_PTR) {
         struct expr *x = expr_alloc(ET_COPY);
         if (!x) {
           cc_no_memory(cc);
@@ -440,8 +445,8 @@ int decl_initializer_as_expr(struct c_compiler *cc, struct expr *target_ptr, str
           return -1;
         }
         x->children_[0] = t;
-        x->children_[1] = ini->value_->children_[0];
-        ini->value_->children_[0]->refs_++;
+        x->children_[1] = bottom->children_[0];
+        bottom->children_[0]->refs_++;
         uint64_t copy_size = type_node_size(&cc->tb_, value_type);
         x->children_[2] = expr_alloc(et_c);
         if (!x->children_[2]) {
@@ -452,6 +457,9 @@ int decl_initializer_as_expr(struct c_compiler *cc, struct expr *target_ptr, str
         }
         x->children_[2]->v_.u64_ = copy_size;
 
+        *slot = x;
+        expr_free(bottom); /* note bottom->children_[0] was refs_++ above, so at +2 it survives */
+
         struct expr *next_seq = expr_alloc(ET_SEQ);
         if (!next_seq) {
           cc_no_memory(cc);
@@ -460,7 +468,9 @@ int decl_initializer_as_expr(struct c_compiler *cc, struct expr *target_ptr, str
           return -1;
         }
         next_seq->children_[0] = seq;
-        next_seq->children_[1] = x;
+        next_seq->children_[1] = ini->value_;
+        ini->value_->refs_++;
+
         seq = next_seq;
       }
       else {
@@ -742,6 +752,15 @@ static struct decl *decl_create_variable(struct c_compiler *cc, struct type_node
   }
     
   return d;
+}
+
+struct decl *decl_create_anonymous_variable(struct c_compiler *cc, struct type_node *tn, struct name_space *ns,
+                                            struct situs *anchor_loc) {
+  char synthesized_name[32];
+  snprintf(synthesized_name, sizeof(synthesized_name), "__anon_%d", cc->anon_counter_++);
+
+  sc_storage_class_t sc = (ns == &cc->global_ns_) ? SC_STATIC : SC_NONE;
+  return decl_create_variable(cc, tn, ns, &cc->global_ns_, synthesized_name, anchor_loc, sc, 0, 1);
 }
 
 static struct decl *decl_create_extern_variable(struct c_compiler *cc, struct type_node *tn, struct name_space *ns, struct name_space *global_ns,

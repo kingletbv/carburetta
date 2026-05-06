@@ -182,6 +182,9 @@ struct c_compiler {
 
   /* Link table, contains all dynamic link names and their void pointers */
   struct symtab link_table_;
+
+  /* Counter used for synthesizing unique names for otherwise anonymous variable declarations */
+  int anon_counter_;
 };
 
 void cc_init(struct c_compiler *cc);

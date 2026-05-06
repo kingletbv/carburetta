@@ -254,6 +254,8 @@ void                                  templ_initializer_designation_free(struct 
 
 struct decl_initializer *templ_initializer_realize(struct c_compiler *cc, struct templ_initializer *tin, struct type_node *tn, uint64_t *top_array_observed_length);
 
+int templ_compound_literal_build(struct c_compiler *cc, struct type_node *type_name, struct templ_initializer_list_node **plist, struct situs *anchor_loc, struct situs *init_loc, struct expr **out);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

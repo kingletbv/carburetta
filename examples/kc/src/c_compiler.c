@@ -186,6 +186,8 @@ void cc_init(struct c_compiler *cc) {
   cc->template_handler_ = cc_template_default_handler;
   cc->default_handler_fn_name_ = g_cc_default_handler_fn_name_;
   st_init(&cc->link_table_);
+
+  cc->anon_counter_ = 0;
 }
 
 void cc_cleanup(struct c_compiler *cc) {
