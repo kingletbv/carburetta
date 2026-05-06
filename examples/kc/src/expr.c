@@ -91,14 +91,20 @@ int expr_pointer_decay(struct c_compiler *cc, struct expr **px) {
   }
   int qualifiers = tn->kind_ == tk_qualifier ? tn->qualifiers_ : 0;
   tn = type_node_unqualified(tn);
+
+  struct expr **slot = px;
+  while ((*slot)->et_ == ET_SEQ) {
+    slot = &(*slot)->children_[1];
+  }
+
   if (tn->kind_ == tk_array) {
     /* Pop the indirection that converts the data pointer to an array to an array, and 
      * cast to a pointer to the array element, re-applying the qualifiers (if any.) */
-    if ((*px)->et_ != ET_INDIRECTION_PTR) {
+    if ((*slot)->et_ != ET_INDIRECTION_PTR) {
       cc_printf(cc, "Internal Error: Array is not an indirected pointer\n");
       return -1;
     }
-    struct expr *ptr_exp = (*px)->children_[0];
+    struct expr *ptr_exp = (*slot)->children_[0];
     /* left is parent of ptr_exp; we now drop the reference so parent frees while ptr child remains */
     struct expr *x = expr_alloc(ET_CVPTR2PTR);
     if (!x) {
@@ -108,8 +114,8 @@ int expr_pointer_decay(struct c_compiler *cc, struct expr **px) {
 
     x->children_[0] = ptr_exp;
     ptr_exp->refs_++; /* expr_free() of *left parent decrements this back down by one; the ++ therefore ensures its survival */
-    expr_free(*px);
-    *px = x;
+    expr_free(*slot);
+    *slot = x;
     struct type_node *tn_ptr_to_arr_elm = type_base_pointer(&cc->tb_, tn->derived_from_);
     tn_ptr_to_arr_elm = type_base_qualifier(&cc->tb_, tn_ptr_to_arr_elm, qualifiers);
     if (!tn_ptr_to_arr_elm) {
@@ -121,14 +127,14 @@ int expr_pointer_decay(struct c_compiler *cc, struct expr **px) {
   }
   else if (tn->kind_ == tk_function) {
     /* Pop the indirection and return the underlying node */
-    if ((*px)->et_ != ET_INDIRECTION_PTR) {
+    if ((*slot)->et_ != ET_INDIRECTION_PTR) {
       cc_printf(cc, "Internal Error: Function is not an indirected pointer\n");
       return -1;
     }
-    struct expr *ptr_exp = (*px)->children_[0];
+    struct expr *ptr_exp = (*slot)->children_[0];
     ptr_exp->refs_++;
-    expr_free(*px);
-    *px = ptr_exp;
+    expr_free(*slot);
+    *slot = ptr_exp;
     return 0;
   }
   else {
