@@ -5014,6 +5014,16 @@ int expr_address_of(struct c_compiler *cc, struct expr **dst, struct situs *op_l
   }
 
   struct expr *indirection_address_child = (*operand)->children_[0];
+
+  /* Cannot take address of register variable */
+  if (indirection_address_child && indirection_address_child->decl_ && (indirection_address_child->decl_->sc_ == SC_REGISTER)) {
+    cc_error_loc(cc, opd_loc, "cannot take address of object with register storage class");
+    return 0;
+  }
+  if ((*operand)->is_bitfield_) {
+    cc_error_loc(cc, opd_loc, "cannot take address of a bit-field");
+    return 0;
+  }
   /* Clear out the child so we may free the indirection itself without giving up the address */
   (*operand)->children_[0] = NULL;
   *dst = indirection_address_child;
@@ -6473,6 +6483,10 @@ int expr_ptr_member_access(struct c_compiler *cc, struct expr **dst, struct situ
     cast->children_[0] = *exp;
     *exp = NULL;
     indir->children_[0] = cast;
+    if (field->bitfield_width_) {
+      indir->is_bitfield_ = 1;
+      indir->bitfield_size_ = field->bitfield_width_;
+    }
     *dst = indir;
     return 0;
   }
@@ -6497,6 +6511,10 @@ int expr_ptr_member_access(struct c_compiler *cc, struct expr **dst, struct situ
   cast->type_arg_ = ptr_to_result_type;
   cast->children_[0] = add;
   indir->children_[0] = cast;
+  if (field->bitfield_width_) {
+    indir->is_bitfield_ = 1;
+    indir->bitfield_size_ = field->bitfield_width_;
+  }
   *dst = indir;
   return 0;
 }

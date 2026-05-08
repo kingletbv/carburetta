@@ -2027,19 +2027,47 @@ struct-declarator: declarator {
   $0.tds_ = NULL;
   $0.ident_ = NULL;
 }
+
 struct-declarator: declarator COLON constant-exp {
-  $$ = templ_de_alloc(NULL, $0.tds_, $0.ident_, &$0.ident_loc_, 0 /* XXX: needs constant-exp evaluation for bitfield size! */);
+  int width = 0;
+  if ($2) {
+    struct expr_temp result;
+    if (expr_constant_evaluation(cc, &result, $2)) {
+      cc_error_loc(cc, &${2}, "bit-field width must be an integer constant expression");
+    }
+    else {
+      width = (int)result.v_.i64_;
+      if (width < 0) {
+        cc_error_loc(cc, &${2}, "bit-field width must be non-negative");
+        width = 0;
+      }
+    }
+  }
+  $$ = templ_de_alloc(NULL, $0.tds_, $0.ident_, &$0.ident_loc_, width);
   if (!$$) return _CP_NO_MEMORY;
   $0.tds_ = NULL;
-  $0.ident_ = NULL;
-  /* XXX: Deal with constant expression $2 for bitfield size! */
+  $0.ident_ = NULL; 
 }
+
 struct-declarator:            COLON constant-exp {
   struct situs sit;
   situs_init(&sit);
-  $$ = templ_de_alloc(NULL, NULL, NULL, &sit, 0 /* XXX: needs constant-exp evaluation for bitfield size! */);
-  if (!$$) return _CP_NO_MEMORY;
-  /* XXX: Deal with constant expression $1 for bitfield size! */
+  int width = 0;
+  if ($1) {
+    struct expr_temp result;
+    if (expr_constant_evaluation(cc, &result, $1)) {
+      cc_error_loc(cc, &${1}, "bit-field width must be an integer constant expression");
+    }
+    else {
+      width = (int)result.v_.i64_;
+      if (width < 0) {
+        cc_error_loc(cc, &${1}, "bit-field width must be non-negative");
+        width = 0;
+      }
+    }
+  }
+  $$ = templ_de_alloc(NULL, NULL, NULL, &sit, width);
+  if (!$$) return _CP_NO_MEMORY; 
 }
 
 %nt enum-specifier-prolog
