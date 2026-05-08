@@ -1462,6 +1462,7 @@ int templ_compound_literal_build(struct c_compiler *cc, struct type_node *type_n
       return _CP_NO_MEMORY;
     }
     addr2->dsp_ = anon->dsp_;
+    addr2->decl_ = anon;
   }
 
   struct expr *lv = expr_alloc(ET_INDIRECTION_PTR);
