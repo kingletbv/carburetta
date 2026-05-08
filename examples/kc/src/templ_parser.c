@@ -827,8 +827,9 @@ int templ_initializer_iter_struct_union(struct c_compiler *cc, struct type_node 
       return -1;
     }
     
-    if (!*pptiln) {
-      /* Reached end of initializer nodes in list */
+    if ((!*pptiln) || (*pptiln)->designators_) {
+      /* Reached end of initializer nodes in list, or next node carries its own designator; pop out
+       * so the outer compound do-while can re-dispatch. */
       expr_free(current_offset);
       return 0;
     }
@@ -1124,7 +1125,13 @@ int templ_initializer_iter(struct c_compiler *cc, struct type_node *tn, struct e
         struct templ_initializer_list_node *compound_tail = (*pptiln)->initializer_->u_.compound_nodes_;
         struct templ_initializer_list_node *pp_compound_child = compound_tail->chain_;
         do {
-          r = templ_initializer_iter_struct_union(cc, tn, base_offset, NULL, &pp_compound_child, compound_tail, ppini_chain);
+          if (pp_compound_child->designators_) {
+            r = templ_initializer_iter_struct_union(cc, tn, base_offset, pp_compound_child->designators_->chain_, &pp_compound_child, compound_tail, ppini_chain);
+          }
+          else {
+            r = templ_initializer_iter_struct_union(cc, tn, base_offset, NULL, &pp_compound_child, compound_tail, ppini_chain);
+          }
+          
           if (r) { 
             return r;
           }
