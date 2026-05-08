@@ -134,6 +134,9 @@ int expr_is_null_ptr(struct c_compiler *cc, struct expr *x, int *is_null_ptr);
 /* Decays arrays and function types to pointers. */
 int expr_pointer_decay(struct c_compiler *cc, struct expr **px);
 
+/* Converts lvalue (e.g. ET_INDIRECTION_PTR) to pointer value */
+int expr_strip_lvalue_to_address(struct expr **p);
+
 /* Converts the type of the node (enum expr_type) to a string, for debugging */
 const char *expr_node_type_to_str(struct expr *x);
 

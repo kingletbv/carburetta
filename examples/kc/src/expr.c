@@ -145,6 +145,20 @@ int expr_pointer_decay(struct c_compiler *cc, struct expr **px) {
   return 0;
 }
 
+int expr_strip_lvalue_to_address(struct expr **p) {
+  struct expr **slot = p;
+  while ((*slot)->et_ == ET_SEQ) {
+    slot = &(*slot)->children_[1];
+  }
+  if ((*slot)->et_ != ET_INDIRECTION_PTR) return -1;
+  struct expr *indir = *slot;
+  struct expr *addr = indir->children_[0];
+  addr->refs_++;
+  *slot = addr;
+  expr_free(indir);
+  return 0;
+}
+
 static enum expr_type expr_get_next_arithmetic_conversion_step(struct c_compiler *cc, enum type_kind current, enum type_kind destination) {
   if (current == destination) {
     return ET_NOP;
@@ -5748,21 +5762,11 @@ int expr_assign(struct c_compiler *cc, struct expr **dst, struct situs *left_loc
       return 0;
     }
 
-    struct expr **rslot = right;
-    while ((*rslot)->et_ == ET_SEQ) {
-      rslot = &(*rslot)->children_[1];
-    }
-    if ((*rslot)->et_ != ET_INDIRECTION_PTR) {
+    if (expr_strip_lvalue_to_address(right)) {
       cc_error_loc(cc, right_loc, "right side of struct assignment is not addressable");
       return 0;
     }
-    { /* Remove the ET_INDIRECTION_PTR so we end up with a pointer */
-      struct expr *bottom_right = *rslot;
-      struct expr *src_addr = bottom_right->children_[0];
-      src_addr->refs_++;
-      *rslot = src_addr;
-      expr_free(bottom_right);
-    }
+
     /* right is now a pointer with ET_SEQ's intact */
     struct expr *size_expr = type_node_size_expr(cc, type_node_unqualified(left_type));
     if (!size_expr) {
@@ -6231,6 +6235,57 @@ static struct expr *expr_args_final_conversions(struct c_compiler *cc, struct ty
       }
       else {
         argslist = x;
+        /* If the parameter is struct/union, the callee's decl has
+         * is_passed_by_pointer_ = 1 (set in c_parser.cbrt:2893-2898), so the
+         * call slot expects a pointer to a copy of the argument. Materialize
+         * a caller-side temp, copy the source bytes into it, and replace
+         * argslist with an expression that yields the temp's address. */
+        struct type_node *param_type = type_node_unqualified((*pparam)->type_);
+        if (type_node_is_struct_or_union(param_type)) {
+          struct name_space *ns = cc->ctx_.block_ ? cc->ctx_.block_->ns_
+                                                  : &cc->global_ns_;
+          struct decl *anon = decl_create_anonymous_variable(cc, param_type, ns, func_loc);
+          if (!anon) {
+            *error_reported = 1;
+            return argslist;
+          }
+
+          /* Convert argslist's lvalue chain into an address-yielding chain
+           * (peels SEQ wrappers and replaces the bottom ET_INDIRECTION_PTR
+           * with its child). */
+          if (expr_strip_lvalue_to_address(&argslist)) {
+            cc_error_loc(cc, func_loc, "struct/union argument #%zu is not addressable", *pcurrent_index);
+            *error_reported = 1;
+            return argslist;
+          }
+
+          struct expr *size_expr = type_node_size_expr(cc, param_type);
+          struct expr *dest_addr = expr_alloc(ET_ADDRESS_L);
+          struct expr *copy      = expr_alloc(ET_COPY);
+          struct expr *anon_addr = expr_alloc(ET_ADDRESS_L);
+          struct expr *seq       = expr_alloc(ET_SEQ);
+          if (!size_expr || !dest_addr || !copy || !anon_addr || !seq) {
+            expr_free(size_expr);
+            expr_free(dest_addr);
+            expr_free(copy);
+            expr_free(anon_addr);
+            expr_free(seq);
+            cc_no_memory(cc);
+            *error_reported = 1;
+            return argslist;
+          }
+          dest_addr->decl_ = anon;
+          anon_addr->decl_ = anon;
+
+          copy->children_[0] = dest_addr;
+          copy->children_[1] = argslist;     /* take ownership of the address chain */
+          copy->children_[2] = size_expr;
+
+          seq->children_[0] = copy;
+          seq->children_[1] = anon_addr;
+
+          argslist = seq;
+        }
       }
     }
   }
