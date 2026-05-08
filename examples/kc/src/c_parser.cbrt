@@ -591,15 +591,33 @@ unary-exp: SIZEOF unary-exp {
     cc_error_loc(cc, &${ 1 }, "cannot determine type\n");
   }
   else if (et) {
-    $$ = type_node_size_expr(cc, et);
+    struct type_node *unq = type_node_unqualified(et);
+    if (unq->kind_ == tk_function) {
+      cc_error_loc(cc, &${ 1 }, "sizeof applied to function type");
+    }
+    else if ((unq->kind_ == tk_array) && !unq->array_size_expr_) {
+      cc_error_loc(cc, &${ 1 }, "sizeof applied to incomplete array type");
+    }
+    else {
+      $$ = type_node_size_expr(cc, et);
+    }
   }
 }
 
 unary-exp: SIZEOF PAR_OPEN type-name PAR_CLOSE {
   if ($2) {
-    $$ = type_node_size_expr(cc, $2);
-    if (!$$) {
-      cc_error_loc(cc, &${ 2 }, "cannot size type\n");
+    struct type_node *unq = type_node_unqualified($2);
+    if (unq->kind_ == tk_function) {
+      cc_error_loc(cc, &${ 2 }, "sizeof applied to function type");
+    }
+    else if ((unq->kind_ == tk_array) && !unq->array_size_expr_) {
+      cc_error_loc(cc, &${ 2 }, "sizeof applied to incomplete array type");
+    }
+    else {
+      $$ = type_node_size_expr(cc, $2);
+      if (!$$) {
+        cc_error_loc(cc, &${2}, "cannot size type");
+      }
     }
   }
 }
