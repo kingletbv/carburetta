@@ -5581,8 +5581,8 @@ struct expr *expr_convert_as_if_by_assignment(struct c_compiler *cc, struct type
       cc_error_loc(cc, src_loc, "incompatible struct/union assignment");
       return NULL;
     }
-    /* XXX: Implement struct/union assignment */
-    return NULL;
+    src->refs_++;
+    return src;
   }
 
   /* Fail anything else */
@@ -5743,15 +5743,59 @@ int expr_assign(struct c_compiler *cc, struct expr **dst, struct situs *left_loc
   }
   else if  (is_struct_or_union_left && is_struct_or_union_right) {
     /* Is left compatible with the right ? */
-    if (type_node_is_compatible(&cc->tb_, type_node_unqualified(left_type), type_node_unqualified(right_type))) {
-      /* XXX: Not yet implemented */
-      cc_fatal_loc(cc, op_loc, "struct assignment is not yet implemented");
-      return -1;
-    }
-    else {
+    if (!type_node_is_compatible(&cc->tb_, type_node_unqualified(left_type), type_node_unqualified(right_type))) {
       cc_error_loc(cc, op_loc, "operand types are incompatible for assignment");
       return 0;
     }
+
+    struct expr **rslot = right;
+    while ((*rslot)->et_ == ET_SEQ) {
+      rslot = &(*rslot)->children_[1];
+    }
+    if ((*rslot)->et_ != ET_INDIRECTION_PTR) {
+      cc_error_loc(cc, right_loc, "right side of struct assignment is not addressable");
+      return 0;
+    }
+    { /* Remove the ET_INDIRECTION_PTR so we end up with a pointer */
+      struct expr *bottom_right = *rslot;
+      struct expr *src_addr = bottom_right->children_[0];
+      src_addr->refs_++;
+      *rslot = src_addr;
+      expr_free(bottom_right);
+    }
+    /* right is now a pointer with ET_SEQ's intact */
+    struct expr *size_expr = type_node_size_expr(cc, type_node_unqualified(left_type));
+    if (!size_expr) {
+      cc_no_memory(cc);
+      return -1;
+    }
+    struct expr *copy = expr_alloc(ET_COPY);
+    struct expr *new_lv = expr_alloc(ET_INDIRECTION_PTR);
+    struct expr *seq = expr_alloc(ET_SEQ);
+    if (!copy || !new_lv || !seq) {
+      expr_free(size_expr);
+      expr_free(copy);
+      expr_free(new_lv);
+      expr_free(seq);
+      cc_no_memory(cc);
+      return -1;
+    }
+
+    copy->children_[0] = ptr_exp;
+    ptr_exp->refs_++;
+    new_lv->children_[0] = ptr_exp;
+    ptr_exp->refs_++;
+    expr_free(*left);
+
+    copy->children_[1] = *right;
+    copy->children_[2] = size_expr;
+
+    seq->children_[0] = copy;
+    seq->children_[1] = new_lv;
+
+    *left = *right = NULL;
+    *dst = seq;
+    return 0;
   }
   else if (is_pointer_left && is_pointer_right) {
     struct type_node *left_type_pointed_to = type_node_unqualified(left_type)->derived_from_;
