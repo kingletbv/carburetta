@@ -257,13 +257,16 @@ int decl_static_initializer_exec(struct c_compiler *cc, struct ds_portion *dsp, 
           return -1;
         }
         struct expr *addr = ini->value_->children_[0];
-          if ((addr->et_ != ET_C_STRING_LIT) &&
-            (addr->et_ != ET_C_WIDE_STRING_LIT) &&
-            (addr->et_ != ET_ADDRESS_G)) {
-            cc_error_loc(cc, &ini->loc_,
-              "static array initializer must be a string literal or addressable constant");
-              return -1;
-          }
+        while (addr->et_ == ET_CVPTR2PTR) {
+          addr = addr->children_[0];
+        }
+        if ((addr->et_ != ET_C_STRING_LIT) &&
+          (addr->et_ != ET_C_WIDE_STRING_LIT) &&
+          (addr->et_ != ET_ADDRESS_G)) {
+          cc_error_loc(cc, &ini->loc_,
+            "static array initializer must be a string literal or addressable constant");
+            return -1;
+        }
         if (!addr->dsp_ || !addr->dsp_->data_) {
           cc_error_loc(cc, &ini->loc_, "static array initializer source has no data section");
           return -1;
