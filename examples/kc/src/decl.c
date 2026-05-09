@@ -250,6 +250,29 @@ int decl_static_initializer_exec(struct c_compiler *cc, struct ds_portion *dsp, 
         return -1;
       }
 
+      /* Array-typed initializer - bypass scalar path */
+      if (type_node_is_array(type_node_unqualified(value_type))) {
+        if (ini->value_->et_ != ET_INDIRECTION_PTR) {
+          cc_error_loc(cc, &ini->loc_, "static array initializer is not addressable");
+          return -1;
+        }
+        struct expr *addr = ini->value_->children_[0];
+          if ((addr->et_ != ET_C_STRING_LIT) &&
+            (addr->et_ != ET_C_WIDE_STRING_LIT) &&
+            (addr->et_ != ET_ADDRESS_G)) {
+            cc_error_loc(cc, &ini->loc_,
+              "static array initializer must be a string literal or addressable constant");
+              return -1;
+          }
+        if (!addr->dsp_ || !addr->dsp_->data_) {
+          cc_error_loc(cc, &ini->loc_, "static array initializer source has no data section");
+          return -1;
+        }
+        uint64_t copy_size = type_node_size(&cc->tb_, value_type);
+        memcpy(target, addr->dsp_->data_, (size_t)copy_size);
+        continue;
+      }
+
       struct decl *reloc_decl = NULL;
 
       int is_valid = 0;
