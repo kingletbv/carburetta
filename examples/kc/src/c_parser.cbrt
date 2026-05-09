@@ -2004,7 +2004,7 @@ struct-declaration: specifier-qualifier-list struct-declarator-list reenable-typ
   }
   $$ = fields;
   
-  if ($0.sc_) {
+  if ($0.sc_ && ($0.sc_ != SC_REGISTER)) {
     cc_error_loc(cc, &${ 0 }, "Invalid parameter storage class specifiers\n");
   }
   if ($0.fs_) {
@@ -2708,7 +2708,7 @@ parameter-declaration: declaration-specifier-seq declarator reenable-typedefname
     }
   }
   $1.ident_ = NULL;
-  if ($0.sc_) {
+  if ($0.sc_ && ($0.sc_ != SC_REGISTER)) {
     cc_error_loc(cc, &${ 0 }, "Invalid parameter storage class specifiers\n");
   }
   if ($0.fs_) {
@@ -2727,7 +2727,7 @@ parameter-declaration: declaration-specifier-seq abstract-declarator reenable-ty
       return _CP_NO_MEMORY;
     }
   }
-  if ($0.sc_) {
+  if ($0.sc_ && ($0.sc_ != SC_REGISTER)) {
     cc_error_loc(cc, &${ 0 }, "Invalid parameter storage class specifiers\n");
   }
   if ($0.fs_) {
@@ -2747,7 +2747,7 @@ parameter-declaration: declaration-specifier-seq {
       return _CP_NO_MEMORY;
     }
   }
-  if ($0.sc_) {
+  if ($0.sc_ && ($0.sc_ != SC_REGISTER)) {
     cc_error_loc(cc, &${ 0 }, "Invalid parameter storage class specifiers\n");
   }
   if ($0.fs_) {
