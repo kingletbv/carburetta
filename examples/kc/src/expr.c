@@ -3195,7 +3195,7 @@ int expr_usual_arithmetic_conversions(struct c_compiler *cc, struct expr **left_
 }
 
 enum type_kind expr_arith_type_kind_no_enum(struct c_compiler *cc, struct expr *x) {
-  struct type_node *tn = expr_type(cc, x);
+  struct type_node *tn = type_node_unqualified(expr_type(cc, x));
   if (!tn) return tk_invalid;
   return type_node_arith_type_kind_no_enum(&cc->tb_, tn);
 }
