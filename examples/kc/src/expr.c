@@ -2540,6 +2540,28 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
           assert(0 && "Unexpected indirection final operand type");
           break;
       }
+
+      /* Check if bitfield and handle load masking */
+      if (x->is_bitfield_ && (x->bitfield_size_ > 0)) {
+        /* Signed bitfields get sign-extended */
+        struct type_node *tn_unq = type_node_unqualified(expr_type(cc, x));
+        int is_signed = ((tn_unq->kind_ == tk_char) && (cc->tb_.char_is_signed_)) || 
+                        (tn_unq->kind_ == tk_signed_char) ||
+                        (tn_unq->kind_ == tk_short_int) ||
+                        (tn_unq->kind_ == tk_int) ||
+                        (tn_unq->kind_ == tk_long_int) ||
+                        (tn_unq->kind_ == tk_long_long_int);
+        if (is_signed) {
+          int shift = 64 - x->bitfield_size_;
+          operands_i[0] = (operands_i[0] << shift) >> shift;
+          operands_u[0] = (uint64_t)operands_i[0];
+        }
+        else {
+          uint64_t mask = (x->bitfield_size_ >= 64) ? ~(uint64_t)0 : (((uint64_t)1) << x->bitfield_size_) - 1;
+          operands_u[0] &= mask;
+          operands_i[0] = (int64_t)operands_u[0];
+        }
+      }
       break;
     }
     case shl:
@@ -2664,6 +2686,10 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
         case storess: bits = 16; break;
         case storesc: bits = 8; break;
       }
+      if (x->is_bitfield_ && (x->bitfield_size_ > 0)) {
+        uint64_t mask = (x->bitfield_size_ >= 64) ? ~(uint64_t)0 : ((uint64_t)1 << x->bitfield_size_) - 1;
+        operands_i[1] = (int64_t)(((uint64_t)operands_i[1]) & mask);
+      }
       switch (bits) {
         case 64:
           ((int64_t *)operands_u[0])[0] = operands_i[1];
@@ -2698,6 +2724,10 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
         case storeui: bits = cc->tb_.bits_per_int_; break;
         case storeus: bits = 16; break;
         case storeuc: bits = 8; break;
+      }
+      if (x->is_bitfield_ && (x->bitfield_size_ > 0)) {
+        uint64_t mask = (x->bitfield_size_ >= 64) ? ~(uint64_t)0 : ((uint64_t)1 << x->bitfield_size_) - 1;
+        operands_u[1] &= mask;
       }
       switch (bits) {
         case 64:
@@ -5748,6 +5778,10 @@ int expr_assign(struct c_compiler *cc, struct expr **dst, struct situs *left_loc
     if (!x) {
       cc_no_memory(cc);
       return -1;
+    }
+    if ((*left)->is_bitfield_) {
+      x->is_bitfield_ = 1;
+      x->bitfield_size_ = (*left)->bitfield_size_;
     }
     struct expr *rc = expr_convert_type(cc, left_type, *right);
     if (!rc) {
