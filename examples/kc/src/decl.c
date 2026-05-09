@@ -1172,11 +1172,20 @@ int decl_resolve_global_decl(struct c_compiler *cc, struct decl *d) {
       d->is_definition_ = 1;
     }
     if (d->is_definition_) {
-      if (!d->dsp_) {
-        cc_fatal(cc, "internal error: no storage allocated for defined external \"%s\".\n", d->sym_.ident_);
-        return -1;
+      if (type_node_is_function(d->type_)) {
+        /* Functions have their address in d->external_ (the JIT trampoline) */
+        if (!d->external_) {
+          cc_fatal(cc, "internal error: function \"%s\" has no trampoline allocated.\n", d->sym_.ident_);
+          return -1;
+        }
       }
-      reloc_value = (uint64_t)d->dsp_->data_;
+      else {
+        if (!d->dsp_) {
+          cc_fatal(cc, "internal error: no storage allocated for defined external \"%s\".\n", d->sym_.ident_);
+          return -1;
+        }
+        reloc_value = (uint64_t)d->dsp_->data_;
+      }
     }
     else if (d->is_declaration_) {
       /* Late binding external.. */
