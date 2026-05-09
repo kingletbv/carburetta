@@ -918,13 +918,14 @@ int templ_initializer_iter_array(struct c_compiler *cc, struct type_node *tn, st
 
     if (!expr_is_constant(index_expr)) {
       /* Expression not constant, this is an error (see 6.7.8 Initialization in particular the grammar.) */
+      report_error(&desig->loc_, "array index designator must be an integer constant expression");
       expr_free(index);
       expr_free(size_expr);
       return -1;
     }
 
     struct expr_temp index_result;
-    int r = expr_eval(cc, &index_result, index_expr, 1, NULL, NULL, NULL, NULL);
+    int r = expr_constant_evaluation(cc, &index_result, index_expr);
     if (r) {
       expr_free(index);
       expr_free(size_expr);
@@ -959,6 +960,7 @@ int templ_initializer_iter_array(struct c_compiler *cc, struct type_node *tn, st
       return -1;
     }
     offset_expr->children_[0] = size_expr;
+    size_expr->refs_++;
     offset_expr->children_[1] = index_expr;
 
     if (!base_offset) {
