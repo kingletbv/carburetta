@@ -1153,7 +1153,7 @@ int templ_initializer_iter(struct c_compiler *cc, struct type_node *tn, struct e
         }
         return 0;
       }
-    }
+    } 
     else if (tn->kind_ == tk_array) {
       if ((*pptiln)->initializer_->kind_ == TINK_LITERAL) {
         struct expr *lit = (*pptiln)->initializer_->u_.literal_exp_;
@@ -1179,6 +1179,10 @@ int templ_initializer_iter(struct c_compiler *cc, struct type_node *tn, struct e
             /* The length of the array type matches the length of the string literal *minus one*,
              * that is to say, minus the null terminator. This is permitted. */
             new_size = tn->array_size_;
+          }
+          else if (tn->array_size_ > string_lit_type->array_size_) {
+            /* Array larger than string, tail is zero-initialized. */
+            new_size = string_lit_type->array_size_;
           }
           else {
             /* Incompatible size */
