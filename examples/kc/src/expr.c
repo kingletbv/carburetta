@@ -3075,14 +3075,14 @@ int expr_usual_arithmetic_conversions(struct c_compiler *cc, struct expr **left_
   enum type_kind tk_left, tk_right;
   struct type_node *type_left, *type_right;
   
-  type_left = expr_type(cc, *left_expr);
+  type_left = type_node_unqualified(expr_type(cc, *left_expr));
   tk_left = type_left->kind_;
   if (tk_left == tk_enumeration) {
     /* enumeration's Compatible integer type */
     tk_left = type_left->derived_from_->kind_;
   }
   
-  type_right = expr_type(cc, *right_expr);
+  type_right = type_node_unqualified(expr_type(cc, *right_expr));
   tk_right = type_right->kind_;
   if (tk_right == tk_enumeration) {
     /* enumeration's Compatible integer type */
@@ -3111,12 +3111,12 @@ int expr_usual_arithmetic_conversions(struct c_compiler *cc, struct expr **left_
 
     /* Re-assess types, may still be enum if compatible integer type has rank exceeding int (unlikely but I see
      * no reason why it'd be impossible.) */
-    type_left = expr_type(cc, *left_expr);
+    type_left = type_node_unqualified(expr_type(cc, *left_expr));
     tk_left = type_left->kind_;
     if (tk_left == tk_enumeration) {
       tk_left = type_left->derived_from_->kind_;
     }
-    type_right = expr_type(cc, *right_expr);
+    type_right = type_node_unqualified(expr_type(cc, *right_expr));
     tk_right = type_right->kind_;
     if (tk_right == tk_enumeration) {
       tk_right = type_right->derived_from_->kind_;
