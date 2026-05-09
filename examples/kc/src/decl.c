@@ -475,7 +475,7 @@ int decl_initializer_as_expr(struct c_compiler *cc, struct expr *target_ptr, str
       }
       else {
         /* Assignment of scalar, grab opcode based on type */
-        enum type_kind tk = type_node_unqualified(value_type)->kind_;
+        enum type_kind tk = type_node_arith_type_kind_no_enum(&cc->tb_, type_node_unqualified(value_type));
         enum expr_type opcode = ET_INVALID;
 
         switch (tk) {

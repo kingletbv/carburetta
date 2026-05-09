@@ -2074,17 +2074,22 @@ static int expr_eval_impl(struct c_compiler *cc, struct expr *x, struct expr_tem
   for (opd = 0; opd < 3; ++opd) {
     /* Down-convert enumeration types to their integer representation (compatible integer type) */
     if ((load[opd] == enum_cit) || (load[opd] == enum_type)) {
-      struct type_node *tn;
+      struct type_node *tn_enum;
       if (load[opd] == enum_cit) {
-        tn = expr_type(cc, x->children_[0]);
+        /* Load compatible integer type, and this node converts it to the enum type.
+         * (so the enum type is on this node) */
+        tn_enum = x->type_arg_;
       }
       else /* (load == enum_type) */ {
-        tn = x->type_arg_;
+        /* Load enum type, and this node converts it to the integer type
+         * (so the enum type is on the child) */
+        tn_enum = expr_type(cc, x->children_[0]);
       }
-      assert(tn->kind_ == tk_enumeration && "Must have an enum as child");
-      tn = tn->derived_from_ /* get Compatible Integer Type */;
+      assert(tn_enum->kind_ == tk_enumeration && "Must have an enum as child");
+      /* Given the enum type, find the compatible integer type */
+      struct type_node *tn_cit = tn_enum->derived_from_ /* get Compatible Integer Type */;
 
-      switch (tn->kind_) {
+      switch (tn_cit->kind_) {
         case tk_bool:
           load[opd] = b;
           break;
