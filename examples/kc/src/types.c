@@ -1940,7 +1940,18 @@ struct expr *type_node_struct_offset_expr(struct c_compiler *cc, struct type_nod
         return current_offset;
       }
 
-      struct expr *field_size = type_node_size_expr(cc, field->type_);
+      /* Flexible array member, the following is permitted in C99:
+       * struct {
+       *   int foo;
+       *   char bar[]; // <-- note absence of size
+       * };
+       * This should be sized as if the bar had size 0, but still include its alignment considerations. */
+      struct type_node *field_type_unq = type_node_unqualified(field->type_);
+      int is_flexible_array = (field_type_unq->kind_ == tk_array) &&
+                              (field_type_unq->array_size_expr_ == NULL) &&
+                              (field == tn_struct->fields_ /* field is last in tail cyclic chain */);
+
+      struct expr *field_size = is_flexible_array ? type_node_const_expr(cc, et_c, 0) : type_node_size_expr(cc, field->type_);
 
       if (current_offset) {
         /* Add size of field */
