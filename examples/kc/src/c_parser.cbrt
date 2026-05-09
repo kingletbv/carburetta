@@ -2313,6 +2313,10 @@ init-declarator: declarator EQUALS initializer {
       }
       /* Change type of the declaration to the new, defined length, array type */
       $$->type_ = new_array_type;
+      if ($$->global_forward_) {
+        $$->global_forward_->type_ = new_array_type;
+      }
+
     }
     $$->init_ = di;
 
