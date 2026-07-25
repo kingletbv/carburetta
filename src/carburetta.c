@@ -383,13 +383,13 @@ int main(int argc, char **argv) {
         generate_hfile = 1;
         if ((option_index < argc) && (argv[option_index])[0] != '-') {
           /* filename specified */
-          if (cc.c_output_filename_) {
-            re_error_nowhere("Error: only one C output file permitted");
+          if (cc.h_output_filename_) {
+            re_error_nowhere("Error: only one C header output file permitted");
             print_usage(stderr);
             goto exit_arg_eval;
           }
-          cc.c_output_filename_ = strdup(argv[option_index]);
-          if (!cc.c_output_filename_) {
+          cc.h_output_filename_ = strdup(argv[option_index]);
+          if (!cc.h_output_filename_) {
             re_error_nowhere("Error: no memory");
             goto exit_arg_eval;
           }
