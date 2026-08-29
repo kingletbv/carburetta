@@ -122,6 +122,63 @@ void *invoke_alloc_function_entry(struct c_compiler *cc, struct decl *fd) {
   return jitmem_acquire(cc, sizeof(trampoline_template), trampoline_template);
 }
 
+/* Win64 passes the first four arguments in registers; the caller only reserves
+ * the 32-byte home space, it does not fill it. kc's own invoke_call_x64 does
+ * fill it, so guest-to-guest entry works, but a natively compiled caller leaves
+ * it as garbage. Spill the captured registers into it so both entries agree.
+ * Slots are positional: argument n uses integer register n or xmm register n,
+ * never a separate count per class. Arguments past the fourth are already in
+ * place, written by the caller. */
+static void spill_register_params(struct c_compiler *cc, struct invoke_context *ic, struct decl *fd, void *param_frame) {
+  struct type_param *param_chain = fd->type_ ? fd->type_->params_ : NULL;
+  const uint64_t *iregs[4];
+  const double *xregs[4];
+  uint64_t *slots = (uint64_t *)param_frame;
+  struct type_param *p;
+  size_t idx = 0;
+
+  if (!param_chain) return;
+
+  iregs[0] = &ic->rcx_;  iregs[1] = &ic->rdx_;  iregs[2] = &ic->r8_;   iregs[3] = &ic->r9_;
+  xregs[0] = &ic->xmm0_; xregs[1] = &ic->xmm1_; xregs[2] = &ic->xmm2_; xregs[3] = &ic->xmm3_;
+
+  p = param_chain;
+  do {
+    struct type_node *tn;
+    int is_float_param = 0;
+
+    p = p->chain_;
+    if (p->is_varadic_ || (idx >= 4)) break;
+
+    tn = p->type_ ? type_node_unqualified(p->type_) : NULL;
+    if (tn) {
+      /* Matches the by-pointer rule the parser applies when it lays out
+       * param_offset_: anything larger than a slot arrives as a pointer. */
+      uint64_t param_size = type_node_size(&cc->tb_, p->type_);
+      if ((param_size <= sizeof(uint64_t)) &&
+          !type_node_is_struct_or_union(p->type_) &&
+          !type_node_is_array(p->type_)) {
+        is_float_param = (tn->kind_ == tk_float) || (tn->kind_ == tk_double);
+      }
+    }
+
+    if (!is_float_param) {
+      slots[idx] = *iregs[idx];
+    }
+    else {
+      slots[idx] = 0;
+      if (tn->kind_ == tk_float) {
+        *(float *)(slots + idx) = *(const float *)xregs[idx];
+      }
+      else {
+        *(double *)(slots + idx) = *xregs[idx];
+      }
+    }
+
+    idx++;
+  } while (p != param_chain);
+}
+
 uint64_t invoke_enter_call(struct invoke_context *ic, void *rsp, struct decl *fd, struct c_compiler *cc) {
 #if 0
   cc_printf(cc, "Invoked function: %s\n", fd->sym_.ident_);
@@ -141,6 +198,7 @@ uint64_t invoke_enter_call(struct invoke_context *ic, void *rsp, struct decl *fd
   void *param_frame = NULL;
   /* Skip over CALL return instruction pointer */
   param_frame = ((char *)rsp) + 8;
+  spill_register_params(cc, ic, fd, param_frame);
 
   ic->rax_result_ = 0;
 
